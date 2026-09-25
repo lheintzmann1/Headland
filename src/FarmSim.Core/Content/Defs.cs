@@ -208,9 +208,18 @@ public sealed class VisualDef
     /// <summary>Procedural placeholder archetype: tractor, combine, trailer, cultivator, seeder, header.</summary>
     public string Placeholder { get; set; } = "tractor";
     public string Color { get; set; } = "#7a3326";
-    /// <summary>Optional glTF model (res:// path). Overrides the placeholder when set.</summary>
+    /// <summary>Optional glTF model (res:// path, e.g. a Blockbench .glb export). Replaces the placeholder.</summary>
     public string? Model { get; set; }
-    /// <summary>Model node names for moving parts (wheel_fl, pipe, ...).</summary>
+    /// <summary>Uniform scale applied to the model (1 = model units are meters).</summary>
+    public float Scale { get; set; } = 1f;
+    /// <summary>Turn the model around Y so its front faces +Z (180 for models built facing -Z).</summary>
+    public float YawDeg { get; set; }
+    /// <summary>Model offset [x, y, z] in meters, in machine local space (+Z forward, +X left).</summary>
+    public float[] Offset { get; set; } = [0f, 0f, 0f];
+    /// <summary>
+    /// Moving parts: role → node name in the model. Roles: wheel0..wheelN (same order as "wheels"),
+    /// pipe, tipper, reel, load. See docs/MODELING.md.
+    /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
 }
 
@@ -357,7 +366,7 @@ public sealed class MapDef
     public int Size { get; set; } = 512;
     public int Seed { get; set; } = 1337;
     public float HillAmplitude { get; set; } = 5f;
-    /// <summary>Edge of one road/track/path/stream tile in meters (the art's band is ~37% of a tile).</summary>
+    /// <summary>Edge of one road/track/path/stream tile in meters (the art's band is 37–50% of a tile).</summary>
     public float TileSize { get; set; } = 16f;
     public TileNetworkDef[] Networks { get; set; } = [];
     public RectDef[] Yards { get; set; } = [];

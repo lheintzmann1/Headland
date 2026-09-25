@@ -44,5 +44,7 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   (`new TerrainRenderer { Sim = sim }`), `FileAccess` means Godot's (global alias in `scripts/GlobalUsings.cs`).
 - Input actions use **physical keys** (AZERTY gets ZQSD automatically); labels come from `InputSetup.Label`.
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
-  Machines are procedural placeholders until `.glb` models are set in a machine's `visual.model`.
-- Every third-party asset goes in `game/assets/CREDITS.md` with its license.
+  Machines are procedural placeholders until `.glb` models (Blockbench exports) are set in a machine's
+  `visual.model`; conventions and part roles are in `docs/MODELING.md`.
+- Licenses: code GPL-3.0-or-later (`LICENSE`), original art CC BY-SA 4.0 (`LICENSE-ASSETS.md`).
+  Every third-party asset goes in `game/assets/CREDITS.md` with its license.

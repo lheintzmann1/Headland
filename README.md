@@ -83,6 +83,12 @@ Linux and Windows builds from every push to `main` are available as artifacts of
 The scripted scenario `godot --path game -- --scenario=loop --shots=<dir>` plays the whole loop with helpers and
 saves a screenshot at each step.
 
+## Contributing models
+
+Models are made in [Blockbench](https://www.blockbench.net) and exported as `.glb`. See
+[`docs/MODELING.md`](docs/MODELING.md) for the conventions (scale, orientation, moving parts) and how to hook a model
+up to a machine.
+
 ## Credits
 
 - Road, track and stream tiles: [Screaming Brain Studios](https://opengameart.org/content/700-isometric-road-tiles),
@@ -94,4 +100,8 @@ See [`game/assets/CREDITS.md`](game/assets/CREDITS.md) for the full list.
 
 ## License
 
-No license has been chosen for the code yet. Third-party assets keep their own licenses (see the credits).
+- **Code** (C#, shaders, tools, JSON game data): [GNU GPL v3.0 or later](LICENSE). You can play, study, modify and
+  share it, mods included; anything you distribute that is built on it must stay open under the same license.
+- **Original art**: [CC BY-SA 4.0](LICENSE-ASSETS.md). Credit Headland and share adaptations alike.
+- **Third-party assets** keep their own licenses, listed in [`game/assets/CREDITS.md`](game/assets/CREDITS.md)
+  (currently all CC0).
