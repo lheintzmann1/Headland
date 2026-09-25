@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore Headland.sln
+
+      # Builds the simulation core, the tests and the Godot game assembly (Godot.NET.Sdk comes from NuGet).
+      - name: Build
+        run: dotnet build Headland.sln --no-restore
+
+      # Includes content validation of every JSON file in game/data and the agronomy calibration runs.
+      - name: Test
+        run: >
+          dotnet test tests/FarmSim.Core.Tests --no-build
+          --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal"
+          --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults
+
+  tools:
+    name: Asset tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pillow numpy
+
+      - name: Compile
+        run: python -m py_compile tools/*.py
+
+      - name: Crop atlas generator runs
+        run: python tools/gen_crop_cards.py --out "$RUNNER_TEMP/crop_atlas.png"

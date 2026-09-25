@@ -1,0 +1,4 @@
+Source tiles: Screaming Brain Studios, CC0 1.0 (public domain).
+https://opengameart.org/content/700-isometric-road-tiles
+https://opengameart.org/content/5000-isometric-pathway-tiles
+Converted to top-down atlases by tools/convert_tiles.py.

@@ -1,0 +1,102 @@
+{
+  "cellPixels": 256,
+  "columns": 4,
+  "sets": {
+    "road_country": {
+      "source": "Large Roads/Realistic Roads/Road_Asphalt_03-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    },
+    "road_curb": {
+      "source": "Large Roads/Realistic Roads/Road_Asphalt_04-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    },
+    "track_dirt": {
+      "source": "Exterior Large 256x128/Dry/Path_Dry_26-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    },
+    "track_grass": {
+      "source": "Exterior Large 256x128/Grass/Path_Grass_01-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    },
+    "path_stones": {
+      "source": "Exterior Large 256x128/Stones/Path_Stones_03-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    },
+    "stream": {
+      "source": "Exterior Large 256x128/Elements/Path_Elements_01-256x128.png",
+      "masks": {
+        "15": 0,
+        "5": 1,
+        "10": 2,
+        "7": 3,
+        "14": 4,
+        "11": 5,
+        "13": 6,
+        "3": 7,
+        "12": 8,
+        "6": 9,
+        "9": 10
+      }
+    }
+  }
+}

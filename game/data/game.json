@@ -1,0 +1,13 @@
+// Game setup. Days per month compress the calendar; crops scale their growth so
+// sowing and harvest months stay realistic whatever the value.
+{
+  "daysPerMonth": 3,
+  "startYear": 1,
+  "startMonth": 8,
+  "startDay": 1,
+  "startHour": 7.5,
+  "startMoney": 100000,
+  "map": "default",
+  "climate": "temperate",
+  "weatherSeed": 20260925
+}

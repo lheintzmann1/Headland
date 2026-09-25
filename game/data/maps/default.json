@@ -1,0 +1,81 @@
+// Default map, 512 x 512 m. +x is east, +z is south. Networks use 16 m tiles.
+// Heights, soils and trees are procedural (seeded); everything below is hand-placed.
+{
+  "id": "default",
+  "name": "Brookfield Farm",
+  "size": 512,
+  "seed": 1337,
+  "hillAmplitude": 6,
+  "tileSize": 16,
+  // Roads, farm tracks and streams share the 16 m tile grid. Runs are in tile units.
+  // width = drawn band in meters (cells get the network's ground type); carve lowers streams.
+  "networks": [
+    { "id": "roads", "style": "road_country", "ground": "road", "width": 6.6, "flatten": 1.0,
+      "runs": [
+        { "x0": 0,  "z0": 15, "x1": 31, "z1": 15 },
+        { "x0": 12, "z0": 0,  "x1": 12, "z1": 31 }
+      ] },
+    { "id": "tracks", "style": "track_dirt", "ground": "dirt", "width": 5.0, "flatten": 0.7,
+      "runs": [
+        { "x0": 7,  "z0": 10, "x1": 7,  "z1": 12 },
+        { "x0": 7,  "z0": 12, "x1": 8,  "z1": 12 },
+        { "x0": 13, "z0": 10, "x1": 14, "z1": 10 },
+        { "x0": 7,  "z0": 16, "x1": 7,  "z1": 17 },
+        { "x0": 16, "z0": 16, "x1": 16, "z1": 17 },
+        { "x0": 24, "z0": 16, "x1": 24, "z1": 17 }
+      ] },
+    { "id": "creek", "style": "stream", "ground": "water", "width": 4.5, "flatten": 0.8, "carve": 0.7,
+      "runs": [
+        { "x0": 21, "z0": 0, "x1": 21, "z1": 8 },
+        { "x0": 21, "z0": 8, "x1": 31, "z1": 8 }
+      ] }
+  ],
+  "yards": [
+    { "x": 120, "z": 178, "w": 72, "h": 62 },
+    { "x": 414, "z": 200, "w": 58, "h": 40 }
+  ],
+  "fields": [
+    { "id": 1, "name": "North Field", "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
+    { "id": 2, "name": "East Field",  "x": 214, "z": 96,  "w": 110, "h": 120, "ground": "seeded", "crop": "wheat", "stage": "harvestable", "angleDeg": 0 },
+    { "id": 3, "name": "South Field", "x": 40,  "z": 264, "w": 100, "h": 110, "ground": "cultivated", "angleDeg": 0 },
+    { "id": 4, "name": "Meadow",      "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass",      "angleDeg": 0 },
+    { "id": 5, "name": "Corn Field",  "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 }
+  ],
+  "buildings": [
+    { "type": "farmhouse", "name": "Farmhouse",     "x": 124, "z": 183, "w": 12, "d": 10, "h": 7,  "color": "#b9ab94" },
+    { "type": "shed",      "name": "Machine shed",  "x": 140, "z": 181, "w": 26, "d": 14, "h": 8,  "color": "#6f6a62" },
+    { "type": "silo",      "name": "Grain bin",     "x": 171, "z": 181, "w": 8,  "d": 8,  "h": 13, "color": "#a3a7a8" },
+    { "type": "silo",      "name": "Grain bin",     "x": 181, "z": 181, "w": 8,  "d": 8,  "h": 13, "color": "#a3a7a8" },
+    { "type": "store",     "name": "Farm supplies", "x": 124, "z": 214, "w": 8,  "d": 6,  "h": 4,  "color": "#8b6f55" },
+    { "type": "pallets",   "name": "Seed pallets",  "x": 125, "z": 225, "w": 4,  "d": 3,  "h": 1.2, "color": "#b89a6a" },
+    { "type": "elevator",  "name": "Grain elevator","x": 452, "z": 204, "w": 12, "d": 12, "h": 24, "color": "#9a9d9e" },
+    { "type": "silo",      "name": "Elevator bin",  "x": 438, "z": 203, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" },
+    { "type": "silo",      "name": "Elevator bin",  "x": 426, "z": 203, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" }
+  ],
+  "sellPoints": [
+    { "id": "elevator", "name": "Grain Elevator", "x": 422, "z": 220, "w": 28, "h": 20,
+      "accepts": ["wheat", "barley", "canola", "corn"] }
+  ],
+  "shops": [
+    { "id": "supplies", "name": "Farm Supplies", "x": 122, "z": 221, "w": 18, "h": 17, "sells": ["seeds"] }
+  ],
+  "machines": [
+    { "def": "tractor_125",    "x": 152, "z": 206, "headingDeg": 90 },
+    { "def": "cultivator_3",   "attachToIndex": 0, "joint": "rear" },
+    { "def": "combine_7",      "x": 170, "z": 224, "headingDeg": 90 },
+    { "def": "header_grain_6", "attachToIndex": 2, "joint": "header" },
+    { "def": "tractor_95",     "x": 153, "z": 233, "headingDeg": 90 },
+    { "def": "trailer_16",     "x": 146, "z": 233, "headingDeg": 90, "attachToIndex": 4, "joint": "drawbar" },
+    { "def": "seeder_3",       "x": 132, "z": 203, "headingDeg": 90 },
+    { "def": "header_corn_6",  "x": 181, "z": 234, "headingDeg": 90 }
+  ],
+  "forests": [
+    { "x": 0,   "z": 190, "w": 34,  "h": 322, "density": 1.1 },
+    { "x": 360, "z": 0,   "w": 152, "h": 150, "density": 1.0 },
+    { "x": 150, "z": 392, "w": 56,  "h": 120, "density": 0.9 },
+    { "x": 0,   "z": 0,   "w": 512, "h": 22,  "density": 0.8 }
+  ],
+  "scatteredTreesPerHa": 0.5,
+  "playerX": 160,
+  "playerZ": 214
+}

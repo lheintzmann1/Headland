@@ -1,0 +1,19 @@
+// Temperate north-west European climate. Arrays are January..December.
+// monthlyPrecipChance is the chance that a given game day has precipitation. A game day stands
+// for ~10 real days, so most game days see some rain; amounts are per game day.
+{
+  "id": "temperate",
+  "name": "Temperate",
+  "monthlyMeanTemp":     [1.5, 2.5, 5.5, 9.0, 13.0, 16.0, 18.5, 18.0, 14.5, 10.5, 6.0, 2.5],
+  // Daily range spans the extremes of the ~10 real days a game day stands for (frost nights, hot afternoons).
+  "monthlyDailyRange":   [7, 8.5, 11, 14, 15, 15, 15, 14, 12.5, 10, 7, 6],
+  "monthlyPrecipMm":     [60, 50, 50, 45, 55, 60, 65, 65, 55, 65, 70, 65],
+  "monthlyPrecipChance": [0.7, 0.65, 0.6, 0.55, 0.55, 0.5, 0.5, 0.5, 0.55, 0.65, 0.7, 0.7],
+  "monthlyFogChance":    [0.25, 0.2, 0.15, 0.1, 0.08, 0.05, 0.05, 0.08, 0.15, 0.25, 0.3, 0.3],
+  "sunriseHour":         [8.0, 7.4, 6.5, 6.4, 5.5, 5.0, 5.2, 5.9, 6.8, 7.6, 7.5, 8.1],
+  "sunsetHour":          [16.8, 17.7, 18.5, 20.3, 21.1, 21.6, 21.5, 20.8, 19.8, 18.7, 17.0, 16.6],
+  // Anomaly of a game day's mean temperature (a game day averages ~10 real days, so it is smaller
+  // than day-to-day weather swings), and its persistence from one game day to the next.
+  "anomalyStdDev": 1.6,
+  "anomalyPersistence": 0.5
+}
