@@ -39,8 +39,20 @@ public sealed record CropHarvested(Machine Harvester, string Crop, string FillTy
 /// <summary>A whole load sold at a POI (published when the machine stops unloading).</summary>
 public sealed record FillSold(Machine Machine, Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
 
-/// <summary>Supplies bought at a POI into a machine's fill unit.</summary>
+/// <summary>A whole load put into a POI's storage by its owner (published when the machine stops unloading).</summary>
+public sealed record FillStored(Machine Machine, Poi Poi, string FillType, float Amount) : IGameEvent;
+
+/// <summary>Supplies or fuel bought at a POI into a machine's fill unit.</summary>
 public sealed record FillBought(Machine Machine, Poi Poi, string FillType, float Amount, float Cost) : IGameEvent;
+
+/// <summary>A POI's processing made this much of an output during one hour.</summary>
+public sealed record PoiProduced(Poi Poi, string FillType, float Amount) : IGameEvent;
+
+// ---- Services
+
+public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGameEvent;
+
+public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
 // ---- Ownership
 

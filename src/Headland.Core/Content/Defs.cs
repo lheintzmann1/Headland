@@ -141,6 +141,8 @@ public sealed class MotorizedDef
     public float SteerRateDeg { get; set; } = 90f;
     /// <summary>"front" (tractor) or "rear" (combine).</summary>
     public string SteerAxle { get; set; } = "front";
+    /// <summary>Fill unit holding the fuel, filled up at refuel POIs.</summary>
+    public string? FuelTank { get; set; }
 }
 
 public sealed class WheelDef
@@ -368,18 +370,38 @@ public sealed class PoiDef
     public ModelDef? Visual { get; set; }
     /// <summary>Areas where machines use the POI.</summary>
     public PoiTriggerDef[] Triggers { get; set; } = [];
-    /// <summary>What the POI does for the machines at its triggers.</summary>
+    /// <summary>Goods the POI keeps, which store and process actions use. Owned by the POI's farm.</summary>
+    public PoiStorageDef? Storage { get; set; }
+    /// <summary>What the POI does, for the machines at its triggers or on its own (processing).</summary>
     public PoiActionDef[] Actions { get; set; } = [];
 }
 
-/// <summary>An area of a POI where machines do something: tip a load, fill up.</summary>
+public sealed class PoiStorageDef
+{
+    public string[] FillTypes { get; set; } = [];
+    /// <summary>Room for each fill type (units).</summary>
+    public float Capacity { get; set; } = 100_000f;
+    /// <summary>Fill types whose room differs from <see cref="Capacity"/>.</summary>
+    public Dictionary<string, float> Capacities { get; set; } = new();
+
+    public float CapacityOf(string fillType) => Capacities.GetValueOrDefault(fillType, Capacity);
+}
+
+/// <summary>An amount of a fill type (processing inputs and outputs).</summary>
+public sealed class FillAmountDef
+{
+    public string FillType { get; set; } = "";
+    public float Amount { get; set; }
+}
+
+/// <summary>An area of a POI where machines do something: tip a load, fill up, get washed or repaired.</summary>
 public sealed class PoiTriggerDef
 {
     /// <summary>Unique within the POI; actions refer to it.</summary>
     public string Id { get; set; } = "";
     /// <summary>
-    /// How machines use it: "unload" (a tipping trailer inside it) or "fill" (machines parked inside it fill up
-    /// with the fill key).
+    /// How machines use it: "unload" (a tipping trailer inside it), or "fill", "wash" and "repair" (machines parked
+    /// inside it, with the use key).
     /// </summary>
     public string Type { get; set; } = "unload";
     /// <summary>Center in the POI's local space; width along x, depth along z.</summary>
@@ -389,20 +411,34 @@ public sealed class PoiTriggerDef
     public float D { get; set; } = 10f;
 }
 
-/// <summary>Something a POI does at one of its triggers, seen from the farmer's side: sell there, buy there.</summary>
+/// <summary>
+/// Something a POI does, seen from the farmer's side. At an unload trigger: "sell" (the POI buys loads of
+/// <see cref="FillTypes"/>, into its storage if it keeps them) or "store" (the owner's loads go into its storage).
+/// At a fill trigger: "buy" (it sells <see cref="FillTypes"/>) or "refuel" (it fills fuel tanks with them). "repair"
+/// and "wash" work at triggers of their own type. "process" needs no trigger: it turns stored inputs into outputs.
+/// </summary>
 public sealed class PoiActionDef
 {
-    /// <summary>"sell": the POI buys loads of <see cref="FillTypes"/> tipped at an unload trigger. "buy": it sells them at a fill trigger.</summary>
     public string Type { get; set; } = "sell";
-    /// <summary>Id of the trigger machines use.</summary>
+    /// <summary>Id of the trigger machines use (none for process).</summary>
     public string Trigger { get; set; } = "";
+    /// <summary>What it trades or stores (store: defaults to everything the storage keeps).</summary>
     public string[] FillTypes { get; set; } = [];
+    /// <summary>Wash: price of washing a fully dirty machine.</summary>
+    public float Price { get; set; }
+    /// <summary>Process: what one cycle takes from storage and puts into it.</summary>
+    public FillAmountDef[] Inputs { get; set; } = [];
+    public FillAmountDef[] Outputs { get; set; } = [];
+    /// <summary>Process: game hours per cycle (below 1 for several cycles an hour).</summary>
+    public float CycleHours { get; set; } = 1f;
+    /// <summary>Process: what the owner pays for each hour it runs.</summary>
+    public float RunningCost { get; set; }
 }
 
 /// <summary>One placeholder block of a POI: a building, a silo, a stack of pallets.</summary>
 public sealed class PoiPartDef
 {
-    /// <summary>Placeholder shape: house, shed, silo, tank, elevator, store, pallets or box. Silos and tanks are round.</summary>
+    /// <summary>Placeholder shape: house, shed, silo, tank, elevator, store, pallets, canopy, pump or box. Silos and tanks are round.</summary>
     public string Shape { get; set; } = "box";
     /// <summary>Center in the POI's local space.</summary>
     public float X { get; set; }

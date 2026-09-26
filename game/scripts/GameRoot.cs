@@ -174,7 +174,7 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("turn_on")) Sim.CommandTurnOn();
         else if (e.IsActionPressed("unload")) Sim.CommandUnload();
         else if (e.IsActionPressed("cycle_seed")) Sim.CommandCycleSeed();
-        else if (e.IsActionPressed("buy")) Sim.CommandBuy();
+        else if (e.IsActionPressed("use")) Sim.CommandUse();
         else if (e.IsActionPressed("helper")) Sim.CommandHelper();
         else if (e.IsActionPressed("cam_rotate_left")) Camera.RotateStep(-1);
         else if (e.IsActionPressed("cam_rotate_right")) Camera.RotateStep(1);

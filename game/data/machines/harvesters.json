@@ -5,7 +5,7 @@
     "price": 285000, "mass": 15500,
     "size": { "length": 7.4, "width": 3.3, "height": 3.9, "centerZ": -2.1 },
     "motorized": { "powerHp": 360, "maxSpeedKmh": 25, "maxReverseKmh": 10, "acceleration": 1.3, "braking": 4,
-                   "wheelbase": 3.6, "maxSteerDeg": 32, "steerRateDeg": 50, "steerAxle": "rear" },
+                   "wheelbase": 3.6, "maxSteerDeg": 32, "steerRateDeg": 50, "steerAxle": "rear", "fuelTank": "fuel" },
     "wheels": [
       { "x":  1.32, "z": 0,    "radius": 0.85, "width": 0.7 },
       { "x": -1.32, "z": 0,    "radius": 0.85, "width": 0.7 },
@@ -13,7 +13,10 @@
       { "x": -1.18, "z": -3.6, "radius": 0.55, "width": 0.45, "steer": true }
     ],
     "attacherJoints": [ { "id": "header", "type": "header", "x": 0, "z": 1.6, "y": 1.0 } ],
-    "fillUnits": [ { "id": "tank", "capacity": 9000, "fillTypes": ["wheat", "barley", "canola", "corn"] } ],
+    "fillUnits": [
+      { "id": "tank", "capacity": 9000, "fillTypes": ["wheat", "barley", "canola", "corn"] },
+      { "id": "fuel", "capacity": 600, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 600 }
+    ],
     "harvestTank": "tank",
     "pipe": { "fillUnit": "tank", "x": 5.6, "z": -1.4, "ratePerSecond": 140 },
     "visual": { "placeholder": "combine", "color": "#56703f" },

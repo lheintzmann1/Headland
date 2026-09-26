@@ -80,6 +80,8 @@ public class PoiTests
                 new PoiActionDef { Type = "sell", Trigger = "pit", FillTypes = ["wheat"] },
                 new PoiActionDef { Type = "buy", Trigger = "gate", FillTypes = ["gold"] },
                 new PoiActionDef { Type = "juggle", Trigger = "pit" },
+                new PoiActionDef { Type = "store", Trigger = "pit", FillTypes = ["wheat"] },
+                new PoiActionDef { Type = "process", Trigger = "pit", Inputs = [new FillAmountDef { FillType = "wheat", Amount = 0 }] },
             ],
         };
         var errors = db.Validate();
@@ -89,6 +91,10 @@ public class PoiTests
         Assert.Contains("poi 'bad' buy action: trigger 'gate' not found", errors);
         Assert.Contains("poi 'bad' buy action: unknown fill type 'gold'", errors);
         Assert.Contains("poi 'bad': unknown action type 'juggle'", errors);
+        Assert.Contains("poi 'bad' store action: the poi has no storage", errors);
+        Assert.Contains("poi 'bad' process action: works without a trigger", errors);
+        Assert.Contains("poi 'bad' process action: needs inputs and outputs", errors);
+        Assert.Contains("poi 'bad' process action: amounts must be > 0", errors);
     }
 
     [Fact]
@@ -102,12 +108,12 @@ public class PoiTests
         tank.Remove(tank.Level);
         var money = sim.Economy.Money;
 
-        sim.Pois.Fill(seeder);
+        sim.Pois.Use(seeder);
         Assert.True(tank.IsEmpty);
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park the machine in a shop's fill area to buy supplies");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in the marked area of a shop, gas station, workshop or wash bay first");
 
         sim.Machines.Teleport(seeder, yard.Area.Center, 0f);
-        sim.Pois.Fill(seeder);
+        sim.Pois.Use(seeder);
         var cost = 1600f * sim.Economy.Price("seeds", sim.Clock.Month);
         Assert.Equal(1600f, tank.Level);
         Assert.Equal(money - cost, sim.Economy.Money, 0);
@@ -163,9 +169,13 @@ public class PoiTests
     }
 
     /// <summary>The small test world with these POIs placed.</summary>
-    internal static Simulation SimWith(params PoiPlacementDef[] pois)
+    internal static Simulation SimWith(params PoiPlacementDef[] pois) => SimWith([], pois);
+
+    /// <summary>The small test world with these POI types added and these POIs placed.</summary>
+    internal static Simulation SimWith(PoiDef[] types, params PoiPlacementDef[] pois)
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        foreach (var type in types) db.Pois[type.Id] = type;
         db.Maps["pois"] = new MapDef
         {
             Id = "pois", Name = "POIs", Size = 64, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,

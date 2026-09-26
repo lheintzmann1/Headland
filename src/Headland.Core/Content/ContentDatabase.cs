@@ -137,9 +137,13 @@ public sealed class ContentDatabase
         var e = new List<string>();
         string[] jointTypes = ["threePoint", "drawbar", "header"];
         string[] workTypes = ["cultivator", "seeder", "harvester"];
-        string[] triggerTypes = ["unload", "fill"];
-        // The trigger types each POI action works through.
-        var actionTriggers = new Dictionary<string, string[]> { ["sell"] = ["unload"], ["buy"] = ["fill"] };
+        string[] triggerTypes = ["unload", "fill", "wash", "repair"];
+        // The trigger types each POI action works through (process works on its own).
+        var actionTriggers = new Dictionary<string, string[]>
+        {
+            ["sell"] = ["unload"], ["store"] = ["unload"], ["buy"] = ["fill"], ["refuel"] = ["fill"],
+            ["repair"] = ["repair"], ["wash"] = ["wash"], ["process"] = [],
+        };
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
         if (!Climates.ContainsKey(Game.Climate)) e.Add($"game.climate '{Game.Climate}' not found");
@@ -205,6 +209,7 @@ public sealed class ContentDatabase
             if (m.SeedTank != null && !units.Contains(m.SeedTank)) e.Add($"machine '{m.Id}': seed tank '{m.SeedTank}' missing");
             if (m.WorkArea?.Type == "seeder" && m.SeedTank == null) e.Add($"machine '{m.Id}': seeder needs seedTank");
             if (m.Motorized is { Wheelbase: <= 0 }) e.Add($"machine '{m.Id}': wheelbase must be > 0");
+            if (m.Motorized?.FuelTank is { } fuel && !units.Contains(fuel)) e.Add($"machine '{m.Id}': fuel tank '{fuel}' missing");
         }
 
         foreach (var p in Pois.Values)
@@ -218,6 +223,11 @@ public sealed class ContentDatabase
                 if (!triggerTypes.Contains(t.Type)) e.Add($"poi '{p.Id}' trigger '{t.Id}': unknown type '{t.Type}'");
                 if (t.W <= 0 || t.D <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': w and d must be > 0");
             }
+            var stored = p.Storage?.FillTypes ?? [];
+            foreach (var ft in stored)
+                if (!FillTypes.ContainsKey(ft)) e.Add($"poi '{p.Id}' storage: unknown fill type '{ft}'");
+            if (p.Storage != null && (p.Storage.Capacity <= 0 || p.Storage.Capacities.Values.Any(c => c <= 0)))
+                e.Add($"poi '{p.Id}' storage: capacities must be > 0");
             foreach (var a in p.Actions)
             {
                 var what = $"poi '{p.Id}' {a.Type} action";
@@ -226,11 +236,27 @@ public sealed class ContentDatabase
                     e.Add($"poi '{p.Id}': unknown action type '{a.Type}'");
                     continue;
                 }
-                if (!triggers.TryGetValue(a.Trigger, out var trigger)) e.Add($"{what}: trigger '{a.Trigger}' not found");
+                if (allowed.Length == 0)
+                {
+                    if (a.Trigger != "") e.Add($"{what}: works without a trigger");
+                }
+                else if (!triggers.TryGetValue(a.Trigger, out var trigger)) e.Add($"{what}: trigger '{a.Trigger}' not found");
                 else if (!allowed.Contains(trigger.Type)) e.Add($"{what}: works at {string.Join(" or ", allowed)} triggers, not {trigger.Type}");
-                if (a.FillTypes.Length == 0) e.Add($"{what}: needs fillTypes");
+                if (a.Type is "sell" or "buy" or "refuel" && a.FillTypes.Length == 0) e.Add($"{what}: needs fillTypes");
                 foreach (var ft in a.FillTypes)
                     if (!FillTypes.ContainsKey(ft)) e.Add($"{what}: unknown fill type '{ft}'");
+                if (a.Type is "store" or "process" && p.Storage == null) e.Add($"{what}: the poi has no storage");
+                if (a.Type == "store")
+                    foreach (var ft in a.FillTypes.Where(f => !stored.Contains(f)))
+                        e.Add($"{what}: the storage does not keep '{ft}'");
+                if (a.Type != "process") continue;
+                if (a.Inputs.Length == 0 || a.Outputs.Length == 0) e.Add($"{what}: needs inputs and outputs");
+                if (a.CycleHours <= 0 || a.RunningCost < 0) e.Add($"{what}: cycleHours must be > 0 and runningCost >= 0");
+                foreach (var io in a.Inputs.Concat(a.Outputs))
+                {
+                    if (io.Amount <= 0) e.Add($"{what}: amounts must be > 0");
+                    if (!stored.Contains(io.FillType)) e.Add($"{what}: the storage does not keep '{io.FillType}'");
+                }
             }
         }
 

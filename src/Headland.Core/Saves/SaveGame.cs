@@ -118,6 +118,12 @@ public static class SaveGame
             },
             Farms = sim.Farms.All.Select(f => new FarmSave { Id = f.Id, Name = f.Name }).ToList(),
             Farmlands = sim.World.Farmlands.Select(l => new FarmlandSave { Id = l.Id, Farm = l.FarmId }).ToList(),
+            Pois = sim.World.Pois.Select(p => new PoiSave
+            {
+                Id = p.Id, Farm = p.FarmId,
+                Storage = p.Storage?.Levels.Where(kv => kv.Value > 0f).ToDictionary(kv => kv.Key, kv => kv.Value) ?? [],
+                Progress = p.Progress.Any(x => x > 0f) ? [.. p.Progress] : null,
+            }).ToList(),
             NextMachineId = sim.Machines.NextId,
             Machines = sim.Machines.All.Select(m => CaptureMachine(sim, m)).ToList(),
             Player = new PlayerSave
@@ -140,11 +146,13 @@ public static class SaveGame
             LowerAnim = m.LowerAnim, PipeAnim = m.PipeAnim, TipAnim = m.TipAnim,
             SeedCrop = m.Def.SeedTank != null ? sim.Content.Crops[m.SelectedCrop].Id : null,
             WorkedHa = m.WorkedHa,
+            Condition = m.Condition,
+            Dirt = m.Dirt,
             FillUnits = m.FillUnits.Select(u => new FillUnitSave { Id = u.Def.Id, FillType = u.FillType, Level = u.Level }).ToList(),
             WorkPose = m.HasWorkPose ? [m.PrevWorkCenter.X, m.PrevWorkCenter.Y, m.PrevWorkHeading] : null,
         };
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
-            save.Delivery = new DeliverySave { Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income };
+            save.Delivery = new DeliverySave { Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income, Stored = d.Stored };
         if (m.Controller is FieldWorkController h)
             save.Helper = new HelperSave
             {
@@ -211,6 +219,7 @@ public static class SaveGame
             else if (l.Farm != Ownership.Farm.None && sim.Farms.ById(l.Farm) == null) warnings.Add($"Farmland {l.Id} belonged to an unknown farm");
             else land.FarmId = l.Farm;
         }
+        RestorePois(sim, s, warnings);
 
         var machines = RestoreMachines(sim, s, warnings);
         var p = s.Player;
@@ -219,6 +228,28 @@ public static class SaveGame
         sim.Player.FarmId = p.Farm;
         sim.Player.Restore(p.Vehicle is { } id ? machines.GetValueOrDefault(id) : null);
         sim.RestoreTime(s.RealTime, s.PendingHourFrom, s.PendingHours);
+    }
+
+    private static void RestorePois(Simulation sim, SaveState s, List<string> warnings)
+    {
+        foreach (var p in s.Pois)
+        {
+            if (sim.World.PoiById(p.Id) is not { } poi)
+            {
+                if (p.Storage.Count > 0) warnings.Add($"POI '{p.Id}' no longer exists on this map: what it stored is lost");
+                continue;
+            }
+            if (p.Farm != Ownership.Farm.None && sim.Farms.ById(p.Farm) == null) warnings.Add($"{poi.Name} belonged to an unknown farm");
+            else poi.FarmId = p.Farm;
+            foreach (var (ft, level) in p.Storage)
+            {
+                if (poi.Storage?.Keeps(ft) == true) poi.Storage.Set(ft, level);
+                else warnings.Add($"{poi.Name} no longer stores '{ft}': {level:N0} was lost");
+            }
+            if (p.Progress is { } progress)
+                for (var i = 0; i < Math.Min(progress.Length, poi.Progress.Length); i++)
+                    if (poi.Def.Actions[i].Type == "process") poi.Progress[i] = Math.Clamp(progress[i], 0f, 1f);
+        }
     }
 
     private static Dictionary<int, Machine> RestoreMachines(Simulation sim, SaveState s, List<string> warnings)
@@ -263,6 +294,8 @@ public static class SaveGame
             machine.PipeAnim = m.PipeAnim;
             machine.TipAnim = m.TipAnim;
             machine.WorkedHa = m.WorkedHa;
+            machine.Condition = Math.Clamp(m.Condition, 0f, 1f);
+            machine.Dirt = Math.Clamp(m.Dirt, 0f, 1f);
             if (m.SeedCrop != null && content.CropIndex(m.SeedCrop) is var crop and >= 0) machine.SelectedCrop = crop;
             foreach (var u in m.FillUnits)
             {
@@ -282,7 +315,7 @@ public static class SaveGame
                 machine.PrevWorkHeading = heading;
             }
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
-                sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income);
+                sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored);
         }
 
         // Helpers last: their route depends on the implements attached.

@@ -189,8 +189,7 @@ public partial class Hud : CanvasLayer
                 if (pit != null) lines.Add($"{K("unload")} {(t.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}")}");
             }
             if (v.Chain().Any(m => m.Def.SeedTank != null)) lines.Add($"{K("cycle_seed")} Change seed");
-            if (v.Chain().Any(m => m.FillUnits.Length > 0 && Sim.Pois.TriggerAt(m.Footprint.Center, "fill") != null))
-                lines.Add($"{K("buy")} Buy supplies");
+            if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");
             if (v.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
             else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label}");
             lines.Add($"{K("enter")} Exit");

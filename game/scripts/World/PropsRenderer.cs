@@ -148,6 +148,17 @@ public partial class PropsRenderer : Node3D
                     Box(root, new Vector3(1.1f, 0.9f, 0.95f), new Vector3(px, 0.6f, pz), color);
                 }
                 break;
+            case "canopy":
+                // A roof on four posts, high enough to drive under.
+                foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (-1, 1), (1, 1) })
+                    Box(root, new Vector3(0.3f, b.H, 0.3f), new Vector3(sx * (b.W * 0.5f - 0.5f), b.H * 0.5f, sz * (b.D * 0.5f - 0.5f)), Materials.Steel);
+                Box(root, new Vector3(b.W, 0.5f, b.D), new Vector3(0, b.H, 0), color);
+                break;
+            case "pump":
+                Box(root, new Vector3(b.W * 1.8f, 0.2f, b.D * 3f), new Vector3(0, 0.1f, 0), new Color(0.55f, 0.55f, 0.52f));
+                Box(root, new Vector3(b.W, b.H, b.D), new Vector3(0, b.H * 0.5f + 0.2f, 0), color);
+                Box(root, new Vector3(b.W * 1.1f, 0.2f, b.D * 1.1f), new Vector3(0, b.H + 0.3f, 0), Materials.DarkSteel);
+                break;
             default:
                 Box(root, new Vector3(b.W, b.H, b.D), new Vector3(0, b.H * 0.5f, 0), color);
                 break;
@@ -320,6 +331,8 @@ public partial class PropsRenderer : Node3D
     private static Color TriggerColor(string type) => type switch
     {
         "unload" => new Color(0.86f, 0.68f, 0.2f),
+        "wash" => new Color(0.45f, 0.78f, 0.82f),
+        "repair" => new Color(0.86f, 0.5f, 0.3f),
         _ => new Color(0.35f, 0.6f, 0.85f),
     };
 
@@ -327,7 +340,7 @@ public partial class PropsRenderer : Node3D
     private static string Hint(string type) => type switch
     {
         "unload" => $"tip here ({InputSetup.Label("unload")})",
-        _ => $"park here ({InputSetup.Label("buy")})",
+        _ => $"park here ({InputSetup.Label("use")})",
     };
 
     private Label3D FieldSign(FieldInfo f) => new()

@@ -172,6 +172,7 @@ public sealed class Simulation
             Weather.Update(day, hour % 24 + 0.5f);
             Weather.TickHour();
             Crops.TickHour(Weather, day, hour);
+            Pois.TickHour();
             PublishTime(hour);
         }
         LastHourTickMs = sw.Elapsed.TotalMilliseconds / n;
@@ -221,7 +222,7 @@ public sealed class Simulation
     public void CommandTurnOn() => WithVehicle(Machines.ToggleOn);
     public void CommandUnload() => WithVehicle(Machines.ToggleUnload);
     public void CommandCycleSeed() => WithVehicle(Machines.CycleSeed);
-    public void CommandBuy() => WithVehicle(Pois.Fill);
+    public void CommandUse() => WithVehicle(Pois.Use);
 
     /// <summary>H: hire a helper to work the field the vehicle is in (or the nearest one), or dismiss it.</summary>
     public void CommandHelper() => WithVehicle(v =>

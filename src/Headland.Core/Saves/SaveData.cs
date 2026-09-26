@@ -43,6 +43,7 @@ public sealed class SaveState
     public StatisticsSave Statistics { get; set; } = new();
     public List<FarmSave> Farms { get; set; } = [];
     public List<FarmlandSave> Farmlands { get; set; } = [];
+    public List<PoiSave> Pois { get; set; } = [];
     public int NextMachineId { get; set; }
     public List<MachineSave> Machines { get; set; } = [];
     public PlayerSave Player { get; set; } = new();
@@ -96,6 +97,18 @@ public sealed class FarmlandSave
     public int Farm { get; set; }
 }
 
+/// <summary>A POI's owner, storage and processing progress.</summary>
+public sealed class PoiSave
+{
+    /// <summary>Placement id on the map.</summary>
+    public string Id { get; set; } = "";
+    public int Farm { get; set; }
+    /// <summary>Stored goods by fill type.</summary>
+    public Dictionary<string, float> Storage { get; set; } = new();
+    /// <summary>Part of a cycle done, by action index (process actions).</summary>
+    public float[]? Progress { get; set; }
+}
+
 public sealed class MachineSave
 {
     public int Id { get; set; }
@@ -119,6 +132,8 @@ public sealed class MachineSave
     /// <summary>Seeder: the selected crop id.</summary>
     public string? SeedCrop { get; set; }
     public float WorkedHa { get; set; }
+    public float Condition { get; set; } = 1f;
+    public float Dirt { get; set; }
     public List<FillUnitSave> FillUnits { get; set; } = [];
     /// <summary>Work area pose of the last tick [x, z, heading], so the next tick sweeps without a gap.</summary>
     public float[]? WorkPose { get; set; }
@@ -141,6 +156,8 @@ public sealed class DeliverySave
     public string FillType { get; set; } = "";
     public float Amount { get; set; }
     public float Income { get; set; }
+    /// <summary>Put into the POI's storage by its owner rather than sold.</summary>
+    public bool Stored { get; set; }
 }
 
 /// <summary>A field helper, with what it needs to plan the very same route again.</summary>

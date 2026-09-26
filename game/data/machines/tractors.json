@@ -5,7 +5,7 @@
     "price": 98000, "mass": 5600,
     "size": { "length": 4.7, "width": 2.45, "height": 3.0, "centerZ": 1.25 },
     "motorized": { "powerHp": 125, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.2, "braking": 6,
-                   "wheelbase": 2.65, "maxSteerDeg": 40, "steerRateDeg": 80, "steerAxle": "front" },
+                   "wheelbase": 2.65, "maxSteerDeg": 40, "steerRateDeg": 80, "steerAxle": "front", "fuelTank": "fuel" },
     "wheels": [
       { "x":  0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
       { "x": -0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
@@ -17,6 +17,7 @@
       { "id": "drawbar", "type": "drawbar",    "x": 0, "z": -1.45, "y": 0.45 },
       { "id": "front",   "type": "threePoint", "x": 0, "z": 3.75, "y": 0.55 }
     ],
+    "fillUnits": [ { "id": "fuel", "capacity": 250, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 250 } ],
     "visual": { "placeholder": "tractor", "color": "#7b2f25" },
     "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer."
   },
@@ -25,7 +26,7 @@
     "price": 72000, "mass": 4300,
     "size": { "length": 4.3, "width": 2.25, "height": 2.8, "centerZ": 1.15 },
     "motorized": { "powerHp": 95, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.4, "braking": 6,
-                   "wheelbase": 2.4, "maxSteerDeg": 42, "steerRateDeg": 85, "steerAxle": "front" },
+                   "wheelbase": 2.4, "maxSteerDeg": 42, "steerRateDeg": 85, "steerAxle": "front", "fuelTank": "fuel" },
     "wheels": [
       { "x":  0.84, "z": 0,   "radius": 0.72, "width": 0.48 },
       { "x": -0.84, "z": 0,   "radius": 0.72, "width": 0.48 },
@@ -36,6 +37,7 @@
       { "id": "rear",    "type": "threePoint", "x": 0, "z": -1.1, "y": 0.5 },
       { "id": "drawbar", "type": "drawbar",    "x": 0, "z": -1.35, "y": 0.45 }
     ],
+    "fillUnits": [ { "id": "fuel", "capacity": 180, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 180 } ],
     "visual": { "placeholder": "tractor", "color": "#4d5c38" },
     "description": "Compact all-rounder, ideal for trailer duty and light tillage."
   }

@@ -17,6 +17,8 @@ public sealed class Poi : IOwnable
         FarmId = farmId;
         Name = name ?? def.Name;
         Triggers = def.Triggers.Select(t => new PoiTrigger(this, t)).ToArray();
+        Storage = def.Storage != null ? new PoiStorage(def.Storage) : null;
+        Progress = new float[def.Actions.Length];
     }
 
     /// <summary>The placement id, unique on the map.</summary>
@@ -30,6 +32,13 @@ public sealed class Poi : IOwnable
     /// <summary>Owning farm (<see cref="Farm.None"/> = an NPC's).</summary>
     public int FarmId { get; internal set; }
     public IReadOnlyList<PoiTrigger> Triggers { get; }
+    public PoiStorage? Storage { get; }
+    /// <summary>Process actions: the part of a cycle done so far, by action index.</summary>
+    internal float[] Progress { get; }
+
+    /// <summary>Fill types an action trades or stores (a store action without any: all its storage keeps).</summary>
+    public IReadOnlyList<string> FillTypesOf(PoiActionDef action) =>
+        action.Type == "store" && action.FillTypes.Length == 0 ? Storage?.Def.FillTypes ?? [] : action.FillTypes;
 
     public Obb Footprint => new(Position, new Vector2(Def.W * 0.5f, Def.D * 0.5f), Heading);
 
