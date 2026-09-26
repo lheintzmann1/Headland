@@ -55,6 +55,7 @@ public sealed class ContentDatabase
     /// <summary>Crop index + 1 is stored in cells (0 = no crop).</summary>
     public List<CropDef> Crops { get; } = [];
     public Dictionary<string, MachineDef> Machines { get; } = new();
+    public Dictionary<string, PoiDef> Pois { get; } = new();
     public Dictionary<string, ClimateDef> Climates { get; } = new();
     public Dictionary<string, MapDef> Maps { get; } = new();
     /// <summary>Mods layered over the base game, in load order (none until the mod loader exists).</summary>
@@ -80,6 +81,9 @@ public sealed class ContentDatabase
         foreach (var file in src.ListJson("machines"))
         foreach (var m in ReadMany<MachineDef>(src, file))
             db.AddUnique(db.Machines, m.Id, m, "machine");
+        foreach (var file in src.ListJson("pois"))
+        foreach (var p in ReadMany<PoiDef>(src, file))
+            db.AddUnique(db.Pois, p.Id, p, "poi");
         foreach (var file in src.ListJson("climates"))
         foreach (var c in ReadMany<ClimateDef>(src, file))
             db.AddUnique(db.Climates, c.Id, c, "climate");
@@ -200,6 +204,12 @@ public sealed class ContentDatabase
             if (m.Motorized is { Wheelbase: <= 0 }) e.Add($"machine '{m.Id}': wheelbase must be > 0");
         }
 
+        foreach (var p in Pois.Values)
+        {
+            if (p.W <= 0 || p.D <= 0) e.Add($"poi '{p.Id}': w and d must be > 0");
+            if (p.Parts.Any(q => q.W <= 0 || q.D <= 0 || q.H <= 0)) e.Add($"poi '{p.Id}': parts need w, d and h > 0");
+        }
+
         foreach (var map in Maps.Values)
         {
             if (map.Size % 32 != 0) e.Add($"map '{map.Id}': size must be a multiple of 32");
@@ -232,6 +242,15 @@ public sealed class ContentDatabase
             }
             foreach (var id in map.Fields.GroupBy(f => f.Id).Where(g => g.Count() > 1).Select(g => g.Key))
                 e.Add($"map '{map.Id}': field {id} is defined more than once");
+            foreach (var p in map.Pois)
+            {
+                if (string.IsNullOrWhiteSpace(p.Id)) e.Add($"map '{map.Id}': a poi has no id");
+                if (!Pois.ContainsKey(p.Type)) e.Add($"map '{map.Id}' poi '{p.Id}': unknown type '{p.Type}'");
+                if (!ValidFarm(p.Farm)) e.Add($"map '{map.Id}' poi '{p.Id}': {FarmRule}");
+                if (p.X < 0 || p.Z < 0 || p.X > map.Size || p.Z > map.Size) e.Add($"map '{map.Id}' poi '{p.Id}': outside the map");
+            }
+            foreach (var id in map.Pois.GroupBy(p => p.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                e.Add($"map '{map.Id}': poi '{id}' is defined more than once");
             foreach (var s in map.SellPoints)
             foreach (var ft in s.Accepts)
                 if (!FillTypes.ContainsKey(ft)) e.Add($"map '{map.Id}' sell point '{s.Id}': unknown fill type '{ft}'");

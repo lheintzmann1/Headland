@@ -2,12 +2,15 @@ using Headland.Game.Common;
 using Headland.Core;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Machines;
+using Headland.Core.Pois;
 using Headland.Core.World;
 using Godot;
+using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game.World;
 
-/// <summary>Buildings, trees (seasonal colors), sell/shop area markers and field signs.</summary>
+/// <summary>POIs (buildings and sites), trees (seasonal colors), sell/shop area markers and field signs.</summary>
 public partial class PropsRenderer : Node3D
 {
     public Simulation Sim { get; init; } = null!;
@@ -18,7 +21,7 @@ public partial class PropsRenderer : Node3D
 
     public override void _Ready()
     {
-        foreach (var b in Sim.World.Buildings) AddChild(BuildBuilding(b));
+        foreach (var poi in Sim.World.Pois) AddChild(BuildPoi(poi));
         BuildTrees();
         foreach (var a in Sim.World.SellPoints) AddChild(BuildArea(a, new Color(0.86f, 0.68f, 0.2f), $"{a.Name}\nSells grain · tip here (U)"));
         foreach (var a in Sim.World.Shops) AddChild(BuildArea(a, new Color(0.35f, 0.6f, 0.85f), $"{a.Name}\nBuy seed here (R)"));
@@ -39,25 +42,71 @@ public partial class PropsRenderer : Node3D
         if (month != _shownMonth) ApplySeason(month);
     }
 
-    // ------------------------------------------------------------------ Buildings
+    // ------------------------------------------------------------------ POIs
 
-    private Node3D BuildBuilding(BuildingDef b)
+    /// <summary>A POI in its local space (+Z its front), from its placeholder parts or its model.</summary>
+    private Node3D BuildPoi(Poi poi)
     {
-        var w = Sim.World;
-        var center = new System.Numerics.Vector2(b.X + b.W * 0.5f, b.Z + b.D * 0.5f);
-        // Sit on the lowest corner so slopes never show a gap under the walls.
-        var y = new[] { (0f, 0f), (b.W, 0f), (0f, b.D), (b.W, b.D) }
-            .Min(o => w.Height.Sample(b.X + o.Item1, b.Z + o.Item2));
         var root = new Node3D
         {
-            Name = b.Name.Replace(' ', '_'),
-            Position = new Vector3(center.X, y, center.Y),
-            Rotation = new Vector3(0f, b.RotDeg * Mathf.DegToRad(1f), 0f),
+            Name = poi.Id,
+            Position = new Vector3(poi.Position.X, 0f, poi.Position.Y),
+            Rotation = new Vector3(0f, poi.Heading, 0f),
+        };
+        var parts = new Node3D { Name = "Parts" };
+        root.AddChild(parts);
+        foreach (var part in poi.Def.Parts) parts.AddChild(BuildPart(poi, part));
+        if (LoadModel(poi) is { } model)
+        {
+            root.AddChild(model);
+            parts.Visible = false;
+        }
+        return root;
+    }
+
+    /// <summary>Height of the lowest corner of a box, so slopes never show a gap under the walls.</summary>
+    private float LowestGround(Obb box)
+    {
+        Span<NVec2> corners = stackalloc NVec2[4];
+        MathUtil.RectCorners(box.Center, box.Heading, box.HalfExtents.X, box.HalfExtents.Y, corners);
+        var y = float.MaxValue;
+        foreach (var c in corners) y = Mathf.Min(y, Sim.World.HeightAt(c));
+        return y;
+    }
+
+    private Node3D? LoadModel(Poi poi)
+    {
+        var v = poi.Def.Visual;
+        if (string.IsNullOrEmpty(v?.Model)) return null;
+        if (!ResourceLoader.Exists(v.Model))
+        {
+            GD.PushWarning($"{poi.Def.Id}: model '{v.Model}' not found (was it imported?); using the placeholder");
+            return null;
+        }
+        var offset = v.Offset.Length == 3 ? new Vector3(v.Offset[0], v.Offset[1], v.Offset[2]) : Vector3.Zero;
+        var holder = new Node3D
+        {
+            Name = "Model",
+            Position = offset + new Vector3(0f, LowestGround(poi.Footprint), 0f),
+            Rotation = new Vector3(0f, Mathf.DegToRad(v.YawDeg), 0f),
+            Scale = Vector3.One * v.Scale,
+        };
+        holder.AddChild(GD.Load<PackedScene>(v.Model).Instantiate());
+        return holder;
+    }
+
+    private Node3D BuildPart(Poi poi, PoiPartDef b)
+    {
+        var root = new Node3D
+        {
+            Name = b.Shape,
+            Position = new Vector3(b.X, LowestGround(poi.PartBox(b)), b.Z),
+            Rotation = new Vector3(0f, Mathf.DegToRad(b.RotDeg), 0f),
         };
         var color = Conv.Hex(b.Color);
-        switch (b.Type)
+        switch (b.Shape)
         {
-            case "farmhouse":
+            case "house":
                 Box(root, new Vector3(b.W, b.H * 0.62f, b.D), new Vector3(0, b.H * 0.31f - 0.3f, 0), color);
                 Roof(root, b.W + 0.8f, b.H * 0.42f, b.D + 0.6f, b.H * 0.62f - 0.3f, new Color(0.35f, 0.22f, 0.18f));
                 Box(root, new Vector3(0.9f, 2.4f, 0.9f), new Vector3(b.W * 0.25f, b.H * 0.9f, b.D * 0.1f), new Color(0.45f, 0.36f, 0.3f));

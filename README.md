@@ -33,7 +33,8 @@ Built with **Godot 4.7** and **C#**.
   and a harvest estimate.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
-- **Data-driven.** Crops, machines, soils, the climate and the map are JSON files in [`game/data`](game/data).
+- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate and the map are JSON
+  files in [`game/data`](game/data).
 
 ## Controls
 

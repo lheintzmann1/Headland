@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Ownership;
+using Headland.Core.Pois;
 
 namespace Headland.Core.World;
 
@@ -234,7 +235,7 @@ public sealed class WorldMap
     public List<Area> Shops { get; } = [];
     public List<Farmland> Farmlands { get; } = [];
     public List<FieldInfo> Fields { get; } = [];
-    public List<BuildingDef> Buildings { get; } = [];
+    public List<Poi> Pois { get; } = [];
 
     /// <summary>Chunk needs its ground data texture re-uploaded.</summary>
     public bool[] GroundDirty { get; }
@@ -296,6 +297,7 @@ public sealed class WorldMap
     public Area? SellPointAt(Vector2 p) => SellPoints.Find(a => a.Contains(p));
     public Area? ShopAt(Vector2 p) => Shops.Find(a => a.Contains(p));
     public FieldInfo? FieldById(int id) => Fields.Find(f => f.Id == id);
+    public Poi? PoiById(string id) => Pois.Find(p => p.Id == id);
     public Farmland? FarmlandById(int id) => Farmlands.Find(f => f.Id == id);
 
     public Farmland? FarmlandAt(Vector2 p)

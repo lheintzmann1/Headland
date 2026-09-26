@@ -16,9 +16,10 @@ SIL Open Font License 1.1 (`fonts/OFL.txt`).
 ## Icons
 
 [Material Symbols](https://github.com/google/material-design-icons) (Rounded, filled) by Google, Apache License 2.0
-(`icons/LICENSE`). Renamed after the game's weather conditions and recolored white so the game can tint them:
-`clear` (sunny), `cloudy` (cloud), `rain` (rainy), `storm` (thunderstorm), `snow` (weather_snowy), `fog` (foggy),
-`warning`.
+(`icons/LICENSE`). Recolored white so the game can tint them. Weather icons are renamed after the game's weather
+conditions: `clear` (sunny), `cloudy` (cloud), `rain` (rainy), `storm` (thunderstorm), `snow` (weather_snowy), `fog`
+(foggy). The rest keep their Material Symbols names: `warning`, and the POI map icons `agriculture`, `home`, `sell`,
+`storefront`, `warehouse`.
 
 ## Crops
 

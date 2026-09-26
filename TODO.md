@@ -60,7 +60,7 @@ conditions. Money is just another input or output:
 | Farm shop      | in: $ → out: seed                     |
 | Gas station    | in: $ → out: diesel                   |
 
-- [ ] POI types in `data/pois/`, placements in the map JSON, validated by `ContentDatabase`.
+- [x] POI types in `data/pois/`, placements in the map JSON, validated by `ContentDatabase`.
 - [ ] Triggers: unload (tipper, pipe), load (fill a trailer from storage), fill (fuel, seed), wash,
       repair, vehicle delivery spot.
 - [ ] Actions: sell, buy, process (rate, cycle time, running cost), store (capacity per fill type),

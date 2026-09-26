@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Pois;
 
 namespace Headland.Core.World;
 
@@ -15,7 +16,7 @@ public static class WorldGen
         BuildHeights(world, map);
         BuildGround(world, map, content);
         BuildAreas(world, map);
-        BuildBuildings(world, map);
+        BuildPois(world, map, content);
         BuildTrees(world, map, rng);
         world.MarkAllDirty(crop: true);
         return world;
@@ -339,21 +340,23 @@ public static class WorldGen
             world.Shops.Add(new Area { Id = s.Id, Name = s.Name, X = s.X, Z = s.Z, W = s.W, H = s.H, FillTypes = s.Sells });
     }
 
-    private static void BuildBuildings(WorldMap world, MapDef map)
+    private static void BuildPois(WorldMap world, MapDef map, ContentDatabase content)
     {
-        foreach (var b in map.Buildings)
+        foreach (var p in map.Pois)
         {
-            world.Buildings.Add(b);
-            var heading = b.RotDeg * MathUtil.Deg2Rad;
-            var center = new Vector2(b.X + b.W * 0.5f, b.Z + b.D * 0.5f);
-            if (b.Type is "silo" or "tank")
-                world.Obstacles.Add(new Obstacle { Shape = ObstacleShape.Circle, Center = center, Radius = b.W * 0.5f, Kind = b.Type });
-            else if (b.Type is not "pallets")
-                world.Obstacles.Add(new Obstacle
-                {
-                    Shape = ObstacleShape.Box, Center = center, HalfExtents = new Vector2(b.W * 0.5f, b.D * 0.5f),
-                    Heading = heading, Kind = b.Type,
-                });
+            var poi = new Poi(p.Id, content.Pois[p.Type], new Vector2(p.X, p.Z), p.HeadingDeg * MathUtil.Deg2Rad, p.Farm, p.Name);
+            world.Pois.Add(poi);
+            foreach (var part in poi.Def.Parts.Where(q => q.Solid))
+            {
+                var box = poi.PartBox(part);
+                world.Obstacles.Add(part.Round
+                    ? new Obstacle { Shape = ObstacleShape.Circle, Center = box.Center, Radius = part.W * 0.5f, Kind = part.Shape }
+                    : new Obstacle
+                    {
+                        Shape = ObstacleShape.Box, Center = box.Center, HalfExtents = box.HalfExtents, Heading = box.Heading,
+                        Kind = part.Shape,
+                    });
+            }
         }
     }
 
@@ -371,6 +374,8 @@ public static class WorldGen
             }
             foreach (var ob in world.Obstacles)
                 if (Vector2.Distance(ob.Center, p) < ob.BoundingRadius + r) return false;
+            foreach (var poi in world.Pois)
+                if (poi.Footprint.Distance(p) < r) return false;
             return true;
         }
 

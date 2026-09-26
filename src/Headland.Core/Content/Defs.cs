@@ -211,19 +211,24 @@ public sealed class TipperDef
     public float RatePerSecond { get; set; } = 400f;
 }
 
-public sealed class VisualDef
+/// <summary>A glTF model shown instead of a procedural placeholder (machines, POIs).</summary>
+public class ModelDef
 {
-    /// <summary>Procedural placeholder archetype: tractor, combine, trailer, cultivator, seeder, header.</summary>
-    public string Placeholder { get; set; } = "tractor";
-    public string Color { get; set; } = "#7a3326";
     /// <summary>Optional glTF model (res:// path, e.g. a Blockbench .glb export). Replaces the placeholder.</summary>
     public string? Model { get; set; }
     /// <summary>Uniform scale applied to the model (1 = model units are meters).</summary>
     public float Scale { get; set; } = 1f;
     /// <summary>Turn the model around Y so its front faces +Z (180 for models built facing -Z).</summary>
     public float YawDeg { get; set; }
-    /// <summary>Model offset [x, y, z] in meters, in machine local space (+Z forward, +X left).</summary>
+    /// <summary>Model offset [x, y, z] in meters, in local space (+Z forward, +X left).</summary>
     public float[] Offset { get; set; } = [0f, 0f, 0f];
+}
+
+public sealed class VisualDef : ModelDef
+{
+    /// <summary>Procedural placeholder archetype: tractor, combine, trailer, cultivator, seeder, header.</summary>
+    public string Placeholder { get; set; } = "tractor";
+    public string Color { get; set; } = "#7a3326";
     /// <summary>
     /// Moving parts: role → node name in the model. Roles: wheel0..wheelN (same order as "wheels"),
     /// pipe, tipper, reel, load. See docs/MODELING.md.
@@ -342,17 +347,63 @@ public sealed class FieldDef : ShapeDef
     public float AngleDeg { get; set; }
 }
 
-public sealed class BuildingDef
+// ---- Points of interest (pois/*.json), placed by maps
+
+/// <summary>
+/// A point of interest: a building or site maps place, from a farmhouse to a grain elevator. Drawn from placeholder
+/// parts or a model. Local space as for machines: +Z forward (the front), +X left, origin at the footprint's center.
+/// </summary>
+public sealed class PoiDef
 {
-    public string Type { get; set; } = "shed";
+    public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    public float X { get; set; }
-    public float Z { get; set; }
+    public string Description { get; set; } = "";
+    /// <summary>Map icon: a Material Symbols icon in assets/icons, by file name (e.g. "storefront").</summary>
+    public string? Icon { get; set; }
+    /// <summary>Ground the POI covers, centered on its origin: width along x, depth along z (meters).</summary>
     public float W { get; set; } = 10f;
     public float D { get; set; } = 10f;
-    public float H { get; set; } = 6f;
+    public PoiPartDef[] Parts { get; set; } = [];
+    /// <summary>Optional model drawn instead of the parts (which still collide).</summary>
+    public ModelDef? Visual { get; set; }
+}
+
+/// <summary>One placeholder block of a POI: a building, a silo, a stack of pallets.</summary>
+public sealed class PoiPartDef
+{
+    /// <summary>Placeholder shape: house, shed, silo, tank, elevator, store, pallets or box. Silos and tanks are round.</summary>
+    public string Shape { get; set; } = "box";
+    /// <summary>Center in the POI's local space.</summary>
+    public float X { get; set; }
+    public float Z { get; set; }
+    /// <summary>Width along local x (the diameter of round shapes), depth along z, height.</summary>
+    public float W { get; set; } = 4f;
+    public float D { get; set; } = 4f;
+    public float H { get; set; } = 3f;
     public float RotDeg { get; set; }
     public string Color { get; set; } = "#8c8378";
+    /// <summary>Blocks machines and the farmer (false for low props they can drive over).</summary>
+    public bool Solid { get; set; } = true;
+
+    public bool Round => Shape is "silo" or "tank";
+}
+
+/// <summary>A POI placed on a map.</summary>
+public sealed class PoiPlacementDef
+{
+    /// <summary>Unique on the map; saves refer to it.</summary>
+    public string Id { get; set; } = "";
+    /// <summary>The POI type (pois/*.json id).</summary>
+    public string Type { get; set; } = "";
+    /// <summary>Replaces the type's name.</summary>
+    public string? Name { get; set; }
+    /// <summary>Where the POI's origin (the center of its footprint) goes.</summary>
+    public float X { get; set; }
+    public float Z { get; set; }
+    /// <summary>Heading of the POI's front, as for machines: 0 faces +z (south), 90 faces +x (east).</summary>
+    public float HeadingDeg { get; set; }
+    /// <summary>Owning farm: 0 = an NPC's (default), 1 = the player's.</summary>
+    public int Farm { get; set; }
 }
 
 public sealed class SellPointDef
@@ -415,7 +466,7 @@ public sealed class MapDef
     public FarmlandDef[] Farmlands { get; set; } = [];
     /// <summary>Each field lies inside a farmland (the one holding its centroid).</summary>
     public FieldDef[] Fields { get; set; } = [];
-    public BuildingDef[] Buildings { get; set; } = [];
+    public PoiPlacementDef[] Pois { get; set; } = [];
     public SellPointDef[] SellPoints { get; set; } = [];
     public ShopDef[] Shops { get; set; } = [];
     public MachineSpawnDef[] Machines { get; set; } = [];

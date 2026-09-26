@@ -64,6 +64,14 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
 
 The machine's size, wheel positions and hitch points still come from its JSON, so check that they match the model.
 
+## Buildings and other POIs
+
+Buildings and sites (points of interest, `game/data/pois/*.json`) follow the same scale and orientation: the front
+faces **+Z** and the origin sits on the ground at the center of the POI's footprint (`w` × `d` in its JSON). Export to
+`game/assets/models/buildings/` and set `"visual": { "model": "res://assets/models/buildings/<name>.glb" }` on the POI
+(with `scale`, `yawDeg` and `offset` as for machines). The model replaces the placeholder `parts`, which still decide
+what machines and the farmer bump into, so keep them roughly matching the walls.
+
 ## License and credit
 
 Models contributed to this repository are licensed CC BY-SA 4.0 (see [`LICENSE-ASSETS.md`](../LICENSE-ASSETS.md)).

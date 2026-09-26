@@ -14,6 +14,7 @@ public class ContentTests
         Assert.Empty(db.Validate());
         Assert.Equal(4, db.Crops.Count);
         Assert.Contains("combine_7", db.Machines.Keys);
+        Assert.Contains("grain_elevator", db.Pois.Keys);
         Assert.Equal(3, db.Soils.Count);
     }
 

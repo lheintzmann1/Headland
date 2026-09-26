@@ -1,0 +1,19 @@
+[
+  // Farm buildings. A POI's local space is a machine's: +z is its front, +x its left, the origin the center of its
+  // footprint (w along x, d along z). Parts are placeholder blocks centered at (x, z): house, shed, silo, tank,
+  // elevator, store, pallets or box; "solid": false lets machines drive over them. "icon" is the map icon, a
+  // Material Symbols SVG in assets/icons. "visual": { "model": "res://..." } draws a glTF model instead of the parts.
+  { "id": "farmhouse", "name": "Farmhouse", "icon": "home", "w": 14, "d": 12,
+    "parts": [
+      { "shape": "house", "w": 12, "d": 10, "h": 7, "color": "#b9ab94" }
+    ] },
+  { "id": "machine_shed", "name": "Machine shed", "icon": "agriculture", "w": 28, "d": 16,
+    "parts": [
+      { "shape": "shed", "w": 26, "d": 14, "h": 8, "color": "#6f6a62" }
+    ] },
+  { "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 20, "d": 10,
+    "parts": [
+      { "shape": "silo", "x": -5, "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" },
+      { "shape": "silo", "x": 5,  "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" }
+    ] }
+]
