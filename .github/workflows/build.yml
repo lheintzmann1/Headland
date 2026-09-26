@@ -30,6 +30,10 @@ jobs:
             preset: Windows
             dir: windows
             file: Headland.exe
+          - name: macOS
+            preset: macOS
+            dir: macos
+            file: Headland.zip
     steps:
       - uses: actions/checkout@v7
 
@@ -51,7 +55,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/godot
-          key: godot-${{ env.GODOT_RELEASE }}-mono-linux-windows
+          key: godot-${{ env.GODOT_RELEASE }}-mono-linux-windows-macos
 
       - name: Download Godot and export templates
         if: steps.godot-cache.outputs.cache-hit != 'true'
@@ -63,7 +67,7 @@ jobs:
           curl -fsSLo templates.tpz "$base/Godot_v${GODOT_RELEASE}_mono_export_templates.tpz"
           unzip -q templates.tpz && rm templates.tpz
           # Keep only the desktop templates we export, so the cache stays small.
-          find templates -type f ! -name 'version.txt' ! -name 'linux_*' ! -name 'windows_*' -delete
+          find templates -type f ! -name 'version.txt' ! -name 'linux_*' ! -name 'windows_*' ! -name 'macos.zip' -delete
           find templates -mindepth 1 -type d -empty -delete
           ls -la templates
 
@@ -84,12 +88,14 @@ jobs:
           test -f "build/${{ matrix.dir }}/${{ matrix.file }}"
           ls -la build/${{ matrix.dir }}
 
-      # Archive before uploading so the Linux executable bit survives.
+      # Archive before uploading so the Linux executable bit survives. Godot already zips the macOS .app.
       - name: Package
         run: |
           cd build/${{ matrix.dir }}
           if [ "${{ matrix.dir }}" = linux ]; then
             tar -czf "../Headland-${{ matrix.dir }}.tar.gz" .
+          elif [ "${{ matrix.dir }}" = macos ]; then
+            mv "${{ matrix.file }}" "../Headland-${{ matrix.dir }}.zip"
           else
             zip -qr "../Headland-${{ matrix.dir }}.zip" .
           fi

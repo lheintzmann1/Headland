@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b75dth36vm0vv"
 path.s3tc="res://.godot/imported/track_dirt_atlas.png-934492b91c6b4f35200b7fe635e1085e.s3tc.ctex"
+path.etc2="res://.godot/imported/track_dirt_atlas.png-934492b91c6b4f35200b7fe635e1085e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/textures/tiles/track_dirt_atlas.png"
-dest_files=["res://.godot/imported/track_dirt_atlas.png-934492b91c6b4f35200b7fe635e1085e.s3tc.ctex"]
+dest_files=["res://.godot/imported/track_dirt_atlas.png-934492b91c6b4f35200b7fe635e1085e.s3tc.ctex", "res://.godot/imported/track_dirt_atlas.png-934492b91c6b4f35200b7fe635e1085e.etc2.ctex"]
 
 [params]
 

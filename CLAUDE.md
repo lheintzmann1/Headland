@@ -10,7 +10,7 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 - `tests/FarmSim.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
 - `game/`: the Godot project (assembly `Headland`, namespaces `FarmSim.Game.*`). `scripts/` (C# presentation),
   `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, soils, climates, maps),
-  `assets/` (textures, future models, `CREDITS.md`), `export_presets.cfg` (Linux/Windows, used by CI).
+  `assets/` (textures, future models, `CREDITS.md`), `export_presets.cfg` (Linux/Windows/macOS, used by CI).
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports; tags `v*` publish a release).
 - `tools/`: asset pipeline (Python + PIL/numpy): `convert_tiles.py` (iso tiles → top-down atlases),
   `fetch_textures.py` (CC0 ambientCG ground textures), `gen_crop_cards.py` (procedural crop atlas).

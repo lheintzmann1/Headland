@@ -67,9 +67,12 @@ godot --path game            # or open game/project.godot in the editor and pres
 Run the tests with `dotnet test tests/FarmSim.Core.Tests`. They include content validation and multi-year crop
 calibration runs.
 
-Linux and Windows builds from every push to `main` are available as artifacts of the
+Linux, Windows and macOS builds from every push to `main` are available as artifacts of the
 [Build game](../../actions/workflows/build.yml) workflow. Tags named `v*` (matching `config/version` in
 `game/project.godot`) publish them as a release.
+
+The macOS build is a universal app (Intel and Apple Silicon) that is not notarized, so macOS blocks its first launch:
+allow it under System Settings → Privacy & Security → Open Anyway, or run `xattr -dr com.apple.quarantine Headland.app`.
 
 ## Project layout
 

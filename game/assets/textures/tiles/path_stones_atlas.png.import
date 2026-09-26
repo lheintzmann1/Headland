@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bf5w0w355py18"
 path.s3tc="res://.godot/imported/path_stones_atlas.png-a041fe735fb29fb0267bcf1d74b044b0.s3tc.ctex"
+path.etc2="res://.godot/imported/path_stones_atlas.png-a041fe735fb29fb0267bcf1d74b044b0.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/textures/tiles/path_stones_atlas.png"
-dest_files=["res://.godot/imported/path_stones_atlas.png-a041fe735fb29fb0267bcf1d74b044b0.s3tc.ctex"]
+dest_files=["res://.godot/imported/path_stones_atlas.png-a041fe735fb29fb0267bcf1d74b044b0.s3tc.ctex", "res://.godot/imported/path_stones_atlas.png-a041fe735fb29fb0267bcf1d74b044b0.etc2.ctex"]
 
 [params]
 
