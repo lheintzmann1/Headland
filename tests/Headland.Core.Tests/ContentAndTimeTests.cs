@@ -35,6 +35,18 @@ public class ContentTests
     }
 
     [Fact]
+    public void DuplicateFieldNumbersAreReported()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Maps["dup"] = new MapDef
+        {
+            Id = "dup",
+            Fields = [new FieldDef { Id = 3, W = 10, H = 10 }, new FieldDef { Id = 3, X = 20, W = 10, H = 10 }],
+        };
+        Assert.Contains(db.Validate(), e => e.Contains("field 3 is defined more than once"));
+    }
+
+    [Fact]
     public void WorldGenIsDeterministic()
     {
         var a = WorldGen.Generate(TestContent.Content.Map, TestContent.Content);

@@ -244,7 +244,7 @@ public static class WorldGen
 
         foreach (var f in map.Fields)
         {
-            world.Fields.Add(new FieldInfo { Id = f.Id, Name = f.Name, X = f.X, Z = f.Z, W = f.W, H = f.H });
+            world.Fields.Add(new FieldInfo { Id = f.Id, X = f.X, Z = f.Z, W = f.W, H = f.H });
             var ground = ParseGround(f.Ground);
             var cropIdx = f.Crop != null ? content.CropIndex(f.Crop) : -1;
             var crop = cropIdx >= 0 ? content.Crops[cropIdx] : null;

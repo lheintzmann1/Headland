@@ -5,7 +5,7 @@ namespace Headland.Core.Tests;
 
 public class CropTests
 {
-    // Open meadow on the default map, far from roads and buildings.
+    // Inside field 4 (grass) on the default map, far from roads and buildings.
     private static readonly Vector2 Plot = new(270f, 310f);
 
     private static (Simulation sim, int cell) Setup(string cropId, byte stage, float moisture, byte nitrogen = 200)

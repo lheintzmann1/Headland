@@ -35,11 +35,11 @@
     { "x": 414, "z": 200, "w": 58, "h": 40 }
   ],
   "fields": [
-    { "id": 1, "name": "North Field", "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
-    { "id": 2, "name": "East Field",  "x": 214, "z": 96,  "w": 110, "h": 120, "ground": "seeded", "crop": "wheat", "stage": "harvestable", "angleDeg": 0 },
-    { "id": 3, "name": "South Field", "x": 40,  "z": 264, "w": 100, "h": 110, "ground": "cultivated", "angleDeg": 0 },
-    { "id": 4, "name": "Meadow",      "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass",      "angleDeg": 0 },
-    { "id": 5, "name": "Corn Field",  "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 }
+    { "id": 1, "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
+    { "id": 2, "x": 214, "z": 96,  "w": 110, "h": 120, "ground": "seeded", "crop": "wheat", "stage": "harvestable", "angleDeg": 0 },
+    { "id": 3, "x": 40,  "z": 264, "w": 100, "h": 110, "ground": "cultivated", "angleDeg": 0 },
+    { "id": 4, "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass",      "angleDeg": 0 },
+    { "id": 5, "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 }
   ],
   "buildings": [
     { "type": "farmhouse", "name": "Farmhouse",     "x": 124, "z": 183, "w": 12, "d": 10, "h": 7,  "color": "#b9ab94" },

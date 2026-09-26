@@ -288,8 +288,8 @@ public sealed class TileNetworkDef
 
 public sealed class FieldDef
 {
+    /// <summary>Field number shown to the player, unique per map (1..255).</summary>
     public int Id { get; set; }
-    public string Name { get; set; } = "";
     public float X { get; set; }
     public float Z { get; set; }
     public float W { get; set; }

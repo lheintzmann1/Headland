@@ -88,7 +88,7 @@ public sealed class Simulation
         Machines.Update(dt);
         foreach (var m in Machines.All)
             if (m.Controller is FieldWorkController { Finished: true } w)
-                DismissHelper(m, w.Stopped ? $"Helper stopped on {w.Field.Name}: {w.StopReason}" : $"Helper finished {w.Field.Name}",
+                DismissHelper(m, w.Stopped ? $"Helper stopped on {w.Field.Label}: {w.StopReason}" : $"Helper finished {w.Field.Label}",
                     w.Stopped ? Severity.Warning : Severity.Good);
         Player.Update(this, dt);
         Notifications.Expire(8.0);
@@ -173,7 +173,7 @@ public sealed class Simulation
             return;
         }
         v.Controller = new FieldWorkController(v, field);
-        Notifications.Post($"Helper started on {field.Name} ({field.AreaHa:0.00} ha)", Severity.Good);
+        Notifications.Post($"Helper started on {field.Label} ({field.AreaHa:0.00} ha)", Severity.Good);
     });
 
     private void DismissHelper(Machine v, string message, Severity severity = Severity.Info)

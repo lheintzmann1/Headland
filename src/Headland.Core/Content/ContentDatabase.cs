@@ -209,6 +209,8 @@ public sealed class ContentDatabase
                 if (f.Crop != null && CropById(f.Crop) == null) e.Add($"map '{map.Id}' field {f.Id}: unknown crop '{f.Crop}'");
                 if (f.Id is < 1 or > 255) e.Add($"map '{map.Id}': field ids must be 1..255");
             }
+            foreach (var id in map.Fields.GroupBy(f => f.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                e.Add($"map '{map.Id}': field {id} is defined more than once");
             foreach (var s in map.SellPoints)
             foreach (var ft in s.Accepts)
                 if (!FillTypes.ContainsKey(ft)) e.Add($"map '{map.Id}' sell point '{s.Id}': unknown fill type '{ft}'");

@@ -161,13 +161,14 @@ public sealed class Area
 
 public sealed class FieldInfo
 {
+    /// <summary>Field number shown to the player (1..255, stored in <see cref="FieldLayers.FieldId"/>).</summary>
     public int Id { get; init; }
-    public string Name { get; init; } = "";
     public float X { get; init; }
     public float Z { get; init; }
     public float W { get; init; }
     public float H { get; init; }
     public float AreaHa => W * H / 10000f;
+    public string Label => $"Field {Id}";
 }
 
 public sealed class WorldMap

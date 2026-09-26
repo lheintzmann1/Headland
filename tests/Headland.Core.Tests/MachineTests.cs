@@ -280,8 +280,8 @@ public class MachineTests
         Assert.True(t.Footprint.Distance(sim.Player.Position) > PlayerCharacter.Radius);
     }
 
-    // A plot inside the meadow, so headland turns stay on open grass (which the cultivator would happily work).
-    private static readonly FieldInfo Plot = new() { Id = 4, Name = "Plot", X = 240, Z = 290, W = 24, H = 40 };
+    // A plot inside field 4 (grass), so headland turns stay on open grass (which the cultivator would happily work).
+    private static readonly FieldInfo Plot = new() { Id = 4, X = 240, Z = 290, W = 24, H = 40 };
 
     private static (Simulation sim, Machine tractor, FieldWorkController helper) HireCultivatorHelper()
     {

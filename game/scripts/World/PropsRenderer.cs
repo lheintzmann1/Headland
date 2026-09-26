@@ -241,7 +241,7 @@ public partial class PropsRenderer : Node3D
         return new Label3D
         {
             Name = $"Field_{f.Id}",
-            Text = $"{f.Name}\n{f.AreaHa:0.00} ha",
+            Text = $"{f.Label}\n{f.AreaHa:0.00} ha",
             Position = Sim.World.OnGround(center, 6f),
             Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
             FontSize = 48,

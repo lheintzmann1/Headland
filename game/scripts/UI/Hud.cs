@@ -208,7 +208,7 @@ public partial class Hud : CanvasLayer
         if (v.Def.HarvestTank != null) sb.Append(v.TurnedOn ? "   [color=#9fd67f]threshing[/color]" : "   [color=#a8aba4]off[/color]");
         sb.Append('\n');
         if (v.Controller is FieldWorkController w)
-            sb.Append($"  [color=#8fc0e8]Helper working {w.Field.Name}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}[/color]\n");
+            sb.Append($"  [color=#8fc0e8]Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}[/color]\n");
         foreach (var m in v.Chain())
         {
             if (m != v) sb.Append($"  {m.Def.Name}");
@@ -260,7 +260,7 @@ public partial class Hud : CanvasLayer
             if (v.Chain().Any(m => Sim.World.ShopAt(m.Footprint.Center) != null && m.FillUnits.Length > 0))
                 lines.Add($"{K("buy")} Buy supplies");
             if (v.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
-            else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Name}");
+            else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label}");
             lines.Add($"{K("enter")} Exit");
         }
         _prompt.Text = string.Join("    ", lines);
@@ -311,7 +311,7 @@ public partial class Hud : CanvasLayer
         _inspectPanel.Visible = true;
         var sb = new StringBuilder();
         var field = r.FieldId != 0 ? Sim.World.FieldById(r.FieldId) : null;
-        sb.Append(field != null ? $"[b]{field.Name}[/b] (field {field.Id}, {field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
+        sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
         sb.Append($"   [color=#a8aba4]{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m[/color]\n");
         sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
         if (r.Crop != null)

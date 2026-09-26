@@ -22,7 +22,7 @@ Rules for every item:
 
 ## Quick wins
 
-- [ ] **Number fields instead of naming them.** Drop `name` from `FieldDef`, `FieldInfo` and the map
+- [x] **Number fields instead of naming them.** Drop `name` from `FieldDef`, `FieldInfo` and the map
       JSON; show the number on field signs (`PropsRenderer`), the HUD, helper notifications and the
       inspector.
 - [ ] **Switch-vehicle key** (FS: Tab / Shift+Tab): jump into the next/previous farm vehicle. Physical

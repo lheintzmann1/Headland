@@ -68,7 +68,7 @@ public partial class ScenarioRunner : Node
         // --- Harvest three lanes of ripe wheat.
         Sim.Player.Enter(combine);
         Ms.Teleport(combine, new NVec2(f2.X + 3f, f2.Z - 8f), 0f);
-        var helper = Hire(combine, new FieldInfo { Id = 2, Name = f2.Name, X = f2.X, Z = f2.Z, W = 18f, H = f2.H }, maxLanes: 3);
+        var helper = Hire(combine, new FieldInfo { Id = f2.Id, X = f2.X, Z = f2.Z, W = 18f, H = f2.H }, maxLanes: 3);
         Game.FocusOverride = () => combine.Footprint.Center;
         Game.Camera.Zoom = 34f;
         Game.SimSubsteps = 4;
@@ -111,12 +111,12 @@ public partial class ScenarioRunner : Node
         await Until(() => !trailer.Tipping, 60f);
         Log($"sold for ${Sim.Economy.Money - money:N0}; money ${Sim.Economy.Money:N0}");
 
-        // --- Cultivate stubble on the North Field.
+        // --- Cultivate stubble on field 1.
         Sim.Player.Exit(Sim);
         var t125 = Find("tractor_125");
         var cultivator = t125.Attached.Values.First();
         var f1 = Sim.World.FieldById(1)!;
-        var strip = new FieldInfo { X = f1.X, Z = f1.Z, W = 15f, H = f1.H };
+        var strip = new FieldInfo { Id = f1.Id, X = f1.X, Z = f1.Z, W = 15f, H = f1.H };
         Sim.Player.Enter(t125);
         Ms.Teleport(t125, new NVec2(f1.X + 1.5f, f1.Z - 8f), 0f);
         helper = Hire(t125, strip, maxLanes: 5);
