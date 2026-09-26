@@ -6,7 +6,8 @@ namespace Headland.Core.Economics;
 
 /// <summary>
 /// The player's farm money, its books and its bank loan, and market prices. Money goes below zero only through
-/// costs that come due by themselves (interest, running costs); the farm can't buy anything until it's back up.
+/// costs that come due by themselves (interest, wages, running costs); the farm can't buy anything or hire helpers
+/// until it's back up.
 /// </summary>
 public sealed class Economy(ContentDatabase content, Calendar calendar, EventBus events, float startMoney, int startDay)
 {

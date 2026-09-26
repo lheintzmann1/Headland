@@ -175,6 +175,50 @@ public class FinanceTests
         Assert.True(eco.Money > 0f);
     }
 
+    /// <summary>A tractor and cultivator in the player's hands, next to field 4.</summary>
+    private static Machines.Machine TractorAtField4(Simulation sim)
+    {
+        var t = sim.Machines.Spawn("tractor_125", new System.Numerics.Vector2(242f, 280f), 0f);
+        sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", new System.Numerics.Vector2(242f, 278f), 0f));
+        sim.Player.Enter(t);
+        return t;
+    }
+
+    [Fact]
+    public void HelpersArePaidForTheTimeTheyWorkWhateverTheClockSpeed()
+    {
+        var sim = TestContent.NewSim();
+        var dismissed = Record<HelperDismissed>(sim);
+        TractorAtField4(sim);
+        sim.Clock.TimeScale = 240f;
+        var money = sim.Economy.Money;
+        sim.CommandHelper();
+
+        // $150 an hour: $3 after 72 seconds, paid in whole dollars.
+        for (var s = 0f; s < 72f; s += 1f / 60f) sim.Tick(1f / 60f);
+        Assert.Equal(money - 3f, sim.Economy.Money);
+        Assert.Equal(-3f, sim.Economy.Ledger.Days.Sum(d => d[MoneyCategory.Wages]));
+
+        // Dismissing settles the rest.
+        sim.CommandHelper();
+        var end = Assert.Single(dismissed);
+        Assert.InRange(end.Wages, 3f, 3.01f);
+        Assert.Equal(money - end.Wages, sim.Economy.Money, 2);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper dismissed ($3 in wages)");
+    }
+
+    [Fact]
+    public void NoHelperIsHiredOnAnOverdrawnAccount()
+    {
+        var sim = TestContent.NewSim();
+        var hired = Record<HelperHired>(sim);
+        TractorAtField4(sim);
+        sim.Economy.Spend(sim.Economy.Money + 1f, MoneyCategory.Other);
+        sim.CommandHelper();
+        Assert.Empty(hired);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Not enough money to pay a helper");
+    }
+
     [Fact]
     public void BadLoanTermsAreReported()
     {

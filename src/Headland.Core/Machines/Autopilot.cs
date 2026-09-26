@@ -307,6 +307,15 @@ public sealed class FieldWorkController : IVehicleController
     public string? StopReason { get; private set; }
     public bool Finished => Driver.Finished || Stopped;
 
+    /// <summary>Pay per hour of work, agreed when hired. Helpers drive in real time, so the clock speed doesn't change it.</summary>
+    public float WagePerHour { get; internal set; }
+    /// <summary>Real seconds worked on this job.</summary>
+    public double WorkedSeconds { get; internal set; }
+    /// <summary>What the helper earned on this job so far.</summary>
+    public float Wages => (float)(WorkedSeconds * WagePerHour / 3600.0);
+    /// <summary>The part of <see cref="Wages"/> paid already: whole dollars as they add up, the rest when the job ends.</summary>
+    public float WagesPaid { get; internal set; }
+
     public int LanesDone => Path.Work.Take(Math.Min(Driver.Index, Path.Work.Count)).Count(w => w);
 
     public VehicleInput GetInput(Machine v, float dt)

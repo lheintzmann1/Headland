@@ -140,7 +140,7 @@ public partial class Hud : CanvasLayer
         if (v.Def.HarvestTank != null) sb.Append("   " + (v.TurnedOn ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
         sb.Append('\n');
         if (v.Controller is FieldWorkController w)
-            sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}", Palette.Info)}\n");
+            sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
         foreach (var m in v.Chain())
         {
             if (m != v) sb.Append($"  {m.Def.Name}");
@@ -196,7 +196,7 @@ public partial class Hud : CanvasLayer
             if (v.Chain().Any(m => m.Def.SeedTank != null)) lines.Add($"{K("cycle_seed")} Change seed");
             if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");
             if (v.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
-            else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label}");
+            else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label} (${Sim.HelperWage:N0}/h)");
             lines.Add($"{K("enter")} Exit");
         }
         _prompt.Text = string.Join("    ", lines);

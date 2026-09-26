@@ -66,7 +66,7 @@ public sealed record LoanTaken(float Amount, float Loan) : IGameEvent;
 
 public sealed record LoanRepaid(float Amount, float Loan) : IGameEvent;
 
-/// <summary>A cost that came due by itself (interest, running costs) took the balance below zero.</summary>
+/// <summary>A cost that came due by itself (interest, wages, running costs) took the balance below zero.</summary>
 public sealed record AccountOverdrawn(float Money) : IGameEvent;
 
 // ---- Services
@@ -97,5 +97,8 @@ public enum HelperEnd { Finished, Stopped, Dismissed }
 
 public sealed record HelperHired(Machine Vehicle, FieldInfo Field) : IGameEvent;
 
-/// <summary>A helper left its vehicle; <paramref name="Reason"/> says why it stopped early (out of seed, tank full).</summary>
-public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, HelperEnd End, string? Reason) : IGameEvent;
+/// <summary>
+/// A helper left its vehicle; <paramref name="Reason"/> says why it stopped early (out of seed, tank full), and
+/// <paramref name="Wages"/> what it earned on the job.
+/// </summary>
+public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, HelperEnd End, string? Reason, float Wages) : IGameEvent;

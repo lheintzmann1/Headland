@@ -179,6 +179,9 @@ public static class SaveGame
                 Margin = h.Margin,
                 Waypoint = h.Driver.Index,
                 DriveStart = h.Driver.Start is { } s ? [s.X, s.Y] : null,
+                WagePerHour = h.WagePerHour,
+                WorkedSeconds = h.WorkedSeconds,
+                WagesPaid = h.WagesPaid,
             };
         return save;
     }
@@ -367,6 +370,9 @@ public static class SaveGame
             var helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes, new Vector2(h.PlannedFrom[0], h.PlannedFrom[1]), h.Margin);
             helper.Driver.Index = Math.Clamp(h.Waypoint, 0, helper.Path.Points.Count);
             helper.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
+            helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
+            helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
+            helper.WagesPaid = Math.Max(0f, h.WagesPaid);
             vehicle.Controller = helper;
         }
         return byId;

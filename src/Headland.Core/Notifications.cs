@@ -56,11 +56,12 @@ public sealed class Notifications
         events.Subscribe<HelperHired>(e => Post($"Helper started on {e.Field.Label} ({e.Field.AreaHa:0.00} ha)", Severity.Good));
         events.Subscribe<HelperDismissed>(e =>
         {
+            var wages = e.Wages >= 0.5f ? $" (${e.Wages:N0} in wages)" : "";
             switch (e.End)
             {
-                case HelperEnd.Finished: Post($"Helper finished {e.Field.Label}", Severity.Good); break;
-                case HelperEnd.Stopped: Post($"Helper stopped on {e.Field.Label}: {e.Reason}", Severity.Warning); break;
-                default: Post("Helper dismissed"); break;
+                case HelperEnd.Finished: Post($"Helper finished {e.Field.Label}{wages}", Severity.Good); break;
+                case HelperEnd.Stopped: Post($"Helper stopped on {e.Field.Label}: {e.Reason}{wages}", Severity.Warning); break;
+                default: Post($"Helper dismissed{wages}"); break;
             }
         });
     }

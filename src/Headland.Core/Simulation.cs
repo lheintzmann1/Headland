@@ -114,8 +114,11 @@ public sealed class Simulation
         Machines.Update(dt);
         Pois.Update(dt);
         foreach (var m in Machines.All)
-            if (m.Controller is FieldWorkController { Finished: true } w)
-                DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
+        {
+            if (m.Controller is not FieldWorkController w) continue;
+            PayHelper(w, dt);
+            if (w.Finished) DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
+        }
         Player.Update(this, dt);
         Notifications.Expire(8.0);
     }
@@ -245,25 +248,47 @@ public sealed class Simulation
             Notifications.Post("Attach an implement first", Severity.Warning);
             return;
         }
+        if (Economy.Money <= 0f)
+        {
+            Notifications.Post("Not enough money to pay a helper", Severity.Warning);
+            return;
+        }
         HireHelper(v, field);
     });
+
+    /// <summary>What a helper hired now earns per hour of work.</summary>
+    public float HelperWage => Content.Economy.HelperWagePerHour;
 
     /// <summary>Puts a helper in the vehicle to work <paramref name="field"/> (optionally only its first lanes).</summary>
     public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null)
     {
-        var helper = new FieldWorkController(v, field, maxLanes: maxLanes);
+        var helper = new FieldWorkController(v, field, maxLanes: maxLanes) { WagePerHour = HelperWage };
         v.Controller = helper;
         Events.Publish(new HelperHired(v, field));
         return helper;
     }
 
+    /// <summary>A helper earns its wage for every second it works, paid in whole dollars as they add up.</summary>
+    private void PayHelper(FieldWorkController helper, float dt)
+    {
+        helper.WorkedSeconds += dt;
+        if (MathF.Floor(helper.Wages - helper.WagesPaid) is var due and >= 1f) PayWages(helper, due);
+    }
+
+    private void PayWages(FieldWorkController helper, float amount)
+    {
+        helper.WagesPaid += amount;
+        if (helper.Vehicle.FarmId == Farms.Player.Id) Economy.Spend(amount, MoneyCategory.Wages);
+    }
+
     private void DismissHelper(Machine v, HelperEnd end)
     {
         var helper = (FieldWorkController)v.Controller!;
+        if (helper.Wages - helper.WagesPaid is var rest and > 0f) PayWages(helper, rest);
         foreach (var m in v.Chain())
             if (m.Def.WorkArea != null) m.Lowered = false;
         v.Controller = Player.Vehicle == v ? Player.Controls : null;
-        Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason));
+        Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason, helper.Wages));
     }
 
     /// <summary>The field under the vehicle or its implements, else the nearest field within 25 m.</summary>

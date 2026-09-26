@@ -3,5 +3,8 @@
 {
   "loanStep": 5000,
   "creditLimit": 500000,
-  "loanInterest": 0.05
+  "loanInterest": 0.05,
+  // Per hour of work. Helpers drive in real time, so this doesn't depend on the clock speed: at ×5 an hour of
+  // work is five game hours, $30 each.
+  "helperWagePerHour": 150
 }

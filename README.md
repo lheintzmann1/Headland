@@ -28,11 +28,12 @@ Built with **Godot 4.7** and **C#**.
   of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
   hours, storage and production that runs by the hour.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, production costs, loan interest. F2 shows them day by day or month by month, and is where the farm
-  borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest and running costs
-  can overdraw the account; until the balance is back above zero, nothing can be bought.
+  maintenance, production costs, wages, loan interest. F2 shows them day by day or month by month, and is where the
+  farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
+  running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
+  hired.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
-  lifts the implement whenever it leaves the field.
+  lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by
   growing degree-days; winter wheat and canola need a winter (vernalization) before they shoot; drought,
   waterlogging, frost and nitrogen shortage cost health and yield. On a compressed calendar (three days per month)

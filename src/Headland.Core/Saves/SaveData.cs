@@ -211,6 +211,10 @@ public sealed class HelperSave
     /// <summary>Index of the waypoint being driven to, and [x, z] where driving started.</summary>
     public int Waypoint { get; set; }
     public float[]? DriveStart { get; set; }
+    /// <summary>Pay agreed when hired (missing in older saves: today's wage).</summary>
+    public float? WagePerHour { get; set; }
+    public double WorkedSeconds { get; set; }
+    public float WagesPaid { get; set; }
 }
 
 public sealed class PlayerSave

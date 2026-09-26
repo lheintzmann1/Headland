@@ -78,6 +78,7 @@ public class SaveTests
         Assert.Equal(h1.Path.Points, h2.Path.Points);
         Assert.Equal(h1.Driver.Index, h2.Driver.Index);
         Assert.Equal(h1.Margin, h2.Margin);
+        Assert.Equal((h1.WagePerHour, h1.WorkedSeconds, h1.WagesPaid), (h2.WagePerHour, h2.WorkedSeconds, h2.WagesPaid));
 
         // New machines never reuse an id.
         Assert.Equal(sim.Machines.Spawn("cultivator_3", Vector2.Zero, 0f).Id, loaded.Machines.Spawn("cultivator_3", Vector2.Zero, 0f).Id);

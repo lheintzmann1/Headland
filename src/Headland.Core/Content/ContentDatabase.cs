@@ -157,6 +157,7 @@ public sealed class ContentDatabase
         if (Economy.LoanStep <= 0) e.Add("economy.loanStep must be > 0");
         if (Economy.CreditLimit < 0) e.Add("economy.creditLimit must be >= 0");
         if (Economy.LoanInterest is < 0 or > 1) e.Add("economy.loanInterest must be 0..1");
+        if (Economy.HelperWagePerHour < 0) e.Add("economy.helperWagePerHour must be >= 0");
 
         foreach (var f in FillTypeList)
             if (f.MonthlyPriceFactor is { Length: not 12 })
