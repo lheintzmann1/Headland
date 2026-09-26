@@ -68,7 +68,8 @@ Run the tests with `dotnet test tests/FarmSim.Core.Tests`. They include content 
 calibration runs.
 
 Linux and Windows builds from every push to `main` are available as artifacts of the
-[Build game](../../actions/workflows/build.yml) workflow. Tags named `v*` publish them as a release.
+[Build game](../../actions/workflows/build.yml) workflow. Tags named `v*` (matching `config/version` in
+`game/project.godot`) publish them as a release.
 
 ## Project layout
 

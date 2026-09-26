@@ -46,5 +46,7 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
   Machines are procedural placeholders until `.glb` models (Blockbench exports) are set in a machine's
   `visual.model`; conventions and part roles are in `docs/MODELING.md`.
+- Versioning: `config/version` in `game/project.godot` is the game version (semver). **Every release bumps it** in the
+  commit that gets tagged `v<version>` (e.g. `0.2.0` → `v0.2.0`); `build.yml` fails a tag that doesn't match it.
 - Licenses: code GPL-3.0-or-later (`LICENSE`), original art CC BY-SA 4.0 (`LICENSE-ASSETS.md`).
   Every third-party asset goes in `game/assets/CREDITS.md` with its license.
