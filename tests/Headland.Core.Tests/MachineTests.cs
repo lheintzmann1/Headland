@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.World;
 
@@ -318,6 +319,30 @@ public class MachineTests
         var start = t.Position;
         Run(sim, 5f);
         Assert.True(Vector2.Distance(start, t.Position) > 5f, "the helper stopped driving");
+    }
+
+    [Fact]
+    public void ACombineHelperLinesUpBeforeItsHeaderReachesTheCrop()
+    {
+        // A short field: every lane start left standing would show.
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Maps["corn"] = new MapDef
+        {
+            Id = "corn", Name = "Corn", Size = 128, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,
+            Farmlands = [new FarmlandDef { Id = 1, Npc = "hendricks", Farm = 1, W = 128, H = 128 }],
+            Fields = [new FieldDef { Id = 1, X = 40, Z = 40, W = 23, H = 30, Ground = "seeded", Crop = "corn", Stage = "harvestable" }],
+        };
+        db.Game.Map = "corn";
+        var sim = Simulation.Create(db);
+        var field = sim.World.FieldById(1)!;
+        var combine = sim.Machines.Spawn("combine_7", field.Shape.Min + new Vector2(3f, -10f), 0f);
+        sim.Machines.Attach(combine, "header", sim.Machines.Spawn("header_corn_6", field.Shape.Min + new Vector2(3f, -8f), 0f));
+        var helper = sim.HireHelper(combine, field);
+        for (var s = 0f; s < 600f && !helper.Finished; s += Dt) sim.Tick(Dt);
+        Assert.True(helper.Finished && !helper.Stopped, helper.StopReason);
+        var cells = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1);
+        var standing = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1 && sim.World.Layers.Crop[i] != 0);
+        Assert.True(standing < cells * 0.03f, $"{standing * 100f / cells:F1}% left standing");
     }
 
     [Fact]

@@ -247,6 +247,8 @@ public sealed class FieldWorkController : IVehicleController
 {
     /// <summary>Seconds of travel to lower in advance (implements take ~0.6 s to reach working depth).</summary>
     private const float LowerLeadSeconds = 0.65f;
+    /// <summary>Meters of straight lane before a front work area reaches the field, to line up and lower it.</summary>
+    private const float RunIn = 2.5f;
     private const float TurnSpeedKmh = 7f;
     private readonly List<Machine> _tools;
     private readonly float _workSpeedKmh;
@@ -277,19 +279,24 @@ public sealed class FieldWorkController : IVehicleController
         if (_tools.Count == 0) throw new InvalidOperationException($"{vehicle.Def.Name} has no implement to work with");
 
         var width = _tools.Min(t => t.Def.WorkArea!.Width) * 0.97f; // slight overlap, no stripes
-        // How far the rearmost work area trails behind the vehicle's reference point.
-        var reach = _tools.Max(t =>
-        {
-            var wa = t.Def.WorkArea!;
-            var rear = t.LocalToWorld(wa.X, wa.Z - wa.Length * 0.5f);
-            return -MathUtil.WorldToLocal(vehicle.Position, vehicle.Heading, rear).Y;
-        });
+        // How far the rearmost work area trails behind the vehicle's reference point, and the frontmost reaches ahead.
+        var reach = _tools.Max(t => -Along(vehicle, t, -0.5f));
+        var ahead = _tools.Max(t => Along(vehicle, t, 0.5f));
         var mot = vehicle.Def.Motorized ?? throw new InvalidOperationException("Helpers drive motorized vehicles");
         var minR = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
-        Margin = margin ?? MathF.Max(0f, reach) + 0.8f;
+        // Past the field edge the rearmost work area clears the field before the turn, and after it the vehicle is
+        // lined up in time to lower a front one (a combine's header) before it reaches the field.
+        Margin = margin ?? MathF.Max(MathF.Max(0f, reach) + 0.8f, ahead + RunIn);
         _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.Def.WorkArea!.MaxWorkSpeedKmh) * 0.9f;
         Path = FieldPlanner.Lanes(field, width, minR, Margin, plannedFrom, maxLanes);
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Work);
+    }
+
+    /// <summary>How far ahead of the vehicle's reference point the front (0.5) or rear (-0.5) edge of a tool's work area is.</summary>
+    private static float Along(Machine vehicle, Machine tool, float edge)
+    {
+        var wa = tool.Def.WorkArea!;
+        return MathUtil.WorldToLocal(vehicle.Position, vehicle.Heading, tool.LocalToWorld(wa.X, wa.Z + wa.Length * edge)).Y;
     }
 
     public Machine Vehicle { get; }
