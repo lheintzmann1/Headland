@@ -68,7 +68,7 @@ public partial class ScenarioRunner : Node
         // --- Harvest three lanes of ripe wheat.
         Sim.Player.Enter(combine);
         Ms.Teleport(combine, new NVec2(f2.X + 3f, f2.Z - 8f), 0f);
-        var helper = Hire(combine, new FieldInfo { Id = f2.Id, X = f2.X, Z = f2.Z, W = 18f, H = f2.H }, maxLanes: 3);
+        var helper = Sim.HireHelper(combine, new FieldInfo { Id = f2.Id, X = f2.X, Z = f2.Z, W = 18f, H = f2.H }, maxLanes: 3);
         Game.FocusOverride = () => combine.Footprint.Center;
         Game.Camera.Zoom = 34f;
         Game.SimSubsteps = 4;
@@ -119,7 +119,7 @@ public partial class ScenarioRunner : Node
         var strip = new FieldInfo { Id = f1.Id, X = f1.X, Z = f1.Z, W = 15f, H = f1.H };
         Sim.Player.Enter(t125);
         Ms.Teleport(t125, new NVec2(f1.X + 1.5f, f1.Z - 8f), 0f);
-        helper = Hire(t125, strip, maxLanes: 5);
+        helper = Sim.HireHelper(t125, strip, maxLanes: 5);
         Game.FocusOverride = () => t125.Footprint.Center;
         Game.Camera.Zoom = 40f;
         Game.SimSubsteps = 6;
@@ -142,7 +142,7 @@ public partial class ScenarioRunner : Node
         if (!Ms.Attach(t125, "drawbar", seeder)) throw new InvalidOperationException("could not attach the seeder");
         seeder.SelectedCrop = Sim.Content.CropIndex("canola");
         var seed = seeder.Unit("seed")!.Level;
-        helper = Hire(t125, strip, maxLanes: 5);
+        helper = Sim.HireHelper(t125, strip, maxLanes: 5);
         Game.FocusOverride = () => t125.Footprint.Center;
         Game.Camera.Zoom = 40f;
         Game.SimSubsteps = 6;
@@ -192,13 +192,6 @@ public partial class ScenarioRunner : Node
     // ------------------------------------------------------------------ Helpers
 
     private Machine Find(string defId) => Ms.All.First(m => m.Def.Id == defId);
-
-    private static FieldWorkController Hire(Machine v, FieldInfo area, int maxLanes)
-    {
-        var helper = new FieldWorkController(v, area, maxLanes: maxLanes);
-        v.Controller = helper;
-        return helper;
-    }
 
     /// <summary>Cultivated cells within 20 m of a field rectangle but outside it.</summary>
     private int OutsideCells(FieldInfo f)

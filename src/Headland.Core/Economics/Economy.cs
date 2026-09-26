@@ -8,9 +8,6 @@ public sealed class Economy(ContentDatabase content, float startMoney)
     public float TotalIncome { get; private set; }
     public float TotalExpenses { get; private set; }
 
-    /// <summary>Units sold per fill type (statistics).</summary>
-    public Dictionary<string, float> Sold { get; } = new();
-
     public float Price(string fillType, int month)
     {
         var def = content.FillTypes[fillType];
@@ -23,7 +20,6 @@ public sealed class Economy(ContentDatabase content, float startMoney)
         var income = amount * Price(fillType, month);
         Money += income;
         TotalIncome += income;
-        Sold[fillType] = Sold.GetValueOrDefault(fillType) + amount;
         return income;
     }
 

@@ -1,11 +1,12 @@
 using System.Numerics;
+using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.World;
 
 namespace Headland.Core;
 
 /// <summary>The farmer avatar: walks, enters vehicles, and is the source of manual vehicle input.</summary>
-public sealed class PlayerCharacter
+public sealed class PlayerCharacter(EventBus events)
 {
     public const float Radius = 0.3f;
     public const float WalkSpeed = 1.9f;
@@ -126,6 +127,7 @@ public sealed class PlayerCharacter
         Controls.Input = default;
         m.Controller ??= Controls;
         Vehicle = m;
+        events.Publish(new VehicleEntered(m));
         return true;
     }
 
@@ -147,6 +149,7 @@ public sealed class PlayerCharacter
         Vehicle = null;
         Position = spot;
         Velocity = Vector2.Zero;
+        events.Publish(new VehicleExited(m));
     }
 
     private static bool IsFree(Simulation sim, Vector2 p)

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Events;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
@@ -11,7 +12,7 @@ public sealed class MachineSystem
     private readonly Simulation _sim;
     private readonly List<int> _cells = [];
     private readonly List<(Machine m, Vector2 pos, float heading)> _saved = [];
-    private readonly Dictionary<int, (string fillType, float amount, float income)> _sales = new();
+    private readonly Dictionary<int, (string sellPoint, string fillType, float amount, float income)> _sales = new();
     private int _nextId = 1;
 
     public MachineSystem(Simulation sim) => _sim = sim;
@@ -20,6 +21,7 @@ public sealed class MachineSystem
 
     private WorldMap World => _sim.World;
     private ContentDatabase Content => _sim.Content;
+    private EventBus Events => _sim.Events;
 
     public Machine Spawn(string defId, Vector2 position, float heading)
     {
@@ -42,6 +44,14 @@ public sealed class MachineSystem
     // ------------------------------------------------------------------ Hitching
 
     public bool Attach(Machine parent, string jointId, Machine child)
+    {
+        if (!Hitch(parent, jointId, child)) return false;
+        Events.Publish(new ImplementAttached(parent, jointId, child));
+        return true;
+    }
+
+    /// <summary>Attaches without publishing an event: machines placed by the map or restored from a save.</summary>
+    internal bool Hitch(Machine parent, string jointId, Machine child)
     {
         var joint = parent.Joint(jointId);
         if (joint == null || child.Def.Attacher == null || child.Def.Attacher.Type != joint.Type) return false;
@@ -66,8 +76,9 @@ public sealed class MachineSystem
     public void Detach(Machine child)
     {
         var parent = child.Parent;
-        if (parent == null || child.ParentJoint == null) return;
-        parent.Attached.Remove(child.ParentJoint);
+        var jointId = child.ParentJoint;
+        if (parent == null || jointId == null) return;
+        parent.Attached.Remove(jointId);
         child.Parent = null;
         child.ParentJoint = null;
         child.Speed = 0f;
@@ -75,6 +86,7 @@ public sealed class MachineSystem
         child.Tipping = false;
         child.Lowered = false;
         child.HasWorkPose = false;
+        Events.Publish(new ImplementDetached(parent, jointId, child));
     }
 
     /// <summary>Nearest free joint in the vehicle's chain that an unattached implement can hook onto.</summary>
@@ -110,15 +122,10 @@ public sealed class MachineSystem
         if (FindAttachable(vehicle) is var (p, j, c))
         {
             Attach(p, j.Id, c);
-            _sim.Notifications.Post($"Attached {c.Def.Name}", Severity.Good);
             return;
         }
         var leaf = vehicle.Chain().LastOrDefault(m => m != vehicle);
-        if (leaf != null)
-        {
-            Detach(leaf);
-            _sim.Notifications.Post($"Detached {leaf.Def.Name}");
-        }
+        if (leaf != null) Detach(leaf);
         else _sim.Notifications.Post("Nothing to attach nearby: back up to an implement's hitch");
     }
 
@@ -216,7 +223,7 @@ public sealed class MachineSystem
                 if (amount > 0.5f)
                 {
                     bought = true;
-                    _sim.Notifications.Post($"Bought {amount:N0} {Content.FillTypes[ft].Unit} {Content.FillTypes[ft].Name} for ${amount * price:N0}", Severity.Good);
+                    Events.Publish(new FillBought(m, shop.Id, ft, amount, amount * price));
                 }
             }
         }
@@ -452,15 +459,25 @@ public sealed class MachineSystem
 
             _cells.Clear();
             Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
+            var fieldId = FieldIdAt(center);
             var changed = wa.Type switch
             {
                 "cultivator" => Cultivate(m),
                 "seeder" => Sow(m),
-                "harvester" => Harvest(m, wa),
+                "harvester" => Harvest(m, wa, fieldId),
                 _ => 0,
             };
-            m.WorkedHa += changed * WorldMap.CellArea / 10000f;
+            if (changed == 0) continue;
+            var ha = changed * WorldMap.CellArea / 10000f;
+            m.WorkedHa += ha;
+            Events.Publish(new FieldWorked(m, wa.Type, fieldId, ha));
         }
+    }
+
+    private int FieldIdAt(Vector2 p)
+    {
+        var (cx, cz) = World.WorldToCell(p);
+        return World.InBounds(cx, cz) ? World.Layers.FieldId[World.CellIndex(cx, cz)] : 0;
     }
 
     private int Cultivate(Machine m)
@@ -499,12 +516,14 @@ public sealed class MachineSystem
         return n;
     }
 
-    private int Harvest(Machine header, WorkAreaDef wa)
+    private int Harvest(Machine header, WorkAreaDef wa, int fieldId)
     {
         var combine = header.Parent!;
         var tank = combine.Unit(combine.Def.HarvestTank)!;
         var L = World.Layers;
         var n = 0;
+        CropDef? threshed = null;
+        var threshedAmount = 0f;
         header.Status = null;
         foreach (var i in _cells)
         {
@@ -534,9 +553,13 @@ public sealed class MachineSystem
                 break;
             }
             tank.Add(def.FillType, liters);
+            threshed ??= def;
+            threshedAmount += liters;
             WorkOps.ClearToStubble(World, i, WorldGen.AngleToByte(header.Heading));
             n++;
         }
+        // The tank takes one fill type at a time, so one tick threshes one crop.
+        if (threshed != null) Events.Publish(new CropHarvested(combine, threshed.Id, threshed.FillType, threshedAmount, fieldId));
         return n;
     }
 
@@ -585,14 +608,13 @@ public sealed class MachineSystem
         var ft = unit.FillType!;
         var amount = unit.Remove(m.Def.Tipper.RatePerSecond * dt);
         var income = _sim.Economy.Sell(ft, amount, _sim.Clock.Month);
-        var prev = _sales.GetValueOrDefault(m.Id, (fillType: ft, amount: 0f, income: 0f));
-        _sales[m.Id] = (ft, prev.amount + amount, prev.income + income);
+        var prev = _sales.GetValueOrDefault(m.Id, (sellPoint: sell.Id, fillType: ft, amount: 0f, income: 0f));
+        _sales[m.Id] = (sell.Id, ft, prev.amount + amount, prev.income + income);
     }
 
     private void FlushSale(Machine m)
     {
         if (!_sales.Remove(m.Id, out var sale) || sale.amount < 1f) return;
-        var ft = Content.FillTypes[sale.fillType];
-        _sim.Notifications.Post($"Sold {sale.amount:N0} {ft.Unit} {ft.Name} for ${sale.income:N0}", Severity.Good, 0);
+        Events.Publish(new FillSold(m, sale.sellPoint, sale.fillType, sale.amount, sale.income));
     }
 }

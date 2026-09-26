@@ -35,6 +35,8 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Language priority: C# first; GDShader for rendering; C++ (GDExtension) only for profiled hot paths.
 - Game logic goes in Core with tests; presentation code only mirrors Core state. Tune gameplay in `game/data/*.json`
   (comments allowed); `ContentDatabase.Validate` checks cross-references and runs at startup and in tests.
+- Systems announce what happens as typed records on `Simulation.Events` (`Events/GameEvents.cs`); notifications and
+  `Statistics` subscribe there rather than being called from the systems.
 - Coordinates: Core uses `System.Numerics.Vector2` on the ground plane (X = east, Y = Godot Z = south).
   Machine local space = glTF model space: **+Z forward, +X left**, origin at the non-steered axle.
   Heading θ ⇒ forward (sin θ, cos θ) = Godot `rotation.y`.

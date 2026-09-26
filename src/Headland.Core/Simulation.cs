@@ -3,6 +3,7 @@ using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Crops;
 using Headland.Core.Economics;
+using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Time;
 using Headland.Core.Weather;
@@ -20,6 +21,7 @@ public sealed class Simulation
 
     private long _pendingHourFrom;
     private int _pendingHours;
+    private WeatherCondition _condition;
 
     private Simulation(ContentDatabase content)
     {
@@ -32,10 +34,15 @@ public sealed class Simulation
         Crops = new CropSystem(content, World, Calendar);
         Economy = new Economy(content, g.StartMoney);
         Machines = new MachineSystem(this);
-        Player = new PlayerCharacter { Position = new Vector2(content.Map.PlayerX, content.Map.PlayerZ) };
+        Player = new PlayerCharacter(Events) { Position = new Vector2(content.Map.PlayerX, content.Map.PlayerZ) };
+        Statistics = new Statistics(Events);
+        Notifications.Follow(Events, content);
         Weather.Update(Clock.DayIndex, Clock.HourOfDay);
+        _condition = Weather.Condition;
     }
 
+    /// <summary>Everything that happens in the game is published here (see <c>GameEvents.cs</c>).</summary>
+    public EventBus Events { get; } = new();
     public ContentDatabase Content { get; }
     public Calendar Calendar { get; }
     public GameClock Clock { get; }
@@ -45,6 +52,7 @@ public sealed class Simulation
     public Economy Economy { get; }
     public MachineSystem Machines { get; }
     public PlayerCharacter Player { get; }
+    public Statistics Statistics { get; }
     public Notifications Notifications { get; } = new();
 
     public double RealTime { get; private set; }
@@ -68,7 +76,7 @@ public sealed class Simulation
             var parent = spawned[idx];
             var jointId = sp.Joint ?? parent.Def.AttacherJoints
                 .FirstOrDefault(j => j.Type == m.Def.Attacher?.Type && !parent.Attached.ContainsKey(j.Id))?.Id;
-            if (jointId == null || !Machines.Attach(parent, jointId, m))
+            if (jointId == null || !Machines.Hitch(parent, jointId, m))
                 throw new ContentException($"Map machine '{sp.Def}' cannot attach to '{parent.Def.Id}'");
         }
     }
@@ -83,13 +91,12 @@ public sealed class Simulation
         var crossed = Clock.Advance(dt);
         QueueHours(before, crossed);
         RunPendingHours(MaxHoursPerTick);
-        Weather.Update(Clock.DayIndex, Clock.HourOfDay);
+        UpdateWeather();
 
         Machines.Update(dt);
         foreach (var m in Machines.All)
             if (m.Controller is FieldWorkController { Finished: true } w)
-                DismissHelper(m, w.Stopped ? $"Helper stopped on {w.Field.Label}: {w.StopReason}" : $"Helper finished {w.Field.Label}",
-                    w.Stopped ? Severity.Warning : Severity.Good);
+                DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
         Player.Update(this, dt);
         Notifications.Expire(8.0);
     }
@@ -101,7 +108,15 @@ public sealed class Simulation
         var crossed = Clock.Skip(hours * 3600.0);
         QueueHours(before, crossed);
         RunPendingHours(int.MaxValue);
+        UpdateWeather();
+    }
+
+    private void UpdateWeather()
+    {
         Weather.Update(Clock.DayIndex, Clock.HourOfDay);
+        if (Weather.Condition == _condition) return;
+        Events.Publish(new WeatherChanged(_condition, Weather.Condition));
+        _condition = Weather.Condition;
     }
 
     private void QueueHours(long lastProcessed, int crossed)
@@ -116,17 +131,29 @@ public sealed class Simulation
         var n = Math.Min(max, _pendingHours);
         if (n <= 0) return;
         var sw = Stopwatch.StartNew();
+        var from = _pendingHourFrom;
+        _pendingHourFrom += n;
+        _pendingHours -= n;
         for (var k = 0; k < n; k++)
         {
-            var hour = _pendingHourFrom + k;
+            var hour = from + k;
             var day = (int)(hour / 24);
             Weather.Update(day, hour % 24 + 0.5f);
             Weather.TickHour();
             Crops.TickHour(Weather, day, hour);
+            PublishTime(hour);
         }
-        _pendingHourFrom += n;
-        _pendingHours -= n;
         LastHourTickMs = sw.Elapsed.TotalMilliseconds / n;
+    }
+
+    private void PublishTime(long hour)
+    {
+        Events.Publish(new HourStarted(hour));
+        if (hour % 24 != 0) return;
+        var day = (int)(hour / 24);
+        var date = Calendar.DateOfDay(day);
+        Events.Publish(new DayStarted(day, date));
+        if (date.Day == 1) Events.Publish(new MonthStarted(date.Year, date.Month));
     }
 
     // ---------------------------------------------------------------- Player commands
@@ -170,7 +197,7 @@ public sealed class Simulation
     {
         if (v.Controller is FieldWorkController)
         {
-            DismissHelper(v, "Helper dismissed");
+            DismissHelper(v, HelperEnd.Dismissed);
             return;
         }
         var field = FieldNear(v);
@@ -184,16 +211,25 @@ public sealed class Simulation
             Notifications.Post("Attach an implement first", Severity.Warning);
             return;
         }
-        v.Controller = new FieldWorkController(v, field);
-        Notifications.Post($"Helper started on {field.Label} ({field.AreaHa:0.00} ha)", Severity.Good);
+        HireHelper(v, field);
     });
 
-    private void DismissHelper(Machine v, string message, Severity severity = Severity.Info)
+    /// <summary>Puts a helper in the vehicle to work <paramref name="field"/> (optionally only its first lanes).</summary>
+    public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null)
     {
+        var helper = new FieldWorkController(v, field, maxLanes: maxLanes);
+        v.Controller = helper;
+        Events.Publish(new HelperHired(v, field));
+        return helper;
+    }
+
+    private void DismissHelper(Machine v, HelperEnd end)
+    {
+        var helper = (FieldWorkController)v.Controller!;
         foreach (var m in v.Chain())
             if (m.Def.WorkArea != null) m.Lowered = false;
         v.Controller = Player.Vehicle == v ? Player.Controls : null;
-        Notifications.Post(message, severity);
+        Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason));
     }
 
     /// <summary>The field under the vehicle or its implements, else the nearest field within 25 m.</summary>
