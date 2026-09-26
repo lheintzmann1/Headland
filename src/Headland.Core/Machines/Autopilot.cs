@@ -352,17 +352,14 @@ public sealed class FieldWorkController : IVehicleController
             var aligned = onLane && Vector2.Dot(fwd, laneDir) > 0.94f;
             var center = t.LocalToWorld(wa.X, wa.Z);
             var side = MathUtil.Left(t.Heading) * (wa.Width * 0.45f);
+            // Lowered just before the work area's leading edge reaches the field, lifted as soon as the work area
+            // leaves it (or the implement swings off the lane).
+            var ahead = center + fwd * (wa.Length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds);
             if (t.Lowered)
             {
-                // Lift as soon as the work area leaves the field (or the implement swings off the lane).
-                if (!aligned || !Touches(center, side)) t.Lowered = false;
+                if (!aligned || !Touches(center, side) && !Touches(ahead, side)) t.Lowered = false;
             }
-            else
-            {
-                // Lower just before the work area's leading edge reaches the field.
-                var lead = wa.Length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds;
-                if (aligned && Touches(center + fwd * lead, side)) t.Lowered = true;
-            }
+            else if (aligned && Touches(ahead, side)) t.Lowered = true;
         }
         return input;
     }

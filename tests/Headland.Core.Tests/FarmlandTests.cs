@@ -150,8 +150,7 @@ public class FarmlandTests
             }
             else if (d < 20f && cultivated) outsideDone++;
         }
-        // Like on rectangles, a lane entered straight out of a turn starts a little late.
-        Assert.True(insideDone > inside * 0.95f, $"coverage {insideDone * 100f / inside:F1}%");
+        Assert.True(insideDone > inside * 0.99f, $"coverage {insideDone * 100f / inside:F1}%");
         Assert.Equal(0, outsideDone);
     }
 

@@ -342,7 +342,7 @@ public class MachineTests
         Assert.True(helper.Finished && !helper.Stopped, helper.StopReason);
         var cells = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1);
         var standing = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1 && sim.World.Layers.Crop[i] != 0);
-        Assert.True(standing < cells * 0.03f, $"{standing * 100f / cells:F1}% left standing");
+        Assert.True(standing < cells * 0.01f, $"{standing * 100f / cells:F1}% left standing");
     }
 
     [Fact]
@@ -367,7 +367,8 @@ public class MachineTests
             }
             else if (distance < 20f && cultivated) outsideDone++;
         }
-        Assert.True(insideDone > inside * 0.95f, $"coverage {insideDone * 100f / inside:F1}%");
+        // Lanes start as soon as the field does: lowered ahead of it, the implement stays down.
+        Assert.True(insideDone > inside * 0.99f, $"coverage {insideDone * 100f / inside:F1}%");
         Assert.True(outsideDone < inside * 0.02f, $"worked outside the field: {outsideDone * 100f / inside:F1}% of its area");
     }
 
