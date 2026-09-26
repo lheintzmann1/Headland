@@ -535,8 +535,23 @@ public sealed class PoiSystem
                 cycles++;
             }
             Spend(poi.FarmId, a.RunningCost);
-            if (cycles == 0) continue;
-            foreach (var output in a.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
+            if (cycles > 0)
+                foreach (var output in a.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
+            SellOutputs(poi, a, month);
+        }
+    }
+
+    /// <summary>Sells the stored outputs whose mode is "sell", at the market price times the action's factor.</summary>
+    private void SellOutputs(Poi poi, PoiActionDef process, int month)
+    {
+        foreach (var output in process.Outputs.Where(o => o.Mode == "sell"))
+        {
+            var ft = output.FillType;
+            var amount = poi.Storage!.Remove(ft, poi.Storage.Level(ft));
+            if (amount < 0.001f) continue;
+            var income = amount * Economy.Price(ft, month) * process.PriceFactors.GetValueOrDefault(ft, process.PriceFactor);
+            Earn(poi.FarmId, income);
+            _sim.Events.Publish(new ProductionSold(poi, ft, amount, income));
         }
     }
 

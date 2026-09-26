@@ -13,6 +13,10 @@
   // action's "demand" lowers its price as loads come in and brings it back day by day, and sometimes puts a fill
   // type in high demand: { "drop": 0.04 per 100,000 units, "floor": 0.7, "recovery": 0.02 a day,
   // "highChance": 0.03 a day, "highFactor": [1.2, 1.5], "highDays": [1, 3] } (the defaults).
+  // "process" (no trigger) takes its inputs from storage every "cycleHours" and puts its outputs there, costing its
+  // owner "runningCost" an hour. Outputs with "mode": "sell" are sold every hour at the market price (times
+  // priceFactor); the rest ("store") wait for the owner's trailers at a load trigger. A sale of a fill type the
+  // POI stores goes into its storage, so the mill below mills what farmers sell it and stops buying when full.
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },
@@ -35,5 +39,21 @@
     ],
     "actions": [
       { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 }
+    ] },
+  { "id": "flour_mill", "name": "Flour Mill", "icon": "factory", "w": 36, "d": 40,
+    "parts": [
+      { "shape": "shed", "z": -10, "w": 18, "d": 12, "h": 12, "color": "#b8ad9a" },
+      { "shape": "silo", "x": -12, "z": -4, "w": 7, "d": 7, "h": 16, "color": "#a3a7a8" },
+      { "shape": "silo", "x": 12,  "z": -4, "w": 7, "d": 7, "h": 16, "color": "#a3a7a8" }
+    ],
+    "triggers": [
+      { "id": "pit", "type": "unload", "z": 10, "w": 24, "d": 14 }
+    ],
+    "storage": { "fillTypes": ["wheat", "flour"], "capacities": { "wheat": 60000, "flour": 20000 } },
+    "actions": [
+      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat"], "priceFactor": 1.1, "minAmount": 1000, "openHours": [6, 20] },
+      { "type": "process", "cycleHours": 1,
+        "inputs": [ { "fillType": "wheat", "amount": 1000 } ],
+        "outputs": [ { "fillType": "flour", "amount": 580, "mode": "sell" } ] }
     ] }
 ]

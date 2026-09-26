@@ -69,7 +69,7 @@ conditions. Money is just another input or output:
       conditions later.
 - [x] Prices: per-POI factors on top of the monthly curves in `filltypes.json`, demand that drops as you
       sell and recovers, occasional high-demand events.
-- [ ] Production output goes to POI storage: sold automatically or loaded into a trailer. Pallets and
+- [x] Production output goes to POI storage: sold automatically or loaded into a trailer. Pallets and
       bales later.
 - [x] Farm silo as a player-owned storage POI.
 - [x] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;

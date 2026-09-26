@@ -10,6 +10,7 @@ public sealed class Statistics
         events.Subscribe<FieldWorked>(e => Add(HectaresWorked, e.Work, e.Hectares));
         events.Subscribe<CropHarvested>(e => Add(Harvested, e.FillType, e.Amount));
         events.Subscribe<FillSold>(e => Add(Sold, e.FillType, e.Amount));
+        events.Subscribe<ProductionSold>(e => Add(Sold, e.FillType, e.Amount));
         events.Subscribe<FillBought>(e => Add(Bought, e.FillType, e.Amount));
         events.Subscribe<HelperHired>(_ => HelpersHired++);
         events.Subscribe<DayStarted>(_ => DaysPlayed++);

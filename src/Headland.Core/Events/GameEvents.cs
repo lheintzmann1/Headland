@@ -56,6 +56,9 @@ public sealed record HighDemandEnded(Poi Poi, string FillType) : IGameEvent;
 /// <summary>A POI's processing made this much of an output during one hour.</summary>
 public sealed record PoiProduced(Poi Poi, string FillType, float Amount) : IGameEvent;
 
+/// <summary>An hour's output sold for the POI's owner (outputs whose mode is "sell").</summary>
+public sealed record ProductionSold(Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
+
 // ---- Services
 
 public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGameEvent;

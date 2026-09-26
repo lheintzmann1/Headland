@@ -25,18 +25,19 @@ public class PoiActionTests
         Actions = [new PoiActionDef { Type = "store", Trigger = "pit" }],
     };
 
-    /// <summary>A press turning 100 L of canola into 40 L of diesel every half hour, for $10 an hour.</summary>
-    private static PoiDef Press(float cycleHours = 0.5f) => new()
+    /// <summary>A press turning 100 L of canola into 40 L of <paramref name="output"/> every half hour, for $10 an hour.</summary>
+    private static PoiDef Press(float cycleHours = 0.5f, string output = "diesel", string mode = "store") => new()
     {
         Id = "test_press", Name = "Press",
-        Storage = new PoiStorageDef { FillTypes = ["canola", "diesel"], Capacity = 1000 },
+        Triggers = [new PoiTriggerDef { Id = "spout", Type = "load", Z = 10, W = 20, D = 12 }],
+        Storage = new PoiStorageDef { FillTypes = ["canola", output], Capacity = 1000 },
         Actions =
         [
             new PoiActionDef
             {
-                Type = "process", CycleHours = cycleHours, RunningCost = 10,
+                Type = "process", CycleHours = cycleHours, RunningCost = 10, PriceFactor = 0.5f,
                 Inputs = [new FillAmountDef { FillType = "canola", Amount = 100 }],
-                Outputs = [new FillAmountDef { FillType = "diesel", Amount = 40 }],
+                Outputs = [new ProcessOutputDef { FillType = output, Amount = 40, Mode = mode }],
             },
         ],
     };
@@ -86,6 +87,68 @@ public class PoiActionTests
         sim.SkipHours(4);
         Assert.Equal((0f, 400f), (press.Storage.Level("canola"), press.Storage.Level("diesel")));
         Assert.Equal(money - 50f, sim.Economy.Money);
+    }
+
+    [Fact]
+    public void SoldOutputsPayTheOwnerEveryHour()
+    {
+        var sim = SimWith([Press(mode: "sell")], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
+        var sold = Record<ProductionSold>(sim);
+        var press = sim.World.PoiById("press")!;
+        press.Storage!.Add("canola", 1000f);
+        var money = sim.Economy.Money;
+
+        sim.SkipHours(2);
+        var income = 80f * sim.Economy.Price("diesel", sim.Clock.Month) * 0.5f;
+        Assert.Equal(0f, press.Storage.Level("diesel"));
+        Assert.Equal([("diesel", 80f, income), ("diesel", 80f, income)], sold.Select(e => (e.FillType, e.Amount, e.Income)));
+        Assert.Equal(money - 20f + 2f * income, sim.Economy.Money, 1);
+        Assert.Equal(160f, sim.Statistics.Sold["diesel"]);
+    }
+
+    [Fact]
+    public void StoredOutputsWaitForTheOwnersTrailer()
+    {
+        var sim = SimWith([Press(output: "wheat")], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
+        var press = sim.World.PoiById("press")!;
+        press.Storage!.Add("canola", 1000f);
+        sim.SkipHours(2);
+        Assert.Equal(160f, press.Storage.Level("wheat"));
+
+        var (t, trailer) = TrailerAt(sim, press.Trigger("spout")!.Area.Center, "wheat", 0f);
+        sim.Player.Enter(t);
+        sim.CommandUse();
+        Run(sim, 2f);
+        Assert.Equal(160f, trailer.Unit("main")!.Level, 1);
+        Assert.Equal(0f, press.Storage.Level("wheat"), 1);
+    }
+
+    [Fact]
+    public void TheMillBuysWheatAndMillsItIntoFlour()
+    {
+        var sim = TestContent.NewSim();
+        var mill = sim.World.PoiById("mill")!;
+        var produced = Record<PoiProduced>(sim);
+        var (t, trailer) = TrailerAt(sim, mill.Trigger("pit")!.Area.Center, "wheat", 16_000f);
+        var money = sim.Economy.Money;
+        sim.Player.Enter(t);
+        sim.CommandUnload();
+        Run(sim, 45f);
+        Assert.True(trailer.Unit("main")!.IsEmpty);
+        Assert.Equal(16_000f, mill.Storage!.Level("wheat"), 1);
+        Assert.Equal(1.1f * SaleIncome(sim, "wheat", 16_000f), sim.Economy.Money - money, 0);
+
+        // It mills a tonne an hour and ships the flour; the farmer earns nothing from that.
+        money = sim.Economy.Money;
+        sim.SkipHours(3);
+        Assert.Equal(13_000f, mill.Storage.Level("wheat"), 1);
+        Assert.Equal((0f, 3f * 580f), (mill.Storage.Level("flour"), produced.Sum(e => e.Amount)));
+        Assert.Equal(money, sim.Economy.Money);
+
+        mill.Storage.Add("wheat", 60_000f);
+        trailer.Unit("main")!.Add("wheat", 5000f);
+        sim.CommandUnload();
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Flour Mill has no room for Wheat");
     }
 
     [Fact]

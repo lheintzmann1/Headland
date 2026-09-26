@@ -406,11 +406,18 @@ public sealed class DemandDef
     public int[] HighDays { get; set; } = [1, 3];
 }
 
-/// <summary>An amount of a fill type (processing inputs and outputs).</summary>
-public sealed class FillAmountDef
+/// <summary>An amount of a fill type (processing inputs).</summary>
+public class FillAmountDef
 {
     public string FillType { get; set; } = "";
     public float Amount { get; set; }
+}
+
+/// <summary>What a processing cycle makes. It goes into the POI's storage first.</summary>
+public sealed class ProcessOutputDef : FillAmountDef
+{
+    /// <summary>"store": kept for the owner's trailers at a load trigger. "sell": sold every hour, for the owner.</summary>
+    public string Mode { get; set; } = "store";
 }
 
 /// <summary>An area of a POI where machines do something: unload, load, fill up, get washed or repaired, get delivered.</summary>
@@ -453,11 +460,12 @@ public sealed class PoiActionDef
     /// <summary>Smallest load it takes (sell, store) or amount it sells (buy, refuel).</summary>
     public float MinAmount { get; set; }
     /// <summary>
-    /// Multiplies the price: for sell, buy and refuel the market price (the fill type's monthly curve), for repair
-    /// the standard price (1% of the machine's price for each 100% of wear).
+    /// Multiplies the price: for sell, buy and refuel the market price (the fill type's monthly curve), for process
+    /// the market price of the outputs it sells, for repair the standard price (1% of the machine's price for each
+    /// 100% of wear).
     /// </summary>
     public float PriceFactor { get; set; } = 1f;
-    /// <summary>Sell, buy, refuel: fill types whose factor differs from <see cref="PriceFactor"/>.</summary>
+    /// <summary>Sell, buy, refuel, process: fill types whose factor differs from <see cref="PriceFactor"/>.</summary>
     public Dictionary<string, float> PriceFactors { get; set; } = new();
     /// <summary>Sell: how prices react to what farmers sell here.</summary>
     public DemandDef Demand { get; set; } = new();
@@ -465,7 +473,7 @@ public sealed class PoiActionDef
     public float Price { get; set; }
     /// <summary>Process: what one cycle takes from storage and puts into it.</summary>
     public FillAmountDef[] Inputs { get; set; } = [];
-    public FillAmountDef[] Outputs { get; set; } = [];
+    public ProcessOutputDef[] Outputs { get; set; } = [];
     /// <summary>Process: game hours per cycle (below 1 for several cycles an hour).</summary>
     public float CycleHours { get; set; } = 1f;
     /// <summary>Process: what the owner pays for each hour it runs.</summary>

@@ -86,7 +86,11 @@ public class PoiTests
                 new PoiActionDef { Type = "buy", Trigger = "gate", FillTypes = ["gold"] },
                 new PoiActionDef { Type = "juggle", Trigger = "pit" },
                 new PoiActionDef { Type = "store", Trigger = "pit", FillTypes = ["wheat"], OpenHours = [8], Months = [13] },
-                new PoiActionDef { Type = "process", Trigger = "pit", Inputs = [new FillAmountDef { FillType = "wheat", Amount = 0 }] },
+                new PoiActionDef
+                {
+                    Type = "process", Trigger = "pit", Inputs = [new FillAmountDef { FillType = "wheat", Amount = 0 }],
+                    Outputs = [new ProcessOutputDef { FillType = "wheat", Amount = 1, Mode = "burn" }],
+                },
             ],
         };
         var errors = db.Validate();
@@ -101,7 +105,7 @@ public class PoiTests
         Assert.Contains("poi 'bad' store action: openHours needs [from, to] hours, 0..24 and different", errors);
         Assert.Contains("poi 'bad' store action: months must be 1..12", errors);
         Assert.Contains("poi 'bad' process action: works without a trigger", errors);
-        Assert.Contains("poi 'bad' process action: needs inputs and outputs", errors);
+        Assert.Contains("poi 'bad' process action: output 'wheat' mode must be store or sell", errors);
         Assert.Contains("poi 'bad' process action: amounts must be > 0", errors);
     }
 
