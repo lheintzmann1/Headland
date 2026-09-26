@@ -37,7 +37,8 @@ Built with **Godot 4.7** and **C#**.
 
 ## Controls
 
-Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. Press F1 in game for the full list.
+Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. Press F1 in game for the full list;
+Esc closes screens. Keys can be changed in the settings file (see below).
 
 | Key | Action |
 |---|---|
@@ -56,6 +57,19 @@ Keys follow their position on the keyboard, so AZERTY players get ZQSD for movem
 | 1 to 6, P | Time speed (×1 to ×240), pause |
 | F9 | Sleep until the next morning |
 | F5 / F8 | Quicksave, quickload |
+
+## Settings
+
+Until the settings screen exists, edit `settings.cfg` in Godot's user data folder (on Linux
+`~/.local/share/godot/app_userdata/Headland/`). The game writes it with the defaults on first launch and reads it at
+startup; a missing or invalid value falls back to its default.
+
+| Section | Keys |
+|---|---|
+| `[graphics]` | `window_mode` (windowed, maximized, fullscreen, exclusive_fullscreen), `resolution`, `vsync`, `max_fps` (0 = no cap), `render_scale` (0.5–1, FSR below 1), `antialiasing` (off, fxaa, msaa2, msaa4), `shadows` (off, low, medium, high) |
+| `[audio]` | `master`, `music`, `vehicles`, `environment`, `ui`: volumes from 0 to 1 |
+| `[controls]` | One key per action, named as on a US QWERTY keyboard (`"W"`, `"Shift+Tab"`): the position counts, not the letter |
+| `[gameplay]` | `autosave_minutes` (0 = off) |
 
 ## Running from source
 

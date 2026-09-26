@@ -47,6 +47,8 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Godot C#: one Node class per file (file name = class name), parameterless constructors with `init` properties
   (`new TerrainRenderer { Sim = sim }`), `FileAccess` means Godot's (global alias in `scripts/GlobalUsings.cs`).
 - Input actions use **physical keys** (AZERTY gets ZQSD automatically); labels come from `InputSetup.Label`.
+  Player overrides and other preferences live in `user://settings.cfg` (`Common/UserSettings.cs`); a new
+  setting gets a default, validation on load, and a README line.
 - UI: build controls with `UI/Widgets`, style them through `ui/theme.tres` type variations (no per-control theme
   overrides), BBCode colors from `UI/Palette`, icons as `Widgets.Icon` (Material Symbols SVGs in `assets/icons`,
   white so they can be tinted). Screens derive from `Screen` and go on the `ScreenStack` (Esc closes the top one).

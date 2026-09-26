@@ -45,7 +45,7 @@ Rules for every item:
       attach…) feeding notifications, sounds, statistics and Lua.
 - [x] **UI framework.** A `Theme` resource and a credited OFL/CC0 font, a screen stack (Esc closes),
       shared widgets; replaces the per-control styles in `Hud.cs`.
-- [ ] **User settings file** (`user://settings.cfg`): graphics, audio, controls, gameplay.
+- [x] **User settings file** (`user://settings.cfg`): graphics, audio, controls, gameplay.
 
 ## Points of interest (POIs)
 

@@ -5,7 +5,8 @@ namespace Headland.Game.Common;
 /// <summary>
 /// Registers input actions on physical key positions, so AZERTY users get ZQSD where QWERTY users get WASD.
 /// Labels shown in the HUD are translated back to the user's layout with <see cref="Label"/>.
-/// A key may carry the Shift modifier (<see cref="Shift"/>).
+/// A key may carry the Shift modifier (<see cref="Shift"/>). <see cref="Bindings"/> are the defaults; the
+/// player's own keys come from the settings file.
 /// </summary>
 public static class InputSetup
 {
@@ -48,10 +49,16 @@ public static class InputSetup
         ("screenshot", Key.F12, "Screenshot"),
     ];
 
-    public static void Register()
+    /// <summary>The key each action is registered on (after <see cref="Bindings"/>: statics initialize in order).</summary>
+    private static readonly Dictionary<string, Key> Keys = Bindings.ToDictionary(b => b.action, b => b.key);
+
+    /// <summary>Registers every action on <paramref name="keys"/> (action → physical key), defaults for the rest.</summary>
+    public static void Register(IReadOnlyDictionary<string, Key>? keys = null)
     {
-        foreach (var (action, key, _) in Bindings)
+        foreach (var (action, fallback, _) in Bindings)
         {
+            var key = keys?.GetValueOrDefault(action, fallback) ?? fallback;
+            Keys[action] = key;
             if (InputMap.HasAction(action)) InputMap.EraseAction(action);
             InputMap.AddAction(action);
             InputMap.ActionAddEvent(action, new InputEventKey { PhysicalKeycode = key & ~ShiftMask, ShiftPressed = (key & ShiftMask) != 0 });
@@ -61,12 +68,8 @@ public static class InputSetup
     /// <summary>Key label on the user's keyboard layout for an action (e.g. "Z" on AZERTY for move_forward).</summary>
     public static string Label(string action)
     {
-        foreach (var (a, key, _) in Bindings)
-        {
-            if (a != action) continue;
-            var local = DisplayServer.KeyboardGetKeycodeFromPhysical(key);
-            return OS.GetKeycodeString(local == Key.None ? key : local);
-        }
-        return "?";
+        if (!Keys.TryGetValue(action, out var key)) return "?";
+        var local = DisplayServer.KeyboardGetKeycodeFromPhysical(key);
+        return OS.GetKeycodeString(local == Key.None ? key : local);
     }
 }

@@ -24,6 +24,10 @@ namespace Headland.Game;
 /// </summary>
 public partial class GameRoot : Node3D
 {
+    /// <summary>Read once per run: loading a save reloads the scene, but not the settings.</summary>
+    private static UserSettings? _settings;
+
+    public UserSettings Settings { get; private set; } = null!;
     public Simulation Sim { get; private set; } = null!;
     public IsoCamera Camera { get; private set; } = null!;
     public Hud Hud { get; private set; } = null!;
@@ -40,9 +44,18 @@ public partial class GameRoot : Node3D
     {
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-        InputSetup.Register();
-
         var args = OS.GetCmdlineUserArgs();
+        var scenario = args.FirstOrDefault(a => a.StartsWith("--scenario="))?.Split('=', 2)[1];
+        if (_settings == null)
+        {
+            _settings = UserSettings.Load();
+            // Scenarios keep the project's window and quality, so their screenshots compare.
+            if (scenario == null) _settings.ApplyDisplay(GetViewport());
+            _settings.ApplyAudio();
+        }
+        Settings = _settings;
+        InputSetup.Register(Settings.Keys);
+
         var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1]);
         Sim = sim;
 
@@ -51,7 +64,7 @@ public partial class GameRoot : Node3D
         AddChild(new CropRenderer { Sim = Sim, Name = "Crops" });
         AddChild(new PropsRenderer { Sim = Sim, Name = "Props" });
         AddChild(new EntityRenderer { Sim = Sim, Name = "Entities" });
-        AddChild(new EnvironmentController { Sim = Sim, Name = "Environment" });
+        AddChild(new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" });
         Camera = new IsoCamera { Name = "Camera" };
         AddChild(Camera);
         Camera.SnapTo(Sim.World.OnGround(Sim.Player.Position));
@@ -59,10 +72,9 @@ public partial class GameRoot : Node3D
         AddChild(Hud);
         Screens = new ScreenStack { Name = "Screens" };
         AddChild(Screens);
-        Saves = new SaveManager { Sim = Sim, Name = "Saves" };
+        Saves = new SaveManager { Sim = Sim, AutosaveMinutes = Settings.AutosaveMinutes, Name = "Saves" };
         AddChild(Saves);
 
-        var scenario = args.FirstOrDefault(a => a.StartsWith("--scenario="))?.Split('=', 2)[1];
         if (scenario != null)
         {
             Saves.AutosaveMinutes = 0;
