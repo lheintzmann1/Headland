@@ -17,6 +17,17 @@ public sealed class GameConfig
     public ulong WeatherSeed { get; set; } = 42;
 }
 
+/// <summary>Money rules (economy.json). Unlike game.json, saved games use the current values.</summary>
+public sealed class EconomyDef
+{
+    /// <summary>What the farm borrows or repays at a time.</summary>
+    public float LoanStep { get; set; } = 5000f;
+    /// <summary>The most the farm can owe the bank.</summary>
+    public float CreditLimit { get; set; } = 500_000f;
+    /// <summary>Interest on the loan per game year (0.05 = 5%), charged every day of the compressed year.</summary>
+    public float LoanInterest { get; set; } = 0.05f;
+}
+
 public sealed class FillTypeDef
 {
     public string Id { get; set; } = "";

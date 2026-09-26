@@ -82,12 +82,13 @@ public sealed class Ledger
         ThisMonth.Amounts[(int)category] += amount;
     }
 
-    /// <summary>Turns to a new page on a later day, and a new month's page when the month changed too.</summary>
-    internal void StartDay(int day)
+    /// <summary>Turns to a new page on a later day (true), and a new month's page when the month changed too.</summary>
+    internal bool StartDay(int day)
     {
-        if (day <= Today.Index) return;
+        if (day <= Today.Index) return false;
         Push(_days, new FinancePeriod(day), KeptDays);
         if (MonthIndex(day) is var month && month != ThisMonth.Index) Push(_months, new FinancePeriod(month), KeptMonths);
+        return true;
     }
 
     /// <summary>Puts back saved pages (any order); starts afresh on <paramref name="today"/> when there are none.</summary>

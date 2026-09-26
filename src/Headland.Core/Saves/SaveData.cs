@@ -75,6 +75,7 @@ public sealed class EconomySave
     public float Money { get; set; }
     public float TotalIncome { get; set; }
     public float TotalExpenses { get; set; }
+    public float Loan { get; set; }
     /// <summary>The books' pages, newest first.</summary>
     public List<PeriodSave> Days { get; set; } = [];
     public List<PeriodSave> Months { get; set; } = [];

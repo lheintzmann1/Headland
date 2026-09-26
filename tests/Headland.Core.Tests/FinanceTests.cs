@@ -93,13 +93,16 @@ public class FinanceTests
     }
 
     [Fact]
-    public void TheBooksAreSaved()
+    public void TheBooksAndTheLoanAreSaved()
     {
         var sim = TestContent.SmallSim();
         sim.Economy.Earn(1200f, MoneyCategory.Sales);
         sim.SkipHours(24);
         sim.Economy.Spend(450f, MoneyCategory.Maintenance);
-        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim.Economy.Ledger;
+        sim.Economy.Borrow();
+        var game = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        Assert.Equal((sim.Economy.Money, 5000f), (game.Economy.Money, game.Economy.Loan));
+        var loaded = game.Economy.Ledger;
         var books = sim.Economy.Ledger;
 
         foreach (var (saved, back) in new[] { (books.Days, loaded.Days), (books.Months, loaded.Months) })
@@ -108,5 +111,76 @@ public class FinanceTests
             Assert.Equal(saved.SelectMany(p => Ledger.Categories.Select(c => p[c])), back.SelectMany(p => Ledger.Categories.Select(c => p[c])));
         }
         Assert.Equal((0f, -450f, 1200f), (loaded.Today[MoneyCategory.Sales], loaded.Today[MoneyCategory.Maintenance], loaded.Days[1].Net));
+    }
+
+    [Fact]
+    public void TheBankLendsInStepsUpToTheCreditLimit()
+    {
+        var sim = TestContent.SmallSim();
+        var eco = sim.Economy;
+        var taken = Record<LoanTaken>(sim);
+        Assert.True(eco.Borrow());
+        Assert.Equal((5000f, 105_000f), (eco.Loan, eco.Money));
+        Assert.Equal([new LoanTaken(5000f, 5000f)], taken);
+        while (eco.Borrow())
+        {
+        }
+        Assert.Equal((500_000f, 0f, 100), (eco.Loan, eco.NextLoan, taken.Count));
+
+        Assert.True(eco.Repay());
+        Assert.Equal((495_000f, 595_000f), (eco.Loan, eco.Money));
+        eco.Spend(eco.Money - 1000f, MoneyCategory.Other);
+        Assert.False(eco.Repay(all: true));
+        eco.Earn(495_000f, MoneyCategory.Other);
+        Assert.True(eco.Repay(all: true));
+        Assert.Equal((0f, 1000f), (eco.Loan, eco.Money));
+        Assert.False(eco.Repay());
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "The loan is paid off");
+        // Borrowing and repaying are not income or expenses.
+        Assert.Equal(eco.Ledger.Today[MoneyCategory.Other], eco.Ledger.Today.Net);
+    }
+
+    [Fact]
+    public void InterestIsChargedEveryDayOfTheCompressedYear()
+    {
+        var sim = TestContent.SmallSim();
+        var eco = sim.Economy;
+        for (var i = 0; i < 20; i++) eco.Borrow();
+        var money = eco.Money;
+
+        // 5% of $100,000 over a year of 36 days: $138.89 at every midnight.
+        sim.SkipHours(24);
+        Assert.Equal(-100_000f * 0.05f / 36f, eco.Ledger.Today[MoneyCategory.LoanInterest], 2);
+        sim.SkipHours(24 * 35);
+        Assert.InRange(money - eco.Money, 4999f, 5001f);
+    }
+
+    [Fact]
+    public void CostsThatComeDueCanOverdrawTheAccount()
+    {
+        var sim = TestContent.SmallSim();
+        var eco = sim.Economy;
+        var overdrawn = Record<AccountOverdrawn>(sim);
+        eco.Borrow();
+        eco.Spend(eco.Money - 100f, MoneyCategory.Other);
+
+        // $6.94 of interest a day eats the last $100 in 15 days.
+        sim.SkipHours(24 * 20);
+        Assert.True(eco.Money < 0f);
+        Assert.Single(overdrawn);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "The account is overdrawn: sell goods or borrow before buying anything");
+        Assert.Equal(0f, eco.Affordable(100f, 1f));
+        Assert.False(eco.Repay());
+        Assert.True(eco.Borrow());
+        Assert.True(eco.Money > 0f);
+    }
+
+    [Fact]
+    public void BadLoanTermsAreReported()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Economy.LoanStep = 0;
+        db.Economy.LoanInterest = 2;
+        Assert.Equal(["economy.loanStep must be > 0", "economy.loanInterest must be 0..1"], db.Validate());
     }
 }

@@ -1,0 +1,7 @@
+// Money rules. The bank lends in steps up to the credit limit; the yearly interest is charged every day, so a
+// game year (12 compressed months) costs the full rate.
+{
+  "loanStep": 5000,
+  "creditLimit": 500000,
+  "loanInterest": 0.05
+}

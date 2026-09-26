@@ -87,6 +87,14 @@ public static class Widgets
         return tab;
     }
 
+    /// <summary>Shows the farm's balance on <paramref name="label"/>, orange when the account is overdrawn.</summary>
+    public static void Balance(Label label, float money)
+    {
+        label.Text = $"$ {money:N0}";
+        StringName variation = money < 0f ? "OverdrawnLabel" : "MoneyLabel";
+        if (label.ThemeTypeVariation != variation) label.ThemeTypeVariation = variation;
+    }
+
     /// <summary>A right-aligned table cell for an amount of money: green in, orange out, a dash for none.</summary>
     public static Label Money(float amount, float width = 84f)
     {

@@ -59,6 +59,16 @@ public sealed record PoiProduced(Poi Poi, string FillType, float Amount) : IGame
 /// <summary>An hour's output sold for the POI's owner (outputs whose mode is "sell").</summary>
 public sealed record ProductionSold(Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
 
+// ---- Money
+
+/// <summary>The farm borrowed <paramref name="Amount"/>; <paramref name="Loan"/> is what it owes now.</summary>
+public sealed record LoanTaken(float Amount, float Loan) : IGameEvent;
+
+public sealed record LoanRepaid(float Amount, float Loan) : IGameEvent;
+
+/// <summary>A cost that came due by itself (interest, running costs) took the balance below zero.</summary>
+public sealed record AccountOverdrawn(float Money) : IGameEvent;
+
 // ---- Services
 
 public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGameEvent;

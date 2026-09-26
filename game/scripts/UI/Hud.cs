@@ -83,7 +83,7 @@ public partial class Hud : CanvasLayer
     public override void _Process(double delta)
     {
         UpdateClock();
-        _money.Text = $"$ {Sim.Economy.Money:N0}";
+        Widgets.Balance(_money, Sim.Economy.Money);
         UpdateVehicle();
         UpdatePrompt();
         UpdateNotes();

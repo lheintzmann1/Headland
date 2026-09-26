@@ -5,10 +5,18 @@ using Godot;
 
 namespace Headland.Game.UI;
 
-/// <summary>F2: the balance, and the farm's books: money in and out by category over the last days or months.</summary>
+/// <summary>
+/// F2: the balance and the bank loan, with buttons to borrow and repay, and the farm's books: money in and out by
+/// category over the last days or months.
+/// </summary>
 public partial class FinancesScreen : Screen
 {
     private Label _balance = null!;
+    private Label _loan = null!;
+    private Label _terms = null!;
+    private Button _borrow = null!;
+    private Button _repay = null!;
+    private Button _repayAll = null!;
     private GridContainer _table = null!;
     private bool _byMonth;
     private double _refresh;
@@ -19,11 +27,25 @@ public partial class FinancesScreen : Screen
     {
         var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
 
-        var balance = new HBoxContainer();
-        balance.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label(variation: "MoneyLabel");
-        balance.AddChild(_balance);
-        content.AddChild(balance);
+        var account = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
+        account.AddChild(Widgets.Label("Balance"));
+        _balance = Widgets.Label();
+        account.AddChild(_balance);
+        account.AddChild(Widgets.Label("Loan"));
+        _loan = Widgets.Label(variation: "MoneyLabel");
+        account.AddChild(_loan);
+        content.AddChild(account);
+        _terms = Widgets.Label(variation: "DimLabel");
+        content.AddChild(_terms);
+
+        var bank = new HBoxContainer();
+        _borrow = Widgets.Button("", () => Bank(() => Sim.Economy.Borrow()));
+        _repay = Widgets.Button("", () => Bank(() => Sim.Economy.Repay()));
+        _repayAll = Widgets.Button("Repay all", () => Bank(() => Sim.Economy.Repay(all: true)));
+        bank.AddChild(_borrow);
+        bank.AddChild(_repay);
+        bank.AddChild(_repayAll);
+        content.AddChild(bank);
 
         var tabs = new HBoxContainer();
         var group = new ButtonGroup();
@@ -53,9 +75,25 @@ public partial class FinancesScreen : Screen
         Refresh();
     }
 
+    /// <summary>Borrows or repays, and shows the new balance right away.</summary>
+    private void Bank(Action deal)
+    {
+        deal();
+        Refresh();
+    }
+
     private void Refresh()
     {
-        _balance.Text = $"$ {Sim.Economy.Money:N0}";
+        var eco = Sim.Economy;
+        Widgets.Balance(_balance, eco.Money);
+        _loan.Text = $"$ {eco.Loan:N0}";
+        var terms = $"Credit limit ${eco.Terms.CreditLimit:N0} at {eco.Terms.LoanInterest * 100f:0.##}% a year";
+        _terms.Text = eco.Loan > 0f ? $"{terms}: ${eco.DailyInterest:N0} of interest a day" : terms;
+        _borrow.Text = $"Borrow ${(eco.NextLoan >= 1f ? eco.NextLoan : eco.Terms.LoanStep):N0}";
+        _borrow.Disabled = eco.NextLoan < 1f;
+        _repay.Text = $"Repay ${(eco.NextRepayment >= 1f ? eco.NextRepayment : eco.Terms.LoanStep):N0}";
+        _repay.Disabled = eco.NextRepayment < 1f || eco.NextRepayment > eco.Money;
+        _repayAll.Disabled = eco.Loan < 1f || eco.Loan > eco.Money;
 
         // Oldest on the left; rows for the categories with money in these columns.
         var books = Sim.Economy.Ledger;

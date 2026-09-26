@@ -48,6 +48,7 @@ public sealed class ContentDatabase
     };
 
     public GameConfig Game { get; private set; } = new();
+    public EconomyDef Economy { get; private set; } = new();
     public List<FillTypeDef> FillTypeList { get; } = [];
     public Dictionary<string, FillTypeDef> FillTypes { get; } = new();
     public List<SoilDef> Soils { get; } = [];
@@ -72,6 +73,7 @@ public sealed class ContentDatabase
     {
         var db = new ContentDatabase();
         db.Game = Parse<GameConfig>(src, "game.json");
+        db.Economy = Parse<EconomyDef>(src, "economy.json");
 
         foreach (var f in ReadMany<FillTypeDef>(src, "filltypes.json")) db.AddUnique(db.FillTypes, f.Id, f, "fill type");
         db.FillTypeList.AddRange(db.FillTypes.Values);
@@ -152,6 +154,9 @@ public sealed class ContentDatabase
         if (Soils.Count > 16) e.Add("at most 16 soils are supported");
         if (Crops.Count is 0 or > 254) e.Add("need between 1 and 254 crops");
         if (Npcs.Count == 0) e.Add("no npcs defined");
+        if (Economy.LoanStep <= 0) e.Add("economy.loanStep must be > 0");
+        if (Economy.CreditLimit < 0) e.Add("economy.creditLimit must be >= 0");
+        if (Economy.LoanInterest is < 0 or > 1) e.Add("economy.loanInterest must be 0..1");
 
         foreach (var f in FillTypeList)
             if (f.MonthlyPriceFactor is { Length: not 12 })

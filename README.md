@@ -28,7 +28,9 @@ Built with **Godot 4.7** and **C#**.
   of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
   hours, storage and production that runs by the hour.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, production costs. F2 shows them day by day or month by month.
+  maintenance, production costs, loan interest. F2 shows them day by day or month by month, and is where the farm
+  borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest and running costs
+  can overdraw the account; until the balance is back above zero, nothing can be bought.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by
@@ -41,8 +43,8 @@ Built with **Godot 4.7** and **C#**.
   and a harvest estimate.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
-- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate and the map are JSON
-  files in [`game/data`](game/data).
+- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map and the money
+  rules are JSON files in [`game/data`](game/data).
 
 ## Controls
 
@@ -61,7 +63,7 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | X | Change the seed |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair, wash |
 | H | Hire or dismiss a field helper |
-| F2 | Finances |
+| F2 | Finances and loans |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

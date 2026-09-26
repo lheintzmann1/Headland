@@ -111,6 +111,7 @@ public static class SaveGame
             Economy = new EconomySave
             {
                 Money = sim.Economy.Money, TotalIncome = sim.Economy.TotalIncome, TotalExpenses = sim.Economy.TotalExpenses,
+                Loan = sim.Economy.Loan,
                 Days = sim.Economy.Ledger.Days.Select(CapturePeriod).ToList(),
                 Months = sim.Economy.Ledger.Months.Select(CapturePeriod).ToList(),
             },
@@ -213,7 +214,7 @@ public static class SaveGame
         for (var i = 0; i < content.Soils.Count; i++)
             sim.Crops.MineralAccumulators[i] = s.Mineralization.GetValueOrDefault(content.Soils[i].Id);
 
-        sim.Economy.Restore(s.Economy.Money, s.Economy.TotalIncome, s.Economy.TotalExpenses);
+        sim.Economy.Restore(s.Economy.Money, s.Economy.TotalIncome, s.Economy.TotalExpenses, s.Economy.Loan);
         sim.Economy.Ledger.Restore(s.Economy.Days.Select(RestorePeriod), s.Economy.Months.Select(RestorePeriod), sim.Clock.DayIndex);
         var stats = sim.Statistics;
         foreach (var (target, saved) in new[]
