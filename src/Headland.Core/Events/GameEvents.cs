@@ -83,6 +83,12 @@ public sealed record MachineDelivered(Machine Machine, Poi Poi) : IGameEvent;
 /// <summary>A parcel changed hands (<see cref="Ownership.Farm.None"/> = its NPC).</summary>
 public sealed record FarmlandOwnerChanged(Farmland Farmland, int FromFarm, int ToFarm) : IGameEvent;
 
+/// <summary><paramref name="Farm"/> bought a parcel from its NPC.</summary>
+public sealed record FarmlandBought(Farmland Farmland, int Farm, float Price) : IGameEvent;
+
+/// <summary><paramref name="Farm"/> sold a parcel back to its NPC.</summary>
+public sealed record FarmlandSold(Farmland Farmland, int Farm, float Price) : IGameEvent;
+
 // ---- Machines
 
 public sealed record ImplementAttached(Machine Parent, string Joint, Machine Implement) : IGameEvent;

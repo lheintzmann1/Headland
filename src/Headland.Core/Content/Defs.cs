@@ -347,6 +347,8 @@ public sealed class FarmlandDef : ShapeDef
     public string Npc { get; set; } = "";
     /// <summary>Farm owning it at the start: 0 = its NPC (for sale), 1 = the player's farm.</summary>
     public int Farm { get; set; }
+    /// <summary>Multiplies the map's price per hectare (better or worse land).</summary>
+    public float PriceFactor { get; set; } = 1f;
 }
 
 public sealed class FieldDef : ShapeDef
@@ -567,6 +569,8 @@ public sealed class MapDef
     public RectDef[] Yards { get; set; } = [];
     /// <summary>Parcels; where two overlap, the later one wins. Land outside every parcel can't be bought.</summary>
     public FarmlandDef[] Farmlands { get; set; } = [];
+    /// <summary>What a hectare of farmland costs (and sells for), before each parcel's price factor.</summary>
+    public float FarmlandPricePerHa { get; set; } = 20_000f;
     /// <summary>Each field lies inside a farmland (the one holding its centroid).</summary>
     public FieldDef[] Fields { get; set; } = [];
     public PoiPlacementDef[] Pois { get; set; } = [];

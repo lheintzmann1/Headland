@@ -46,6 +46,7 @@ public static class InputSetup
         ("quickload", Key.F8, "Quickload"),
         ("toggle_help", Key.F1, "Help"),
         ("toggle_finances", Key.F2, "Finances and loans"),
+        ("toggle_farmland", Key.L, "Farmland: buy and sell parcels"),
         ("toggle_debug", Key.F3, "Debug overlay"),
         ("screenshot", Key.F12, "Screenshot"),
     ];

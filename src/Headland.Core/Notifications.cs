@@ -46,6 +46,8 @@ public sealed class Notifications
             $"until {Time.Calendar.MonthNames[e.Until.Month - 1][..3]} {e.Until.Day}", Severity.Good, 0));
         events.Subscribe<HighDemandEnded>(e => Post($"The high demand for {content.FillTypes[e.FillType].Name.ToLowerInvariant()} at {e.Poi.Name} is over"));
         events.Subscribe<FillBought>(e => Post($"Bought {Amount(e.FillType, e.Amount)} for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<FarmlandBought>(e => Post($"Bought {e.Farmland.Label} ({e.Farmland.AreaHa:0.00} ha) for ${e.Price:N0}", Severity.Good, 0));
+        events.Subscribe<FarmlandSold>(e => Post($"Sold {e.Farmland.Label} for ${e.Price:N0}", Severity.Good, 0));
         events.Subscribe<LoanTaken>(e => Post($"Borrowed ${e.Amount:N0}: the loan is ${e.Loan:N0}", Severity.Info, 0));
         events.Subscribe<LoanRepaid>(e => Post(e.Loan > 0f ? $"Repaid ${e.Amount:N0}: the loan is ${e.Loan:N0}" : "The loan is paid off", Severity.Good, 0));
         events.Subscribe<AccountOverdrawn>(_ => Post("The account is overdrawn: sell goods or borrow before buying anything", Severity.Warning));

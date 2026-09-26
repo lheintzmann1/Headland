@@ -161,6 +161,8 @@ public sealed class Farmland : IOwnable
     public required NpcDef Npc { get; init; }
     /// <summary>Owning farm (<see cref="Farm.None"/> = its NPC). Changed through <see cref="Farms.SetOwner"/>.</summary>
     public int FarmId { get; internal set; }
+    /// <summary>What the parcel costs, and sells back for: its area at the map's price per hectare.</summary>
+    public float Price { get; init; }
     public float AreaHa => Shape.Area / 10000f;
     public List<FieldInfo> Fields { get; } = [];
     public string Label => $"Farmland {Id}";

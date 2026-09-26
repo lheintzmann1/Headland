@@ -2,6 +2,7 @@ using System.Text;
 using Headland.Game.Common;
 using Headland.Core;
 using Headland.Core.Machines;
+using Headland.Core.Ownership;
 using Headland.Core.Time;
 using Headland.Core.Weather;
 using Headland.Core.World;
@@ -248,7 +249,11 @@ public partial class Hud : CanvasLayer
         var farmland = r.FarmlandId != 0 ? Sim.World.FarmlandById(r.FarmlandId) : null;
         sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
         if (farmland != null)
-            sb.Append(farmland.FarmId == Sim.Player.FarmId ? $" · {farmland.Label}, yours" : $" · {farmland.Label}, {Sim.Farms.OwnerName(farmland)}'s");
+        {
+            var owner = farmland.FarmId == Sim.Player.FarmId ? "yours" : $"{Sim.Farms.OwnerName(farmland)}'s";
+            if (farmland.FarmId == Farm.None) owner += $", for sale at ${Sim.Farms.Price(farmland):N0}";
+            sb.Append($" · {farmland.Label}, {owner}");
+        }
         sb.Append($"   {Widgets.Colored($"{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m", Palette.Dim)}\n");
         sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
         if (r.Crop != null)

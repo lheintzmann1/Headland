@@ -294,9 +294,11 @@ public sealed class ContentDatabase
                     e.Add($"map '{map.Id}' network '{net.Id}': width must be between 0 and tileSize");
                 if (string.IsNullOrWhiteSpace(net.Style)) e.Add($"map '{map.Id}' network '{net.Id}': style is required");
             }
+            if (map.FarmlandPricePerHa < 0) e.Add($"map '{map.Id}': farmlandPricePerHa must be >= 0");
             var farmlands = new List<World.Polygon>();
             foreach (var f in map.Farmlands)
             {
+                if (f.PriceFactor <= 0) e.Add($"map '{map.Id}' farmland {f.Id}: priceFactor must be > 0");
                 if (f.Id is < 1 or > ushort.MaxValue) e.Add($"map '{map.Id}': farmland ids must be 1..{ushort.MaxValue}");
                 if (!Npcs.ContainsKey(f.Npc)) e.Add($"map '{map.Id}' farmland {f.Id}: unknown npc '{f.Npc}'");
                 if (!ValidFarm(f.Farm)) e.Add($"map '{map.Id}' farmland {f.Id}: {FarmRule}");

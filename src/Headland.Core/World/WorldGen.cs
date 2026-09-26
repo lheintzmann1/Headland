@@ -260,7 +260,12 @@ public static class WorldGen
 
         foreach (var def in map.Farmlands)
         {
-            var farmland = new Farmland { Id = def.Id, Shape = def.Shape(), Npc = content.Npcs[def.Npc], FarmId = def.Farm };
+            var shape = def.Shape();
+            var farmland = new Farmland
+            {
+                Id = def.Id, Shape = shape, Npc = content.Npcs[def.Npc], FarmId = def.Farm,
+                Price = MathF.Round(shape.Area / 10000f * map.FarmlandPricePerHa * def.PriceFactor),
+            };
             world.Farmlands.Add(farmland);
             Fill(world, farmland.Shape, (i, _, _) => L.FarmlandId[i] = (ushort)farmland.Id);
         }

@@ -28,10 +28,13 @@ Built with **Godot 4.7** and **C#**.
   of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
   hours, storage and production that runs by the hour.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, production costs, wages, loan interest. F2 shows them day by day or month by month, and is where the
+  maintenance, production costs, wages, land, loan interest. F2 shows them day by day or month by month, and is where the
   farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.
+- **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who
+  own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
+  ground the farm's own buildings stand on.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by
@@ -65,6 +68,7 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair, wash |
 | H | Hire or dismiss a field helper |
 | F2 | Finances and loans |
+| L | Farmland: buy and sell parcels |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |
