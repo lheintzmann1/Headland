@@ -141,7 +141,7 @@ public partial class EnvironmentController : Node3D
             _snow = w.SnowCover;
         }
         _cloudOffset += new Vector2(1f, 0.35f) * (3f + 9f * w.Wind) * dt;
-        var monthlyMean = WeatherSystem.MonthlyLerp(Sim.Content.Climate.MonthlyMeanTemp, monthF);
+        var monthlyMean = WeatherSystem.MonthlyLerp(Sim.Climate.MonthlyMeanTemp, monthF);
         RenderingServer.GlobalShaderParameterSet("g_wetness", _wetness);
         RenderingServer.GlobalShaderParameterSet("g_snow", _snow);
         RenderingServer.GlobalShaderParameterSet("g_cloud_cover", _cloud);

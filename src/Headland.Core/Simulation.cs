@@ -24,19 +24,21 @@ public sealed class Simulation
     private int _pendingHours;
     private WeatherCondition _condition;
 
-    private Simulation(ContentDatabase content)
+    private Simulation(ContentDatabase content, GameConfig setup)
     {
         Content = content;
-        var g = content.Game;
-        Calendar = new Calendar(g.DaysPerMonth);
-        Clock = new GameClock(Calendar, new GameDate(g.StartYear, g.StartMonth, g.StartDay), g.StartHour);
-        Weather = new WeatherSystem(content.Climate, Calendar, g.WeatherSeed);
-        World = WorldGen.Generate(content.Map, content);
-        Farms = new Farms(World, Events, g.FarmName);
-        Crops = new CropSystem(content, World, Calendar);
-        Economy = new Economy(content, g.StartMoney);
+        Setup = setup;
+        Map = content.Maps[setup.Map];
+        Climate = content.Climates[setup.Climate];
+        Calendar = new Calendar(setup.DaysPerMonth);
+        Clock = new GameClock(Calendar, new GameDate(setup.StartYear, setup.StartMonth, setup.StartDay), setup.StartHour);
+        Weather = new WeatherSystem(Climate, Calendar, setup.WeatherSeed);
+        World = WorldGen.Generate(Map, content);
+        Farms = new Farms(World, Events, setup.FarmName);
+        Crops = new CropSystem(content, World, Calendar, Climate);
+        Economy = new Economy(content, setup.StartMoney);
         Machines = new MachineSystem(this);
-        Player = new PlayerCharacter(Events) { Position = new Vector2(content.Map.PlayerX, content.Map.PlayerZ) };
+        Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
         Statistics = new Statistics(Events);
         Notifications.Follow(Events, content);
         Weather.Update(Clock.DayIndex, Clock.HourOfDay);
@@ -46,6 +48,10 @@ public sealed class Simulation
     /// <summary>Everything that happens in the game is published here (see <c>GameEvents.cs</c>).</summary>
     public EventBus Events { get; } = new();
     public ContentDatabase Content { get; }
+    /// <summary>What this game was started with: game.json for a new game, the save's own copy once loaded.</summary>
+    public GameConfig Setup { get; }
+    public MapDef Map { get; }
+    public ClimateDef Climate { get; }
     public Calendar Calendar { get; }
     public GameClock Clock { get; }
     public WeatherSystem Weather { get; }
@@ -58,20 +64,25 @@ public sealed class Simulation
     public Statistics Statistics { get; }
     public Notifications Notifications { get; } = new();
 
+    /// <summary>Real seconds simulated since the game started (play time).</summary>
     public double RealTime { get; private set; }
     public double LastHourTickMs { get; private set; }
 
-    public static Simulation Create(ContentDatabase content)
+    /// <summary>A new game, set up from <paramref name="setup"/> (default: the content's game.json).</summary>
+    public static Simulation Create(ContentDatabase content, GameConfig? setup = null)
     {
-        var sim = new Simulation(content);
+        var sim = new Simulation(content, setup ?? content.Game);
         sim.SpawnMapMachines();
         return sim;
     }
 
+    /// <summary>The map's world without its starting machines, for a save to fill in.</summary>
+    internal static Simulation CreateForLoad(ContentDatabase content, GameConfig setup) => new(content, setup);
+
     private void SpawnMapMachines()
     {
         var spawned = new List<Machine>();
-        foreach (var sp in Content.Map.Machines)
+        foreach (var sp in Map.Machines)
         {
             var m = Machines.Spawn(sp.Def, new Vector2(sp.X, sp.Z), sp.HeadingDeg * MathUtil.Deg2Rad, sp.Farm);
             spawned.Add(m);
@@ -112,6 +123,19 @@ public sealed class Simulation
         QueueHours(before, crossed);
         RunPendingHours(int.MaxValue);
         UpdateWeather();
+    }
+
+    /// <summary>Hours crossed but not yet run (a frame runs at most <see cref="MaxHoursPerTick"/>).</summary>
+    internal (long from, int count) PendingHours => (_pendingHourFrom, _pendingHours);
+
+    internal void RestoreTime(double realTime, long pendingFrom, int pendingCount)
+    {
+        RealTime = realTime;
+        Notifications.Now = realTime;
+        _pendingHourFrom = pendingFrom;
+        _pendingHours = pendingCount;
+        Weather.Update(Clock.DayIndex, Clock.HourOfDay);
+        _condition = Weather.Condition;
     }
 
     private void UpdateWeather()

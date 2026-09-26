@@ -32,10 +32,11 @@ Rules for every item:
 
 ## Foundations
 
-- [ ] **Save/load.** Versioned format: JSON for entities, compressed binary for `FieldLayers`. Slots,
+- [x] **Save/load.** Versioned format: JSON for entities, compressed binary for `FieldLayers`. Slots,
       autosave, game version and mod list recorded. Covers clock, weather (anomaly, generated days,
       snowpack), crop mineralization accumulators, field layers, machines (pose, attachments, fill,
-      configuration, wear, fuel), economy, player, POI storage, contracts, loans.
+      configuration, wear, fuel), economy, player, POI storage, contracts, loans. Configuration, wear,
+      fuel, POI storage, contracts and loans join `Saves/SaveData.cs` as they're built.
 - [x] **Ownership.** Farm id on machines, farmland and storage; NPC owners for the rest. Needed by the
       shop, contracts, vehicle switching and field access.
 - [x] **Farmland and fields** (FS model): farmland parcels are bought, fields are the crop areas inside.

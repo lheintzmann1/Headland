@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Headland.Core.Content;
 using Headland.Core.Time;
 
@@ -20,15 +21,16 @@ public sealed class DayWeather
     public float Wind { get; init; }
     public bool Stormy { get; init; }
 
-    public float TempMin => TempMean - TempRange * 0.5f;
-    public float TempMax => TempMean + TempRange * 0.5f;
+    [JsonIgnore] public float TempMin => TempMean - TempRange * 0.5f;
+    [JsonIgnore] public float TempMax => TempMean + TempRange * 0.5f;
 
     public bool IsPrecipitating(float hour) =>
         PrecipHours > 0 && hour >= PrecipStartHour && hour < PrecipStartHour + PrecipHours;
 
-    public float PrecipRate => PrecipHours > 0 ? PrecipMm / PrecipHours : 0f;
+    [JsonIgnore] public float PrecipRate => PrecipHours > 0 ? PrecipMm / PrecipHours : 0f;
 
     /// <summary>Dominant condition for icons/forecast.</summary>
+    [JsonIgnore]
     public WeatherCondition Summary
     {
         get
@@ -58,6 +60,11 @@ public sealed class WeatherSystem
         _calendar = calendar;
         _rng = new Rng(seed);
     }
+
+    // ---- Generator state, for saves ----
+    internal Rng Rng => _rng;
+    internal float Anomaly { get => _anomaly; set => _anomaly = value; }
+    internal List<DayWeather> Days => _days;
 
     // ---- Current hourly snapshot (refreshed by Update) ----
     public WeatherCondition Condition { get; private set; }

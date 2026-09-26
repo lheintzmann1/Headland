@@ -8,6 +8,13 @@ public sealed class Economy(ContentDatabase content, float startMoney)
     public float TotalIncome { get; private set; }
     public float TotalExpenses { get; private set; }
 
+    internal void Restore(float money, float totalIncome, float totalExpenses)
+    {
+        Money = money;
+        TotalIncome = totalIncome;
+        TotalExpenses = totalExpenses;
+    }
+
     public float Price(string fillType, int month)
     {
         var def = content.FillTypes[fillType];

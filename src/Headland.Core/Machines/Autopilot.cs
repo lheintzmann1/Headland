@@ -22,7 +22,9 @@ public sealed class WaypointController : IVehicleController
     /// <summary>Per waypoint: true if the segment arriving at it must be driven to its end before turning.</summary>
     public IReadOnlyList<bool>? HardEnds { get; }
     /// <summary>Index of the waypoint being driven to (the current segment ends there).</summary>
-    public int Index { get; private set; }
+    public int Index { get; internal set; }
+    /// <summary>Where the vehicle was when it started driving (the first segment starts there).</summary>
+    internal Vector2? Start { get => _start; set => _start = value; }
     public float SpeedKmh { get; set; }
     public float MinLookahead { get; set; } = 2.2f;
     public float MaxLookahead { get; set; } = 4.5f;
@@ -250,9 +252,27 @@ public sealed class FieldWorkController : IVehicleController
     private readonly float _workSpeedKmh;
 
     public FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh = 0f, int? maxLanes = null)
+        : this(vehicle, field, speedKmh, maxLanes, vehicle.Position, null)
+    {
+        foreach (var t in _tools)
+        {
+            t.Lowered = false;
+            if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
+        }
+        if (vehicle.Def.HarvestTank != null) vehicle.TurnedOn = true;
+    }
+
+    /// <summary>
+    /// Plans the route from <paramref name="plannedFrom"/> without touching the implements: a saved helper
+    /// resumes with the same route and margin it had.
+    /// </summary>
+    internal FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, Vector2 plannedFrom, float? margin)
     {
         Vehicle = vehicle;
         Field = field;
+        SpeedKmh = speedKmh;
+        MaxLanes = maxLanes;
+        PlannedFrom = plannedFrom;
         _tools = vehicle.Chain().Where(m => m.Def.WorkArea != null).ToList();
         if (_tools.Count == 0) throw new InvalidOperationException($"{vehicle.Def.Name} has no implement to work with");
 
@@ -266,21 +286,19 @@ public sealed class FieldWorkController : IVehicleController
         });
         var mot = vehicle.Def.Motorized ?? throw new InvalidOperationException("Helpers drive motorized vehicles");
         var minR = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
-        Margin = MathF.Max(0f, reach) + 0.8f;
+        Margin = margin ?? MathF.Max(0f, reach) + 0.8f;
         _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.Def.WorkArea!.MaxWorkSpeedKmh) * 0.9f;
-        Path = FieldPlanner.Lanes(field, width, minR, Margin, vehicle.Position, maxLanes);
+        Path = FieldPlanner.Lanes(field, width, minR, Margin, plannedFrom, maxLanes);
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Work);
-
-        foreach (var t in _tools)
-        {
-            t.Lowered = false;
-            if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
-        }
-        if (vehicle.Def.HarvestTank != null) vehicle.TurnedOn = true;
     }
 
     public Machine Vehicle { get; }
     public FieldInfo Field { get; }
+    /// <summary>Work speed asked for (0 = the implements' own).</summary>
+    public float SpeedKmh { get; }
+    public int? MaxLanes { get; }
+    /// <summary>Where the vehicle was when the route was planned.</summary>
+    public Vector2 PlannedFrom { get; }
     public FieldPath Path { get; }
     public WaypointController Driver { get; }
     /// <summary>Headland distance driven past the field edge before turning.</summary>

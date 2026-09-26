@@ -20,6 +20,11 @@ public sealed class MachineSystem
 
     public List<Machine> All { get; } = [];
 
+    /// <summary>Id of the next machine spawned (ids are never reused).</summary>
+    internal int NextId { get => _nextId; set => _nextId = value; }
+    /// <summary>Loads being tipped, totalled until tipping stops (by machine id).</summary>
+    internal Dictionary<int, (string sellPoint, string fillType, float amount, float income)> Sales => _sales;
+
     private WorldMap World => _sim.World;
     private ContentDatabase Content => _sim.Content;
     private EventBus Events => _sim.Events;

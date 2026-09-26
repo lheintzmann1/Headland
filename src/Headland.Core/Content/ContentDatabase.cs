@@ -34,6 +34,9 @@ public sealed class FileSystemContentSource : IContentSource
 
 public sealed class ContentException(string message) : Exception(message);
 
+/// <summary>A mod the content was loaded with; saves record them.</summary>
+public sealed record ModRef(string Id, string Version);
+
 /// <summary>All loaded definitions. Soils and crops keep their list order: the index is what cells store.</summary>
 public sealed class ContentDatabase
 {
@@ -54,6 +57,8 @@ public sealed class ContentDatabase
     public Dictionary<string, MachineDef> Machines { get; } = new();
     public Dictionary<string, ClimateDef> Climates { get; } = new();
     public Dictionary<string, MapDef> Maps { get; } = new();
+    /// <summary>Mods layered over the base game, in load order (none until the mod loader exists).</summary>
+    public List<ModRef> Mods { get; } = [];
 
     public CropDef? CropById(string id) => Crops.Find(c => c.Id == id);
     public int CropIndex(string id) => Crops.FindIndex(c => c.Id == id);

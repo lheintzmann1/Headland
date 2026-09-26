@@ -31,6 +31,8 @@ Built with **Godot 4.7** and **C#**.
   drifting cloud shadows, and a sun that follows the time of day and the season.
 - **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, crop stage, vernalization progress
   and a harvest estimate.
+- **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
+  user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, soils, the climate and the map are JSON files in [`game/data`](game/data).
 
 ## Controls
@@ -53,6 +55,7 @@ Keys follow their position on the keyboard, so AZERTY players get ZQSD for movem
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |
 | F9 | Sleep until the next morning |
+| F5 / F8 | Quicksave, quickload |
 
 ## Running from source
 

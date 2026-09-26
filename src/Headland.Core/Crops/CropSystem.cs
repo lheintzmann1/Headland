@@ -15,18 +15,23 @@ public sealed class CropSystem
     private readonly ContentDatabase _content;
     private readonly WorldMap _world;
     private readonly Calendar _calendar;
+    private readonly ClimateDef _climate;
     private readonly float[] _mineralAcc;
     private readonly bool[] _growingChunk;
 
-    public CropSystem(ContentDatabase content, WorldMap world, Calendar calendar)
+    public CropSystem(ContentDatabase content, WorldMap world, Calendar calendar, ClimateDef climate)
     {
         _content = content;
         _world = world;
         _calendar = calendar;
+        _climate = climate;
         _mineralAcc = new float[content.Soils.Count];
         _growingChunk = new bool[world.ChunksX * world.ChunksZ];
         CoverLut = BuildCoverLut(content);
     }
+
+    /// <summary>Nitrogen mineralization carried over between hours, per soil index (for saves).</summary>
+    internal float[] MineralAccumulators => _mineralAcc;
 
     /// <summary>Crop cover for the terrain shader, indexed by (crop &lt;&lt; 8) | stage.</summary>
     public byte[] CoverLut { get; }
@@ -221,7 +226,7 @@ public sealed class CropSystem
         if (def.Stages[stage].Harvestable) return 0f;
 
         // Walk the remaining stages day by day with climate-average temperatures.
-        var climate = _content.Climate;
+        var climate = _climate;
         var day = clock.DayIndex;
         var s = (int)stage;
         var progress = L.Progress[cellIndex];

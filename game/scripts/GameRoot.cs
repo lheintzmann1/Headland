@@ -2,6 +2,7 @@ using System.Globalization;
 using Headland.Game.Camera;
 using Headland.Game.Common;
 using Headland.Game.Debug;
+using Headland.Game.Saves;
 using Headland.Game.UI;
 using Headland.Game.Vehicles;
 using Headland.Game.Weather;
@@ -9,6 +10,7 @@ using Headland.Game.World;
 using Headland.Core;
 using Headland.Core.Content;
 using Headland.Core.Machines;
+using Headland.Core.Saves;
 using Headland.Core.Time;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
@@ -16,14 +18,16 @@ using NVec2 = System.Numerics.Vector2;
 namespace Headland.Game;
 
 /// <summary>
-/// Entry point: loads content, creates the simulation, builds the renderers, and routes input.
-/// The simulation ticks at the physics rate (60 Hz); visuals read its state every frame.
+/// Entry point: loads content, starts a new game or a saved one, builds the renderers, and routes input.
+/// The simulation ticks at the physics rate (60 Hz); visuals read its state every frame. Loading a save reloads
+/// this scene around the loaded game.
 /// </summary>
 public partial class GameRoot : Node3D
 {
     public Simulation Sim { get; private set; } = null!;
     public IsoCamera Camera { get; private set; } = null!;
     public Hud Hud { get; private set; } = null!;
+    public SaveManager Saves { get; private set; } = null!;
 
     /// <summary>Simulation ticks per physics frame (scenarios fast-forward with this).</summary>
     public int SimSubsteps { get; set; } = 1;
@@ -37,8 +41,9 @@ public partial class GameRoot : Node3D
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         InputSetup.Register();
 
-        var content = ContentDatabase.Load(new GodotContentSource("res://data"));
-        Sim = Simulation.Create(content);
+        var args = OS.GetCmdlineUserArgs();
+        var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1]);
+        Sim = sim;
 
         AddChild(new TerrainRenderer { Sim = Sim, Name = "Terrain" });
         AddChild(new NetworkRenderer { Sim = Sim, Name = "Networks" });
@@ -51,15 +56,39 @@ public partial class GameRoot : Node3D
         Camera.SnapTo(Sim.World.OnGround(Sim.Player.Position));
         Hud = new Hud { Sim = Sim, Name = "Hud" };
         AddChild(Hud);
+        Saves = new SaveManager { Sim = Sim, Name = "Saves" };
+        AddChild(Saves);
 
-        var args = OS.GetCmdlineUserArgs();
         var scenario = args.FirstOrDefault(a => a.StartsWith("--scenario="))?.Split('=', 2)[1];
         if (scenario != null)
         {
+            Saves.AutosaveMinutes = 0;
             var shots = args.FirstOrDefault(a => a.StartsWith("--shots="))?.Split('=', 2)[1] ?? "user://shots";
             AddChild(new ScenarioRunner { Game = this, Scenario = scenario, ShotsDir = shots, Name = "Scenario" });
         }
-        else Sim.Notifications.Post($"Welcome to {content.Map.Name}. Press {InputSetup.Label("toggle_help")} for controls.", Severity.Info, 0);
+        else if (slot != null) Sim.Notifications.Post($"Loaded {slot}: {Sim.Clock.Date} {Sim.Clock.TimeString}", Severity.Info, 0);
+        else Sim.Notifications.Post($"Welcome to {Sim.Map.Name}. Press {InputSetup.Label("toggle_help")} for controls.", Severity.Info, 0);
+        foreach (var w in warnings) Sim.Notifications.Post(w, Severity.Warning, 0);
+    }
+
+    /// <summary>The game a quickload just built, else the save named by --load, else a new game.</summary>
+    private static (Simulation sim, string? slot, IReadOnlyList<string> warnings) StartGame(string? loadSlot)
+    {
+        if (SaveManager.TakePending() is var (pending, pendingSlot)) return (pending.Sim, pendingSlot, pending.Warnings);
+        var content = ContentDatabase.Load(new GodotContentSource("res://data"));
+        if (loadSlot != null)
+        {
+            try
+            {
+                var game = SaveManager.Read(content, loadSlot);
+                return (game.Sim, loadSlot, game.Warnings);
+            }
+            catch (SaveException e)
+            {
+                GD.PrintErr($"Could not load '{loadSlot}': {e.Message}");
+            }
+        }
+        return (Simulation.Create(content), null, []);
     }
 
     public override void _PhysicsProcess(double delta)
@@ -126,6 +155,8 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("cam_rotate_right")) Camera.RotateStep(1);
         else if (e.IsActionPressed("pause")) Sim.Clock.Paused = !Sim.Clock.Paused;
         else if (e.IsActionPressed("skip_day")) SleepUntilMorning();
+        else if (e.IsActionPressed("quicksave")) Saves.Save(SaveManager.QuickSlot);
+        else if (e.IsActionPressed("quickload")) Saves.Load(SaveManager.QuickSlot);
         else if (e.IsActionPressed("toggle_help")) Hud.ToggleHelp();
         else if (e.IsActionPressed("toggle_debug")) Hud.DebugVisible = !Hud.DebugVisible;
         else if (e.IsActionPressed("screenshot")) SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png");

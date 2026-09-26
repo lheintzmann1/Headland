@@ -41,6 +41,8 @@ public static class InputSetup
         ("time_6", Key.Key6, "Time ×240"),
         ("pause", Key.P, "Pause time"),
         ("skip_day", Key.F9, "Sleep until tomorrow 6:00"),
+        ("quicksave", Key.F5, "Quicksave"),
+        ("quickload", Key.F8, "Quickload"),
         ("toggle_help", Key.F1, "Help"),
         ("toggle_debug", Key.F3, "Debug overlay"),
         ("screenshot", Key.F12, "Screenshot"),

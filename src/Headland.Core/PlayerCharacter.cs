@@ -126,6 +126,14 @@ public sealed class PlayerCharacter(EventBus events)
     /// </summary>
     private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Controller is null or FieldWorkController;
 
+    /// <summary>Puts the player back in a vehicle (or on foot) as a save had them, without an event.</summary>
+    internal void Restore(Machine? vehicle)
+    {
+        Vehicle = vehicle;
+        Controls.Input = default;
+        if (vehicle != null) vehicle.Controller ??= Controls;
+    }
+
     public bool Enter(Machine m)
     {
         if (!m.IsMotorized || !CanEnter(m)) return false;

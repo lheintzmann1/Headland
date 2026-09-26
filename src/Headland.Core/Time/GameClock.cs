@@ -95,6 +95,12 @@ public sealed class GameClock
         return CollectHours();
     }
 
+    internal void Restore(double totalSeconds, long lastHour)
+    {
+        TotalSeconds = totalSeconds;
+        LastHour = lastHour;
+    }
+
     private int CollectHours()
     {
         var now = TotalHours;
