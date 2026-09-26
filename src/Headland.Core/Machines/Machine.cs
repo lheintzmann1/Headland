@@ -80,6 +80,8 @@ public sealed class Machine : IOwnable
     public MachineDef Def { get; }
     /// <summary>Owning farm; only its members drive it or hitch to it (<see cref="Farm.None"/> = an NPC's).</summary>
     public int FarmId { get; set; }
+    /// <summary>The contract the machine is leased for (0: the farm's own); it goes back when the contract ends.</summary>
+    public int LeaseContract { get; set; }
 
     /// <summary>Center of the non-steered axle (the kinematic reference point).</summary>
     public Vector2 Position { get; set; }

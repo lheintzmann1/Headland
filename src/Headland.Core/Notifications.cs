@@ -52,6 +52,8 @@ public sealed class Notifications
         string Penalty(float penalty) => penalty >= 0.5f ? $" (${penalty:N0} penalty)" : "";
         events.Subscribe<ContractOffered>(e => Post($"New contract: {e.Contract.Label} for {e.Contract.Client}, ${e.Contract.Reward:N0}", Severity.Info, 0));
         events.Subscribe<ContractAccepted>(e => Post($"Contract taken: {e.Contract.Label}, {e.Contract.Days} days to do it", Severity.Good, 0));
+        events.Subscribe<MachinesLeased>(e => Post($"Leased {string.Join(", ", e.Machines.Select(m => m.Def.Name))}: they wait at {e.Poi.Name}", Severity.Good, 0));
+        events.Subscribe<LeaseReturned>(e => Post($"The leased machines went back: ${e.Fee:N0} for the lease", Severity.Info, 0));
         events.Subscribe<ContractLastDay>(e => Post($"Last day for the contract: {e.Contract.Label}", Severity.Warning, 0));
         events.Subscribe<ContractDelivery>(e =>
         {

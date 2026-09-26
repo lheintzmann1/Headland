@@ -162,13 +162,14 @@ public static class SaveGame
         Id = c.Id, Type = c.Type.Id, Npc = c.Npc?.Id, Field = c.Field?.Id, Crop = c.Crop?.Id, Poi = c.Poi?.Id, Goods = c.Goods?.Id,
         Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay, Farm = c.FarmId, DueDay = c.DueDay,
         Harvested = c.Harvested, Delivered = c.Delivered,
+        Lease = c.Lease != null ? Array.IndexOf(c.Type.Leases, c.Lease) : null, LeaseFee = c.LeaseFee, Leased = c.Leased,
     };
 
     private static MachineSave CaptureMachine(Simulation sim, Machine m)
     {
         var save = new MachineSave
         {
-            Id = m.Id, Def = m.Def.Id, Farm = m.FarmId,
+            Id = m.Id, Def = m.Def.Id, Farm = m.FarmId, Lease = m.LeaseContract != 0 ? m.LeaseContract : null,
             X = m.Position.X, Z = m.Position.Y, Heading = m.Heading,
             Speed = m.Speed, SteerAngle = m.SteerAngle, Distance = m.Distance,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
@@ -333,6 +334,8 @@ public static class SaveGame
                 Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay,
                 State = active ? ContractState.Active : ContractState.Offered, FarmId = c.Farm, DueDay = c.DueDay,
                 Harvested = Math.Max(0f, c.Harvested), Delivered = Math.Max(0f, c.Delivered),
+                Lease = c.Lease is { } k && k >= 0 && k < type.Leases.Length ? type.Leases[k] : null, LeaseFee = c.LeaseFee,
+                Leased = active && c.Leased,
             });
         }
         sim.Contracts.Restore(contracts, s.NextContractId);
@@ -351,7 +354,12 @@ public static class SaveGame
                 warnings.Add($"Machine '{m.Def}' no longer exists: it was removed");
                 continue;
             }
-            var machine = new Machine(m.Id, def, new Vector2(m.X, m.Z), m.Heading, m.Farm);
+            if (m.Lease is { } lease && sim.Contracts.ById(lease) is not { Leased: true })
+            {
+                warnings.Add($"The leased {def.Name} went back: its contract is over");
+                continue;
+            }
+            var machine = new Machine(m.Id, def, new Vector2(m.X, m.Z), m.Heading, m.Farm) { LeaseContract = m.Lease ?? 0 };
             ms.All.Add(machine);
             byId[m.Id] = machine;
         }

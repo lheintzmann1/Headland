@@ -1,6 +1,7 @@
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Machines;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
 using Headland.Core.Time;
@@ -11,9 +12,10 @@ namespace Headland.Core.Contracts;
 /// <summary>
 /// The contract board. Every midnight the neighbors post jobs their fields need in that season (contracts.json), and
 /// buyers ask for goods; offers nobody takes come down after a few days. The farm takes a few at a time, each due
-/// within its days. A field job is done once enough of the field is in its done state; goods count once tipped at
-/// the buyer, who takes them for the contract instead of paying for them. Done contracts pay their reward; canceled or
-/// late ones cost a penalty.
+/// within its days, with its own machines or leased ones delivered at a dealer's lot. A field job is done once enough
+/// of the field is in its done state; goods count once tipped at the buyer, who takes them for the contract instead of
+/// paying for them. Done contracts pay their reward; canceled or late ones cost a penalty. Leased machines go back
+/// when the contract ends, and the lease is paid then.
 /// </summary>
 public sealed class ContractSystem
 {
@@ -65,15 +67,45 @@ public sealed class ContractSystem
         return ActiveOf(Player).Count() >= Rules.MaxActive ? $"You have {Rules.MaxActive} contracts under way already" : null;
     }
 
-    public bool Accept(Contract c)
+    /// <summary>Why the player's farm can't take <paramref name="c"/> with its leased machines, or null if it can.</summary>
+    public string? LeaseBlocker(Contract c)
     {
-        if (AcceptBlocker(c) != null) return false;
+        if (AcceptBlocker(c) is { } why) return why;
+        if (c.Lease == null) return "No machines can be leased for this job";
+        return Lot() == null ? "No dealer leases machines now" : null;
+    }
+
+    /// <summary>
+    /// Takes <paramref name="c"/> for the player's farm; with <paramref name="lease"/>, its lease machines come to the
+    /// dealer's lot (false when there is no room for them).
+    /// </summary>
+    public bool Accept(Contract c, bool lease = false)
+    {
+        if ((lease ? LeaseBlocker(c) : AcceptBlocker(c)) != null) return false;
+        var lot = lease ? Lot() : null;
+        List<Machine>? machines = null;
+        if (lot != null)
+        {
+            machines = _sim.Pois.DeliverSet(c.Lease!.Machines, Player, lot);
+            if (machines == null)
+            {
+                _sim.Notifications.Post($"No room on the lot of {lot.Poi.Name} for the leased machines: clear it first", Severity.Warning);
+                return false;
+            }
+            machines.ForEach(m => m.LeaseContract = c.Id);
+            c.Leased = true;
+        }
         c.State = ContractState.Active;
         c.FarmId = Player;
         c.DueDay = _sim.Clock.DayIndex + c.Days;
         _sim.Events.Publish(new ContractAccepted(c));
+        if (machines != null) _sim.Events.Publish(new MachinesLeased(c, machines, lot!.Poi));
         return true;
     }
+
+    /// <summary>Where leased machines are delivered: the lot (delivery trigger) of a POI with an open lease action.</summary>
+    private PoiTrigger? Lot() => _sim.World.Pois.SelectMany(p => p.Triggers)
+        .FirstOrDefault(t => t.Type == "delivery" && t.Actions.Any(a => a.Type == "lease" && _sim.Pois.Closed(t.Poi, a) == null));
 
     /// <summary>What giving <paramref name="c"/> back, or missing its due day, costs: a share of its reward.</summary>
     public float Penalty(Contract c) => Round10(c.Reward * Rules.Penalty);
@@ -187,6 +219,16 @@ public sealed class ContractSystem
             case ContractState.Canceled: _sim.Events.Publish(new ContractCanceled(c, penalty)); break;
             case ContractState.Completed: _sim.Events.Publish(new ContractCompleted(c, c.Reward)); break;
         }
+        if (c.Leased) ReturnLease(c);
+    }
+
+    /// <summary>A contract's leased machines go back to the dealer, however it ended, and the farm pays the lease.</summary>
+    private void ReturnLease(Contract c)
+    {
+        if (c.FarmId == Player && c.LeaseFee > 0f) _sim.Economy.Spend(c.LeaseFee, MoneyCategory.Leasing);
+        var machines = _sim.Machines.All.Where(m => m.LeaseContract == c.Id).ToList();
+        _sim.RemoveMachines(machines);
+        _sim.Events.Publish(new LeaseReturned(c, machines, c.LeaseFee));
     }
 
     /// <summary>A parcel bought by a farm: its neighbor's offers on it come down.</summary>
@@ -250,14 +292,21 @@ public sealed class ContractSystem
     private Contract FieldJob(ContractTypeDef type, FieldInfo field, int day, int month)
     {
         Plan(type, field, month, Rng, out var crop, out var buyer);
+        var lease = LeaseFor(type, crop);
         return new Contract
         {
             Id = NextId++, Type = type, Npc = _sim.World.FarmlandById(field.FarmlandId)!.Npc, Field = field, Crop = crop,
             Poi = buyer, Goods = buyer != null ? _sim.Content.FillTypes[crop!.FillType] : null,
             Reward = Round10(type.RewardPerHa * field.AreaHa * Rng.Range(0.9f, 1.1f)),
             Days = Rng.Range(type.Days[0], type.Days[1] + 1), OfferedDay = day,
+            Lease = lease, LeaseFee = lease != null ? Round10(lease.FeePerHa * field.AreaHa) : 0f,
         };
     }
+
+    /// <summary>The first of the job's lease sets that can do it: a work area of its work (a header that cuts its crop).</summary>
+    private ContractLeaseDef? LeaseFor(ContractTypeDef type, CropDef? crop) => type.Leases.FirstOrDefault(l => l.Machines.Any(id =>
+        _sim.Content.Machines[id].WorkArea is { } wa && wa.Type == type.Work
+        && (wa.Type != "harvester" || crop == null || wa.HarvestGroups.Contains(crop.HarvestGroup))));
 
     private Contract Delivery(ContractTypeDef type, int day, int month)
     {

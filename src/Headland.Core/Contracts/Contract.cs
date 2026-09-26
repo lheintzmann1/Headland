@@ -43,6 +43,9 @@ public sealed class Contract
     public float Reward { get; init; }
     /// <summary>Game days to finish it once taken.</summary>
     public int Days { get; init; }
+    /// <summary>Field jobs: machines it can be taken with, leased, and what they cost, taken from the reward.</summary>
+    public ContractLeaseDef? Lease { get; init; }
+    public float LeaseFee { get; init; }
     /// <summary>Day index it went on the board.</summary>
     public int OfferedDay { get; init; }
 
@@ -51,6 +54,8 @@ public sealed class Contract
     public int FarmId { get; internal set; }
     /// <summary>Day index it's due: unless done, it fails at the midnight starting this day.</summary>
     public int DueDay { get; internal set; }
+    /// <summary>Taken with the <see cref="Lease"/> machines, which go back when it ends.</summary>
+    public bool Leased { get; internal set; }
 
     /// <summary>Field jobs: the share of the field in the job's done state, as of the last check.</summary>
     public float Progress { get; internal set; }

@@ -149,7 +149,7 @@ public sealed class ContentDatabase
         var actionTriggers = new Dictionary<string, string[]>
         {
             ["sell"] = ["unload"], ["store"] = ["unload"], ["buy"] = ["fill"], ["refuel"] = ["fill"],
-            ["repair"] = ["repair"], ["wash"] = ["wash"], ["process"] = [],
+            ["repair"] = ["repair"], ["wash"] = ["wash"], ["lease"] = ["delivery"], ["process"] = [],
         };
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
@@ -312,6 +312,17 @@ public sealed class ContentDatabase
                     e.Add($"{what}: {name} ground '{g}' is not a field's ({string.Join(", ", fieldGrounds)})");
                 foreach (var c in state.Crop.Where(c => !FieldStateDef.CropStates.Contains(c)))
                     e.Add($"{what}: {name} crop state '{c}' is unknown ({string.Join(", ", FieldStateDef.CropStates)})");
+            }
+            if (t.Work == "" && t.Leases.Length > 0) e.Add($"{what}: leases are for field jobs");
+            for (var k = 0; k < t.Leases.Length && t.Work != ""; k++)
+            {
+                var lease = t.Leases[k];
+                var set = $"{what} lease {k + 1}";
+                if (lease.FeePerHa < 0) e.Add($"{set}: feePerHa must be >= 0");
+                foreach (var id in lease.Machines.Where(id => !Machines.ContainsKey(id))) e.Add($"{set}: unknown machine '{id}'");
+                var machines = lease.Machines.Where(Machines.ContainsKey).Select(id => Machines[id]).ToList();
+                if (!machines.Any(m => m.WorkArea?.Type == t.Work)) e.Add($"{set}: no machine does the job's work ({t.Work})");
+                if (!machines.Any(m => m.Motorized != null)) e.Add($"{set}: needs a vehicle");
             }
             var d = t.Deliver;
             if (t.Work == "")

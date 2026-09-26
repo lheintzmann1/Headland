@@ -13,7 +13,10 @@ namespace Headland.Core.Tests;
 
 public class ContractTests
 {
-    /// <summary>A small map: the farm's parcel with field 1 (stubble), Ada Morrow's with these fields, and an elevator.</summary>
+    /// <summary>
+    /// A small map: the farm's parcel with field 1 (stubble), Ada Morrow's with these fields, an elevator and a
+    /// machinery dealer.
+    /// </summary>
     private static Simulation Neighbors(params FieldDef[] fields)
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
@@ -26,7 +29,11 @@ public class ContractTests
                 new FarmlandDef { Id = 2, Npc = "morrow", X = 64, Z = 0, W = 192, H = 128 },
             ],
             Fields = [new FieldDef { Id = 1, X = 8, Z = 8, W = 48, H = 48, Ground = "stubble" }, .. fields],
-            Pois = [new PoiPlacementDef { Id = "elevator", Type = "grain_elevator", X = 128, Z = 200 }],
+            Pois =
+            [
+                new PoiPlacementDef { Id = "elevator", Type = "grain_elevator", X = 128, Z = 200 },
+                new PoiPlacementDef { Id = "dealer", Type = "machinery_dealer", X = 215, Z = 190 },
+            ],
             PlayerX = 2, PlayerZ = 2,
         };
         db.Game.Map = "neighbors";
@@ -42,6 +49,14 @@ public class ContractTests
     private static string Describe(Contract c) =>
         $"{c} {c.Npc?.Id} {c.Crop?.Id} {c.Poi?.Id} {c.Goods?.Id} {c.Amount} {c.Reward} {c.Days} {c.OfferedDay} {c.FarmId} {c.DueDay} " +
         $"{c.Progress:0.0000} {c.Harvested} {c.Delivered}";
+
+    /// <summary>Puts field <paramref name="id"/>'s whole ground in the given state, as if worked.</summary>
+    private static void SetGround(Simulation sim, int id, GroundType ground)
+    {
+        var L = sim.World.Layers;
+        for (var i = 0; i < L.FieldId.Length; i++)
+            if (L.FieldId[i] == id) L.Ground[i] = (byte)ground;
+    }
 
     private static void Run(Simulation sim, float seconds, Func<bool>? until = null)
     {
@@ -431,5 +446,132 @@ public class ContractTests
         Run(sim, 1f);
         Assert.Equal((ContractState.Completed, job.Amount), (job.State, job.Delivered));
         Assert.Equal(money + job.Reward + income, sim.Economy.Money, 1);
+    }
+
+    [Fact]
+    public void LeasedMachinesComeWithTheJobAndGoBackOnceItIsDone()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var leased = Record<MachinesLeased>(sim);
+        var returned = Record<LeaseReturned>(sim);
+        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        Assert.Equal(["tractor_125", "cultivator_3"], job.Lease!.Machines);
+        Assert.Equal(MathF.Round(150f * job.Field!.AreaHa / 10f) * 10f, job.LeaseFee);
+        var before = sim.Machines.All.Count;
+        Assert.True(sim.Contracts.Accept(job, lease: true));
+
+        // On the dealer's lot, the cultivator on the tractor: the farm's to drive while the contract lasts.
+        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        var machines = Assert.Single(leased).Machines;
+        Assert.Equal((before + 2, true), (sim.Machines.All.Count, job.Leased));
+        Assert.Same(machines[0], machines[1].Parent);
+        Assert.All(machines, m => Assert.Equal((Farm.PlayerId, job.Id), (m.FarmId, m.LeaseContract)));
+        Assert.All(machines, m => Assert.True(lot.Contains(m.Footprint.Center)));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Leased Fieldmaster 125, Tiller 300: they wait at Machinery Dealer");
+        sim.Player.Enter(machines[0]);
+
+        // Done: the reward less the lease, and the machines go back, the farmer stepping out.
+        var money = sim.Economy.Money;
+        SetGround(sim, 4, GroundType.Cultivated);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, job.State);
+        Assert.Equal((money + job.Reward - job.LeaseFee, -job.LeaseFee), (sim.Economy.Money, sim.Economy.Ledger.Today[MoneyCategory.Leasing]));
+        Assert.Equal(before, sim.Machines.All.Count);
+        Assert.DoesNotContain(machines[0], sim.Machines.All);
+        Assert.Null(sim.Player.Vehicle);
+        Assert.Equal(job.LeaseFee, Assert.Single(returned).Fee);
+    }
+
+    [Fact]
+    public void ALeaseIsPaidAndGoesBackWhenTheContractIsGivenBack()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var dismissed = Record<HelperDismissed>(sim);
+        var job = sim.Contracts.On(sim.World.FieldById(6)!)!;
+        Assert.True(sim.Contracts.Accept(job, lease: true));
+        var tractor = sim.Machines.All.Single(m => m.LeaseContract == job.Id && m.IsMotorized);
+        // The farm's own trailer on the leased tractor, and a helper driving it.
+        var trailer = sim.Machines.Spawn("trailer_16", tractor.Position, tractor.Heading);
+        Assert.True(sim.Machines.Attach(tractor, "drawbar", trailer));
+        sim.HireHelper(tractor, job.Field!);
+        var money = sim.Economy.Money;
+
+        Assert.True(sim.Contracts.Cancel(job));
+        Assert.Equal(money - sim.Contracts.Penalty(job) - job.LeaseFee, sim.Economy.Money, 1);
+        Assert.Single(dismissed);
+        Assert.DoesNotContain(sim.Machines.All, m => m.LeaseContract == job.Id);
+        Assert.Contains(trailer, sim.Machines.All);
+        Assert.Null(trailer.Parent);
+    }
+
+    [Fact]
+    public void AHarvestLeaseBringsAHeaderForItsCrop()
+    {
+        var sim = Neighbors(Field(2, "seeded", "corn", "harvestable"), Field(3, "seeded", "wheat", "harvestable"));
+        sim.SkipHours(24);
+        var corn = sim.Contracts.On(sim.World.FieldById(2)!)!;
+        var wheat = sim.Contracts.On(sim.World.FieldById(3)!)!;
+        Assert.Contains("header_corn_6", corn.Lease!.Machines);
+        Assert.Contains("header_grain_6", wheat.Lease!.Machines);
+        Assert.Equal("No machines can be leased for this job", sim.Contracts.LeaseBlocker(sim.Contracts.Offers.First(c => c.Field == null)));
+
+        Assert.True(sim.Contracts.Accept(corn, lease: true));
+        var set = sim.Machines.All.Where(m => m.LeaseContract == corn.Id).ToList();
+        Assert.Equal(["combine_7", "header_corn_6", "tractor_95", "trailer_16"], set.Select(m => m.Def.Id));
+        Assert.Equal((set[0], set[2]), (set[1].Parent, set[3].Parent));
+        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        Assert.All(set, m => Assert.True(lot.Contains(m.Footprint.Center)));
+        for (var i = 0; i < set.Count; i++)
+        for (var j = i + 1; j < set.Count; j++)
+            Assert.False(Geometry.Overlaps(set[i].Footprint, set[j].Footprint), $"{set[i]} overlaps {set[j]}");
+    }
+
+    [Fact]
+    public void NoLeaseWithoutRoomOnTheLot()
+    {
+        var sim = Neighbors(Field(2, "seeded", "wheat", "harvestable"));
+        var job = sim.Contracts.On(sim.World.FieldById(2)!)!;
+        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        while (sim.Pois.DeliverSet(["combine_7"], Farm.PlayerId, lot) != null) { }
+        var machines = sim.Machines.All.Count;
+
+        Assert.False(sim.Contracts.Accept(job, lease: true));
+        Assert.Equal((ContractState.Offered, machines), (job.State, sim.Machines.All.Count));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "No room on the lot of Machinery Dealer for the leased machines: clear it first");
+    }
+
+    [Fact]
+    public void LeasedMachinesAreSavedWithTheirContract()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        Assert.True(sim.Contracts.Accept(job, lease: true));
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        var copy = loaded.Contracts.ById(job.Id)!;
+        Assert.Equal((true, job.LeaseFee, job.Lease), (copy.Leased, copy.LeaseFee, copy.Lease));
+        Assert.Equal(sim.Machines.All.Select(m => (m.Id, m.LeaseContract)), loaded.Machines.All.Select(m => (m.Id, m.LeaseContract)));
+        Assert.True(loaded.Contracts.Cancel(copy));
+        Assert.DoesNotContain(loaded.Machines.All, m => m.LeaseContract != 0);
+    }
+
+    [Fact]
+    public void LeasesAreValidated()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.ContractTypes["deliver"].Leases = [new ContractLeaseDef { Machines = ["tractor_95"] }];
+        db.ContractTypes["cultivate"].Leases = [new ContractLeaseDef { Machines = ["seeder_3", "rocket"], FeePerHa = -1 }];
+        db.Pois["farm_shop"].Actions = [new PoiActionDef { Type = "lease", Trigger = "yard" }];
+        Assert.Equal(
+        [
+            "poi 'farm_shop' lease action: works at delivery triggers, not fill",
+            "contract type 'cultivate' lease 1: feePerHa must be >= 0",
+            "contract type 'cultivate' lease 1: unknown machine 'rocket'",
+            "contract type 'cultivate' lease 1: no machine does the job's work (cultivator)",
+            "contract type 'cultivate' lease 1: needs a vehicle",
+            "contract type 'deliver': leases are for field jobs",
+        ], db.Validate());
     }
 }

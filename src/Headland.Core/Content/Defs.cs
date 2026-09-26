@@ -340,6 +340,17 @@ public sealed class ContractTypeDef
     public float Weight { get; set; } = 1f;
     /// <summary>Goods to bring to a buyer: a harvest's crop, or the goods of a delivery job.</summary>
     public ContractDeliveryDef? Deliver { get; set; }
+    /// <summary>Field jobs: machine sets the job can be taken with, leased; an offer has the first that can do it.</summary>
+    public ContractLeaseDef[] Leases { get; set; } = [];
+}
+
+/// <summary>Machines leased from a dealer for a contract, for a fee taken from the reward.</summary>
+public sealed class ContractLeaseDef
+{
+    /// <summary>Machine ids. Implements come hitched to the first vehicle of the set with a joint for them.</summary>
+    public string[] Machines { get; set; } = [];
+    /// <summary>What the lease costs for each hectare of the field.</summary>
+    public float FeePerHa { get; set; }
 }
 
 /// <summary>

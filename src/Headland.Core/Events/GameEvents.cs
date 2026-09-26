@@ -119,6 +119,12 @@ public sealed record ContractCanceled(Contract Contract, float Penalty) : IContr
 /// <summary>A contract was done, and paid <paramref name="Reward"/>.</summary>
 public sealed record ContractCompleted(Contract Contract, float Reward) : IContractEvent;
 
+/// <summary>Machines leased for a contract are waiting at <paramref name="Poi"/>'s lot.</summary>
+public sealed record MachinesLeased(Contract Contract, IReadOnlyList<Machine> Machines, Poi Poi) : IContractEvent;
+
+/// <summary>A contract ended and its leased machines went back; the farm paid <paramref name="Fee"/> for them.</summary>
+public sealed record LeaseReturned(Contract Contract, IReadOnlyList<Machine> Machines, float Fee) : IContractEvent;
+
 /// <summary>A load tipped at a buyer for a contract, which took it without paying (published when the machine stops).</summary>
 public sealed record ContractDelivery(Contract Contract, Machine Machine, Poi Poi, string FillType, float Amount) : IContractEvent;
 

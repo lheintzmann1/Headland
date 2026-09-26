@@ -11,21 +11,31 @@
   // "deliver" on a harvest job: the crop belongs to the neighbor and at least "share" of what was harvested must be
   // tipped at the buyer named on the contract. A delivery job (no "work") asks for "amount": [min, max] units of
   // goods a buyer on the map takes ("fillTypes", default any), and pays their market price times "priceFactor".
+  // "leases": machine sets a field job can be taken with, from a POI with a "lease" action (the dealer). An offer
+  // gets the first set that can do it (for a harvest, one whose header cuts the crop), for "feePerHa" by the
+  // field's area, taken from the reward. The machines wait on the dealer's lot, implements hitched, and go back when
+  // the contract ends.
   { "id": "cultivate", "name": "Cultivate", "work": "cultivator", "months": [3, 4, 7, 8, 9, 10, 11],
     "offer": { "ground": ["stubble", "grass", "seeded"], "crop": ["none", "dead"] },
     "done": { "ground": ["cultivated"] },
     "rewardPerHa": 500, "days": [3, 5],
+    "leases": [ { "machines": ["tractor_125", "cultivator_3"], "feePerHa": 150 } ],
     "description": "Turn the stubble, grass or failed crop into a seedbed." },
   { "id": "sow", "name": "Sow", "work": "seeder",
     "offer": { "ground": ["cultivated", "plowed"], "crop": ["none"] },
     "done": { "crop": ["sown"] },
     "rewardPerHa": 650, "days": [2, 4],
-    "description": "Sow the crop asked for, with your own seed." },
+    "leases": [ { "machines": ["tractor_125", "seeder_3"], "feePerHa": 200 } ],
+    "description": "Sow the crop asked for: with your own seed, or the seed in a leased drill." },
   { "id": "harvest", "name": "Harvest", "work": "harvester",
     "offer": { "crop": ["harvestable"] },
     "done": { "crop": ["none"] },
     "deliver": { "share": 0.9 },
     "rewardPerHa": 900, "days": [3, 5],
+    "leases": [
+      { "machines": ["combine_7", "header_grain_6", "tractor_95", "trailer_16"], "feePerHa": 350 },
+      { "machines": ["combine_7", "header_corn_6", "tractor_95", "trailer_16"], "feePerHa": 350 }
+    ],
     "description": "Harvest the field and tip the crop at the buyer. It is the neighbor's: the buyer pays you nothing for it." },
   { "id": "deliver", "name": "Deliver", "days": [6, 10], "weight": 0.6,
     "deliver": { "amount": [4000, 12000], "priceFactor": 1.3 },

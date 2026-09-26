@@ -162,7 +162,8 @@ public partial class Hud : CanvasLayer
         _vehiclePanel.Visible = v != null;
         if (v == null) return;
         var sb = new StringBuilder();
-        sb.Append($"[b]{v.Def.Name}[/b]   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
+        var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract) : "";
+        sb.Append($"[b]{v.Def.Name}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
         if (v.Def.HarvestTank != null) sb.Append("   " + (v.TurnedOn ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
         sb.Append('\n');
         if (v.Controller is FieldWorkController w)

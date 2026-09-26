@@ -23,7 +23,8 @@ Built with **Godot 4.7** and **C#**.
   and working speed depends on the implement, the engine's power, the load and soft ground.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed at the farm shop,
-  refuel and wash at the gas station, and get machines repaired at the workshop. Prices follow the season, drop as
+  refuel and wash at the gas station, get machines repaired at the workshop, and lease them for contracts at the
+  machinery dealer. Prices follow the season, drop as
   you flood a buyer and recover over time, and now and then a buyer pays more for a few days. Each place is a point
   of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
   hours, storage and production that runs by the hour.
@@ -42,8 +43,10 @@ Built with **Godot 4.7** and **C#**.
   sowing a seedbed, harvesting a ripe crop), and buyers order goods for more than the market price. C opens the
   board: take up to three at a time, each due within a few days. A field job is done once 95% of the field is; a
   harvest's crop is the neighbor's, and 90% of it must be tipped at the buyer named on the contract, who takes it
-  without paying. Giving a contract back, or finishing late, costs 10% of its reward. Fields under contract show it
-  on their sign and get an outline. The jobs are JSON too (`contracts.json`).
+  without paying. Giving a contract back, or finishing late, costs 10% of its reward. A field job can also be taken
+  with leased machines, for a fee taken from the reward: they wait on the machinery dealer's lot, implements hitched,
+  and go back when the contract ends. Fields under contract show it on their sign and get an outline. The jobs are
+  JSON too (`contracts.json`).
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by

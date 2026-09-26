@@ -4,6 +4,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.World;
 
 namespace Headland.Core.Pois;
 
@@ -88,7 +89,7 @@ public sealed class PoiSystem
     public IEnumerable<string> Describe(PoiTrigger trigger) => trigger.Type switch
     {
         "load" => [$"Load {Names(trigger.Poi.Storage!.Def.FillTypes)}"],
-        "delivery" => ["New machines are delivered here"],
+        "delivery" => [trigger.Actions.Any(a => a.Type == "lease") ? "Machines leased for contracts wait here" : "New machines are delivered here"],
         _ => trigger.Actions.Select(a => Describe(trigger.Poi, a)),
     };
 
@@ -250,6 +251,14 @@ public sealed class PoiSystem
         UpdateLoading(dt);
     }
 
+    /// <summary>A machine leaving the map: its load under way is published, and its loading stops.</summary>
+    internal void Forget(Machine m)
+    {
+        Flush(m);
+        _unloading.Remove(m);
+        FinishLoading(m);
+    }
+
     private void Flush(Machine m)
     {
         if (!_deliveries.Remove(m, out var d) || d.Amount < 1f) return;
@@ -356,6 +365,59 @@ public sealed class PoiSystem
             return m;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Puts a set of new machines of <paramref name="farmId"/> on <paramref name="spot"/>, a delivery trigger: each
+    /// implement hitched to the first vehicle of the set with a free joint for it, and each vehicle with what it pulls
+    /// in a free place facing the POI's front. Null when they don't all fit, and then none are delivered.
+    /// </summary>
+    public List<Machine>? DeliverSet(IReadOnlyList<string> machineDefIds, int farmId, PoiTrigger spot)
+    {
+        var area = spot.Area;
+        var others = _sim.Machines.All.ToList();
+        var set = machineDefIds.Select(id => _sim.Machines.Spawn(id, area.Center, area.Heading, farmId)).ToList();
+        foreach (var implement in set.Where(m => m.Def.Attacher != null))
+        {
+            var (vehicle, joint) = set.Where(v => v.IsMotorized)
+                .SelectMany(v => v.Def.AttacherJoints.Select(j => (v, j)))
+                .FirstOrDefault(x => x.j.Type == implement.Def.Attacher!.Type && !x.v.Attached.ContainsKey(x.j.Id));
+            if (vehicle != null) _sim.Machines.Hitch(vehicle, joint.Id, implement);
+        }
+        var obstacles = _sim.World.Obstacles.Where(o => Vector2.Distance(o.Center, area.Center) < area.BoundingRadius + o.BoundingRadius).ToList();
+        foreach (var root in set.Where(m => m.Parent == null))
+        {
+            if (!Place(root, area, obstacles, others))
+            {
+                foreach (var m in set) _sim.Machines.All.Remove(m);
+                return null;
+            }
+            others.AddRange(root.Chain());
+        }
+        return set;
+    }
+
+    /// <summary>Moves a machine and what it pulls to the first place in <paramref name="area"/> clear of the rest, front row first.</summary>
+    private bool Place(Machine root, Obb area, List<Obstacle> obstacles, List<Machine> others)
+    {
+        const float gap = 1f;
+        for (var y = area.HalfExtents.Y; y >= -area.HalfExtents.Y; y -= 1f)
+        for (var x = -area.HalfExtents.X; x <= area.HalfExtents.X; x += 1f)
+        {
+            _sim.Machines.Teleport(root, area.Center + area.AxisX * x + area.AxisY * y, area.Heading);
+            if (root.Chain().All(m => Clear(m.Footprint))) return true;
+        }
+        return false;
+
+        bool Clear(Obb box)
+        {
+            Span<Vector2> corners = stackalloc Vector2[4];
+            MathUtil.RectCorners(box.Center, box.Heading, box.HalfExtents.X, box.HalfExtents.Y, corners);
+            foreach (var c in corners)
+                if (!area.Contains(c)) return false;
+            var room = box with { HalfExtents = box.HalfExtents + new Vector2(gap * 0.5f) };
+            return !obstacles.Any(o => Geometry.Overlaps(room, o)) && !others.Any(m => Geometry.Overlaps(room, m.Footprint));
+        }
     }
 
     /// <summary>A footprint center inside <paramref name="area"/>, clear of machines and obstacles, row by row.</summary>

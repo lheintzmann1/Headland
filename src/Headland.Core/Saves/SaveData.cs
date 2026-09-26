@@ -162,6 +162,10 @@ public sealed class ContractSave
     /// <summary>Crop threshed on the field (harvests), and goods tipped at the buyer.</summary>
     public float Harvested { get; set; }
     public float Delivered { get; set; }
+    /// <summary>The job's lease set (index in its leases), its fee, and whether the contract was taken with it.</summary>
+    public int? Lease { get; set; }
+    public float LeaseFee { get; set; }
+    public bool Leased { get; set; }
 }
 
 public sealed class MachineSave
@@ -169,6 +173,8 @@ public sealed class MachineSave
     public int Id { get; set; }
     public string Def { get; set; } = "";
     public int Farm { get; set; }
+    /// <summary>The contract it's leased for.</summary>
+    public int? Lease { get; set; }
     public float X { get; set; }
     public float Z { get; set; }
     public float Heading { get; set; }

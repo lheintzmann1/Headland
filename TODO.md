@@ -95,7 +95,7 @@ conditions. Money is just another input or output:
 - [x] Field access: work only applies on the player's farmland or fields with an active contract, and only
       the contract's work. Contract fields show in the world (sign, outline) and in the inspector; the map
       screen shows them once it exists.
-- [ ] Equipment rental: a contract can offer a leased machine set, fee taken from the reward; machines
+- [x] Equipment rental: a contract can offer a leased machine set, fee taken from the reward; machines
       appear at a delivery spot and leave when the contract ends.
 - [x] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
       delivering a share to a given POI.

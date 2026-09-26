@@ -7,7 +7,7 @@ namespace Headland.Game.UI;
 
 /// <summary>
 /// C: the contract board. The farm's contracts under way, with their progress, due day and a button to give them
-/// back, and the offers on the board to take.
+/// back, and the offers on the board to take, with the farm's machines or leased ones.
 /// </summary>
 public partial class ContractsScreen : Screen
 {
@@ -36,7 +36,7 @@ public partial class ContractsScreen : Screen
         _active = new GridContainer { Columns = 6, ThemeTypeVariation = "TableGrid" };
         content.AddChild(_active);
         content.AddChild(Widgets.Label("On the board", "StrongLabel"));
-        _offers = new GridContainer { Columns = 7, ThemeTypeVariation = "TableGrid" };
+        _offers = new GridContainer { Columns = 8, ThemeTypeVariation = "TableGrid" };
         content.AddChild(_offers);
 
         var rules = Sim.Contracts.Rules;
@@ -76,7 +76,7 @@ public partial class ContractsScreen : Screen
         else Headers(_active, "Job", "For", "Progress", "Due", "Reward", "");
         foreach (var c in mine)
         {
-            _active.AddChild(Widgets.Label(Title(c)));
+            _active.AddChild(Widgets.Label(c.Leased ? $"{Title(c)} (leased machines)" : Title(c)));
             _active.AddChild(Widgets.Label(c.Client));
             var progress = Widgets.Label();
             _active.AddChild(progress);
@@ -96,7 +96,7 @@ public partial class ContractsScreen : Screen
 
         var offers = Sim.Contracts.Offers.ToList();
         if (offers.Count == 0) _offers.AddChild(Widgets.Label("Empty: new offers go up every morning.", "DimLabel"));
-        else Headers(_offers, "Job", "For", "Size", "Time", "Reward", "", "");
+        else Headers(_offers, "Job", "For", "Size", "Time", "Reward", "", "", "");
         foreach (var c in offers)
         {
             _offers.AddChild(Widgets.Label(Title(c)));
@@ -106,13 +106,20 @@ public partial class ContractsScreen : Screen
             _offers.AddChild(Widgets.Money(c.Reward));
             var take = Widgets.Button("Take", () => Sim.Contracts.Accept(c));
             _offers.AddChild(take);
+            var lease = c.Lease != null ? Widgets.Button($"Lease machines (${c.LeaseFee:N0})", () => Sim.Contracts.Accept(c, lease: true)) : null;
+            if (lease != null)
+                lease.TooltipText = $"{string.Join(", ", c.Lease!.Machines.Select(id => Sim.Content.Machines[id].Name))}: delivered at the " +
+                                    $"dealer, gone back when the contract ends. ${c.LeaseFee:N0} is taken from the reward.";
+            _offers.AddChild(lease ?? (Control)Widgets.Label());
             var why = Widgets.Label(variation: "DimLabel");
             _offers.AddChild(why);
             _refreshers.Add(() =>
             {
                 var blocker = Sim.Contracts.AcceptBlocker(c);
                 take.Disabled = blocker != null;
-                why.Text = blocker ?? "";
+                var leaseBlocker = lease != null ? Sim.Contracts.LeaseBlocker(c) : null;
+                if (lease != null) lease.Disabled = leaseBlocker != null;
+                why.Text = blocker ?? leaseBlocker ?? "";
             });
         }
         Refresh();

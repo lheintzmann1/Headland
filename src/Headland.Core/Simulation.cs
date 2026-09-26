@@ -305,6 +305,27 @@ public sealed class Simulation
         Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason, helper.Wages));
     }
 
+    /// <summary>
+    /// Takes machines off the map (leased ones going back): helpers driving them leave, the player steps out, and the
+    /// machines staying are unhitched from them.
+    /// </summary>
+    internal void RemoveMachines(IReadOnlyCollection<Machine> gone)
+    {
+        foreach (var root in gone.Select(m => m.Root).Distinct().ToList())
+            if (root.Controller is FieldWorkController) DismissHelper(root, HelperEnd.Dismissed);
+        if (Player.Vehicle is { } v && gone.Contains(v)) Player.Exit(this);
+        foreach (var m in gone)
+        {
+            if (m.Parent != null && !gone.Contains(m.Parent)) Machines.Detach(m);
+            foreach (var child in m.Attached.Values.Where(c => !gone.Contains(c)).ToList()) Machines.Detach(child);
+        }
+        foreach (var m in gone)
+        {
+            Pois.Forget(m);
+            Machines.All.Remove(m);
+        }
+    }
+
     /// <summary>The field under the vehicle or its implements, else the nearest field within 25 m.</summary>
     public FieldInfo? FieldNear(Machine v)
     {
