@@ -27,6 +27,6 @@
       { "id": "bay", "type": "repair", "z": 7, "w": 18, "d": 16 }
     ],
     "actions": [
-      { "type": "repair", "trigger": "bay" }
+      { "type": "repair", "trigger": "bay", "openHours": [7, 20] }
     ] }
 ]

@@ -172,7 +172,7 @@ public sealed class Simulation
             Weather.Update(day, hour % 24 + 0.5f);
             Weather.TickHour();
             Crops.TickHour(Weather, day, hour);
-            Pois.TickHour();
+            Pois.TickHour(hour);
             PublishTime(hour);
         }
         LastHourTickMs = sw.Elapsed.TotalMilliseconds / n;

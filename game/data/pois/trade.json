@@ -7,6 +7,8 @@
   // trigger), "store" (its owner's loads go into its storage) or "buy" (it sells its fillTypes at a fill trigger).
   // "storage" keeps fillTypes, each up to "capacity" units ("capacities": { "wheat": 50000 } for exceptions); it
   // belongs to the POI's owner.
+  // Conditions, on any action: "openHours": [from, to] (game hours; past midnight when from > to), "months": [...]
+  // (1..12) and "minAmount" (the smallest load taken, or amount sold). Storage that is full takes nothing more.
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },
@@ -16,7 +18,7 @@
       { "id": "yard", "type": "fill", "z": 3.5, "w": 18, "d": 17 }
     ],
     "actions": [
-      { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"] }
+      { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"], "openHours": [7, 19] }
     ] },
   { "id": "grain_elevator", "name": "Grain Elevator", "icon": "sell", "w": 58, "d": 40,
     "parts": [
@@ -28,6 +30,6 @@
       { "id": "pit", "type": "unload", "x": -7, "z": 10, "w": 28, "d": 20 }
     ],
     "actions": [
-      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"] }
+      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 }
     ] }
 ]

@@ -248,6 +248,10 @@ public sealed class ContentDatabase
                 foreach (var ft in a.FillTypes)
                     if (!FillTypes.ContainsKey(ft)) e.Add($"{what}: unknown fill type '{ft}'");
                 if (a.Type is "store" or "process" && p.Storage == null) e.Add($"{what}: the poi has no storage");
+                if (a.OpenHours is { } hours && (hours.Length != 2 || hours.Any(h => h is < 0 or > 24) || hours[0] == hours[1]))
+                    e.Add($"{what}: openHours needs [from, to] hours, 0..24 and different");
+                if (a.Months.Any(m => m is < 1 or > 12)) e.Add($"{what}: months must be 1..12");
+                if (a.MinAmount < 0) e.Add($"{what}: minAmount must be >= 0");
                 if (a.Type == "store")
                     foreach (var ft in a.FillTypes.Where(f => !stored.Contains(f)))
                         e.Add($"{what}: the storage does not keep '{ft}'");

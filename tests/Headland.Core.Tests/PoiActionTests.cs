@@ -283,6 +283,60 @@ public class PoiActionTests
     }
 
     [Fact]
+    public void ClosedPoisSayWhenTheyOpen()
+    {
+        var sim = TestContent.NewSim();
+        var yard = sim.World.PoiById("supplies")!.Trigger("yard")!;
+        var seeder = sim.Machines.Spawn("seeder_3", yard.Area.Center, 0f);
+        seeder.Unit("seed")!.Remove(500f);
+        Assert.Equal(["Buy seeds (7:00–19:00)"], sim.Pois.Describe(yard));
+        Assert.Equal(["Buy seeds"], sim.Pois.UseOptions(seeder));
+
+        sim.SkipHours(13);
+        Assert.Empty(sim.Pois.UseOptions(seeder));
+        sim.Pois.Use(seeder);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Farm Supplies is closed: open 7:00–19:00");
+        Assert.Equal(400f, seeder.Unit("seed")!.Level);
+    }
+
+    [Fact]
+    public void LoadsUnderTheMinimumAreRefusedButStartedLoadsFinish()
+    {
+        var sim = TestContent.NewSim();
+        var (t, trailer) = TrailerAt(sim, new Vector2(441f, 230f), "wheat", 400f);
+        sim.Player.Enter(t);
+        sim.CommandUnload();
+        Assert.False(trailer.Tipping);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator takes loads of 500 L or more");
+
+        trailer.Unit("main")!.Add("wheat", 600f);
+        sim.CommandUnload();
+        Run(sim, 20f);
+        Assert.True(trailer.Unit("main")!.IsEmpty);
+    }
+
+    [Fact]
+    public void ProcessingRunsOnlyInItsHoursAndMonths()
+    {
+        var hours = Press(cycleHours: 1f);
+        hours.Actions[0].OpenHours = [8, 12];
+        var season = Press(cycleHours: 1f);
+        season.Id = "test_press_september";
+        season.Actions[0].Months = [9];
+        var sim = SimWith([hours, season],
+            new PoiPlacementDef { Id = "hours", Type = "test_press", X = 20, Z = 30, Farm = Farm.PlayerId },
+            new PoiPlacementDef { Id = "season", Type = "test_press_september", X = 44, Z = 30, Farm = Farm.PlayerId });
+        foreach (var poi in sim.World.Pois) poi.Storage!.Add("canola", 1000f);
+        var money = sim.Economy.Money;
+
+        // August 1st, 7:00 to the next morning: open from 8:00 to 12:00 only.
+        sim.SkipHours(24);
+        Assert.Equal(600f, sim.World.PoiById("hours")!.Storage!.Level("canola"));
+        Assert.Equal(1000f, sim.World.PoiById("season")!.Storage!.Level("canola"));
+        Assert.Equal(money - 40f, sim.Economy.Money);
+    }
+
+    [Fact]
     public void ConditionAndDirtAreSaved()
     {
         var sim = TestContent.NewSim();

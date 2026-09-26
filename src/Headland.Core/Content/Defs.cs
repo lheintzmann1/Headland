@@ -427,6 +427,12 @@ public sealed class PoiActionDef
     public string Trigger { get; set; } = "";
     /// <summary>What it trades or stores (store: defaults to everything the storage keeps).</summary>
     public string[] FillTypes { get; set; } = [];
+    /// <summary>Hours it is open, [from, to) in game hours (past midnight when from > to). Missing: always.</summary>
+    public float[]? OpenHours { get; set; }
+    /// <summary>Months it works in (1..12). Empty: all year.</summary>
+    public int[] Months { get; set; } = [];
+    /// <summary>Smallest load it takes (sell, store) or amount it sells (buy, refuel).</summary>
+    public float MinAmount { get; set; }
     /// <summary>Wash: price of washing a fully dirty machine.</summary>
     public float Price { get; set; }
     /// <summary>Process: what one cycle takes from storage and puts into it.</summary>

@@ -64,59 +64,128 @@ public sealed class PoiSystem
         _ => trigger.Actions.Select(a => Describe(trigger.Poi, a)),
     };
 
-    private string Describe(Poi poi, PoiActionDef a) => a.Type switch
+    /// <summary>An action and its conditions: "Buy seeds (7:00–19:00)".</summary>
+    private string Describe(Poi poi, PoiActionDef a)
     {
-        "sell" => $"Sell {Names(poi.FillTypesOf(a))}",
-        "store" => $"Store {Names(poi.FillTypesOf(a))}",
-        "buy" => $"Buy {Names(a.FillTypes)}",
-        "refuel" => $"Refuel with {Names(a.FillTypes)}",
-        "repair" => "Repair machines",
-        "wash" => "Wash machines",
-        _ => a.Type,
-    };
+        var what = a.Type switch
+        {
+            "sell" => $"Sell {Names(poi.FillTypesOf(a))}",
+            "store" => $"Store {Names(poi.FillTypesOf(a))}",
+            "buy" => $"Buy {Names(a.FillTypes)}",
+            "refuel" => $"Refuel with {Names(a.FillTypes)}",
+            "repair" => "Repair machines",
+            "wash" => "Wash machines",
+            _ => a.Type,
+        };
+        return Conditions(poi, a) is { Length: > 0 } conditions ? $"{what} ({conditions})" : what;
+    }
 
     private string Names(IEnumerable<string> fillTypes) =>
         string.Join(", ", fillTypes.Select(f => Content.FillTypes[f].Name.ToLowerInvariant()));
 
+    // ------------------------------------------------------------------ Conditions
+
+    /// <summary>Why <paramref name="action"/> is not available now (closed, out of season), or null when it is.</summary>
+    public string? Closed(Poi poi, PoiActionDef action) => Closed(poi, action, _sim.Clock.HourOfDay, _sim.Clock.Month);
+
+    private static string? Closed(Poi poi, PoiActionDef action, float hour, int month)
+    {
+        if (action.Months.Length > 0 && !action.Months.Contains(month))
+            return $"{poi.Name} {Verb(action)} only in {MachineSystem.Months(action.Months)}";
+        if (action.OpenHours is [var from, var to] && !(from < to ? hour >= from && hour < to : hour >= from || hour < to))
+            return $"{poi.Name} is closed: open {Hours(from, to)}";
+        return null;
+    }
+
+    private static string Verb(PoiActionDef a) => a.Type switch
+    {
+        "sell" => "buys",
+        "buy" => "sells",
+        "store" => "stores",
+        "refuel" => "refuels",
+        "repair" => "repairs",
+        "wash" => "washes",
+        _ => "works",
+    };
+
+    private static string Hours(float from, float to) => $"{Clock(from)}–{Clock(to)}";
+
+    private static string Clock(float hour) => $"{(int)hour}:{(int)MathF.Round((hour - (int)hour) * 60f):00}";
+
+    /// <summary>When and how much, for labels: "7:00–19:00, from 500 L".</summary>
+    private string Conditions(Poi poi, PoiActionDef a)
+    {
+        var parts = new List<string>();
+        if (a.OpenHours is [var from, var to]) parts.Add(Hours(from, to));
+        if (a.Months.Length > 0) parts.Add(MachineSystem.Months(a.Months));
+        if (a.MinAmount > 0f) parts.Add($"from {a.MinAmount:N0} {Unit(poi, a)}");
+        return string.Join(", ", parts);
+    }
+
+    private string Unit(Poi poi, PoiActionDef a) =>
+        poi.FillTypesOf(a).FirstOrDefault() is { } ft ? Content.FillTypes[ft].Unit : "units";
+
     // ------------------------------------------------------------------ Unloading
 
-    /// <summary>The action taking <paramref name="fillType"/> from <paramref name="m"/>: its farm's storage first, else a sale.</summary>
-    private static PoiActionDef? UnloadAction(Machine m, PoiTrigger trigger, string fillType)
+    /// <summary>
+    /// The open action taking <paramref name="fillType"/> from <paramref name="m"/>: its farm's storage first, else a
+    /// sale. When there is none but a closed one, why it is closed.
+    /// </summary>
+    private (PoiActionDef? action, string? closed) UnloadAction(Machine m, PoiTrigger trigger, string fillType)
     {
         PoiActionDef? sell = null;
+        string? closed = null;
         foreach (var a in trigger.Actions)
         {
             if (!trigger.Poi.FillTypesOf(a).Contains(fillType)) continue;
-            if (a.Type == "store" && m.FarmId == trigger.Poi.FarmId) return a;
-            if (a.Type == "sell") sell ??= a;
+            if (a.Type == "store" ? m.FarmId != trigger.Poi.FarmId : a.Type != "sell") continue;
+            if (Closed(trigger.Poi, a) is { } why)
+            {
+                closed ??= why;
+                continue;
+            }
+            if (a.Type == "store") return (a, null);
+            sell ??= a;
         }
-        return sell;
+        return (sell, sell == null ? closed : null);
     }
 
     /// <summary>Where an accepted load goes: the POI's storage, or away to the market (null).</summary>
     private static PoiStorage? Destination(Poi poi, PoiActionDef action, string fillType) =>
         action.Type == "store" || poi.Storage?.Keeps(fillType) == true ? poi.Storage : null;
 
-    /// <summary>Why <paramref name="m"/> can't unload <paramref name="fillType"/> at <paramref name="trigger"/>, or null if it can.</summary>
-    public string? UnloadBlocker(Machine m, PoiTrigger trigger, string fillType)
+    /// <summary>
+    /// Why <paramref name="m"/>, carrying <paramref name="load"/> units of <paramref name="fillType"/>, can't unload
+    /// at <paramref name="trigger"/>, or null if it can: the fill type isn't taken, it's closed, the storage is full or
+    /// the load is under the minimum.
+    /// </summary>
+    public string? UnloadBlocker(Machine m, PoiTrigger trigger, string fillType, float load)
     {
         var poi = trigger.Poi;
-        var name = Content.FillTypes[fillType].Name;
-        if (UnloadAction(m, trigger, fillType) is not { } action)
+        var ft = Content.FillTypes[fillType];
+        var (action, closed) = UnloadAction(m, trigger, fillType);
+        if (action == null)
         {
+            if (closed != null) return closed;
             if (trigger.Actions.Any(a => a.Type == "store" && poi.FillTypesOf(a).Contains(fillType)))
                 return $"{poi.Name} belongs to another farm";
-            return trigger.Actions.All(a => a.Type == "store") ? $"{poi.Name} does not store {name}" : $"{poi.Name} does not buy {name}";
+            return trigger.Actions.All(a => a.Type == "store") ? $"{poi.Name} does not store {ft.Name}" : $"{poi.Name} does not buy {ft.Name}";
         }
-        if (Destination(poi, action, fillType) is { } storage && storage.Free(fillType) < 1f) return $"{poi.Name} has no room for {name}";
+        if (Destination(poi, action, fillType) is { } storage && storage.Free(fillType) < 1f) return $"{poi.Name} has no room for {ft.Name}";
+        // A load under way may finish below the minimum.
+        var underWay = _deliveries.TryGetValue(m, out var d) && d.Poi == poi && d.FillType == fillType;
+        if (load < action.MinAmount && !underWay) return $"{poi.Name} takes loads of {action.MinAmount:N0} {ft.Unit} or more";
         return null;
     }
 
-    /// <summary>Takes up to <paramref name="amount"/> from <paramref name="m"/> unloading at <paramref name="trigger"/>; returns what it took.</summary>
+    /// <summary>
+    /// Takes up to <paramref name="amount"/> from <paramref name="m"/> unloading at <paramref name="trigger"/>; returns
+    /// what it took. The machine checks <see cref="UnloadBlocker"/> with its whole load first.
+    /// </summary>
     public float Unload(Machine m, PoiTrigger trigger, string fillType, float amount)
     {
-        if (amount <= 0f || UnloadBlocker(m, trigger, fillType) != null) return 0f;
-        var action = UnloadAction(m, trigger, fillType)!;
+        if (amount <= 0f || UnloadBlocker(m, trigger, fillType, float.PositiveInfinity) != null) return 0f;
+        var action = UnloadAction(m, trigger, fillType).action!;
         if (Destination(trigger.Poi, action, fillType) is { } storage) amount = storage.Add(fillType, amount);
         if (amount <= 0f) return 0f;
         var stored = action.Type == "store";
@@ -316,16 +385,18 @@ public sealed class PoiSystem
         foreach (var m in chain)
         {
             if (TriggerAt(m.Footprint.Center, "fill") is not { } fill) continue;
-            foreach (var a in fill.Actions)
+            foreach (var a in fill.Actions.Where(a => Closed(fill.Poi, a) == null))
             {
                 if (a.Type == "buy" && m.FillUnits.Any(u => a.FillTypes.Any(u.Accepts))) options.Add($"Buy {Names(a.FillTypes)}");
                 if (a.Type == "refuel" && m.Unit(m.Def.Motorized?.FuelTank) is { } tank && a.FillTypes.Any(tank.Accepts)) options.Add("Refuel");
             }
         }
-        if (Bay(chain, "repair") is { } workshop && chain.Sum(RepairPrice) is var repair and > 0.5f)
+        if (Bay(chain, "repair") is { } workshop && workshop.Actions.Any(a => a.Type == "repair" && Closed(workshop.Poi, a) == null)
+            && chain.Sum(RepairPrice) is var repair and > 0.5f)
             options.Add($"Repair (${repair:N0})");
-        if (Bay(chain, "wash") is { } wash && chain.Any(m => m.Dirt > 0.005f))
-            options.Add($"Wash (${chain.Sum(m => wash.Actions.Where(a => a.Type == "wash").Sum(a => WashPrice(a, m))):N0})");
+        if (Bay(chain, "wash") is { } bay && bay.Actions.Where(a => a.Type == "wash" && Closed(bay.Poi, a) == null).ToList() is { Count: > 0 } washes
+            && chain.Any(m => m.Dirt > 0.005f))
+            options.Add($"Wash (${chain.Sum(m => washes.Sum(a => WashPrice(a, m))):N0})");
         return options.Distinct().ToList();
     }
 
@@ -335,8 +406,13 @@ public sealed class PoiSystem
     private bool FillUp(Machine m, PoiTrigger trigger, List<string> why)
     {
         var done = false;
-        foreach (var action in trigger.Actions)
+        foreach (var action in trigger.Actions.Where(a => a.Type is "buy" or "refuel"))
         {
+            if (Closed(trigger.Poi, action) is { } closed)
+            {
+                why.Add(closed);
+                continue;
+            }
             FillUnit[] units = action.Type switch
             {
                 "buy" => m.FillUnits,
@@ -347,6 +423,11 @@ public sealed class PoiSystem
             foreach (var ft in action.FillTypes)
             {
                 if (!unit.CanAccept(ft)) continue;
+                if (unit.Free < action.MinAmount)
+                {
+                    why.Add($"{trigger.Poi.Name} sells {action.MinAmount:N0} {Content.FillTypes[ft].Unit} or more");
+                    continue;
+                }
                 var price = Price(trigger, ft);
                 var amount = unit.Add(ft, Affordable(m.FarmId, unit.Free, price));
                 if (amount <= 0f)
@@ -359,13 +440,18 @@ public sealed class PoiSystem
                 done = true;
             }
         }
-        if (!done) why.Add($"{m.Def.Name}: full, or takes nothing sold here");
+        if (!done && why.Count == 0) why.Add($"{m.Def.Name}: full, or takes nothing sold here");
         return done;
     }
 
     private bool Service(Machine m, PoiTrigger bay, PoiActionDef action, List<string> why)
     {
         var repair = action.Type == "repair";
+        if (Closed(bay.Poi, action) is { } closed)
+        {
+            why.Add(closed);
+            return false;
+        }
         if ((repair ? 1f - m.Condition : m.Dirt) < 0.005f)
         {
             why.Add(repair ? "Nothing to repair" : "Nothing to wash");
@@ -393,14 +479,19 @@ public sealed class PoiSystem
 
     // ------------------------------------------------------------------ Processing
 
-    /// <summary>Runs an hour of every POI's processing (called for each world hour, so sleeping runs them too).</summary>
-    internal void TickHour()
+    /// <summary>
+    /// Runs an hour of every POI's processing (called for each world hour, so sleeping runs them too). Closed
+    /// processing waits with its cycle half done; processing short of inputs or room starts its cycle over.
+    /// </summary>
+    internal void TickHour(long hour)
     {
+        var hourOfDay = hour % 24 + 0.5f;
+        var month = _sim.Calendar.DateOfDay((int)(hour / 24)).Month;
         foreach (var poi in All)
         for (var i = 0; i < poi.Def.Actions.Length; i++)
         {
             var a = poi.Def.Actions[i];
-            if (a.Type != "process") continue;
+            if (a.Type != "process" || Closed(poi, a, hourOfDay, month) != null) continue;
             if (!CanCycle(poi, a))
             {
                 poi.Progress[i] = 0f;

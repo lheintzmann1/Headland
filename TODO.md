@@ -65,7 +65,7 @@ conditions. Money is just another input or output:
       repair, vehicle delivery spot.
 - [x] Actions: sell, buy, process (rate, cycle time, running cost), store (capacity per fill type),
       refuel, repair, wash.
-- [ ] Conditions: accepted fill types, opening hours, months, storage full, minimum amount; Lua
+- [x] Conditions: accepted fill types, opening hours, months, storage full, minimum amount; Lua
       conditions later.
 - [ ] Prices: per-POI factors on top of the monthly curves in `filltypes.json`, demand that drops as you
       sell and recovers, occasional high-demand events.

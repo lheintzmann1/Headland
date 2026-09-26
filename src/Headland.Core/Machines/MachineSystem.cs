@@ -186,7 +186,7 @@ public sealed class MachineSystem
             var pit = Pois.TriggerAt(t.Footprint.Center, "unload");
             if (unit.IsEmpty) _sim.Notifications.Post($"{t.Def.Name} is empty");
             else if (pit == null) _sim.Notifications.Post("Drive the trailer into an unloading area to tip", Severity.Warning);
-            else if (Pois.UnloadBlocker(t, pit, unit.FillType!) is { } why) _sim.Notifications.Post(why, Severity.Warning);
+            else if (Pois.UnloadBlocker(t, pit, unit.FillType!, unit.Level) is { } why) _sim.Notifications.Post(why, Severity.Warning);
             else t.Tipping = true;
         }
     }
@@ -569,7 +569,7 @@ public sealed class MachineSystem
         var amount = MathF.Min(pipe.RatePerSecond * dt, tank.Level);
         // A machine under the pipe first, else a POI's unloading area.
         if (FindReceiver(outlet, ft, m) is { } target) tank.Remove(target.Add(ft, amount));
-        else if (Pois.TriggerAt(outlet, "unload") is { } pit && Pois.UnloadBlocker(m, pit, ft) == null) tank.Remove(Pois.Unload(m, pit, ft, amount));
+        else if (Pois.TriggerAt(outlet, "unload") is { } pit && Pois.UnloadBlocker(m, pit, ft, tank.Level) == null) tank.Remove(Pois.Unload(m, pit, ft, amount));
     }
 
     private void UpdateTipper(Machine m, float dt)
@@ -577,7 +577,7 @@ public sealed class MachineSystem
         if (!m.Tipping) return;
         var unit = m.Unit(m.Def.Tipper!.FillUnit)!;
         var pit = Pois.TriggerAt(m.Footprint.Center, "unload");
-        if (unit.IsEmpty || pit == null || Pois.UnloadBlocker(m, pit, unit.FillType!) != null)
+        if (unit.IsEmpty || pit == null || Pois.UnloadBlocker(m, pit, unit.FillType!, unit.Level) != null)
         {
             m.Tipping = false;
             return;
