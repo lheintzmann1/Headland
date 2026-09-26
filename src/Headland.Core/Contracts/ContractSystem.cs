@@ -12,7 +12,8 @@ namespace Headland.Core.Contracts;
 /// The contract board. Every midnight the neighbors post jobs their fields need in that season (contracts.json), and
 /// buyers ask for goods; offers nobody takes come down after a few days. The farm takes a few at a time, each due
 /// within its days. A field job is done once enough of the field is in its done state; goods count once tipped at
-/// the buyer, who takes them for the contract instead of paying for them. Done contracts pay their reward.
+/// the buyer, who takes them for the contract instead of paying for them. Done contracts pay their reward; canceled or
+/// late ones cost a penalty.
 /// </summary>
 public sealed class ContractSystem
 {
@@ -74,6 +75,17 @@ public sealed class ContractSystem
         return true;
     }
 
+    /// <summary>What giving <paramref name="c"/> back, or missing its due day, costs: a share of its reward.</summary>
+    public float Penalty(Contract c) => Round10(c.Reward * Rules.Penalty);
+
+    /// <summary>Gives a contract under way back, for its <see cref="Penalty"/>.</summary>
+    public bool Cancel(Contract c)
+    {
+        if (c.State != ContractState.Active || c.FarmId != Player) return false;
+        End(c, ContractState.Canceled);
+        return true;
+    }
+
     // ------------------------------------------------------------------ Time
 
     /// <summary>After the machines moved: checks the contracts whose fields were worked or goods delivered.</summary>
@@ -97,6 +109,7 @@ public sealed class ContractSystem
         {
             if (c.State == ContractState.Offered && day >= c.OfferedDay + Rules.OfferDays) End(c, ContractState.Withdrawn);
             else if (c.State == ContractState.Active && day >= c.DueDay) End(c, ContractState.Failed);
+            else if (c.State == ContractState.Active && day == c.DueDay - 1) _sim.Events.Publish(new ContractLastDay(c));
         }
         Post(day, Rules.OffersPerDay);
     }
@@ -163,12 +176,15 @@ public sealed class ContractSystem
 
     private void End(Contract c, ContractState state)
     {
+        var penalty = state is ContractState.Failed or ContractState.Canceled ? Penalty(c) : 0f;
+        if (penalty > 0f && c.FarmId == Player) _sim.Economy.Spend(penalty, MoneyCategory.Contracts);
         c.State = state;
         _all.Remove(c);
         switch (state)
         {
             case ContractState.Withdrawn: _sim.Events.Publish(new ContractWithdrawn(c)); break;
-            case ContractState.Failed: _sim.Events.Publish(new ContractFailed(c)); break;
+            case ContractState.Failed: _sim.Events.Publish(new ContractFailed(c, penalty)); break;
+            case ContractState.Canceled: _sim.Events.Publish(new ContractCanceled(c, penalty)); break;
             case ContractState.Completed: _sim.Events.Publish(new ContractCompleted(c, c.Reward)); break;
         }
     }

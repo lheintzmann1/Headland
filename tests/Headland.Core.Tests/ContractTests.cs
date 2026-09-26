@@ -97,9 +97,9 @@ public class ContractTests
     public void ContractRulesAreValidated()
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
-        db.Economy.Contracts = new ContractRulesDef { MaxOffers = -1, OfferDays = 0, Threshold = 1.5f };
+        db.Economy.Contracts = new ContractRulesDef { MaxOffers = -1, OfferDays = 0, Threshold = 1.5f, Penalty = 2f };
         Assert.Equal(["economy.contracts: maxOffers and offersPerDay must be >= 0, offerDays and maxActive >= 1",
-            "economy.contracts.threshold must be in (0, 1]"], db.Validate());
+            "economy.contracts.threshold must be in (0, 1]", "economy.contracts.penalty must be 0..1"], db.Validate());
     }
 
     [Fact]
@@ -128,6 +128,8 @@ public class ContractTests
             Assert.Equal(MathF.Round(c.Amount * sim.Economy.Price(c.Goods!.Id, 8) * 1.3f / 10f) * 10f, c.Reward);
         });
         Assert.Equal($"Deliver {deliveries[1].Amount:N0} L wheat to Flour Mill", deliveries[1].Label);
+        var first = sim.Contracts.Offers.First();
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"New contract: {first.Label} for {first.Client}, ${first.Reward:N0}");
     }
 
     [Fact]
@@ -182,19 +184,48 @@ public class ContractTests
     {
         var sim = TestContent.NewSim();
         var accepted = Record<ContractAccepted>(sim);
+        var lastDay = Record<ContractLastDay>(sim);
         var failed = Record<ContractFailed>(sim);
         var job = sim.Contracts.Offers.First();
         Assert.True(sim.Contracts.Accept(job));
         Assert.Equal((ContractState.Active, Farm.PlayerId, sim.Clock.DayIndex + job.Days), (job.State, job.FarmId, job.DueDay));
         Assert.Equal([new ContractAccepted(job)], accepted);
         Assert.Contains(job, sim.Contracts.ActiveOf(Farm.PlayerId));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract taken: {job.Label}, {job.Days} days to do it");
 
-        // Due at the midnight starting its due day.
+        // Due at the midnight starting its due day, with a warning the day before; missing it costs the penalty.
         sim.SkipHours((int)(job.DueDay * 24L - sim.Clock.TotalHours) - 1);
+        Assert.Equal([new ContractLastDay(job)], lastDay);
         Assert.Equal(ContractState.Active, job.State);
+        var money = sim.Economy.Money;
         sim.SkipHours(1);
+        var penalty = MathF.Round(job.Reward / 100f) * 10f;
         Assert.Equal(ContractState.Failed, job.State);
-        Assert.Equal([new ContractFailed(job)], failed);
+        Assert.Equal([new ContractFailed(job, penalty)], failed);
+        Assert.Equal(money - penalty, sim.Economy.Money);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract not done in time: {job.Label} (${penalty:N0} penalty)");
+        Assert.DoesNotContain(job, sim.Contracts.All);
+    }
+
+    [Fact]
+    public void GivingAContractBackCostsAShareOfItsReward()
+    {
+        var sim = TestContent.NewSim();
+        var canceled = Record<ContractCanceled>(sim);
+        var job = sim.Contracts.Offers.First();
+        Assert.False(sim.Contracts.Cancel(job));
+        Assert.True(sim.Contracts.Accept(job));
+        var money = sim.Economy.Money;
+        // 10% of the reward, in tens of dollars.
+        var penalty = sim.Contracts.Penalty(job);
+        Assert.Equal(MathF.Round(job.Reward / 100f) * 10f, penalty);
+
+        Assert.True(sim.Contracts.Cancel(job));
+        Assert.Equal((ContractState.Canceled, money - penalty), (job.State, sim.Economy.Money));
+        Assert.Equal(-penalty, sim.Economy.Ledger.Today[MoneyCategory.Contracts]);
+        Assert.Equal([new ContractCanceled(job, penalty)], canceled);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract canceled: {job.Label} (${penalty:N0} penalty)");
+        Assert.False(sim.Contracts.Cancel(job));
         Assert.DoesNotContain(job, sim.Contracts.All);
     }
 
@@ -318,6 +349,7 @@ public class ContractTests
         Assert.Equal((money + job.Reward, job.Reward), (sim.Economy.Money, sim.Economy.Ledger.Today[MoneyCategory.Contracts]));
         Assert.Equal(1, sim.Statistics.ContractsCompleted);
         Assert.Null(sim.Contracts.On(sim.World.FieldById(4)!));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract done: Cultivate Field 4, ${job.Reward:N0} paid");
     }
 
     [Fact]
@@ -392,6 +424,7 @@ public class ContractTests
         sim.Pois.Unload(trailer, pit, "wheat", job.Amount - 1000f);
         Run(sim, 1f);
         Assert.Equal((ContractState.Active, job.Amount - 1000f, money), (job.State, job.Delivered, sim.Economy.Money));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Delivered {job.Amount - 1000f:N0} L Wheat for the contract: {job.Label}, 1,000 L to go");
         // The last 1,000 L go to the contract, the rest is sold.
         var income = 2000f * sim.Pois.Price(pit.Poi, pit.Actions[0], "wheat");
         sim.Pois.Unload(trailer, pit, "wheat", 3000f);

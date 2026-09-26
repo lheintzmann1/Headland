@@ -1,4 +1,5 @@
 using Headland.Core.Content;
+using Headland.Core.Contracts;
 using Headland.Core.Events;
 
 namespace Headland.Core;
@@ -48,6 +49,19 @@ public sealed class Notifications
         events.Subscribe<FillBought>(e => Post($"Bought {Amount(e.FillType, e.Amount)} for ${e.Cost:N0}", Severity.Good));
         events.Subscribe<FarmlandBought>(e => Post($"Bought {e.Farmland.Label} ({e.Farmland.AreaHa:0.00} ha) for ${e.Price:N0}", Severity.Good, 0));
         events.Subscribe<FarmlandSold>(e => Post($"Sold {e.Farmland.Label} for ${e.Price:N0}", Severity.Good, 0));
+        string Penalty(float penalty) => penalty >= 0.5f ? $" (${penalty:N0} penalty)" : "";
+        events.Subscribe<ContractOffered>(e => Post($"New contract: {e.Contract.Label} for {e.Contract.Client}, ${e.Contract.Reward:N0}", Severity.Info, 0));
+        events.Subscribe<ContractAccepted>(e => Post($"Contract taken: {e.Contract.Label}, {e.Contract.Days} days to do it", Severity.Good, 0));
+        events.Subscribe<ContractLastDay>(e => Post($"Last day for the contract: {e.Contract.Label}", Severity.Warning, 0));
+        events.Subscribe<ContractDelivery>(e =>
+        {
+            var c = e.Contract;
+            var left = c.State == ContractState.Active && c.ToDeliver - c.Delivered >= 1f ? $", {c.ToDeliver - c.Delivered:N0} {c.Goods!.Unit} to go" : "";
+            Post($"Delivered {Amount(e.FillType, e.Amount)} for the contract: {c.Label}{left}", Severity.Good, 0);
+        });
+        events.Subscribe<ContractCompleted>(e => Post($"Contract done: {e.Contract.Label}, ${e.Reward:N0} paid", Severity.Good, 0));
+        events.Subscribe<ContractFailed>(e => Post($"Contract not done in time: {e.Contract.Label}{Penalty(e.Penalty)}", Severity.Warning, 0));
+        events.Subscribe<ContractCanceled>(e => Post($"Contract canceled: {e.Contract.Label}{Penalty(e.Penalty)}", Severity.Warning, 0));
         events.Subscribe<LoanTaken>(e => Post($"Borrowed ${e.Amount:N0}: the loan is ${e.Loan:N0}", Severity.Info, 0));
         events.Subscribe<LoanRepaid>(e => Post(e.Loan > 0f ? $"Repaid ${e.Amount:N0}: the loan is ${e.Loan:N0}" : "The loan is paid off", Severity.Good, 0));
         events.Subscribe<AccountOverdrawn>(_ => Post("The account is overdrawn: sell goods or borrow before buying anything", Severity.Warning));

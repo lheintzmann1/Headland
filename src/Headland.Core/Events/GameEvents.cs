@@ -107,8 +107,14 @@ public sealed record ContractWithdrawn(Contract Contract) : IContractEvent;
 /// <summary>A farm took a contract; it's due at the start of <see cref="Contract.DueDay"/>.</summary>
 public sealed record ContractAccepted(Contract Contract) : IContractEvent;
 
-/// <summary>A contract wasn't done by its due day.</summary>
-public sealed record ContractFailed(Contract Contract) : IContractEvent;
+/// <summary>A contract under way enters its last day.</summary>
+public sealed record ContractLastDay(Contract Contract) : IContractEvent;
+
+/// <summary>A contract wasn't done by its due day; the farm paid <paramref name="Penalty"/>.</summary>
+public sealed record ContractFailed(Contract Contract, float Penalty) : IContractEvent;
+
+/// <summary>The farm gave a contract back and paid <paramref name="Penalty"/>.</summary>
+public sealed record ContractCanceled(Contract Contract, float Penalty) : IContractEvent;
 
 /// <summary>A contract was done, and paid <paramref name="Reward"/>.</summary>
 public sealed record ContractCompleted(Contract Contract, float Reward) : IContractEvent;

@@ -17,6 +17,8 @@ public enum ContractState
     Failed,
     /// <summary>Done, and paid.</summary>
     Completed,
+    /// <summary>Given back by the farm doing it.</summary>
+    Canceled,
 }
 
 /// <summary>

@@ -170,6 +170,7 @@ public partial class GameRoot : Node3D
         if (e.IsActionPressed("toggle_help")) Screens.Toggle(() => new HelpScreen());
         else if (e.IsActionPressed("toggle_finances")) Screens.Toggle(() => new FinancesScreen { Sim = Sim });
         else if (e.IsActionPressed("toggle_farmland")) Screens.Toggle(() => new FarmlandScreen { Sim = Sim });
+        else if (e.IsActionPressed("toggle_contracts")) Screens.Toggle(() => new ContractsScreen { Sim = Sim });
         else if (Screens.BlocksInput) return;
         else if (e.IsActionPressed("enter")) Sim.ToggleEnterExit();
         // Before next_vehicle: Shift+Tab also matches the plain Tab binding.

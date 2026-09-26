@@ -62,6 +62,8 @@ public sealed class ContractRulesDef
     public int MaxActive { get; set; } = 3;
     /// <summary>Share of a field that must be in a job's done state for the job to be done (FS: 95%).</summary>
     public float Threshold { get; set; } = 0.95f;
+    /// <summary>Share of the reward a contract costs when canceled, or not done by its due day.</summary>
+    public float Penalty { get; set; } = 0.1f;
 }
 
 public sealed class FillTypeDef
@@ -77,7 +79,7 @@ public sealed class FillTypeDef
     public string Color { get; set; } = "#c8a860";
 }
 
-/// <summary>A neighbor who owns the land no farm owns: sells it, and later offers contracts on it.</summary>
+/// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>
 public sealed class NpcDef
 {
     public string Id { get; set; } = "";

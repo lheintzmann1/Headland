@@ -13,12 +13,14 @@ using NVec2 = System.Numerics.Vector2;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Heads-up display: clock/weather/forecast, money, vehicle panel, DF-style cell inspector, context key prompts,
-/// notifications and the debug overlay. Built from <see cref="Widgets"/>; styled by the theme.
+/// Heads-up display: clock/weather/forecast, contracts under way, money, vehicle panel, DF-style cell inspector,
+/// context key prompts, notifications and the debug overlay. Built from <see cref="Widgets"/>; styled by the theme.
 /// </summary>
 public partial class Hud : CanvasLayer
 {
     private RichTextLabel _clock = null!;
+    private RichTextLabel _contracts = null!;
+    private PanelContainer _contractsPanel = null!;
     private Label _money = null!;
     private RichTextLabel _vehicle = null!;
     private PanelContainer _vehiclePanel = null!;
@@ -47,8 +49,14 @@ public partial class Hud : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
+        // The clock, the contracts under way under it, and the debug overlay below them.
+        var topLeft = Widgets.Anchor(new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore }, Control.LayoutPreset.TopLeft, new Vector2(12, 12));
+        root.AddChild(topLeft);
         _clock = Widgets.Rich(360);
-        root.AddChild(Widgets.Anchor(Widgets.Panel(_clock), Control.LayoutPreset.TopLeft, new Vector2(12, 12)));
+        topLeft.AddChild(Widgets.Panel(_clock));
+        _contracts = Widgets.Rich(360);
+        _contractsPanel = Widgets.Panel(_contracts);
+        topLeft.AddChild(_contractsPanel);
 
         _money = Widgets.Label(variation: "MoneyLabel");
         _money.HorizontalAlignment = HorizontalAlignment.Right;
@@ -76,8 +84,7 @@ public partial class Hud : CanvasLayer
 
         _debug = Widgets.Label(variation: "DebugLabel");
         _debug.Visible = false;
-        _debug.Position = new Vector2(14, 150);
-        root.AddChild(_debug);
+        topLeft.AddChild(_debug);
     }
 
     // ------------------------------------------------------------------ Update
@@ -85,6 +92,7 @@ public partial class Hud : CanvasLayer
     public override void _Process(double delta)
     {
         UpdateClock();
+        UpdateContracts();
         Widgets.Balance(_money, Sim.Economy.Money);
         UpdateVehicle();
         UpdatePrompt();
@@ -125,6 +133,22 @@ public partial class Hud : CanvasLayer
         }
         sb.Append("[/color]");
         _clock.Text = sb.ToString();
+    }
+
+    /// <summary>The farm's contracts under way: what, how far, and how long is left.</summary>
+    private void UpdateContracts()
+    {
+        var mine = Sim.Contracts.ActiveOf(Sim.Player.FarmId).ToList();
+        _contractsPanel.Visible = mine.Count > 0;
+        if (mine.Count == 0) return;
+        var sb = new StringBuilder();
+        foreach (var c in mine)
+        {
+            var left = c.DueDay - Sim.Clock.DayIndex;
+            var due = left <= 1 ? Widgets.Colored("last day", Palette.Warning) : Widgets.Colored($"{left} days left", Palette.Dim);
+            sb.Append($"{Widgets.Colored(c.Label, Palette.Contract)}  {ContractsScreen.Progress(Sim, c)}  {due}\n");
+        }
+        _contracts.Text = sb.ToString().TrimEnd('\n');
     }
 
     /// <summary>The condition's icon (assets/icons is named after <see cref="WeatherCondition"/>).</summary>

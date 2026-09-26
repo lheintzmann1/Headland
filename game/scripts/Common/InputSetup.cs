@@ -47,6 +47,7 @@ public static class InputSetup
         ("toggle_help", Key.F1, "Help"),
         ("toggle_finances", Key.F2, "Finances and loans"),
         ("toggle_farmland", Key.L, "Farmland: buy and sell parcels"),
+        ("toggle_contracts", Key.C, "Contracts: take, follow and give back jobs"),
         ("toggle_debug", Key.F3, "Debug overlay"),
         ("screenshot", Key.F12, "Screenshot"),
     ];

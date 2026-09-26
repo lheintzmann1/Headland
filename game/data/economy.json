@@ -9,6 +9,7 @@
   "helperWagePerHour": 150,
   // Contracts (the jobs are in contracts.json). Every midnight the neighbors post "offersPerDay" new offers while
   // fewer than "maxOffers" are on the board, each for "offerDays" days. The farm takes up to "maxActive" at a time. A
-  // field job is done once "threshold" of the field is.
-  "contracts": { "maxOffers": 6, "offersPerDay": 2, "offerDays": 3, "maxActive": 3, "threshold": 0.95 }
+  // field job is done once "threshold" of the field is. A contract canceled, or not done by its due day, costs
+  // "penalty" of its reward.
+  "contracts": { "maxOffers": 6, "offersPerDay": 2, "offerDays": 3, "maxActive": 3, "threshold": 0.95, "penalty": 0.1 }
 }
