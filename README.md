@@ -32,6 +32,8 @@ Built with **Godot 4.7** and **C#**.
   farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.
+- **Difficulty.** Easy, normal and hard set the money and loan the farm starts with, and how much everything it
+  buys costs, from seed to land and wages; sale prices stay the same.
 - **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who
   own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
   ground the farm's own buildings stand on.
@@ -98,6 +100,9 @@ cd Headland
 dotnet build Headland.sln
 godot --path game            # or open game/project.godot in the editor and press Play
 ```
+
+A new game starts on the difficulty named in `game/data/game.json` (normal); until there is a main menu, pick another
+with `godot --path game -- --difficulty=easy` (or `hard`).
 
 Run the tests with `dotnet test tests/Headland.Core.Tests`. They include content validation and multi-year crop
 calibration runs.

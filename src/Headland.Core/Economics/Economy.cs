@@ -9,17 +9,19 @@ namespace Headland.Core.Economics;
 /// costs that come due by themselves (interest, wages, running costs); the farm can't buy anything or hire helpers
 /// until it's back up.
 /// </summary>
-public sealed class Economy(ContentDatabase content, Calendar calendar, EventBus events, float startMoney, int startDay)
+public sealed class Economy(ContentDatabase content, Calendar calendar, EventBus events, DifficultyDef difficulty, int startDay)
 {
-    public float Money { get; private set; } = startMoney;
+    public float Money { get; private set; } = difficulty.StartMoney;
     public float TotalIncome { get; private set; }
     public float TotalExpenses { get; private set; }
     /// <summary>Money in and out by category, day by day and month by month.</summary>
     public Ledger Ledger { get; } = new(calendar, startDay);
 
     /// <summary>What the farm owes the bank.</summary>
-    public float Loan { get; private set; }
+    public float Loan { get; private set; } = difficulty.StartLoan;
     public EconomyDef Terms => content.Economy;
+    /// <summary>The difficulty's multiplier on what the farm pays (goods, services, land, wages; not interest).</summary>
+    public float PriceLevel => difficulty.PriceLevel;
     /// <summary>What the next <see cref="Borrow"/> lends: a step, or what's left under the credit limit.</summary>
     public float NextLoan => MathF.Max(0f, MathF.Min(Terms.LoanStep, Terms.CreditLimit - Loan));
     /// <summary>What the next <see cref="Repay"/> pays back: a step, or the rest of the loan.</summary>

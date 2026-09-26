@@ -49,6 +49,7 @@ public sealed class ContentDatabase
 
     public GameConfig Game { get; private set; } = new();
     public EconomyDef Economy { get; private set; } = new();
+    public Dictionary<string, DifficultyDef> Difficulties { get; } = new();
     public List<FillTypeDef> FillTypeList { get; } = [];
     public Dictionary<string, FillTypeDef> FillTypes { get; } = new();
     public List<SoilDef> Soils { get; } = [];
@@ -74,6 +75,7 @@ public sealed class ContentDatabase
         var db = new ContentDatabase();
         db.Game = Parse<GameConfig>(src, "game.json");
         db.Economy = Parse<EconomyDef>(src, "economy.json");
+        foreach (var d in ReadMany<DifficultyDef>(src, "difficulties.json")) db.AddUnique(db.Difficulties, d.Id, d, "difficulty");
 
         foreach (var f in ReadMany<FillTypeDef>(src, "filltypes.json")) db.AddUnique(db.FillTypes, f.Id, f, "fill type");
         db.FillTypeList.AddRange(db.FillTypes.Values);
@@ -158,6 +160,13 @@ public sealed class ContentDatabase
         if (Economy.CreditLimit < 0) e.Add("economy.creditLimit must be >= 0");
         if (Economy.LoanInterest is < 0 or > 1) e.Add("economy.loanInterest must be 0..1");
         if (Economy.HelperWagePerHour < 0) e.Add("economy.helperWagePerHour must be >= 0");
+        if (!Difficulties.ContainsKey(Game.Difficulty)) e.Add($"game.difficulty '{Game.Difficulty}' not found");
+        foreach (var d in Difficulties.Values)
+        {
+            if (d.StartMoney < 0) e.Add($"difficulty '{d.Id}': startMoney must be >= 0");
+            if (d.StartLoan < 0 || d.StartLoan > Economy.CreditLimit) e.Add($"difficulty '{d.Id}': startLoan must be 0..economy.creditLimit");
+            if (d.PriceLevel <= 0) e.Add($"difficulty '{d.Id}': priceLevel must be > 0");
+        }
 
         foreach (var f in FillTypeList)
             if (f.MonthlyPriceFactor is { Length: not 12 })

@@ -85,7 +85,7 @@ conditions. Money is just another input or output:
       overdraw the account, and nothing can be bought until it's back above zero.
 - [x] Helper wages (the field helper is free today).
 - [x] Farmland purchase and sale, price per ha.
-- [ ] Difficulty presets: start money, starting loan, price level.
+- [x] Difficulty presets: start money, starting loan, price level.
 
 ## Contracts
 

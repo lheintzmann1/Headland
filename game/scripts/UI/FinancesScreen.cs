@@ -56,7 +56,9 @@ public partial class FinancesScreen : Screen
         _table = new GridContainer { ThemeTypeVariation = "TableGrid" };
         content.AddChild(_table);
 
-        AddChild(Widgets.Dialog("Finances", content, "Money in and out by category. Esc closes."));
+        var level = Sim.Economy.PriceLevel;
+        var prices = Math.Abs(level - 1f) < 0.001f ? "" : $", prices {(level > 1f ? "+" : "")}{(level - 1f) * 100f:0}%";
+        AddChild(Widgets.Dialog("Finances", content, $"{Sim.Difficulty.Name} difficulty{prices}. Money in and out by category. Esc closes."));
         tabs.GetChild<Button>(0).CallDeferred(Control.MethodName.GrabFocus);
         Refresh();
     }

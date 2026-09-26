@@ -35,7 +35,8 @@ public sealed class Simulation
         Clock = new GameClock(Calendar, new GameDate(setup.StartYear, setup.StartMonth, setup.StartDay), setup.StartHour);
         Weather = new WeatherSystem(Climate, Calendar, setup.WeatherSeed);
         World = WorldGen.Generate(Map, content);
-        Economy = new Economy(content, Calendar, Events, setup.StartMoney, Clock.DayIndex);
+        Difficulty = content.Difficulties[setup.Difficulty];
+        Economy = new Economy(content, Calendar, Events, Difficulty, Clock.DayIndex);
         Farms = new Farms(World, Events, Economy, setup.FarmName);
         Crops = new CropSystem(content, World, Calendar, Climate);
         // Its own stream, so high demand doesn't change the weather.
@@ -55,6 +56,7 @@ public sealed class Simulation
     public GameConfig Setup { get; }
     public MapDef Map { get; }
     public ClimateDef Climate { get; }
+    public DifficultyDef Difficulty { get; }
     public Calendar Calendar { get; }
     public GameClock Clock { get; }
     public WeatherSystem Weather { get; }
@@ -257,7 +259,7 @@ public sealed class Simulation
     });
 
     /// <summary>What a helper hired now earns per hour of work.</summary>
-    public float HelperWage => Content.Economy.HelperWagePerHour;
+    public float HelperWage => Content.Economy.HelperWagePerHour * Economy.PriceLevel;
 
     /// <summary>Puts a helper in the vehicle to work <paramref name="field"/> (optionally only its first lanes).</summary>
     public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null)

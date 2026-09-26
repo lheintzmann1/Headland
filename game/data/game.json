@@ -6,7 +6,8 @@
   "startMonth": 8,
   "startDay": 1,
   "startHour": 7.5,
-  "startMoney": 100000,
+  // Start money, loan and price level: a difficulties.json preset.
+  "difficulty": "normal",
   "farmName": "Brookfield Farm",
   "map": "default",
   "climate": "temperate",

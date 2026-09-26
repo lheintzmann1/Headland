@@ -57,12 +57,12 @@ public sealed class PoiSystem
 
     /// <summary>
     /// What a unit of <paramref name="fillType"/> sells for or costs through <paramref name="action"/> right now: the
-    /// market price times the action's factor, and for sales the demand and any high demand.
+    /// market price times the action's factor, and for sales the demand and any high demand, else the price level.
     /// </summary>
     public float Price(Poi poi, PoiActionDef action, string fillType)
     {
         var price = Economy.Price(fillType, _sim.Clock.Month) * action.PriceFactors.GetValueOrDefault(fillType, action.PriceFactor);
-        if (action.Type != "sell") return price;
+        if (action.Type != "sell") return price * Economy.PriceLevel;
         price *= poi.DemandOf(fillType);
         return poi.HighDemand is { } high && high.FillType == fillType ? price * high.Factor : price;
     }
@@ -71,10 +71,14 @@ public sealed class PoiSystem
     public float? SalePrice(Machine m, PoiTrigger trigger, string fillType) =>
         UnloadAction(m, trigger, fillType).action is { Type: "sell" } sell ? Price(trigger.Poi, sell, fillType) : null;
 
-    /// <summary>What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear, times the action's factor.</summary>
-    public static float RepairPrice(PoiActionDef repair, Machine m) => repair.PriceFactor * m.Def.Price / 100f * (1f - m.Condition);
+    /// <summary>
+    /// What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear, times the action's factor and
+    /// the price level.
+    /// </summary>
+    public float RepairPrice(PoiActionDef repair, Machine m) =>
+        repair.PriceFactor * m.Def.Price / 100f * (1f - m.Condition) * Economy.PriceLevel;
 
-    public static float WashPrice(PoiActionDef wash, Machine m) => wash.Price * m.Dirt;
+    public float WashPrice(PoiActionDef wash, Machine m) => wash.Price * m.Dirt * Economy.PriceLevel;
 
     /// <summary>What the farmer can do at a trigger, one line per action ("Sell wheat, barley").</summary>
     public IEnumerable<string> Describe(PoiTrigger trigger) => trigger.Type switch
@@ -534,7 +538,7 @@ public sealed class PoiSystem
                 poi.Progress[i] -= 1f;
                 cycles++;
             }
-            Spend(poi.FarmId, a.RunningCost, MoneyCategory.Production);
+            Spend(poi.FarmId, a.RunningCost * Economy.PriceLevel, MoneyCategory.Production);
             if (cycles > 0)
                 foreach (var output in a.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
             SellOutputs(poi, a, month);

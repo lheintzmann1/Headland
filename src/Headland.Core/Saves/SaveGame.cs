@@ -74,6 +74,11 @@ public static class SaveGame
         var warnings = new List<string>();
         foreach (var mod in file.Meta.Mods.Where(m => !content.Mods.Contains(m)))
             warnings.Add($"Saved with mod {mod.Id} {mod.Version}, which is not loaded");
+        if (!content.Difficulties.ContainsKey(state.Setup.Difficulty))
+        {
+            warnings.Add($"Difficulty '{state.Setup.Difficulty}' no longer exists: prices follow {content.Difficulties[content.Game.Difficulty].Name}");
+            state.Setup.Difficulty = content.Game.Difficulty;
+        }
         var sim = Simulation.CreateForLoad(content, state.Setup);
         Restore(sim, state, file.Layers, warnings);
         return new LoadedGame(sim, warnings);

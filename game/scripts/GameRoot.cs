@@ -56,7 +56,8 @@ public partial class GameRoot : Node3D
         Settings = _settings;
         InputSetup.Register(Settings.Keys);
 
-        var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1]);
+        var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1],
+            args.FirstOrDefault(a => a.StartsWith("--difficulty="))?.Split('=', 2)[1]);
         Sim = sim;
 
         AddChild(new TerrainRenderer { Sim = Sim, Name = "Terrain" });
@@ -82,12 +83,12 @@ public partial class GameRoot : Node3D
             AddChild(new ScenarioRunner { Game = this, Scenario = scenario, ShotsDir = shots, Name = "Scenario" });
         }
         else if (slot != null) Sim.Notifications.Post($"Loaded {slot}: {Sim.Clock.Date} {Sim.Clock.TimeString}", Severity.Info, 0);
-        else Sim.Notifications.Post($"Welcome to {Sim.Map.Name}. Press {InputSetup.Label("toggle_help")} for controls.", Severity.Info, 0);
+        else Sim.Notifications.Post($"Welcome to {Sim.Map.Name} ({Sim.Difficulty.Name}). Press {InputSetup.Label("toggle_help")} for controls.", Severity.Info, 0);
         foreach (var w in warnings) Sim.Notifications.Post(w, Severity.Warning, 0);
     }
 
-    /// <summary>The game a quickload just built, else the save named by --load, else a new game.</summary>
-    private static (Simulation sim, string? slot, IReadOnlyList<string> warnings) StartGame(string? loadSlot)
+    /// <summary>The game a quickload just built, else the save named by --load, else a new game (on --difficulty).</summary>
+    private static (Simulation sim, string? slot, IReadOnlyList<string> warnings) StartGame(string? loadSlot, string? difficulty)
     {
         if (SaveManager.TakePending() is var (pending, pendingSlot)) return (pending.Sim, pendingSlot, pending.Warnings);
         var content = ContentDatabase.Load(new GodotContentSource("res://data"));
@@ -103,6 +104,9 @@ public partial class GameRoot : Node3D
                 GD.PrintErr($"Could not load '{loadSlot}': {e.Message}");
             }
         }
+        if (difficulty != null && !content.Difficulties.ContainsKey(difficulty))
+            GD.PrintErr($"No difficulty '{difficulty}' ({string.Join(", ", content.Difficulties.Keys)}): playing on {content.Game.Difficulty}");
+        else if (difficulty != null) content.Game.Difficulty = difficulty;
         return (Simulation.Create(content), null, []);
     }
 

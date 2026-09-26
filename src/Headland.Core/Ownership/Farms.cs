@@ -65,8 +65,8 @@ public sealed class Farms
 
     public IEnumerable<Farmland> FarmlandOf(int farmId) => _world.Farmlands.Where(l => l.FarmId == farmId);
 
-    /// <summary>What <paramref name="land"/> costs the player's farm, and pays when sold back.</summary>
-    public float Price(Farmland land) => land.Price;
+    /// <summary>What <paramref name="land"/> costs the player's farm at its price level, and pays when sold back.</summary>
+    public float Price(Farmland land) => MathF.Round(land.Price * _economy.PriceLevel);
 
     /// <summary>Why the player's farm can't buy <paramref name="land"/>, or null if it can.</summary>
     public string? BuyBlocker(Farmland land)

@@ -219,6 +219,68 @@ public class FinanceTests
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Not enough money to pay a helper");
     }
 
+    /// <summary>The default map on a difficulty preset.</summary>
+    private static Simulation SimOn(string difficulty)
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Game.Difficulty = difficulty;
+        return Simulation.Create(db);
+    }
+
+    [Fact]
+    public void TheDifficultySetsTheStartAndWhatTheFarmPays()
+    {
+        var normal = TestContent.NewSim();
+        var hard = SimOn("hard");
+        Assert.Equal((100_000f, 0f, 1f), (normal.Economy.Money, normal.Economy.Loan, normal.Economy.PriceLevel));
+        Assert.Equal((30_000f, 150_000f, 1.2f), (hard.Economy.Money, hard.Economy.Loan, hard.Economy.PriceLevel));
+
+        float Prices(Simulation sim, string poi, string action, string fillType)
+        {
+            var p = sim.World.PoiById(poi)!;
+            return sim.Pois.Price(p, p.Def.Actions.First(a => a.Type == action), fillType);
+        }
+        float Repair(Simulation sim)
+        {
+            var t = sim.Machines.All.First(m => m.Def.Id == "tractor_95");
+            t.Condition = 0.5f;
+            return sim.Pois.RepairPrice(sim.World.PoiById("workshop")!.Def.Actions.First(a => a.Type == "repair"), t);
+        }
+        Assert.Equal(1.2f * Prices(normal, "supplies", "buy", "seeds"), Prices(hard, "supplies", "buy", "seeds"), 4);
+        Assert.Equal(1.2f * Repair(normal), Repair(hard), 2);
+        Assert.Equal(MathF.Round(1.2f * normal.Farms.Price(normal.World.FarmlandById(5)!)), hard.Farms.Price(hard.World.FarmlandById(5)!));
+        Assert.Equal(1.2f * normal.HelperWage, hard.HelperWage, 4);
+        // Buyers pay the same.
+        Assert.Equal(Prices(normal, "elevator", "sell", "wheat"), Prices(hard, "elevator", "sell", "wheat"));
+    }
+
+    [Fact]
+    public void TheDifficultyIsSavedWithTheGame()
+    {
+        var file = SaveGame.Capture(SimOn("hard"), "test");
+        Assert.Equal("hard", SaveGame.Load(TestContent.Content, file).Sim.Difficulty.Id);
+
+        var content = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        content.Difficulties.Remove("hard");
+        var loaded = SaveGame.Load(content, file);
+        Assert.Equal(("normal", 30_000f, 150_000f), (loaded.Sim.Difficulty.Id, loaded.Sim.Economy.Money, loaded.Sim.Economy.Loan));
+        Assert.Contains("Difficulty 'hard' no longer exists: prices follow Normal", loaded.Warnings);
+    }
+
+    [Fact]
+    public void BadDifficultiesAreReported()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Game.Difficulty = "insane";
+        db.Difficulties["easy"].PriceLevel = 0;
+        db.Difficulties["hard"].StartLoan = 600_000;
+        var errors = db.Validate();
+        Assert.Equal(3, errors.Count);
+        Assert.Contains("game.difficulty 'insane' not found", errors);
+        Assert.Contains("difficulty 'easy': priceLevel must be > 0", errors);
+        Assert.Contains("difficulty 'hard': startLoan must be 0..economy.creditLimit", errors);
+    }
+
     [Fact]
     public void BadLoanTermsAreReported()
     {

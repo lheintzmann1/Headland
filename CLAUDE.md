@@ -26,6 +26,7 @@ dotnet test tests/Headland.Core.Tests                             # ~30 s
 ~/.local/bin/godot --path game -- --scenario=loop --shots=/abs/dir  # scripted end-to-end run + screenshots
 ~/.local/bin/godot --path game -- --scenario=tour --shots=/abs/dir  # quick render check
 ~/.local/bin/godot --path game -- --load=quicksave                  # start from a save slot (user://saves/<slot>.zip)
+~/.local/bin/godot --path game -- --difficulty=hard                 # new game on a difficulties.json preset
 ~/.local/bin/godot -e --path game                                 # editor
 ```
 

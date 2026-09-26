@@ -10,11 +10,29 @@ public sealed class GameConfig
     public int StartMonth { get; set; } = 8;
     public int StartDay { get; set; } = 1;
     public float StartHour { get; set; } = 7f;
-    public float StartMoney { get; set; } = 100_000f;
+    /// <summary>The difficulty preset (difficulties.json id): start money and loan, price level.</summary>
+    public string Difficulty { get; set; } = "normal";
     public string FarmName { get; set; } = "My Farm";
     public string Map { get; set; } = "default";
     public string Climate { get; set; } = "temperate";
     public ulong WeatherSeed { get; set; } = 42;
+}
+
+/// <summary>A difficulty preset (difficulties.json), picked when a game starts.</summary>
+public sealed class DifficultyDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    /// <summary>Money in the account at the start.</summary>
+    public float StartMoney { get; set; } = 100_000f;
+    /// <summary>What the farm owes the bank at the start (up to the credit limit).</summary>
+    public float StartLoan { get; set; }
+    /// <summary>
+    /// Multiplies what the farm pays: supplies, fuel, repairs, washing, running costs, land and wages. Sale prices
+    /// and loan interest don't change.
+    /// </summary>
+    public float PriceLevel { get; set; } = 1f;
 }
 
 /// <summary>Money rules (economy.json). Unlike game.json, saved games use the current values.</summary>
