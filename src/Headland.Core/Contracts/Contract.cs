@@ -51,10 +51,13 @@ public sealed class Contract
     /// <summary>Who offers it: the field's owner, or the buyer.</summary>
     public string Client => Npc?.Name ?? Poi?.Name ?? "";
 
+    /// <summary>The work, without the place: "Cultivate", "Harvest corn", "Deliver".</summary>
+    public string Job => Crop != null ? $"{Type.Name} {Crop.Name.ToLowerInvariant()}" : Type.Name;
+
     /// <summary>"Cultivate Field 4", "Harvest corn on Field 5", "Deliver 8,000 L wheat to Grain Elevator".</summary>
     public string Label => Field == null
         ? $"{Type.Name} {Amount:N0} {Goods!.Unit} {Goods.Name.ToLowerInvariant()} to {Poi!.Name}"
-        : Crop != null ? $"{Type.Name} {Crop.Name.ToLowerInvariant()} on {Field.Label}" : $"{Type.Name} {Field.Label}";
+        : Crop != null ? $"{Job} on {Field.Label}" : $"{Type.Name} {Field.Label}";
 
     public override string ToString() => $"{Label} (#{Id}, {State})";
 }

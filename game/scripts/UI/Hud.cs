@@ -1,6 +1,7 @@
 using System.Text;
 using Headland.Game.Common;
 using Headland.Core;
+using Headland.Core.Contracts;
 using Headland.Core.Machines;
 using Headland.Core.Ownership;
 using Headland.Core.Time;
@@ -255,6 +256,10 @@ public partial class Hud : CanvasLayer
             sb.Append($" · {farmland.Label}, {owner}");
         }
         sb.Append($"   {Widgets.Colored($"{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m", Palette.Dim)}\n");
+        if (field != null && Sim.Contracts.On(field) is { } contract)
+            sb.Append((contract.State == ContractState.Active
+                ? Widgets.Colored($"Contract: {contract.Job}, by {Sim.Contracts.DueDate(contract).Short}", Palette.Contract)
+                : Widgets.Colored($"Offer: {contract.Job} for {contract.Client}, ${contract.Reward:N0}", Palette.Dim)) + "\n");
         sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
         if (r.Crop != null)
         {

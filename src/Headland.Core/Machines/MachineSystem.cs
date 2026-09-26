@@ -442,6 +442,7 @@ public sealed class MachineSystem
             _cells.Clear();
             Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
             if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
+            var refused = KeepAllowed(root.FarmId, m, wa);
             var fieldId = FieldIdAt(center);
             var changed = wa.Type switch
             {
@@ -450,11 +451,32 @@ public sealed class MachineSystem
                 "harvester" => Harvest(m, wa, fieldId),
                 _ => 0,
             };
-            if (changed == 0) continue;
+            if (changed == 0)
+            {
+                if (refused != null) m.Status = refused;
+                continue;
+            }
             var ha = changed * WorldMap.CellArea / 10000f;
             m.WorkedHa += ha;
             Events.Publish(new FieldWorked(m, wa.Type, fieldId, ha));
         }
+    }
+
+    /// <summary>
+    /// Drops the cells the farm may not work (<see cref="Farms.MayWork"/>): other farms' land, and fields it has no
+    /// contract for. Returns why when that left field ground unworked.
+    /// </summary>
+    private string? KeepAllowed(int farmId, Machine m, WorkAreaDef wa)
+    {
+        var crop = wa.Type == "seeder" ? Content.Crops[m.SelectedCrop] : null;
+        var refused = -1;
+        _cells.RemoveAll(i =>
+        {
+            if (_sim.Farms.MayWork(farmId, i, wa.Type, crop)) return false;
+            if (refused < 0 && World.IsWorkable((GroundType)World.Layers.Ground[i])) refused = i;
+            return true;
+        });
+        return refused >= 0 ? _sim.Farms.WorkBlocker(farmId, refused, wa.Type, crop) : null;
     }
 
     private int FieldIdAt(Vector2 p)

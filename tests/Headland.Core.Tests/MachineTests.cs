@@ -163,6 +163,7 @@ public class MachineTests
     public void CultivatorTurnsGrassIntoSeedbed()
     {
         var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
         sim.Machines.Attach(t, "rear", c);
@@ -286,6 +287,7 @@ public class MachineTests
     private static (Simulation sim, Machine tractor, FieldWorkController helper) HireCultivatorHelper()
     {
         var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f);
         sim.Machines.Attach(t, "rear", c);

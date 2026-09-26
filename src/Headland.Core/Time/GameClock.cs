@@ -4,6 +4,9 @@ public enum Season { Spring, Summer, Autumn, Winter }
 
 public readonly record struct GameDate(int Year, int Month, int Day)
 {
+    /// <summary>"Aug 3".</summary>
+    public string Short => $"{Calendar.MonthNames[Month - 1][..3]} {Day}";
+
     public override string ToString() => $"{Calendar.MonthNames[Month - 1]} {Day}, Year {Year}";
 }
 

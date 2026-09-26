@@ -92,17 +92,23 @@ public sealed record FarmlandSold(Farmland Farmland, int Farm, float Price) : IG
 
 // ---- Contracts
 
+/// <summary>Something happened to a contract: the board, the map and the HUD follow them all.</summary>
+public interface IContractEvent : IGameEvent
+{
+    Contract Contract { get; }
+}
+
 /// <summary>A neighbor or a buyer put a contract on the board.</summary>
-public sealed record ContractOffered(Contract Contract) : IGameEvent;
+public sealed record ContractOffered(Contract Contract) : IContractEvent;
 
 /// <summary>An offer came off the board untaken: too old, or its field was sold.</summary>
-public sealed record ContractWithdrawn(Contract Contract) : IGameEvent;
+public sealed record ContractWithdrawn(Contract Contract) : IContractEvent;
 
 /// <summary>A farm took a contract; it's due at the start of <see cref="Contract.DueDay"/>.</summary>
-public sealed record ContractAccepted(Contract Contract) : IGameEvent;
+public sealed record ContractAccepted(Contract Contract) : IContractEvent;
 
 /// <summary>A contract wasn't done by its due day.</summary>
-public sealed record ContractFailed(Contract Contract) : IGameEvent;
+public sealed record ContractFailed(Contract Contract) : IContractEvent;
 
 // ---- Machines
 

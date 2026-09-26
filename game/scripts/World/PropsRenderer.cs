@@ -1,6 +1,7 @@
 using Headland.Game.Common;
 using Headland.Core;
 using Headland.Core.Content;
+using Headland.Core.Contracts;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Pois;
@@ -10,14 +11,21 @@ using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game.World;
 
-/// <summary>POIs (buildings and sites) with their trigger areas, trees (seasonal colors) and field signs.</summary>
+/// <summary>
+/// POIs (buildings and sites) with their trigger areas, trees (seasonal colors), and field signs with the contracts on
+/// them, outlining the fields the farm has a contract on.
+/// </summary>
 public partial class PropsRenderer : Node3D
 {
+    private static readonly Color ContractColor = Color.FromHtml(UI.Palette.Contract);
+
     public Simulation Sim { get; init; } = null!;
     private MultiMesh? _broadleafCanopy;
     private int _shownMonth = -1;
     private readonly Dictionary<FieldInfo, Label3D> _signs = new();
+    private readonly Dictionary<FieldInfo, MeshInstance3D> _outlines = new();
     private IDisposable? _ownerChanges;
+    private IDisposable? _contractChanges;
 
     public override void _Ready()
     {
@@ -34,9 +42,17 @@ public partial class PropsRenderer : Node3D
             UpdateSign(f);
         }
         _ownerChanges = Sim.Events.Subscribe<FarmlandOwnerChanged>(e => e.Farmland.Fields.ForEach(UpdateSign));
+        _contractChanges = Sim.Events.SubscribeAll(e =>
+        {
+            if (e is IContractEvent { Contract.Field: { } field }) UpdateSign(field);
+        });
     }
 
-    public override void _ExitTree() => _ownerChanges?.Dispose();
+    public override void _ExitTree()
+    {
+        _ownerChanges?.Dispose();
+        _contractChanges?.Dispose();
+    }
 
     public override void _Process(double delta)
     {
@@ -357,13 +373,63 @@ public partial class PropsRenderer : Node3D
         NoDepthTest = true,
     };
 
-    /// <summary>Your fields read bright; the neighbors' are dimmer and name their owner.</summary>
+    /// <summary>
+    /// Your fields read bright; the neighbors' are dimmer and name their owner and any offer on them. A field you
+    /// have a contract on takes the contract color and an outline.
+    /// </summary>
     private void UpdateSign(FieldInfo f)
     {
         var land = Sim.World.FarmlandById(f.FarmlandId);
         var yours = land?.FarmId == Sim.Player.FarmId;
+        var contract = Sim.Contracts.On(f);
+        var taken = contract is { State: ContractState.Active } && contract.FarmId == Sim.Player.FarmId;
         var sign = _signs[f];
         sign.Text = yours || land == null ? $"{f.Label}\n{f.AreaHa:0.00} ha" : $"{f.Label}\n{f.AreaHa:0.00} ha · {Sim.Farms.OwnerName(land)}";
-        sign.Modulate = yours ? new Color(1f, 1f, 1f, 0.75f) : new Color(0.82f, 0.82f, 0.78f, 0.55f);
+        if (taken) sign.Text += $"\nContract: {contract!.Job}, by {Sim.Contracts.DueDate(contract).Short}";
+        else if (contract is { State: ContractState.Offered }) sign.Text += $"\nOffer: {contract.Job}, ${contract.Reward:N0}";
+        sign.Modulate = taken ? ContractColor : yours ? new Color(1f, 1f, 1f, 0.75f) : new Color(0.82f, 0.82f, 0.78f, 0.55f);
+        if (taken) Outline(f).Visible = true;
+        else if (_outlines.TryGetValue(f, out var outline)) outline.Visible = false;
     }
+
+    /// <summary>A band on the ground along the field's edge, built the first time the farm takes a contract on it.</summary>
+    private MeshInstance3D Outline(FieldInfo f)
+    {
+        if (_outlines.TryGetValue(f, out var outline)) return outline;
+        const float halfWidth = 0.25f;
+        var st = new SurfaceTool();
+        st.Begin(Mesh.PrimitiveType.Triangles);
+        st.SetNormal(Vector3.Up);
+        var points = f.Shape.Points;
+        for (var k = 0; k < points.Count; k++)
+        {
+            var a = points[k];
+            var edge = points[(k + 1) % points.Count] - a;
+            if (edge.LengthSquared() < 1e-4f) continue;
+            var side = NVec2.Normalize(new NVec2(-edge.Y, edge.X)) * halfWidth;
+            // A quad per meter, so the band follows the ground.
+            var steps = Math.Max(1, (int)MathF.Ceiling(edge.Length()));
+            for (var i = 0; i < steps; i++)
+            {
+                var p = a + edge * i / steps;
+                var q = a + edge * (i + 1) / steps;
+                Vector3[] quad = [Ground(p - side), Ground(p + side), Ground(q + side), Ground(q - side)];
+                foreach (var v in (ReadOnlySpan<int>)[0, 1, 2, 0, 2, 3]) st.AddVertex(quad[v]);
+            }
+        }
+        outline = new MeshInstance3D
+        {
+            Name = $"Contract_{f.Id}",
+            Mesh = st.Commit(),
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            MaterialOverride = new StandardMaterial3D
+            {
+                AlbedoColor = ContractColor, Roughness = 0.6f, CullMode = BaseMaterial3D.CullModeEnum.Disabled,
+            },
+        };
+        AddChild(outline);
+        return _outlines[f] = outline;
+    }
+
+    private Vector3 Ground(NVec2 p) => Sim.World.OnGround(p, 0.1f);
 }

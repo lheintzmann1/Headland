@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
@@ -67,6 +68,44 @@ public sealed class Farms
     public bool Owns(int farmId, Vector2 p) => farmId != Farm.None && _world.FarmlandAt(p)?.FarmId == farmId;
 
     public IEnumerable<Farmland> FarmlandOf(int farmId) => _world.Farmlands.Where(l => l.FarmId == farmId);
+
+    // ------------------------------------------------------------------ Field access
+
+    /// <summary>
+    /// True when <paramref name="farmId"/> may work cell <paramref name="i"/> with a work area of type
+    /// <paramref name="work"/> (a seeder sowing <paramref name="crop"/>): anywhere on its own farmland, and on a field
+    /// it has a contract on, the contract's work.
+    /// </summary>
+    public bool MayWork(int farmId, int i, string work, CropDef? crop)
+    {
+        var L = _world.Layers;
+        if (farmId != Farm.None && L.FarmlandId[i] > 0 && _world.FarmlandById(L.FarmlandId[i])?.FarmId == farmId) return true;
+        return L.FieldId[i] > 0 && _world.FieldById(L.FieldId[i]) is { } field && _contracts.On(field) is { } c && Allows(c, farmId, work, crop);
+    }
+
+    /// <summary>Why <paramref name="farmId"/> may not work cell <paramref name="i"/> (see <see cref="MayWork"/>), or null if it may.</summary>
+    public string? WorkBlocker(int farmId, int i, string work, CropDef? crop)
+    {
+        if (MayWork(farmId, i, work, crop)) return null;
+        var L = _world.Layers;
+        if (L.FieldId[i] > 0 && _world.FieldById(L.FieldId[i]) is { } field) return FieldBlocker(farmId, field, work, crop);
+        return _world.FarmlandById(L.FarmlandId[i]) is { } land ? $"{land.Label} belongs to {OwnerName(land)}" : "Only farmland can be worked";
+    }
+
+    /// <summary>Why <paramref name="farmId"/> may not work <paramref name="field"/> (see <see cref="MayWork"/>), or null if it may.</summary>
+    public string? FieldBlocker(int farmId, FieldInfo field, string work, CropDef? crop)
+    {
+        var land = _world.FarmlandById(field.FarmlandId);
+        if (farmId != Farm.None && land?.FarmId == farmId) return null;
+        if (_contracts.On(field) is not { State: ContractState.Active } c || c.FarmId != farmId)
+            return land != null ? $"{field.Label} belongs to {OwnerName(land)}: take a contract on it first" : $"{field.Label} can't be worked";
+        if (c.Type.Work != work) return $"The contract on {field.Label} is to {c.Type.Name.ToLowerInvariant()}";
+        return Allows(c, farmId, work, crop) ? null : $"The contract on {field.Label} is to sow {c.Crop!.Name.ToLowerInvariant()}";
+    }
+
+    /// <summary>A contract lets the farm doing it do its work, and sow only its crop.</summary>
+    private static bool Allows(Contract c, int farmId, string work, CropDef? crop) =>
+        c.State == ContractState.Active && c.FarmId == farmId && c.Type.Work == work && (work != "seeder" || c.Crop == null || c.Crop == crop);
 
     /// <summary>What <paramref name="land"/> costs the player's farm at its price level, and pays when sold back.</summary>
     public float Price(Farmland land) => MathF.Round(land.Price * _economy.PriceLevel);

@@ -52,6 +52,9 @@ internal static class TestContent
         return sim;
     }
 
+    /// <summary>Hands farmland 5 (field 4, grass) to the farm: work only applies on the farm's own land.</summary>
+    public static void OwnField4(Simulation sim) => sim.Farms.SetOwner(sim.World.FarmlandById(5)!, Ownership.Farm.PlayerId);
+
     /// <summary>Skips forward to the next occurrence of a date and hour.</summary>
     public static void SkipTo(Simulation sim, int month, int day, float hour)
     {

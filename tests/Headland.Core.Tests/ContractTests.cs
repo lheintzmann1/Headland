@@ -1,8 +1,11 @@
+using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Events;
+using Headland.Core.Machines;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
+using Headland.Core.World;
 using static Headland.Core.Tests.PoiTests;
 
 namespace Headland.Core.Tests;
@@ -219,5 +222,60 @@ public class ContractTests
         sim.SkipHours(24 * 4);
         loaded.SkipHours(24 * 4);
         Assert.Equal(sim.Contracts.All.Select(Describe), loaded.Contracts.All.Select(Describe));
+    }
+
+    private static int Cultivated(Simulation sim, int field) =>
+        Enumerable.Range(0, sim.World.Layers.Ground.Length)
+            .Count(i => sim.World.Layers.FieldId[i] == field && sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated);
+
+    [Fact]
+    public void WorkOnlyAppliesOnTheFarmsLandAndTheFieldsItHasAContractOn()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
+        var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
+        sim.Machines.Attach(t, "rear", c);
+        sim.Player.Enter(t);
+
+        // Field 4 is Tom Aldridge's: no helper, and a lowered cultivator leaves it as it is.
+        sim.CommandHelper();
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Field 4 belongs to Tom Aldridge: take a contract on it first");
+        Assert.Null(t.Controller as FieldWorkController);
+        c.Lowered = true;
+        sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
+        for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
+        Assert.Equal(0, Cultivated(sim, 4));
+        Assert.Equal("Field 4 belongs to Tom Aldridge: take a contract on it first", c.Status);
+
+        // With the contract to cultivate it, it's worked.
+        Assert.True(sim.Contracts.Accept(sim.Contracts.On(sim.World.FieldById(4)!)!));
+        for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
+        Assert.True(Cultivated(sim, 4) > 6 * 40, $"cultivated cells: {Cultivated(sim, 4)}");
+        Assert.Null(c.Status);
+    }
+
+    [Fact]
+    public void AContractAllowsItsOwnWorkAndCrop()
+    {
+        var sim = Neighbors(Field(2, "cultivated"));
+        var (canola, wheat) = (sim.Content.CropById("canola"), sim.Content.CropById("wheat"));
+        var field = sim.World.FieldById(2)!;
+        var sow = sim.Contracts.On(field)!;
+        Assert.Equal("Sow canola on Field 2", sow.Label);
+        Assert.Equal("Field 2 belongs to Ada Morrow: take a contract on it first", sim.Farms.FieldBlocker(Farm.PlayerId, field, "seeder", canola));
+
+        Assert.True(sim.Contracts.Accept(sow));
+        Assert.Null(sim.Farms.FieldBlocker(Farm.PlayerId, field, "seeder", canola));
+        Assert.Equal("The contract on Field 2 is to sow canola", sim.Farms.FieldBlocker(Farm.PlayerId, field, "seeder", wheat));
+        Assert.Equal("The contract on Field 2 is to sow", sim.Farms.FieldBlocker(Farm.PlayerId, field, "cultivator", null));
+        Assert.Equal("Field 2 belongs to Ada Morrow: take a contract on it first", sim.Farms.FieldBlocker(Farm.None, field, "seeder", canola));
+
+        // The farm's own land takes any work; the neighbor's land off its fields and land outside every parcel, none.
+        Assert.Null(sim.Farms.FieldBlocker(Farm.PlayerId, sim.World.FieldById(1)!, "harvester", null));
+        int Cell(float x, float z) => sim.World.CellIndex((int)(x / WorldMap.CellSize), (int)(z / WorldMap.CellSize));
+        Assert.True(sim.Farms.MayWork(Farm.PlayerId, Cell(60f, 100f), "cultivator", null));
+        Assert.Equal("Farmland 2 belongs to Ada Morrow", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(70f, 100f), "cultivator", null));
+        Assert.Equal("Only farmland can be worked", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(30f, 160f), "cultivator", null));
     }
 }

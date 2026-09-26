@@ -2,6 +2,7 @@ using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
+using Headland.Core.Time;
 using Headland.Core.World;
 
 namespace Headland.Core.Contracts;
@@ -42,6 +43,9 @@ public sealed class ContractSystem
     public Contract? On(FieldInfo field) => _all.Find(c => c.Field == field);
 
     private int Player => _sim.Farms.Player.Id;
+
+    /// <summary>The last day to do a taken contract.</summary>
+    public GameDate DueDate(Contract c) => _sim.Calendar.DateOfDay(c.DueDay - 1);
 
     // ------------------------------------------------------------------ Taking a contract
 

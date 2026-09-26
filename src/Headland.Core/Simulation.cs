@@ -250,9 +250,15 @@ public sealed class Simulation
             Notifications.Post("Drive to a field first: helpers work the field you are in or next to", Severity.Warning);
             return;
         }
-        if (!v.Chain().Any(m => m.Def.WorkArea != null))
+        if (v.Chain().FirstOrDefault(m => m.Def.WorkArea != null) is not { } tool)
         {
             Notifications.Post("Attach an implement first", Severity.Warning);
+            return;
+        }
+        var seed = tool.Def.SeedTank != null ? Content.Crops[tool.SelectedCrop] : null;
+        if (Farms.FieldBlocker(v.FarmId, field, tool.Def.WorkArea!.Type, seed) is { } why)
+        {
+            Notifications.Post(why, Severity.Warning);
             return;
         }
         if (Economy.Money <= 0f)

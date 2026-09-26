@@ -13,6 +13,8 @@ public static class Palette
     /// <summary>Something running for a while: tipping, pipe out.</summary>
     public const string Busy = "#e8c060";
     public const string Paused = "#e0a060";
+    /// <summary>Contracts under way: their fields on the map, and their lines in the HUD.</summary>
+    public const string Contract = "#b9a2dc";
 
     public static string Weather(WeatherCondition c) => c switch
     {

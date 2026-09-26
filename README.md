@@ -36,7 +36,8 @@ Built with **Godot 4.7** and **C#**.
   buys costs, from seed to land and wages; sale prices stay the same.
 - **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who
   own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
-  ground the farm's own buildings stand on.
+  ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors' fields it has
+  a contract on.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by

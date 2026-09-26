@@ -178,6 +178,7 @@ public class FinanceTests
     /// <summary>A tractor and cultivator in the player's hands, next to field 4.</summary>
     private static Machines.Machine TractorAtField4(Simulation sim)
     {
+        TestContent.OwnField4(sim);
         var t = sim.Machines.Spawn("tractor_125", new System.Numerics.Vector2(242f, 280f), 0f);
         sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", new System.Numerics.Vector2(242f, 278f), 0f));
         sim.Player.Enter(t);

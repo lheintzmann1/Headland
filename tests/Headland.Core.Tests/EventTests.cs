@@ -83,6 +83,7 @@ public class GameEventTests
     public void WorkAndSalesAreCountedInStatistics()
     {
         var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
         var worked = Record<FieldWorked>(sim);
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
@@ -122,6 +123,7 @@ public class GameEventTests
     public void HelperIsHiredAndDismissedThroughEvents()
     {
         var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
         var hired = Record<HelperHired>(sim);
         var dismissed = Record<HelperDismissed>(sim);
         var entered = Record<VehicleEntered>(sim);
