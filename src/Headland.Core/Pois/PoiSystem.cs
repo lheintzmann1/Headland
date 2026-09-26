@@ -210,7 +210,7 @@ public sealed class PoiSystem
         if (amount <= 0f) return 0f;
         var stored = action.Type == "store";
         var income = stored ? 0f : amount * Price(trigger.Poi, action, fillType);
-        Earn(m.FarmId, income);
+        Earn(m.FarmId, income, MoneyCategory.Sales);
         if (!stored) trigger.Poi.Demand[fillType] = MathF.Max(action.Demand.Floor, trigger.Poi.DemandOf(fillType) - action.Demand.Drop * amount / 100_000f);
         if (_deliveries.TryGetValue(m, out var d) && (d.Poi != trigger.Poi || d.FillType != fillType || d.Stored != stored)) Flush(m);
         d = _deliveries.GetValueOrDefault(m) ?? new Delivery(trigger.Poi, fillType, 0f, 0f, stored);
@@ -456,7 +456,7 @@ public sealed class PoiSystem
                     why.Add("Not enough money");
                     continue;
                 }
-                Spend(m.FarmId, amount * price);
+                Spend(m.FarmId, amount * price, action.Type == "refuel" ? MoneyCategory.Fuel : MoneyCategory.Purchases);
                 _sim.Events.Publish(new FillBought(m, trigger.Poi, ft, amount, amount * price));
                 done = true;
             }
@@ -484,7 +484,7 @@ public sealed class PoiSystem
             why.Add("Not enough money");
             return false;
         }
-        Spend(m.FarmId, cost);
+        Spend(m.FarmId, cost, MoneyCategory.Maintenance);
         if (repair)
         {
             m.Condition = 1f;
@@ -534,7 +534,7 @@ public sealed class PoiSystem
                 poi.Progress[i] -= 1f;
                 cycles++;
             }
-            Spend(poi.FarmId, a.RunningCost);
+            Spend(poi.FarmId, a.RunningCost, MoneyCategory.Production);
             if (cycles > 0)
                 foreach (var output in a.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
             SellOutputs(poi, a, month);
@@ -550,7 +550,7 @@ public sealed class PoiSystem
             var amount = poi.Storage!.Remove(ft, poi.Storage.Level(ft));
             if (amount < 0.001f) continue;
             var income = amount * Economy.Price(ft, month) * process.PriceFactors.GetValueOrDefault(ft, process.PriceFactor);
-            Earn(poi.FarmId, income);
+            Earn(poi.FarmId, income, MoneyCategory.Sales);
             _sim.Events.Publish(new ProductionSold(poi, ft, amount, income));
         }
     }
@@ -603,14 +603,14 @@ public sealed class PoiSystem
     // The economy is the player's farm's: other farms (NPCs) trade without it.
     private bool IsPlayers(int farmId) => farmId == _sim.Farms.Player.Id;
 
-    private void Earn(int farmId, float amount)
+    private void Earn(int farmId, float amount, MoneyCategory category)
     {
-        if (IsPlayers(farmId)) Economy.Earn(amount);
+        if (IsPlayers(farmId) && amount > 0f) Economy.Earn(amount, category);
     }
 
-    private void Spend(int farmId, float amount)
+    private void Spend(int farmId, float amount, MoneyCategory category)
     {
-        if (IsPlayers(farmId) && amount > 0f) Economy.Spend(amount);
+        if (IsPlayers(farmId) && amount > 0f) Economy.Spend(amount, category);
     }
 
     private float Affordable(int farmId, float amount, float unitPrice) =>

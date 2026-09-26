@@ -45,6 +45,7 @@ public static class InputSetup
         ("quicksave", Key.F5, "Quicksave"),
         ("quickload", Key.F8, "Quickload"),
         ("toggle_help", Key.F1, "Help"),
+        ("toggle_finances", Key.F2, "Finances"),
         ("toggle_debug", Key.F3, "Debug overlay"),
         ("screenshot", Key.F12, "Screenshot"),
     ];

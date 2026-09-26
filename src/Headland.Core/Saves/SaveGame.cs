@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
+using Headland.Core.Economics;
 using Headland.Core.Machines;
 using Headland.Core.Pois;
 using Headland.Core.World;
@@ -110,6 +111,8 @@ public static class SaveGame
             Economy = new EconomySave
             {
                 Money = sim.Economy.Money, TotalIncome = sim.Economy.TotalIncome, TotalExpenses = sim.Economy.TotalExpenses,
+                Days = sim.Economy.Ledger.Days.Select(CapturePeriod).ToList(),
+                Months = sim.Economy.Ledger.Months.Select(CapturePeriod).ToList(),
             },
             Statistics = new StatisticsSave
             {
@@ -136,6 +139,12 @@ public static class SaveGame
             },
         };
     }
+
+    private static PeriodSave CapturePeriod(FinancePeriod p) => new()
+    {
+        Index = p.Index,
+        Amounts = Ledger.Categories.Where(c => p[c] != 0f).ToDictionary(c => Json.PropertyNamingPolicy!.ConvertName(c.ToString()), c => p[c]),
+    };
 
     private static MachineSave CaptureMachine(Simulation sim, Machine m)
     {
@@ -205,6 +214,7 @@ public static class SaveGame
             sim.Crops.MineralAccumulators[i] = s.Mineralization.GetValueOrDefault(content.Soils[i].Id);
 
         sim.Economy.Restore(s.Economy.Money, s.Economy.TotalIncome, s.Economy.TotalExpenses);
+        sim.Economy.Ledger.Restore(s.Economy.Days.Select(RestorePeriod), s.Economy.Months.Select(RestorePeriod), sim.Clock.DayIndex);
         var stats = sim.Statistics;
         foreach (var (target, saved) in new[]
                  {
@@ -233,6 +243,15 @@ public static class SaveGame
         sim.Player.FarmId = p.Farm;
         sim.Player.Restore(p.Vehicle is { } id ? machines.GetValueOrDefault(id) : null);
         sim.RestoreTime(s.RealTime, s.PendingHourFrom, s.PendingHours);
+    }
+
+    /// <summary>A page of the books; money of a category this version doesn't know goes under Other.</summary>
+    private static FinancePeriod RestorePeriod(PeriodSave p)
+    {
+        var period = new FinancePeriod(p.Index);
+        foreach (var (name, amount) in p.Amounts)
+            period.Amounts[(int)(Enum.TryParse<MoneyCategory>(name, ignoreCase: true, out var c) ? c : MoneyCategory.Other)] += amount;
+        return period;
     }
 
     private static void RestorePois(Simulation sim, SaveState s, List<string> warnings)

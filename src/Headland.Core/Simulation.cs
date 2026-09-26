@@ -37,7 +37,7 @@ public sealed class Simulation
         World = WorldGen.Generate(Map, content);
         Farms = new Farms(World, Events, setup.FarmName);
         Crops = new CropSystem(content, World, Calendar, Climate);
-        Economy = new Economy(content, setup.StartMoney);
+        Economy = new Economy(content, Calendar, setup.StartMoney, Clock.DayIndex);
         // Its own stream, so high demand doesn't change the weather.
         Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
@@ -170,6 +170,7 @@ public sealed class Simulation
         {
             var hour = from + k;
             var day = (int)(hour / 24);
+            Economy.StartHour(hour);
             Weather.Update(day, hour % 24 + 0.5f);
             Weather.TickHour();
             Crops.TickHour(Weather, day, hour);

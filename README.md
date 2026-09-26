@@ -27,6 +27,8 @@ Built with **Godot 4.7** and **C#**.
   you flood a buyer and recover over time, and now and then a buyer pays more for a few days. Each place is a point
   of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
   hours, storage and production that runs by the hour.
+- **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
+  maintenance, production costs. F2 shows them day by day or month by month.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by
@@ -59,6 +61,7 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | X | Change the seed |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair, wash |
 | H | Hire or dismiss a field helper |
+| F2 | Finances |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

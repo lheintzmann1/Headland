@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
@@ -208,12 +209,12 @@ public class PoiActionTests
         var cost = (72_000f + 21_000f) / 100f * 0.5f;
         Assert.Equal([$"Repair (${cost:N0})"], sim.Pois.UseOptions(t));
 
-        sim.Economy.Spend(sim.Economy.Money - 100f);
+        sim.Economy.Spend(sim.Economy.Money - 100f, MoneyCategory.Other);
         sim.CommandUse();
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Not enough money");
         Assert.Empty(repaired);
 
-        sim.Economy.Earn(1000f);
+        sim.Economy.Earn(1000f, MoneyCategory.Other);
         sim.CommandUse();
         Assert.Equal((1f, 1f), (t.Condition, trailer.Condition));
         Assert.Equal(1100f - cost, sim.Economy.Money, 1);

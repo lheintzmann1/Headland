@@ -75,6 +75,18 @@ public sealed class EconomySave
     public float Money { get; set; }
     public float TotalIncome { get; set; }
     public float TotalExpenses { get; set; }
+    /// <summary>The books' pages, newest first.</summary>
+    public List<PeriodSave> Days { get; set; } = [];
+    public List<PeriodSave> Months { get; set; } = [];
+}
+
+/// <summary>A day or a month of the books.</summary>
+public sealed class PeriodSave
+{
+    /// <summary>Day index, or for a month (year - 1) × 12 + month - 1.</summary>
+    public int Index { get; set; }
+    /// <summary>Money in (positive) and out (negative) by category ("sales", "loanInterest"...).</summary>
+    public Dictionary<string, float> Amounts { get; set; } = new();
 }
 
 public sealed class StatisticsSave

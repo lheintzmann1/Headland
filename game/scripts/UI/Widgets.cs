@@ -79,6 +79,25 @@ public static class Widgets
         return button;
     }
 
+    /// <summary>One of a row of buttons that stay down while selected (the others in <paramref name="group"/> pop up).</summary>
+    public static Button Tab(string text, ButtonGroup group, bool selected, Action select)
+    {
+        var tab = new Button { Text = text, ToggleMode = true, ButtonGroup = group, ButtonPressed = selected };
+        tab.Pressed += select;
+        return tab;
+    }
+
+    /// <summary>A right-aligned table cell for an amount of money: green in, orange out, a dash for none.</summary>
+    public static Label Money(float amount, float width = 84f)
+    {
+        var cell = MathF.Abs(amount) < 0.5f
+            ? Label("–", "DimLabel")
+            : Label($"{amount:N0}", amount > 0f ? "IncomeLabel" : "ExpenseLabel");
+        cell.HorizontalAlignment = HorizontalAlignment.Right;
+        cell.CustomMinimumSize = new Vector2(width, 0);
+        return cell;
+    }
+
     /// <summary>BBCode for a key prompt: the action's key on the player's keyboard layout, highlighted.</summary>
     public static string Key(string action) => Colored($"[lb]{InputSetup.Label(action)}[rb]", Palette.Key);
 

@@ -78,7 +78,7 @@ conditions. Money is just another input or output:
 
 ## Economy
 
-- [ ] **Finances**: daily/monthly income and expenses by category (sales, purchases, fuel, maintenance,
+- [x] **Finances**: daily/monthly income and expenses by category (sales, purchases, fuel, maintenance,
       wages, leasing, land, loan interest, contracts) and a finances screen.
 - [ ] **Loans**: borrow and repay in steps (FS: 5,000), credit limit, annual interest charged per day or
       month scaled to the compressed calendar. Decide what negative money does.
