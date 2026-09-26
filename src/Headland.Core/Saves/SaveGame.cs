@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
+using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Machines;
 using Headland.Core.Pois;
@@ -136,6 +137,9 @@ public static class SaveGame
                 HighDemand = p.HighDemand is { } h ? new HighDemandSave { FillType = h.FillType, Factor = h.Factor, EndDay = h.EndDay } : null,
             }).ToList(),
             PoiRngState = sim.Pois.Rng.State,
+            Contracts = sim.Contracts.All.Select(CaptureContract).ToList(),
+            NextContractId = sim.Contracts.NextId,
+            ContractRngState = sim.Contracts.Rng.State,
             NextMachineId = sim.Machines.NextId,
             Machines = sim.Machines.All.Select(m => CaptureMachine(sim, m)).ToList(),
             Player = new PlayerSave
@@ -150,6 +154,12 @@ public static class SaveGame
     {
         Index = p.Index,
         Amounts = Ledger.Categories.Where(c => p[c] != 0f).ToDictionary(c => Json.PropertyNamingPolicy!.ConvertName(c.ToString()), c => p[c]),
+    };
+
+    private static ContractSave CaptureContract(Contract c) => new()
+    {
+        Id = c.Id, Type = c.Type.Id, Npc = c.Npc?.Id, Field = c.Field?.Id, Crop = c.Crop?.Id, Poi = c.Poi?.Id, Goods = c.Goods?.Id,
+        Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay, Farm = c.FarmId, DueDay = c.DueDay,
     };
 
     private static MachineSave CaptureMachine(Simulation sim, Machine m)
@@ -244,6 +254,7 @@ public static class SaveGame
             else land.FarmId = l.Farm;
         }
         RestorePois(sim, s, warnings);
+        RestoreContracts(sim, s, warnings);
 
         var machines = RestoreMachines(sim, s, warnings);
         var p = s.Player;
@@ -288,6 +299,37 @@ public static class SaveGame
                 for (var i = 0; i < Math.Min(progress.Length, poi.Progress.Length); i++)
                     if (poi.Def.Actions[i].Type == "process") poi.Progress[i] = Math.Clamp(progress[i], 0f, 1f);
         }
+    }
+
+    /// <summary>Contracts whose job, field, crop, buyer or goods are gone are dropped: offers quietly, taken ones with a warning.</summary>
+    private static void RestoreContracts(Simulation sim, SaveState s, List<string> warnings)
+    {
+        var content = sim.Content;
+        var contracts = new List<Contract>();
+        foreach (var c in s.Contracts)
+        {
+            var type = content.ContractTypes.GetValueOrDefault(c.Type);
+            var npc = c.Npc != null ? content.Npcs.GetValueOrDefault(c.Npc) : null;
+            var field = c.Field is { } f ? sim.World.FieldById(f) : null;
+            var crop = c.Crop != null ? content.CropById(c.Crop) : null;
+            var poi = c.Poi != null ? sim.World.PoiById(c.Poi) : null;
+            var goods = c.Goods != null ? content.FillTypes.GetValueOrDefault(c.Goods) : null;
+            var active = c.Farm != Ownership.Farm.None;
+            if (type == null || (c.Npc != null && npc == null) || (c.Field != null && field == null) || (c.Crop != null && crop == null)
+                || (c.Poi != null && poi == null) || (c.Goods != null && goods == null) || (active && sim.Farms.ById(c.Farm) == null))
+            {
+                if (active) warnings.Add($"A contract ({c.Type}) can't go on: what it was about no longer exists");
+                continue;
+            }
+            contracts.Add(new Contract
+            {
+                Id = c.Id, Type = type, Npc = npc, Field = field, Crop = crop, Poi = poi, Goods = goods,
+                Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay,
+                State = active ? ContractState.Active : ContractState.Offered, FarmId = c.Farm, DueDay = c.DueDay,
+            });
+        }
+        sim.Contracts.Restore(contracts, s.NextContractId);
+        if (s.ContractRngState != 0) sim.Contracts.Rng.State = s.ContractRngState;
     }
 
     private static Dictionary<int, Machine> RestoreMachines(Simulation sim, SaveState s, List<string> warnings)

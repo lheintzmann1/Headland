@@ -1,3 +1,4 @@
+using Headland.Core.Contracts;
 using Headland.Core.Machines;
 using Headland.Core.Pois;
 using Headland.Core.Time;
@@ -88,6 +89,20 @@ public sealed record FarmlandBought(Farmland Farmland, int Farm, float Price) : 
 
 /// <summary><paramref name="Farm"/> sold a parcel back to its NPC.</summary>
 public sealed record FarmlandSold(Farmland Farmland, int Farm, float Price) : IGameEvent;
+
+// ---- Contracts
+
+/// <summary>A neighbor or a buyer put a contract on the board.</summary>
+public sealed record ContractOffered(Contract Contract) : IGameEvent;
+
+/// <summary>An offer came off the board untaken: too old, or its field was sold.</summary>
+public sealed record ContractWithdrawn(Contract Contract) : IGameEvent;
+
+/// <summary>A farm took a contract; it's due at the start of <see cref="Contract.DueDay"/>.</summary>
+public sealed record ContractAccepted(Contract Contract) : IGameEvent;
+
+/// <summary>A contract wasn't done by its due day.</summary>
+public sealed record ContractFailed(Contract Contract) : IGameEvent;
 
 // ---- Machines
 

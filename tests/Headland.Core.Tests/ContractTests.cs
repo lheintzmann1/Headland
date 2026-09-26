@@ -1,9 +1,43 @@
 using Headland.Core.Content;
+using Headland.Core.Contracts;
+using Headland.Core.Events;
+using Headland.Core.Ownership;
+using Headland.Core.Saves;
+using static Headland.Core.Tests.PoiTests;
 
 namespace Headland.Core.Tests;
 
 public class ContractTests
 {
+    /// <summary>A small map: the farm's parcel with field 1 (stubble), Ada Morrow's with these fields, and an elevator.</summary>
+    private static Simulation Neighbors(params FieldDef[] fields)
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Maps["neighbors"] = new MapDef
+        {
+            Id = "neighbors", Name = "Neighbors", Size = 256, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,
+            Farmlands =
+            [
+                new FarmlandDef { Id = 1, Npc = "hendricks", Farm = Farm.PlayerId, X = 0, Z = 0, W = 64, H = 128 },
+                new FarmlandDef { Id = 2, Npc = "morrow", X = 64, Z = 0, W = 192, H = 128 },
+            ],
+            Fields = [new FieldDef { Id = 1, X = 8, Z = 8, W = 48, H = 48, Ground = "stubble" }, .. fields],
+            Pois = [new PoiPlacementDef { Id = "elevator", Type = "grain_elevator", X = 128, Z = 200 }],
+            PlayerX = 2, PlayerZ = 2,
+        };
+        db.Game.Map = "neighbors";
+        return Simulation.Create(db);
+    }
+
+    /// <summary>A 50 m square neighbor's field; ids 2 to 7 fill two rows of three.</summary>
+    private static FieldDef Field(int id, string ground, string? crop = null, string? stage = null) => new()
+    {
+        Id = id, X = 72 + (id - 2) % 3 * 60, Z = 8 + (id - 2) / 3 * 60, W = 50, H = 50, Ground = ground, Crop = crop, Stage = stage,
+    };
+
+    private static string Describe(Contract c) =>
+        $"{c} {c.Npc?.Id} {c.Crop?.Id} {c.Poi?.Id} {c.Goods?.Id} {c.Amount} {c.Reward} {c.Days} {c.OfferedDay} {c.FarmId} {c.DueDay}";
+
     [Fact]
     public void ContractTypesComeFromTheData()
     {
@@ -47,5 +81,143 @@ public class ContractTests
         Assert.Contains("contract type 'haul': deliver.priceFactor must be > 0", errors);
         Assert.Contains("contract type 'haul': unknown fill type 'gravel'", errors);
         Assert.Equal(14, errors.Count);
+    }
+
+    [Fact]
+    public void ContractRulesAreValidated()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Economy.Contracts = new ContractRulesDef { MaxOffers = -1, OfferDays = 0, Threshold = 1.5f };
+        Assert.Equal(["economy.contracts: maxOffers and offersPerDay must be >= 0, offerDays and maxActive >= 1",
+            "economy.contracts.threshold must be in (0, 1]"], db.Validate());
+    }
+
+    [Fact]
+    public void NeighborsOfferTheWorkTheirFieldsNeed()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var offers = sim.Contracts.Offers.ToList();
+
+        // August: field 4 (grass) and field 6 (stubble) need cultivating, field 5's corn is still growing, and fields
+        // 1 to 3 are the farm's own.
+        var jobs = offers.Where(c => c.Field != null).OrderBy(c => c.Field!.Id).ToList();
+        Assert.Equal(["Cultivate Field 4", "Cultivate Field 6"], jobs.Select(c => c.Label));
+        Assert.Equal(["aldridge", "brandt"], jobs.Select(c => c.Npc!.Id));
+        Assert.All(jobs, c => Assert.InRange(c.Reward, 450f * c.Field!.AreaHa - 5f, 550f * c.Field.AreaHa + 5f));
+        Assert.All(jobs, c => Assert.InRange(c.Days, 3, 5));
+
+        // Each buyer asks for one kind of goods at a time, for their market price and 30% more.
+        var deliveries = offers.Where(c => c.Field == null).OrderBy(c => c.Poi!.Id).ToList();
+        Assert.Equal(["elevator", "mill"], deliveries.Select(c => c.Poi!.Id));
+        Assert.Equal("wheat", deliveries[1].Goods!.Id);
+        Assert.All(deliveries, c =>
+        {
+            Assert.Equal((0f, c.Poi!.Name), (c.Amount % 1000f, c.Client));
+            Assert.InRange(c.Amount, 4000f, 12000f);
+            Assert.Equal(MathF.Round(c.Amount * sim.Economy.Price(c.Goods!.Id, 8) * 1.3f / 10f) * 10f, c.Reward);
+        });
+        Assert.Equal($"Deliver {deliveries[1].Amount:N0} L wheat to Flour Mill", deliveries[1].Label);
+    }
+
+    [Fact]
+    public void RipeCropsGetHarvestJobsAndSeedbedsSowingJobs()
+    {
+        var sim = Neighbors(Field(2, "seeded", "corn", "harvestable"), Field(3, "cultivated"), Field(4, "seeded", "wheat", "2"));
+        sim.SkipHours(24);
+        var harvest = Assert.Single(sim.Contracts.Offers, c => c.Type.Id == "harvest");
+        Assert.Equal(("Harvest corn on Field 2", "elevator", "corn"), (harvest.Label, harvest.Poi!.Id, harvest.Goods!.Id));
+        Assert.Equal("Ada Morrow", harvest.Client);
+        // Canola is the only crop sown in August; field 4's wheat needs nothing yet and field 1 is the farm's.
+        var sow = Assert.Single(sim.Contracts.Offers, c => c.Type.Id == "sow");
+        Assert.Equal("Sow canola on Field 3", sow.Label);
+        Assert.Equal([2, 3], sim.Contracts.Offers.Where(c => c.Field != null).Select(c => c.Field!.Id).Order());
+    }
+
+    [Fact]
+    public void TheBoardAndTheFarmHaveLimits()
+    {
+        var sim = Neighbors(Field(2, "stubble"), Field(3, "stubble"), Field(4, "stubble"), Field(5, "grass"), Field(6, "grass"), Field(7, "grass"));
+        Assert.Equal(2, sim.Contracts.Offers.Count());
+        sim.SkipHours(24 * 3);
+        Assert.Equal(6, sim.Contracts.Offers.Count());
+
+        var offers = sim.Contracts.Offers.ToList();
+        Assert.All(offers.Take(3), c => Assert.True(sim.Contracts.Accept(c)));
+        Assert.Equal("You have 3 contracts under way already", sim.Contracts.AcceptBlocker(offers[3]));
+        Assert.False(sim.Contracts.Accept(offers[3]));
+        Assert.Equal("This contract is not on the board anymore", sim.Contracts.AcceptBlocker(offers[0]));
+        // Taken contracts make room on the board: the seventh job there is (six fields, one buyer) goes up.
+        sim.SkipHours(24);
+        Assert.Equal((4, 3), (sim.Contracts.Offers.Count(), sim.Contracts.ActiveOf(Farm.PlayerId).Count()));
+    }
+
+    [Fact]
+    public void OffersComeDownAfterThreeDays()
+    {
+        var sim = TestContent.NewSim();
+        var withdrawn = Record<ContractWithdrawn>(sim);
+        var first = sim.Contracts.Offers.ToList();
+        TestContent.SkipTo(sim, 8, 3, 23f);
+        Assert.All(first, c => Assert.Contains(c, sim.Contracts.Offers));
+        // Posted on August 1st: down at midnight on September 1st (August has three days).
+        sim.SkipHours(1);
+        Assert.All(first, c => Assert.Equal(ContractState.Withdrawn, c.State));
+        Assert.Equal(first.Select(c => new ContractWithdrawn(c)), withdrawn);
+        Assert.All(first, c => Assert.DoesNotContain(c, sim.Contracts.All));
+    }
+
+    [Fact]
+    public void TakenContractsFailWhenNotDoneInTime()
+    {
+        var sim = TestContent.NewSim();
+        var accepted = Record<ContractAccepted>(sim);
+        var failed = Record<ContractFailed>(sim);
+        var job = sim.Contracts.Offers.First();
+        Assert.True(sim.Contracts.Accept(job));
+        Assert.Equal((ContractState.Active, Farm.PlayerId, sim.Clock.DayIndex + job.Days), (job.State, job.FarmId, job.DueDay));
+        Assert.Equal([new ContractAccepted(job)], accepted);
+        Assert.Contains(job, sim.Contracts.ActiveOf(Farm.PlayerId));
+
+        // Due at the midnight starting its due day.
+        sim.SkipHours((int)(job.DueDay * 24L - sim.Clock.TotalHours) - 1);
+        Assert.Equal(ContractState.Active, job.State);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Failed, job.State);
+        Assert.Equal([new ContractFailed(job)], failed);
+        Assert.DoesNotContain(job, sim.Contracts.All);
+    }
+
+    [Fact]
+    public void BoughtLandTakesItsOffersAndLandUnderContractStaysTheNeighbors()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var field4 = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        var field6 = sim.Contracts.On(sim.World.FieldById(6)!)!;
+        Assert.True(sim.Contracts.Accept(field6));
+
+        Assert.True(sim.Farms.Buy(sim.World.FarmlandById(5)!));
+        Assert.Equal(ContractState.Withdrawn, field4.State);
+        Assert.Null(sim.Contracts.On(sim.World.FieldById(4)!));
+        Assert.Equal("Field 6 is under contract", sim.Farms.BuyBlocker(sim.World.FarmlandById(7)!));
+        // The farm's own fields never get offers.
+        sim.SkipHours(24 * 6);
+        Assert.DoesNotContain(sim.Contracts.All, c => c.Field?.Id is 1 or 2 or 3 or 4);
+    }
+
+    [Fact]
+    public void TheBoardAndTakenContractsAreSaved()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        Assert.True(sim.Contracts.Accept(sim.Contracts.Offers.First(c => c.Field != null)));
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        Assert.Equal(sim.Contracts.All.Select(Describe), loaded.Contracts.All.Select(Describe));
+
+        // And the board goes on the same way.
+        sim.SkipHours(24 * 4);
+        loaded.SkipHours(24 * 4);
+        Assert.Equal(sim.Contracts.All.Select(Describe), loaded.Contracts.All.Select(Describe));
     }
 }

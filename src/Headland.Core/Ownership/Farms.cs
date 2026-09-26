@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.World;
@@ -24,20 +25,22 @@ public sealed class Farm(int id, string name)
 }
 
 /// <summary>
-/// Farms and who owns what. Farmland not owned by a farm belongs to its NPC, who sells it and (later) offers
-/// contracts on it. The player's farm buys parcels from their NPC and sells them back, for the parcel's price.
+/// Farms and who owns what. Farmland not owned by a farm belongs to its NPC, who sells it and offers contracts on it.
+/// The player's farm buys parcels from their NPC and sells them back, for the parcel's price.
 /// </summary>
 public sealed class Farms
 {
     private readonly WorldMap _world;
     private readonly EventBus _events;
     private readonly Economy _economy;
+    private readonly ContractSystem _contracts;
 
-    public Farms(WorldMap world, EventBus events, Economy economy, string playerFarmName)
+    public Farms(WorldMap world, EventBus events, Economy economy, ContractSystem contracts, string playerFarmName)
     {
         _world = world;
         _events = events;
         _economy = economy;
+        _contracts = contracts;
         Player = new Farm(Farm.PlayerId, playerFarmName);
         All = [Player];
     }
@@ -73,6 +76,8 @@ public sealed class Farms
     {
         if (land.FarmId == Player.Id) return $"{land.Label} is yours already";
         if (land.FarmId != Farm.None) return $"{land.Label} belongs to {OwnerName(land)}";
+        if (land.Fields.Select(_contracts.On).FirstOrDefault(c => c?.State == ContractState.Active) is { } job)
+            return $"{job.Field!.Label} is under contract";
         return Price(land) > _economy.Money ? "Not enough money" : null;
     }
 

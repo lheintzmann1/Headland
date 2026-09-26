@@ -46,6 +46,10 @@ public sealed class SaveState
     public List<PoiSave> Pois { get; set; } = [];
     /// <summary>State of the random stream rolling high demand at POIs.</summary>
     public ulong PoiRngState { get; set; }
+    /// <summary>Contracts on the board and under way, the next contract's id and the stream rolling new ones.</summary>
+    public List<ContractSave> Contracts { get; set; } = [];
+    public int NextContractId { get; set; }
+    public ulong ContractRngState { get; set; }
     public int NextMachineId { get; set; }
     public List<MachineSave> Machines { get; set; } = [];
     public PlayerSave Player { get; set; } = new();
@@ -133,6 +137,27 @@ public sealed class HighDemandSave
     public float Factor { get; set; }
     /// <summary>Day index it ends on, at midnight.</summary>
     public int EndDay { get; set; }
+}
+
+/// <summary>A contract, with its parts by id: the job (contracts.json), field, crop, buyer and goods.</summary>
+public sealed class ContractSave
+{
+    public int Id { get; set; }
+    public string Type { get; set; } = "";
+    /// <summary>The neighbor offering a field job (npcs.json id).</summary>
+    public string? Npc { get; set; }
+    public int? Field { get; set; }
+    public string? Crop { get; set; }
+    /// <summary>Placement id of the buyer, and the fill type of the goods.</summary>
+    public string? Poi { get; set; }
+    public string? Goods { get; set; }
+    public float Amount { get; set; }
+    public float Reward { get; set; }
+    public int Days { get; set; }
+    public int OfferedDay { get; set; }
+    /// <summary>The farm doing it (0: on the board), and the day index it's due.</summary>
+    public int Farm { get; set; }
+    public int DueDay { get; set; }
 }
 
 public sealed class MachineSave

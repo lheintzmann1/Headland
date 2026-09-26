@@ -89,9 +89,9 @@ conditions. Money is just another input or output:
 
 ## Contracts
 
-- [ ] Generation: NPC fields offer jobs by crop state and season (cultivate, plow, sow, fertilize, spray,
-      harvest, mow, bale, deliver goods to a POI). Reward from area and type, time limit, cap on open
-      contracts.
+- [x] Generation: NPC fields offer jobs by crop state and season (cultivate, sow, harvest), buyers ask for
+      goods (deliver to a POI). Reward from area and type, time limit, cap on open contracts.
+- [ ] Plow, fertilize, spray, mow and bale jobs: entries in `contracts.json` once machines do that work.
 - [ ] Field access: work only applies on the player's farmland or fields with an active contract (any
       field can be worked today). Contract fields show on the map.
 - [ ] Equipment rental: a contract can offer a leased machine set, fee taken from the reward; machines

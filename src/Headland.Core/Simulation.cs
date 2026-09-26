@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Contracts;
 using Headland.Core.Crops;
 using Headland.Core.Economics;
 using Headland.Core.Events;
@@ -37,9 +38,10 @@ public sealed class Simulation
         World = WorldGen.Generate(Map, content);
         Difficulty = content.Difficulties[setup.Difficulty];
         Economy = new Economy(content, Calendar, Events, Difficulty, Clock.DayIndex);
-        Farms = new Farms(World, Events, Economy, setup.FarmName);
+        // Their own streams, so contracts and high demand don't change the weather.
+        Contracts = new ContractSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x434F4EUL);
+        Farms = new Farms(World, Events, Economy, Contracts, setup.FarmName);
         Crops = new CropSystem(content, World, Calendar, Climate);
-        // Its own stream, so high demand doesn't change the weather.
         Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
@@ -65,6 +67,7 @@ public sealed class Simulation
     public CropSystem Crops { get; }
     public Economy Economy { get; }
     public PoiSystem Pois { get; }
+    public ContractSystem Contracts { get; }
     public MachineSystem Machines { get; }
     public PlayerCharacter Player { get; }
     public Statistics Statistics { get; }
@@ -79,6 +82,7 @@ public sealed class Simulation
     {
         var sim = new Simulation(content, setup ?? content.Game);
         sim.SpawnMapMachines();
+        sim.Contracts.Post(sim.Clock.DayIndex, sim.Contracts.Rules.OffersPerDay);
         return sim;
     }
 
@@ -180,6 +184,7 @@ public sealed class Simulation
             Weather.TickHour();
             Crops.TickHour(Weather, day, hour);
             Pois.TickHour(hour);
+            Contracts.TickHour(hour);
             PublishTime(hour);
         }
         LastHourTickMs = sw.Elapsed.TotalMilliseconds / n;

@@ -46,6 +46,22 @@ public sealed class EconomyDef
     public float LoanInterest { get; set; } = 0.05f;
     /// <summary>What a field helper earns per hour of work (real time: machines don't follow the clock speed).</summary>
     public float HelperWagePerHour { get; set; } = 150f;
+    /// <summary>How the neighbors offer contracts (the jobs themselves are in contracts.json).</summary>
+    public ContractRulesDef Contracts { get; set; } = new();
+}
+
+public sealed class ContractRulesDef
+{
+    /// <summary>Offers on the board at once.</summary>
+    public int MaxOffers { get; set; } = 6;
+    /// <summary>New offers posted every midnight while the board has room (a new game starts with as many).</summary>
+    public int OffersPerDay { get; set; } = 2;
+    /// <summary>Game days an offer stays on the board.</summary>
+    public int OfferDays { get; set; } = 3;
+    /// <summary>Contracts the farm can have under way at once.</summary>
+    public int MaxActive { get; set; } = 3;
+    /// <summary>Share of a field that must be in a job's done state for the job to be done (FS: 95%).</summary>
+    public float Threshold { get; set; } = 0.95f;
 }
 
 public sealed class FillTypeDef
