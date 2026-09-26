@@ -125,8 +125,6 @@ See [`game/assets/CREDITS.md`](game/assets/CREDITS.md) for the full list.
 
 ## License
 
-- **Code** (C#, shaders, tools, JSON game data): [GNU GPL v3.0 or later](LICENSE). You can play, study, modify and
-  share it, mods included; anything you distribute that is built on it must stay open under the same license.
-- **Original art**: [CC BY-SA 4.0](LICENSE-ASSETS.md). Credit Headland and share adaptations alike.
-- **Third-party assets** keep their own licenses, listed in [`game/assets/CREDITS.md`](game/assets/CREDITS.md)
-  (CC0 textures, the OFL Barlow font, Apache-2.0 Material Symbols icons).
+- **Code** (C#, shaders, tools, JSON game data): [GNU GPL v3.0 or later](LICENSE).
+- **Original art**: [CC BY-SA 4.0](LICENSE-ASSETS).
+- **Third-party assets** keep their own licenses, see [`game/assets/CREDITS.md`](game/assets/CREDITS.md).
