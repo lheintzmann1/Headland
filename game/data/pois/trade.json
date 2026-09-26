@@ -9,6 +9,10 @@
   // belongs to the POI's owner.
   // Conditions, on any action: "openHours": [from, to] (game hours; past midnight when from > to), "months": [...]
   // (1..12) and "minAmount" (the smallest load taken, or amount sold). Storage that is full takes nothing more.
+  // Prices: "priceFactor" (and "priceFactors": { "wheat": 1.1 }) multiply the market price (filltypes.json). A sell
+  // action's "demand" lowers its price as loads come in and brings it back day by day, and sometimes puts a fill
+  // type in high demand: { "drop": 0.04 per 100,000 units, "floor": 0.7, "recovery": 0.02 a day,
+  // "highChance": 0.03 a day, "highFactor": [1.2, 1.5], "highDays": [1, 3] } (the defaults).
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },

@@ -252,6 +252,14 @@ public sealed class ContentDatabase
                     e.Add($"{what}: openHours needs [from, to] hours, 0..24 and different");
                 if (a.Months.Any(m => m is < 1 or > 12)) e.Add($"{what}: months must be 1..12");
                 if (a.MinAmount < 0) e.Add($"{what}: minAmount must be >= 0");
+                if (a.PriceFactor <= 0 || a.PriceFactors.Values.Any(f => f <= 0)) e.Add($"{what}: price factors must be > 0");
+                foreach (var ft in a.PriceFactors.Keys.Where(f => !a.FillTypes.Contains(f)))
+                    e.Add($"{what}: price factor for '{ft}', which it does not trade");
+                var d = a.Demand;
+                if (d.Drop < 0 || d.Floor is <= 0 or > 1 || d.Recovery < 0 || d.HighChance is < 0 or > 1)
+                    e.Add($"{what}: demand needs drop >= 0, floor in (0, 1], recovery >= 0 and highChance in [0, 1]");
+                if (d.HighFactor is not [>= 1f, var fMax] || fMax < d.HighFactor[0] || d.HighDays is not [>= 1, var dMax] || dMax < d.HighDays[0])
+                    e.Add($"{what}: demand needs highFactor [min, max] >= 1 and highDays [min, max] >= 1");
                 if (a.Type == "store")
                     foreach (var ft in a.FillTypes.Where(f => !stored.Contains(f)))
                         e.Add($"{what}: the storage does not keep '{ft}'");

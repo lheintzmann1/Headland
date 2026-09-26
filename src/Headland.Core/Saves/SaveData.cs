@@ -44,6 +44,8 @@ public sealed class SaveState
     public List<FarmSave> Farms { get; set; } = [];
     public List<FarmlandSave> Farmlands { get; set; } = [];
     public List<PoiSave> Pois { get; set; } = [];
+    /// <summary>State of the random stream rolling high demand at POIs.</summary>
+    public ulong PoiRngState { get; set; }
     public int NextMachineId { get; set; }
     public List<MachineSave> Machines { get; set; } = [];
     public PlayerSave Player { get; set; } = new();
@@ -107,6 +109,17 @@ public sealed class PoiSave
     public Dictionary<string, float> Storage { get; set; } = new();
     /// <summary>Part of a cycle done, by action index (process actions).</summary>
     public float[]? Progress { get; set; }
+    /// <summary>Demand factors below 1, by fill type.</summary>
+    public Dictionary<string, float> Demand { get; set; } = new();
+    public HighDemandSave? HighDemand { get; set; }
+}
+
+public sealed class HighDemandSave
+{
+    public string FillType { get; set; } = "";
+    public float Factor { get; set; }
+    /// <summary>Day index it ends on, at midnight.</summary>
+    public int EndDay { get; set; }
 }
 
 public sealed class MachineSave

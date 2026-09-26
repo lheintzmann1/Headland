@@ -123,7 +123,10 @@ public static class SaveGame
                 Id = p.Id, Farm = p.FarmId,
                 Storage = p.Storage?.Levels.Where(kv => kv.Value > 0f).ToDictionary(kv => kv.Key, kv => kv.Value) ?? [],
                 Progress = p.Progress.Any(x => x > 0f) ? [.. p.Progress] : null,
+                Demand = new(p.Demand),
+                HighDemand = p.HighDemand is { } h ? new HighDemandSave { FillType = h.FillType, Factor = h.Factor, EndDay = h.EndDay } : null,
             }).ToList(),
+            PoiRngState = sim.Pois.Rng.State,
             NextMachineId = sim.Machines.NextId,
             Machines = sim.Machines.All.Select(m => CaptureMachine(sim, m)).ToList(),
             Player = new PlayerSave
@@ -234,6 +237,8 @@ public static class SaveGame
 
     private static void RestorePois(Simulation sim, SaveState s, List<string> warnings)
     {
+        var content = sim.Content;
+        if (s.PoiRngState != 0) sim.Pois.Rng.State = s.PoiRngState;
         foreach (var p in s.Pois)
         {
             if (sim.World.PoiById(p.Id) is not { } poi)
@@ -248,6 +253,9 @@ public static class SaveGame
                 if (poi.Storage?.Keeps(ft) == true) poi.Storage.Set(ft, level);
                 else warnings.Add($"{poi.Name} no longer stores '{ft}': {level:N0} was lost");
             }
+            foreach (var (ft, demand) in p.Demand)
+                if (content.FillTypes.ContainsKey(ft)) poi.Demand[ft] = Math.Clamp(demand, 0f, 1f);
+            if (p.HighDemand is { } h && content.FillTypes.ContainsKey(h.FillType)) poi.HighDemand = new HighDemand(h.FillType, h.Factor, h.EndDay);
             if (p.Progress is { } progress)
                 for (var i = 0; i < Math.Min(progress.Length, poi.Progress.Length); i++)
                     if (poi.Def.Actions[i].Type == "process") poi.Progress[i] = Math.Clamp(progress[i], 0f, 1f);

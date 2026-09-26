@@ -25,7 +25,14 @@ public sealed class PoiSystem
     private readonly HashSet<Machine> _unloading = [];
     private readonly Dictionary<Machine, Loading> _loading = new();
 
-    public PoiSystem(Simulation sim) => _sim = sim;
+    public PoiSystem(Simulation sim, ulong seed)
+    {
+        _sim = sim;
+        Rng = new Rng(seed);
+    }
+
+    /// <summary>Rolls high-demand events.</summary>
+    internal Rng Rng { get; }
 
     public IReadOnlyList<Poi> All => _sim.World.Pois;
 
@@ -48,11 +55,24 @@ public sealed class PoiSystem
         return null;
     }
 
-    /// <summary>What a unit of <paramref name="fillType"/> sells or costs at <paramref name="trigger"/> right now.</summary>
-    public float Price(PoiTrigger trigger, string fillType) => Economy.Price(fillType, _sim.Clock.Month);
+    /// <summary>
+    /// What a unit of <paramref name="fillType"/> sells for or costs through <paramref name="action"/> right now: the
+    /// market price times the action's factor, and for sales the demand and any high demand.
+    /// </summary>
+    public float Price(Poi poi, PoiActionDef action, string fillType)
+    {
+        var price = Economy.Price(fillType, _sim.Clock.Month) * action.PriceFactors.GetValueOrDefault(fillType, action.PriceFactor);
+        if (action.Type != "sell") return price;
+        price *= poi.DemandOf(fillType);
+        return poi.HighDemand is { } high && high.FillType == fillType ? price * high.Factor : price;
+    }
 
-    /// <summary>What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear.</summary>
-    public static float RepairPrice(Machine m) => m.Def.Price / 100f * (1f - m.Condition);
+    /// <summary>What <paramref name="m"/>'s load of <paramref name="fillType"/> sells for at <paramref name="trigger"/> per unit, or null if it doesn't sell there.</summary>
+    public float? SalePrice(Machine m, PoiTrigger trigger, string fillType) =>
+        UnloadAction(m, trigger, fillType).action is { Type: "sell" } sell ? Price(trigger.Poi, sell, fillType) : null;
+
+    /// <summary>What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear, times the action's factor.</summary>
+    public static float RepairPrice(PoiActionDef repair, Machine m) => repair.PriceFactor * m.Def.Price / 100f * (1f - m.Condition);
 
     public static float WashPrice(PoiActionDef wash, Machine m) => wash.Price * m.Dirt;
 
@@ -189,8 +209,9 @@ public sealed class PoiSystem
         if (Destination(trigger.Poi, action, fillType) is { } storage) amount = storage.Add(fillType, amount);
         if (amount <= 0f) return 0f;
         var stored = action.Type == "store";
-        var income = stored ? 0f : amount * Price(trigger, fillType);
+        var income = stored ? 0f : amount * Price(trigger.Poi, action, fillType);
         Earn(m.FarmId, income);
+        if (!stored) trigger.Poi.Demand[fillType] = MathF.Max(action.Demand.Floor, trigger.Poi.DemandOf(fillType) - action.Demand.Drop * amount / 100_000f);
         if (_deliveries.TryGetValue(m, out var d) && (d.Poi != trigger.Poi || d.FillType != fillType || d.Stored != stored)) Flush(m);
         d = _deliveries.GetValueOrDefault(m) ?? new Delivery(trigger.Poi, fillType, 0f, 0f, stored);
         _deliveries[m] = d with { Amount = d.Amount + amount, Income = d.Income + income };
@@ -391,8 +412,8 @@ public sealed class PoiSystem
                 if (a.Type == "refuel" && m.Unit(m.Def.Motorized?.FuelTank) is { } tank && a.FillTypes.Any(tank.Accepts)) options.Add("Refuel");
             }
         }
-        if (Bay(chain, "repair") is { } workshop && workshop.Actions.Any(a => a.Type == "repair" && Closed(workshop.Poi, a) == null)
-            && chain.Sum(RepairPrice) is var repair and > 0.5f)
+        if (Bay(chain, "repair") is { } workshop && workshop.Actions.FirstOrDefault(a => a.Type == "repair" && Closed(workshop.Poi, a) == null) is { } fix
+            && chain.Sum(m => RepairPrice(fix, m)) is var repair and > 0.5f)
             options.Add($"Repair (${repair:N0})");
         if (Bay(chain, "wash") is { } bay && bay.Actions.Where(a => a.Type == "wash" && Closed(bay.Poi, a) == null).ToList() is { Count: > 0 } washes
             && chain.Any(m => m.Dirt > 0.005f))
@@ -428,7 +449,7 @@ public sealed class PoiSystem
                     why.Add($"{trigger.Poi.Name} sells {action.MinAmount:N0} {Content.FillTypes[ft].Unit} or more");
                     continue;
                 }
-                var price = Price(trigger, ft);
+                var price = Price(trigger.Poi, action, ft);
                 var amount = unit.Add(ft, Affordable(m.FarmId, unit.Free, price));
                 if (amount <= 0f)
                 {
@@ -457,7 +478,7 @@ public sealed class PoiSystem
             why.Add(repair ? "Nothing to repair" : "Nothing to wash");
             return false;
         }
-        var cost = repair ? RepairPrice(m) : WashPrice(action, m);
+        var cost = repair ? RepairPrice(action, m) : WashPrice(action, m);
         if (IsPlayers(m.FarmId) && cost > Economy.Money)
         {
             why.Add("Not enough money");
@@ -480,13 +501,20 @@ public sealed class PoiSystem
     // ------------------------------------------------------------------ Processing
 
     /// <summary>
-    /// Runs an hour of every POI's processing (called for each world hour, so sleeping runs them too). Closed
-    /// processing waits with its cycle half done; processing short of inputs or room starts its cycle over.
+    /// Runs an hour of every POI (called for each world hour, so sleeping runs them too): demand recovers, high
+    /// demand comes and goes at midnight, and processing works. Closed processing waits with its cycle half done;
+    /// processing short of inputs or room starts its cycle over.
     /// </summary>
     internal void TickHour(long hour)
     {
         var hourOfDay = hour % 24 + 0.5f;
-        var month = _sim.Calendar.DateOfDay((int)(hour / 24)).Month;
+        var day = (int)(hour / 24);
+        var month = _sim.Calendar.DateOfDay(day).Month;
+        foreach (var poi in All)
+        {
+            RecoverDemand(poi);
+            if (hour % 24 == 0) UpdateHighDemand(poi, day);
+        }
         foreach (var poi in All)
         for (var i = 0; i < poi.Def.Actions.Length; i++)
         {
@@ -511,6 +539,44 @@ public sealed class PoiSystem
             foreach (var output in a.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
         }
     }
+
+    // ------------------------------------------------------------------ Demand
+
+    private static PoiActionDef? SellAction(Poi poi, string fillType) =>
+        poi.Def.Actions.FirstOrDefault(a => a.Type == "sell" && a.FillTypes.Contains(fillType));
+
+    private static void RecoverDemand(Poi poi)
+    {
+        foreach (var ft in poi.Demand.Keys.ToList())
+        {
+            var demand = poi.Demand[ft] + (SellAction(poi, ft)?.Demand.Recovery ?? 1f) / 24f;
+            if (demand >= 1f) poi.Demand.Remove(ft);
+            else poi.Demand[ft] = demand;
+        }
+    }
+
+    private void UpdateHighDemand(Poi poi, int day)
+    {
+        if (poi.HighDemand is { } high && day >= high.EndDay)
+        {
+            poi.HighDemand = null;
+            _sim.Events.Publish(new HighDemandEnded(poi, high.FillType));
+        }
+        if (poi.HighDemand != null) return;
+        foreach (var sell in poi.Def.Actions.Where(a => a.Type == "sell" && a.Demand.HighChance > 0f))
+        {
+            var d = sell.Demand;
+            if (!Rng.Chance(d.HighChance)) continue;
+            var ft = sell.FillTypes[Rng.Range(0, sell.FillTypes.Length)];
+            var factor = Rng.Range(d.HighFactor[0], d.HighFactor[1]);
+            var end = day + Rng.Range(d.HighDays[0], d.HighDays[1] + 1);
+            poi.HighDemand = new HighDemand(ft, factor, end);
+            _sim.Events.Publish(new HighDemandStarted(poi, ft, factor, _sim.Calendar.DateOfDay(end - 1)));
+            return;
+        }
+    }
+
+    // ------------------------------------------------------------------ Processing helpers
 
     /// <summary>True when the storage holds a cycle's inputs and has room for its outputs.</summary>
     private static bool CanCycle(Poi poi, PoiActionDef process) =>

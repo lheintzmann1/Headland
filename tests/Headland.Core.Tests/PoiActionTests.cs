@@ -185,7 +185,7 @@ public class PoiActionTests
 
         Assert.True(combine.Unit("tank")!.IsEmpty);
         Assert.Equal((combine, 3000f), (Assert.Single(sold).Machine, MathF.Round(sold[0].Amount)));
-        Assert.Equal(3000f * sim.Economy.Price("wheat", sim.Clock.Month), sold[0].Income, 1);
+        Assert.Equal(SaleIncome(sim, "wheat", 3000f), sold[0].Income, 1);
         Assert.InRange(sim.Economy.Money - money, sold[0].Income - 5f, sold[0].Income + 5f);
     }
 
@@ -334,6 +334,83 @@ public class PoiActionTests
         Assert.Equal(600f, sim.World.PoiById("hours")!.Storage!.Level("canola"));
         Assert.Equal(1000f, sim.World.PoiById("season")!.Storage!.Level("canola"));
         Assert.Equal(money - 40f, sim.Economy.Money);
+    }
+
+    /// <summary>A market paying 20% over the market price for wheat, where wheat is always in high demand.</summary>
+    private static PoiDef Market(float highChance) => new()
+    {
+        Id = "test_market", Name = "Market",
+        Triggers = [new PoiTriggerDef { Id = "pit", Type = "unload" }],
+        Actions =
+        [
+            new PoiActionDef
+            {
+                Type = "sell", Trigger = "pit", FillTypes = ["wheat", "barley"], PriceFactors = new() { ["wheat"] = 1.2f },
+                Demand = new DemandDef { HighChance = highChance, HighFactor = [1.5f, 1.5f], HighDays = [2, 2] },
+            },
+        ],
+    };
+
+    [Fact]
+    public void SalesLowerTheDemandUntilItRecovers()
+    {
+        var sim = TestContent.NewSim();
+        var elevator = sim.World.PoiById("elevator")!;
+        var pit = elevator.Trigger("pit")!;
+        var sell = pit.Actions[0];
+        var market = sim.Economy.Price("wheat", sim.Clock.Month);
+        var trailer = sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f);
+        Assert.Equal(market, sim.Pois.Price(elevator, sell, "wheat"));
+
+        sim.Pois.Unload(trailer, pit, "wheat", 50_000f);
+        Assert.Equal(0.98f, elevator.DemandOf("wheat"), 4);
+        Assert.Equal(0.98f * market, sim.Pois.Price(elevator, sell, "wheat"), 4);
+        Assert.Equal(1f, elevator.DemandOf("barley"));
+
+        sim.SkipHours(12);
+        Assert.Equal(0.99f, elevator.DemandOf("wheat"), 4);
+        sim.SkipHours(12);
+        Assert.Equal(1f, elevator.DemandOf("wheat"));
+
+        sim.Pois.Unload(trailer, pit, "wheat", 2_000_000f);
+        Assert.Equal(0.7f, elevator.DemandOf("wheat"), 4);
+    }
+
+    [Fact]
+    public void HighDemandPaysMoreForAFewDays()
+    {
+        var sim = SimWith([Market(highChance: 1f)], new PoiPlacementDef { Id = "market", Type = "test_market", X = 30, Z = 30 });
+        var started = Record<HighDemandStarted>(sim);
+        var ended = Record<HighDemandEnded>(sim);
+        var market = sim.World.PoiById("market")!;
+        var sell = market.Def.Actions[0];
+
+        sim.SkipHours(16);
+        Assert.Empty(started);
+        sim.SkipHours(1);
+        var high = Assert.Single(started);
+        Assert.Equal((1.5f, new Time.GameDate(1, 8, 3)), (high.Factor, high.Until));
+        var boosted = high.FillType == "wheat" ? 1.2f * 1.5f : 1.5f;
+        Assert.Equal(boosted * sim.Economy.Price(high.FillType, sim.Clock.Month), sim.Pois.Price(market, sell, high.FillType), 4);
+
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        Assert.Equal(market.HighDemand, loaded.World.PoiById("market")!.HighDemand);
+        foreach (var s in new[] { sim, loaded }) s.SkipHours(48);
+        Assert.Equal(high.FillType, Assert.Single(ended).FillType);
+        Assert.Equal(2, started.Count);
+        Assert.Equal(market.HighDemand, loaded.World.PoiById("market")!.HighDemand);
+    }
+
+    [Fact]
+    public void PriceFactorsAreOnTopOfTheMarketPrice()
+    {
+        var sim = SimWith([Market(highChance: 0f)], new PoiPlacementDef { Id = "market", Type = "test_market", X = 30, Z = 30 });
+        var market = sim.World.PoiById("market")!;
+        var month = sim.Clock.Month;
+        Assert.Equal(1.2f * sim.Economy.Price("wheat", month), sim.Pois.Price(market, market.Def.Actions[0], "wheat"), 4);
+        Assert.Equal(sim.Economy.Price("barley", month), sim.Pois.Price(market, market.Def.Actions[0], "barley"), 4);
+        sim.SkipHours(24 * 40);
+        Assert.Null(market.HighDemand);
     }
 
     [Fact]

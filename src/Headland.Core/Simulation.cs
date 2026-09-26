@@ -38,7 +38,8 @@ public sealed class Simulation
         Farms = new Farms(World, Events, setup.FarmName);
         Crops = new CropSystem(content, World, Calendar, Climate);
         Economy = new Economy(content, setup.StartMoney);
-        Pois = new PoiSystem(this);
+        // Its own stream, so high demand doesn't change the weather.
+        Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
         Statistics = new Statistics(Events);

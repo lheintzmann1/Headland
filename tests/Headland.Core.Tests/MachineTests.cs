@@ -254,7 +254,7 @@ public class MachineTests
         Assert.True(sim.Machines.Attach(t, "drawbar", trailer));
         trailer.Unit("main")!.Add("wheat", 10000f);
         var money = sim.Economy.Money;
-        var expected = 10000f * sim.Economy.Price("wheat", sim.Clock.Month);
+        var expected = PoiTests.SaleIncome(sim, "wheat", 10000f);
 
         sim.Player.Enter(t);
         sim.CommandUnload();

@@ -67,7 +67,7 @@ conditions. Money is just another input or output:
       refuel, repair, wash.
 - [x] Conditions: accepted fill types, opening hours, months, storage full, minimum amount; Lua
       conditions later.
-- [ ] Prices: per-POI factors on top of the monthly curves in `filltypes.json`, demand that drops as you
+- [x] Prices: per-POI factors on top of the monthly curves in `filltypes.json`, demand that drops as you
       sell and recovers, occasional high-demand events.
 - [ ] Production output goes to POI storage: sold automatically or loaded into a trailer. Pallets and
       bales later.

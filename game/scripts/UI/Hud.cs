@@ -187,7 +187,11 @@ public partial class Hud : CanvasLayer
             foreach (var t in v.Chain().Where(m => m.Def.Tipper != null))
             {
                 var pit = Sim.Pois.TriggerAt(t.Footprint.Center, "unload");
-                if (pit != null) lines.Add($"{K("unload")} {(t.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}")}");
+                if (pit == null) continue;
+                var load = t.Unit(t.Def.Tipper!.FillUnit)!;
+                var price = load.FillType != null ? Sim.Pois.SalePrice(t, pit, load.FillType) : null;
+                var at = price is { } p ? $" at ${p:0.00}/{Sim.Content.FillTypes[load.FillType!].Unit}" : "";
+                lines.Add($"{K("unload")} {(t.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
             }
             if (v.Chain().Any(m => m.Def.SeedTank != null)) lines.Add($"{K("cycle_seed")} Change seed");
             if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");

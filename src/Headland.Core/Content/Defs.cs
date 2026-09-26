@@ -387,6 +387,25 @@ public sealed class PoiStorageDef
     public float CapacityOf(string fillType) => Capacities.GetValueOrDefault(fillType, Capacity);
 }
 
+/// <summary>
+/// Demand at a sell action: the price of a fill type drops as loads of it come in and recovers day by day, and now
+/// and then a fill type is in high demand for a few days.
+/// </summary>
+public sealed class DemandDef
+{
+    /// <summary>Price drop for each 100,000 units sold (0.04 = 4%), down to <see cref="Floor"/>.</summary>
+    public float Drop { get; set; } = 0.04f;
+    /// <summary>The lowest the demand factor goes.</summary>
+    public float Floor { get; set; } = 0.7f;
+    /// <summary>Demand factor regained per game day.</summary>
+    public float Recovery { get; set; } = 0.02f;
+    /// <summary>Chance per game day that one of the fill types goes in high demand (one at a time per POI).</summary>
+    public float HighChance { get; set; } = 0.03f;
+    /// <summary>High demand: [min, max] price factor, and [min, max] game days it lasts.</summary>
+    public float[] HighFactor { get; set; } = [1.2f, 1.5f];
+    public int[] HighDays { get; set; } = [1, 3];
+}
+
 /// <summary>An amount of a fill type (processing inputs and outputs).</summary>
 public sealed class FillAmountDef
 {
@@ -433,6 +452,15 @@ public sealed class PoiActionDef
     public int[] Months { get; set; } = [];
     /// <summary>Smallest load it takes (sell, store) or amount it sells (buy, refuel).</summary>
     public float MinAmount { get; set; }
+    /// <summary>
+    /// Multiplies the price: for sell, buy and refuel the market price (the fill type's monthly curve), for repair
+    /// the standard price (1% of the machine's price for each 100% of wear).
+    /// </summary>
+    public float PriceFactor { get; set; } = 1f;
+    /// <summary>Sell, buy, refuel: fill types whose factor differs from <see cref="PriceFactor"/>.</summary>
+    public Dictionary<string, float> PriceFactors { get; set; } = new();
+    /// <summary>Sell: how prices react to what farmers sell here.</summary>
+    public DemandDef Demand { get; set; } = new();
     /// <summary>Wash: price of washing a fully dirty machine.</summary>
     public float Price { get; set; }
     /// <summary>Process: what one cycle takes from storage and puts into it.</summary>

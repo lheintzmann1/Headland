@@ -144,7 +144,7 @@ public class PoiTests
 
         var sale = Assert.Single(sold);
         Assert.Equal(("elevator", 8000f), (sale.Poi.Id, MathF.Round(sale.Amount)));
-        Assert.Equal(8000f * sim.Economy.Price("wheat", sim.Clock.Month), sale.Income, 0);
+        Assert.Equal(SaleIncome(sim, "wheat", 8000f), sale.Income, 0);
     }
 
     [Fact]
@@ -168,6 +168,10 @@ public class PoiTests
         trailer.Unit("main")!.Add(fillType, amount);
         return (t, trailer);
     }
+
+    /// <summary>What a load sells for at the market price, as the default demand drops under it (4% per 100,000 units).</summary>
+    internal static float SaleIncome(Simulation sim, string fillType, float amount) =>
+        sim.Economy.Price(fillType, sim.Clock.Month) * amount * (1f - 0.04f * amount / 200_000f);
 
     internal static List<T> Record<T>(Simulation sim) where T : IGameEvent
     {
