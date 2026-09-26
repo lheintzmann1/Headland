@@ -5,6 +5,8 @@
   // units a second), "fill" (park inside and press the use key) or "delivery" (new machines appear there). Actions
   // say what happens, from the farmer's side: "sell" (the POI buys loads of its fillTypes tipped at an unload
   // trigger), "store" (its owner's loads go into its storage) or "buy" (it sells its fillTypes at a fill trigger).
+  // "storage" keeps fillTypes, each up to "capacity" units ("capacities": { "wheat": 50000 } for exceptions); it
+  // belongs to the POI's owner.
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },

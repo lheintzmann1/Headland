@@ -21,8 +21,9 @@ Built with **Godot 4.7** and **C#**.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator and a
   trailed seed drill. Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch,
   and working speed depends on the implement, the engine's power, the load and soft ground.
-- **Places to trade and service.** Tip grain at the elevator, buy seed at the farm shop, refuel and wash at the gas
-  station, and get machines repaired at the workshop. Each is a point of interest defined in JSON: areas where
+- **Places to trade and service.** Tip grain at the elevator or keep it in the farm silo and load it back into a
+  trailer later, buy seed at the farm shop, refuel and wash at the gas station, and get machines repaired at the
+  workshop. Each is a point of interest defined in JSON: areas where
   machines unload, fill up or park, and what happens there, including storage and production that runs by the hour.
 - **Field helpers.** Press H and a helper works the field lane by lane. It turns on the headland in tight arcs and
   lifts the implement whenever it leaves the field.

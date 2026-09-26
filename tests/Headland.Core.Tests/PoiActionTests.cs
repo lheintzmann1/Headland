@@ -258,6 +258,31 @@ public class PoiActionTests
     }
 
     [Fact]
+    public void TheFarmSiloStoresTheFarmsGrainAndLoadsItBack()
+    {
+        var sim = TestContent.NewSim();
+        var silo = sim.World.PoiById("silo")!;
+        Assert.Equal(Farm.PlayerId, silo.FarmId);
+        var (t, trailer) = TrailerAt(sim, silo.Trigger("pit")!.Area.Center, "barley", 9000f);
+        var stored = Record<FillStored>(sim);
+        var money = sim.Economy.Money;
+        sim.Player.Enter(t);
+        sim.CommandUnload();
+        Run(sim, 40f);
+        Assert.Equal(9000f, silo.Storage!.Level("barley"), 1);
+        Assert.True(trailer.Unit("main")!.IsEmpty);
+        Assert.Equal(money, sim.Economy.Money);
+        Assert.Equal((silo, "barley", 9000f), (Assert.Single(stored).Poi, stored[0].FillType, MathF.Round(stored[0].Amount)));
+
+        sim.Machines.Teleport(t, silo.Trigger("spout")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
+        Assert.Equal(["Load barley"], sim.Pois.UseOptions(t));
+        sim.CommandUse();
+        Run(sim, 30f);
+        Assert.Equal(9000f, trailer.Unit("main")!.Level, 1);
+        Assert.Equal(0f, silo.Storage.Level("barley"), 1);
+    }
+
+    [Fact]
     public void ConditionAndDirtAreSaved()
     {
         var sim = TestContent.NewSim();

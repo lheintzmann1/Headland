@@ -31,12 +31,13 @@ public class PoiTests
     public void PartsTurnWithThePoi()
     {
         var sim = SimWith(new PoiPlacementDef { Id = "silo", Type = "farm_silo", X = 30, Z = 30, HeadingDeg = 90 });
-        // Facing east, the POI's left (+x) is north.
+        // Facing east, the POI's left (+x) is north and its back (-z) west.
         var poi = sim.World.PoiById("silo")!;
         var centers = poi.Def.Parts.Select(p => poi.PartBox(p).Center).ToList();
-        Assert.Equal(new Vector2(30f, 35f), centers[0], new Near());
-        Assert.Equal(new Vector2(30f, 25f), centers[1], new Near());
-        Assert.True(poi.Footprint.Contains(new Vector2(34f, 39f)) && !poi.Footprint.Contains(new Vector2(36f, 30f)));
+        Assert.Equal(new Vector2(24f, 35f), centers[0], new Near());
+        Assert.Equal(new Vector2(24f, 25f), centers[1], new Near());
+        Assert.True(poi.Trigger("pit")!.Contains(new Vector2(34f, 35f)));
+        Assert.True(poi.Footprint.Contains(new Vector2(39f, 40f)) && !poi.Footprint.Contains(new Vector2(41f, 30f)));
     }
 
     [Fact]

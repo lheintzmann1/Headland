@@ -15,9 +15,19 @@
     "triggers": [
       { "id": "delivery", "type": "delivery", "x": 10, "z": 13, "w": 10, "d": 10 }
     ] },
-  { "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 20, "d": 10,
+  // The farm's own grain store: tip or pipe grain into the pit, load it back into a trailer at the spout.
+  // Storage and triggers are described in trade.json.
+  { "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 22, "d": 20,
     "parts": [
-      { "shape": "silo", "x": -5, "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" },
-      { "shape": "silo", "x": 5,  "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" }
+      { "shape": "silo", "x": -5, "z": -6, "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" },
+      { "shape": "silo", "x": 5,  "z": -6, "w": 8, "d": 8, "h": 13, "color": "#a3a7a8" }
+    ],
+    "triggers": [
+      { "id": "pit",   "type": "unload", "x": -5, "z": 4, "w": 10, "d": 9 },
+      { "id": "spout", "type": "load",   "x": 6,  "z": 4, "w": 9,  "d": 9 }
+    ],
+    "storage": { "fillTypes": ["wheat", "barley", "canola", "corn"], "capacity": 100000 },
+    "actions": [
+      { "type": "store", "trigger": "pit" }
     ] }
 ]

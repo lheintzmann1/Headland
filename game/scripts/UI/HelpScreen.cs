@@ -26,7 +26,7 @@ public partial class HelpScreen : Screen
             sb.Append($"[cell]{key}   [/cell][cell]{help}        [/cell]");
         sb.Append("[/table]\n\n");
         sb.Append("[b]Loop[/b]: cultivate stubble, sow in season and let it grow. Harvest with the right header, unload into\n");
-        sb.Append("a trailer and tip at the Grain Elevator. Hover the ground to inspect soil and crops.");
+        sb.Append("a trailer and tip at the Grain Elevator, or store it in the farm silo. Hover the ground to inspect soil and crops.");
 
         var text = Widgets.Rich(0);
         text.Text = sb.ToString();
