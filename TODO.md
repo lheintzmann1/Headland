@@ -97,7 +97,7 @@ conditions. Money is just another input or output:
       screen shows them once it exists.
 - [ ] Equipment rental: a contract can offer a leased machine set, fee taken from the reward; machines
       appear at a delivery spot and leave when the contract ends.
-- [ ] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
+- [x] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
       delivering a share to a given POI.
 - [ ] Cancel penalty, contract board screen, notifications.
 - [x] Contract types in data (`data/contracts.json`). New types in Lua come with the Lua extension points.

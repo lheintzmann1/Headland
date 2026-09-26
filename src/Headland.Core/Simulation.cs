@@ -125,6 +125,7 @@ public sealed class Simulation
             PayHelper(w, dt);
             if (w.Finished) DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
         }
+        Contracts.Update(dt);
         Player.Update(this, dt);
         Notifications.Expire(8.0);
     }

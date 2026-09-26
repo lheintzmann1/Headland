@@ -110,6 +110,12 @@ public sealed record ContractAccepted(Contract Contract) : IContractEvent;
 /// <summary>A contract wasn't done by its due day.</summary>
 public sealed record ContractFailed(Contract Contract) : IContractEvent;
 
+/// <summary>A contract was done, and paid <paramref name="Reward"/>.</summary>
+public sealed record ContractCompleted(Contract Contract, float Reward) : IContractEvent;
+
+/// <summary>A load tipped at a buyer for a contract, which took it without paying (published when the machine stops).</summary>
+public sealed record ContractDelivery(Contract Contract, Machine Machine, Poi Poi, string FillType, float Amount) : IContractEvent;
+
 // ---- Machines
 
 public sealed record ImplementAttached(Machine Parent, string Joint, Machine Implement) : IGameEvent;

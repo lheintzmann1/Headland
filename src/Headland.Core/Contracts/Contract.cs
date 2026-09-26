@@ -15,6 +15,8 @@ public enum ContractState
     Withdrawn,
     /// <summary>Not done by its due day.</summary>
     Failed,
+    /// <summary>Done, and paid.</summary>
+    Completed,
 }
 
 /// <summary>
@@ -47,6 +49,19 @@ public sealed class Contract
     public int FarmId { get; internal set; }
     /// <summary>Day index it's due: unless done, it fails at the midnight starting this day.</summary>
     public int DueDay { get; internal set; }
+
+    /// <summary>Field jobs: the share of the field in the job's done state, as of the last check.</summary>
+    public float Progress { get; internal set; }
+    /// <summary>Harvest jobs: what the farm threshed on the field, all of it the neighbor's.</summary>
+    public float Harvested { get; internal set; }
+    /// <summary>Goods tipped at the buyer for the contract.</summary>
+    public float Delivered { get; internal set; }
+
+    /// <summary>Goods that must reach the buyer: a delivery's amount, or a share of what the harvest yielded.</summary>
+    public float ToDeliver => Field == null ? Amount : Type.Deliver is { } d ? d.Share * Harvested : 0f;
+
+    /// <summary>Goods the farm has of the contract's, still to be tipped: the rest of a delivery, or the harvest's crop.</summary>
+    public float Owed => MathF.Max(0f, (Field == null ? Amount : Type.Deliver != null ? Harvested : 0f) - Delivered);
 
     /// <summary>Who offers it: the field's owner, or the buyer.</summary>
     public string Client => Npc?.Name ?? Poi?.Name ?? "";

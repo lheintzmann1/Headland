@@ -1,4 +1,5 @@
 using Headland.Core.Content;
+using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
@@ -10,22 +11,29 @@ namespace Headland.Core.Contracts;
 /// <summary>
 /// The contract board. Every midnight the neighbors post jobs their fields need in that season (contracts.json), and
 /// buyers ask for goods; offers nobody takes come down after a few days. The farm takes a few at a time, each due
-/// within its days.
+/// within its days. A field job is done once enough of the field is in its done state; goods count once tipped at
+/// the buyer, who takes them for the contract instead of paying for them. Done contracts pay their reward.
 /// </summary>
 public sealed class ContractSystem
 {
     /// <summary>Share of a field in a job's offer state for the job to be offered.</summary>
     public const float OfferShare = 0.5f;
+    /// <summary>Real seconds between progress checks while fields are being worked.</summary>
+    private const float CheckInterval = 0.5f;
 
     private readonly Simulation _sim;
     private readonly List<Contract> _all = [];
     private readonly Dictionary<FieldInfo, int[]> _cells = new();
+    private bool _changed;
+    private float _sinceCheck = CheckInterval;
 
     public ContractSystem(Simulation sim, ulong seed)
     {
         _sim = sim;
         Rng = new Rng(seed);
         sim.Events.Subscribe<FarmlandOwnerChanged>(e => WithdrawOn(e.Farmland));
+        sim.Events.Subscribe<FieldWorked>(_ => _changed = true);
+        sim.Events.Subscribe<CropHarvested>(OnHarvested);
     }
 
     /// <summary>Rolls what goes on the board.</summary>
@@ -68,9 +76,21 @@ public sealed class ContractSystem
 
     // ------------------------------------------------------------------ Time
 
-    /// <summary>Runs each world hour. At midnight, contracts past due fail, old offers come down and new ones go up.</summary>
+    /// <summary>After the machines moved: checks the contracts whose fields were worked or goods delivered.</summary>
+    internal void Update(float dt)
+    {
+        _sinceCheck += dt;
+        if (!_changed || _sinceCheck < CheckInterval) return;
+        Check();
+    }
+
+    /// <summary>
+    /// Runs each world hour: crops that grew or died change the fields, so contracts are checked. At midnight,
+    /// contracts past due fail, old offers come down and new ones go up.
+    /// </summary>
     internal void TickHour(long hour)
     {
+        Check();
         if (hour % 24 != 0) return;
         var day = (int)(hour / 24);
         foreach (var c in _all.ToList())
@@ -81,12 +101,76 @@ public sealed class ContractSystem
         Post(day, Rules.OffersPerDay);
     }
 
+    /// <summary>Updates the progress of the contracts under way, and completes the ones that are done.</summary>
+    private void Check()
+    {
+        _changed = false;
+        _sinceCheck = 0f;
+        foreach (var c in _all.Where(c => c.State == ContractState.Active).ToList())
+        {
+            if (c.Field != null) c.Progress = Progress(c);
+            if (IsDone(c)) Complete(c);
+        }
+    }
+
+    /// <summary>A field job needs the threshold of its field done, and a harvest its share of the crop tipped at the buyer.</summary>
+    private bool IsDone(Contract c) =>
+        (c.Field == null || c.Progress >= Rules.Threshold) && c.Delivered >= c.ToDeliver - 0.001f;
+
+    private void Complete(Contract c)
+    {
+        if (c.FarmId == Player) _sim.Economy.Earn(c.Reward, MoneyCategory.Contracts);
+        End(c, ContractState.Completed);
+    }
+
+    /// <summary>The share of the contract's field in its job's done state (with the job's crop).</summary>
+    private float Progress(Contract c)
+    {
+        var done = new FieldState(c.Type.Done);
+        var crop = c.Crop != null ? _sim.Content.Crops.IndexOf(c.Crop) + 1 : 0;
+        var L = _sim.World.Layers;
+        var cells = CellsOf(c.Field!);
+        var n = 0;
+        foreach (var i in cells)
+            if (done.Matches(L, _sim.Content.Crops, i, crop)) n++;
+        return (float)n / Math.Max(1, cells.Length);
+    }
+
+    /// <summary>Crop threshed on a field the harvester's farm has a harvest contract on is the neighbor's.</summary>
+    private void OnHarvested(CropHarvested e)
+    {
+        if (_sim.World.FieldById(e.FieldId) is not { } field || On(field) is not { State: ContractState.Active } c) return;
+        if (c.FarmId == e.Harvester.FarmId && c.Type.Deliver != null && c.Goods?.Id == e.FillType) c.Harvested += e.Amount;
+    }
+
+    /// <summary>The farm's contract that <paramref name="fillType"/> tipped at <paramref name="poi"/> would go to, if any.</summary>
+    public Contract? Taking(int farmId, Poi poi, string fillType) =>
+        _all.Find(c => c.State == ContractState.Active && c.FarmId == farmId && c.Poi == poi && c.Goods?.Id == fillType && c.Owed > 0f);
+
+    /// <summary>
+    /// Goods tipped at <paramref name="poi"/> by <paramref name="farmId"/>'s machines: the part a contract of the farm is
+    /// owed (<see cref="Contract.Owed"/>) is the contract's, which the buyer takes without paying. Returns that
+    /// contract and how much it took.
+    /// </summary>
+    internal (Contract? contract, float credited) Credit(int farmId, Poi poi, string fillType, float amount)
+    {
+        if (Taking(farmId, poi, fillType) is not { } c) return (null, 0f);
+        var credited = MathF.Min(amount, c.Owed);
+        c.Delivered += credited;
+        _changed = true;
+        return (c, credited);
+    }
+
     private void End(Contract c, ContractState state)
     {
         c.State = state;
         _all.Remove(c);
-        if (state == ContractState.Withdrawn) _sim.Events.Publish(new ContractWithdrawn(c));
-        else _sim.Events.Publish(new ContractFailed(c));
+        switch (state)
+        {
+            case ContractState.Withdrawn: _sim.Events.Publish(new ContractWithdrawn(c)); break;
+            case ContractState.Failed: _sim.Events.Publish(new ContractFailed(c)); break;
+            case ContractState.Completed: _sim.Events.Publish(new ContractCompleted(c, c.Reward)); break;
+        }
     }
 
     /// <summary>A parcel bought by a farm: its neighbor's offers on it come down.</summary>
@@ -101,6 +185,7 @@ public sealed class ContractSystem
         _all.Clear();
         _all.AddRange(contracts);
         NextId = Math.Max(nextId, _all.Select(c => c.Id + 1).DefaultIfEmpty(1).Max());
+        foreach (var c in _all.Where(c => c.State == ContractState.Active && c.Field != null)) c.Progress = Progress(c);
     }
 
     // ------------------------------------------------------------------ Offers

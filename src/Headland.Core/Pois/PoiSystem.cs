@@ -1,13 +1,17 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 
 namespace Headland.Core.Pois;
 
-/// <summary>A load being unloaded at a POI, totalled until the machine stops: sold, or stored by the POI's owner.</summary>
-internal sealed record Delivery(Poi Poi, string FillType, float Amount, float Income, bool Stored);
+/// <summary>
+/// A load being unloaded at a POI, totalled until the machine stops: sold, stored by the POI's owner, or taken for a
+/// contract.
+/// </summary>
+internal sealed record Delivery(Poi Poi, string FillType, float Amount, float Income, bool Stored, Contract? Contract = null);
 
 /// <summary>A machine filling up from a POI's storage at a load trigger, with what it took so far.</summary>
 internal sealed record Loading(PoiTrigger Trigger, string FillType, float Amount);
@@ -204,23 +208,35 @@ public sealed class PoiSystem
 
     /// <summary>
     /// Takes up to <paramref name="amount"/> from <paramref name="m"/> unloading at <paramref name="trigger"/>; returns
-    /// what it took. The machine checks <see cref="UnloadBlocker"/> with its whole load first.
+    /// what it took. The machine checks <see cref="UnloadBlocker"/> with its whole load first. Goods a contract of the
+    /// machine's farm is owed here go to the contract, unpaid; the rest is sold or stored.
     /// </summary>
     public float Unload(Machine m, PoiTrigger trigger, string fillType, float amount)
     {
         if (amount <= 0f || UnloadBlocker(m, trigger, fillType, float.PositiveInfinity) != null) return 0f;
+        var poi = trigger.Poi;
         var action = UnloadAction(m, trigger, fillType).action!;
-        if (Destination(trigger.Poi, action, fillType) is { } storage) amount = storage.Add(fillType, amount);
+        if (Destination(poi, action, fillType) is { } storage) amount = storage.Add(fillType, amount);
         if (amount <= 0f) return 0f;
         var stored = action.Type == "store";
-        var income = stored ? 0f : amount * Price(trigger.Poi, action, fillType);
-        Earn(m.FarmId, income, MoneyCategory.Sales);
-        if (!stored) trigger.Poi.Demand[fillType] = MathF.Max(action.Demand.Floor, trigger.Poi.DemandOf(fillType) - action.Demand.Drop * amount / 100_000f);
-        if (_deliveries.TryGetValue(m, out var d) && (d.Poi != trigger.Poi || d.FillType != fillType || d.Stored != stored)) Flush(m);
-        d = _deliveries.GetValueOrDefault(m) ?? new Delivery(trigger.Poi, fillType, 0f, 0f, stored);
-        _deliveries[m] = d with { Amount = d.Amount + amount, Income = d.Income + income };
-        _unloading.Add(m);
+        var (contract, credited) = stored ? (null, 0f) : _sim.Contracts.Credit(m.FarmId, poi, fillType, amount);
+        if (credited > 0f) Record(m, new Delivery(poi, fillType, credited, 0f, false, contract));
+        if (amount - credited is var rest and > 0f)
+        {
+            var income = stored ? 0f : rest * Price(poi, action, fillType);
+            Earn(m.FarmId, income, MoneyCategory.Sales);
+            Record(m, new Delivery(poi, fillType, rest, income, stored));
+        }
+        if (!stored) poi.Demand[fillType] = MathF.Max(action.Demand.Floor, poi.DemandOf(fillType) - action.Demand.Drop * amount / 100_000f);
         return amount;
+    }
+
+    /// <summary>Adds to the machine's load under way, first publishing the one before when it was a different one.</summary>
+    private void Record(Machine m, Delivery add)
+    {
+        if (_deliveries.TryGetValue(m, out var d) && (d.Poi, d.FillType, d.Stored, d.Contract) != (add.Poi, add.FillType, add.Stored, add.Contract)) Flush(m);
+        _deliveries[m] = _deliveries.TryGetValue(m, out d) ? d with { Amount = d.Amount + add.Amount, Income = d.Income + add.Income } : add;
+        _unloading.Add(m);
     }
 
     /// <summary>
@@ -237,7 +253,8 @@ public sealed class PoiSystem
     private void Flush(Machine m)
     {
         if (!_deliveries.Remove(m, out var d) || d.Amount < 1f) return;
-        if (d.Stored) _sim.Events.Publish(new FillStored(m, d.Poi, d.FillType, d.Amount));
+        if (d.Contract != null) _sim.Events.Publish(new ContractDelivery(d.Contract, m, d.Poi, d.FillType, d.Amount));
+        else if (d.Stored) _sim.Events.Publish(new FillStored(m, d.Poi, d.FillType, d.Amount));
         else _sim.Events.Publish(new FillSold(m, d.Poi, d.FillType, d.Amount, d.Income));
     }
 

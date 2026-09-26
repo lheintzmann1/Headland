@@ -193,6 +193,8 @@ public partial class Hud : CanvasLayer
                 var load = t.Unit(t.Def.Tipper!.FillUnit)!;
                 var price = load.FillType != null ? Sim.Pois.SalePrice(t, pit, load.FillType) : null;
                 var at = price is { } p ? $" at ${p:0.00}/{Sim.Content.FillTypes[load.FillType!].Unit}" : "";
+                if (load.FillType != null && Sim.Contracts.Taking(t.FarmId, pit.Poi, load.FillType) is { } job)
+                    at = $" for the contract ({job.Owed:N0} {job.Goods!.Unit} to go)";
                 lines.Add($"{K("unload")} {(t.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
             }
             if (v.Chain().Any(m => m.Def.SeedTank != null)) lines.Add($"{K("cycle_seed")} Change seed");

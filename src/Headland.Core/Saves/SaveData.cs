@@ -101,6 +101,7 @@ public sealed class StatisticsSave
     public Dictionary<string, float> Sold { get; set; } = new();
     public Dictionary<string, float> Bought { get; set; } = new();
     public int HelpersHired { get; set; }
+    public int ContractsCompleted { get; set; }
     public int DaysPlayed { get; set; }
 }
 
@@ -158,6 +159,9 @@ public sealed class ContractSave
     /// <summary>The farm doing it (0: on the board), and the day index it's due.</summary>
     public int Farm { get; set; }
     public int DueDay { get; set; }
+    /// <summary>Crop threshed on the field (harvests), and goods tipped at the buyer.</summary>
+    public float Harvested { get; set; }
+    public float Delivered { get; set; }
 }
 
 public sealed class MachineSave
@@ -211,6 +215,8 @@ public sealed class DeliverySave
     public float Income { get; set; }
     /// <summary>Put into the POI's storage by its owner rather than sold.</summary>
     public bool Stored { get; set; }
+    /// <summary>Taken for this contract (id) rather than sold.</summary>
+    public int? Contract { get; set; }
 }
 
 public sealed class LoadingSave

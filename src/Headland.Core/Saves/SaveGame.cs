@@ -124,7 +124,8 @@ public static class SaveGame
             Statistics = new StatisticsSave
             {
                 HectaresWorked = new(stats.HectaresWorked), Harvested = new(stats.Harvested), Sold = new(stats.Sold),
-                Bought = new(stats.Bought), HelpersHired = stats.HelpersHired, DaysPlayed = stats.DaysPlayed,
+                Bought = new(stats.Bought), HelpersHired = stats.HelpersHired, ContractsCompleted = stats.ContractsCompleted,
+                DaysPlayed = stats.DaysPlayed,
             },
             Farms = sim.Farms.All.Select(f => new FarmSave { Id = f.Id, Name = f.Name }).ToList(),
             Farmlands = sim.World.Farmlands.Select(l => new FarmlandSave { Id = l.Id, Farm = l.FarmId }).ToList(),
@@ -160,6 +161,7 @@ public static class SaveGame
     {
         Id = c.Id, Type = c.Type.Id, Npc = c.Npc?.Id, Field = c.Field?.Id, Crop = c.Crop?.Id, Poi = c.Poi?.Id, Goods = c.Goods?.Id,
         Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay, Farm = c.FarmId, DueDay = c.DueDay,
+        Harvested = c.Harvested, Delivered = c.Delivered,
     };
 
     private static MachineSave CaptureMachine(Simulation sim, Machine m)
@@ -180,7 +182,10 @@ public static class SaveGame
             WorkPose = m.HasWorkPose ? [m.PrevWorkCenter.X, m.PrevWorkCenter.Y, m.PrevWorkHeading] : null,
         };
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
-            save.Delivery = new DeliverySave { Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income, Stored = d.Stored };
+            save.Delivery = new DeliverySave
+            {
+                Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income, Stored = d.Stored, Contract = d.Contract?.Id,
+            };
         if (sim.Pois.Loadings.TryGetValue(m, out var l))
             save.Loading = new LoadingSave { Poi = l.Trigger.Poi.Id, Trigger = l.Trigger.Id, FillType = l.FillType, Amount = l.Amount };
         if (m.Controller is FieldWorkController h)
@@ -243,6 +248,7 @@ public static class SaveGame
         foreach (var (key, value) in saved)
             target[key] = value;
         stats.HelpersHired = s.Statistics.HelpersHired;
+        stats.ContractsCompleted = s.Statistics.ContractsCompleted;
         stats.DaysPlayed = s.Statistics.DaysPlayed;
 
         foreach (var f in s.Farms)
@@ -326,6 +332,7 @@ public static class SaveGame
                 Id = c.Id, Type = type, Npc = npc, Field = field, Crop = crop, Poi = poi, Goods = goods,
                 Amount = c.Amount, Reward = c.Reward, Days = c.Days, OfferedDay = c.OfferedDay,
                 State = active ? ContractState.Active : ContractState.Offered, FarmId = c.Farm, DueDay = c.DueDay,
+                Harvested = Math.Max(0f, c.Harvested), Delivered = Math.Max(0f, c.Delivered),
             });
         }
         sim.Contracts.Restore(contracts, s.NextContractId);
@@ -395,7 +402,7 @@ public static class SaveGame
                 machine.PrevWorkHeading = heading;
             }
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
-                sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored);
+                sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored, d.Contract is { } id ? sim.Contracts.ById(id) : null);
             if (m.Loading is { } l && sim.Pois.ById(l.Poi)?.Trigger(l.Trigger) is { Type: "load" } spout && content.FillTypes.ContainsKey(l.FillType))
                 sim.Pois.Loadings[machine] = new Loading(spout, l.FillType, l.Amount);
         }

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
+using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Ownership;
@@ -39,7 +40,13 @@ public class ContractTests
     };
 
     private static string Describe(Contract c) =>
-        $"{c} {c.Npc?.Id} {c.Crop?.Id} {c.Poi?.Id} {c.Goods?.Id} {c.Amount} {c.Reward} {c.Days} {c.OfferedDay} {c.FarmId} {c.DueDay}";
+        $"{c} {c.Npc?.Id} {c.Crop?.Id} {c.Poi?.Id} {c.Goods?.Id} {c.Amount} {c.Reward} {c.Days} {c.OfferedDay} {c.FarmId} {c.DueDay} " +
+        $"{c.Progress:0.0000} {c.Harvested} {c.Delivered}";
+
+    private static void Run(Simulation sim, float seconds, Func<bool>? until = null)
+    {
+        for (var s = 0f; s < seconds && until?.Invoke() != true; s += 1f / 60f) sim.Tick(1f / 60f);
+    }
 
     [Fact]
     public void ContractTypesComeFromTheData()
@@ -215,8 +222,17 @@ public class ContractTests
         var sim = TestContent.NewSim();
         sim.SkipHours(24);
         Assert.True(sim.Contracts.Accept(sim.Contracts.Offers.First(c => c.Field != null)));
+        // A delivery with a load being tipped for it.
+        var delivery = sim.Contracts.Offers.First(c => c.Field == null);
+        Assert.True(sim.Contracts.Accept(delivery));
+        var pit = delivery.Poi!.Triggers.First(t => t.Type == "unload");
+        sim.Pois.Unload(sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f), pit, delivery.Goods!.Id, 2000f);
+
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
         Assert.Equal(sim.Contracts.All.Select(Describe), loaded.Contracts.All.Select(Describe));
+        var tipped = Record<ContractDelivery>(loaded);
+        loaded.Tick(1f / 60f);
+        Assert.Equal((loaded.Contracts.ById(delivery.Id), 2000f), (tipped.Single().Contract, tipped[0].Amount));
 
         // And the board goes on the same way.
         sim.SkipHours(24 * 4);
@@ -277,5 +293,110 @@ public class ContractTests
         Assert.True(sim.Farms.MayWork(Farm.PlayerId, Cell(60f, 100f), "cultivator", null));
         Assert.Equal("Farmland 2 belongs to Ada Morrow", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(70f, 100f), "cultivator", null));
         Assert.Equal("Only farmland can be worked", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(30f, 160f), "cultivator", null));
+    }
+
+    [Fact]
+    public void AFieldJobIsDoneOnceMostOfTheFieldIs()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var completed = Record<ContractCompleted>(sim);
+        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        Assert.True(sim.Contracts.Accept(job));
+        var L = sim.World.Layers;
+        var cells = Enumerable.Range(0, L.FieldId.Length).Where(i => L.FieldId[i] == 4).ToList();
+        void Cultivate(float share) => cells.Take((int)(cells.Count * share)).ToList().ForEach(i => L.Ground[i] = (byte)GroundType.Cultivated);
+        var money = sim.Economy.Money;
+
+        Cultivate(0.94f);
+        sim.SkipHours(1);
+        Assert.Equal((ContractState.Active, 0.94f), (job.State, MathF.Round(job.Progress, 2)));
+        Cultivate(0.95f);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, job.State);
+        Assert.Equal([new ContractCompleted(job, job.Reward)], completed);
+        Assert.Equal((money + job.Reward, job.Reward), (sim.Economy.Money, sim.Economy.Ledger.Today[MoneyCategory.Contracts]));
+        Assert.Equal(1, sim.Statistics.ContractsCompleted);
+        Assert.Null(sim.Contracts.On(sim.World.FieldById(4)!));
+    }
+
+    [Fact]
+    public void AJobIsDoneAsSoonAsTheWorkIs()
+    {
+        var sim = Neighbors(new FieldDef { Id = 2, X = 72, Z = 30, W = 21, H = 30, Ground = "stubble" });
+        var field = sim.World.FieldById(2)!;
+        var job = sim.Contracts.On(field)!;
+        Assert.True(sim.Contracts.Accept(job));
+        sim.Clock.Paused = true;
+        var t = sim.Machines.Spawn("tractor_125", field.Shape.Min + new Vector2(2f, -10f), 0f);
+        sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", field.Shape.Min + new Vector2(2f, -12f), 0f));
+        sim.HireHelper(t, field);
+
+        // Checked as the field is worked: no world hour goes by with the clock paused.
+        var hour = sim.Clock.LastHour;
+        Run(sim, 600f, () => job.State != ContractState.Active);
+        Assert.Equal((ContractState.Completed, hour), (job.State, sim.Clock.LastHour));
+        Assert.InRange(job.Progress, 0.95f, 1f);
+    }
+
+    [Fact]
+    public void AHarvestIsDoneOnceItsCropIsAtTheBuyer()
+    {
+        var sim = Neighbors(new FieldDef { Id = 2, X = 72, Z = 30, W = 23, H = 30, Ground = "seeded", Crop = "corn", Stage = "harvestable" });
+        var field = sim.World.FieldById(2)!;
+        var job = sim.Contracts.On(field)!;
+        Assert.Equal(("Harvest corn on Field 2", "elevator"), (job.Label, job.Poi!.Id));
+        Assert.True(sim.Contracts.Accept(job));
+        sim.Clock.Paused = true;
+        var combine = sim.Machines.Spawn("combine_7", field.Shape.Min + new Vector2(3f, -10f), 0f);
+        sim.Machines.Attach(combine, "header", sim.Machines.Spawn("header_corn_6", field.Shape.Min + new Vector2(3f, -8f), 0f));
+        var helper = sim.HireHelper(combine, field);
+        Run(sim, 600f, () => helper.Finished);
+
+        // The field is done, but the corn is still in the tank.
+        var tank = combine.Unit("tank")!;
+        Assert.True(tank.Level > 500f, $"harvested {tank.Level} L");
+        Assert.Equal(tank.Level, job.Harvested, 1);
+        Assert.InRange(job.Progress, 0.95f, 1f);
+        Assert.Equal(ContractState.Active, job.State);
+
+        // At the elevator the neighbor's corn goes to the contract, unpaid; the farm's own corn is sold.
+        var delivered = Record<ContractDelivery>(sim);
+        var sold = Record<FillSold>(sim);
+        var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
+        var money = sim.Economy.Money;
+        tank.Add("corn", 1000f);
+        tank.Remove(sim.Pois.Unload(combine, pit, "corn", job.Harvested / 2f));
+        Run(sim, 1f);
+        Assert.Equal(job.Harvested / 2f, delivered.Single().Amount, 1);
+        Assert.Equal((ContractState.Active, money), (job.State, sim.Economy.Money));
+        tank.Remove(sim.Pois.Unload(combine, pit, "corn", tank.Level));
+        Run(sim, 1f);
+        Assert.Equal(ContractState.Completed, job.State);
+        Assert.Equal(job.Harvested, job.Delivered, 1);
+        Assert.Equal(1000f, sold.Single().Amount, 1);
+        Assert.Equal(money + job.Reward + sold[0].Income, sim.Economy.Money, 1);
+    }
+
+    [Fact]
+    public void ADeliveryIsDoneOnceItsGoodsAreAtTheBuyer()
+    {
+        var sim = TestContent.NewSim();
+        sim.SkipHours(24);
+        var job = sim.Contracts.Offers.Single(c => c.Poi?.Id == "mill");
+        Assert.True(sim.Contracts.Accept(job));
+        var pit = sim.World.PoiById("mill")!.Trigger("pit")!;
+        var trailer = sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f);
+        var money = sim.Economy.Money;
+
+        sim.Pois.Unload(trailer, pit, "wheat", job.Amount - 1000f);
+        Run(sim, 1f);
+        Assert.Equal((ContractState.Active, job.Amount - 1000f, money), (job.State, job.Delivered, sim.Economy.Money));
+        // The last 1,000 L go to the contract, the rest is sold.
+        var income = 2000f * sim.Pois.Price(pit.Poi, pit.Actions[0], "wheat");
+        sim.Pois.Unload(trailer, pit, "wheat", 3000f);
+        Run(sim, 1f);
+        Assert.Equal((ContractState.Completed, job.Amount), (job.State, job.Delivered));
+        Assert.Equal(money + job.Reward + income, sim.Economy.Money, 1);
     }
 }

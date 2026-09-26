@@ -13,6 +13,7 @@ public sealed class Statistics
         events.Subscribe<ProductionSold>(e => Add(Sold, e.FillType, e.Amount));
         events.Subscribe<FillBought>(e => Add(Bought, e.FillType, e.Amount));
         events.Subscribe<HelperHired>(_ => HelpersHired++);
+        events.Subscribe<ContractCompleted>(_ => ContractsCompleted++);
         events.Subscribe<DayStarted>(_ => DaysPlayed++);
     }
 
@@ -25,6 +26,7 @@ public sealed class Statistics
     /// <summary>Units bought per fill type.</summary>
     public Dictionary<string, float> Bought { get; } = new();
     public int HelpersHired { get; set; }
+    public int ContractsCompleted { get; set; }
     public int DaysPlayed { get; set; }
 
     private static void Add(Dictionary<string, float> totals, string key, float amount) =>
