@@ -11,14 +11,11 @@ using NVec2 = System.Numerics.Vector2;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Heads-up display: clock/weather/forecast, money, vehicle panel, DF-style cell inspector,
-/// context key prompts, notifications, help and debug overlays. Built in code, styled muted.
+/// Heads-up display: clock/weather/forecast, money, vehicle panel, DF-style cell inspector, context key prompts,
+/// notifications and the debug overlay. Built from <see cref="Widgets"/>; styled by the theme.
 /// </summary>
 public partial class Hud : CanvasLayer
 {
-    private static readonly Color Text = new(0.9f, 0.9f, 0.86f);
-    private static readonly Color Dim = new(0.66f, 0.68f, 0.64f);
-
     private RichTextLabel _clock = null!;
     private Label _money = null!;
     private RichTextLabel _vehicle = null!;
@@ -27,7 +24,6 @@ public partial class Hud : CanvasLayer
     private PanelContainer _inspectPanel = null!;
     private RichTextLabel _prompt = null!;
     private VBoxContainer _notes = null!;
-    private PanelContainer _help = null!;
     private Label _debug = null!;
     private double _inspectTimer;
 
@@ -49,25 +45,23 @@ public partial class Hud : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
-        _clock = Rich(360);
-        root.AddChild(Panel(_clock, Control.LayoutPreset.TopLeft, new Vector2(12, 12)));
+        _clock = Widgets.Rich(360);
+        root.AddChild(Widgets.Anchor(Widgets.Panel(_clock), Control.LayoutPreset.TopLeft, new Vector2(12, 12)));
 
-        _money = new Label { HorizontalAlignment = HorizontalAlignment.Right };
-        _money.AddThemeFontSizeOverride("font_size", 22);
-        _money.AddThemeColorOverride("font_color", new Color(0.86f, 0.8f, 0.55f));
-        root.AddChild(Panel(_money, Control.LayoutPreset.TopRight, new Vector2(-12, 12)));
+        _money = Widgets.Label(variation: "MoneyLabel");
+        _money.HorizontalAlignment = HorizontalAlignment.Right;
+        root.AddChild(Widgets.Anchor(Widgets.Panel(_money), Control.LayoutPreset.TopRight, new Vector2(-12, 12)));
 
-        _vehicle = Rich(380);
-        _vehiclePanel = Panel(_vehicle, Control.LayoutPreset.BottomRight, new Vector2(-12, -12));
+        _vehicle = Widgets.Rich(380);
+        _vehiclePanel = Widgets.Anchor(Widgets.Panel(_vehicle), Control.LayoutPreset.BottomRight, new Vector2(-12, -12));
         root.AddChild(_vehiclePanel);
 
-        _inspect = Rich(360);
-        _inspectPanel = Panel(_inspect, Control.LayoutPreset.TopRight, new Vector2(-12, 70));
+        _inspect = Widgets.Rich(360);
+        _inspectPanel = Widgets.Anchor(Widgets.Panel(_inspect), Control.LayoutPreset.TopRight, new Vector2(-12, 70));
         root.AddChild(_inspectPanel);
 
-        _prompt = Rich(420);
-        _prompt.AddThemeFontSizeOverride("normal_font_size", 16);
-        var promptPanel = Panel(_prompt, Control.LayoutPreset.CenterBottom, new Vector2(0, -12));
+        _prompt = Widgets.Rich(420, "PromptText");
+        var promptPanel = Widgets.Anchor(Widgets.Panel(_prompt), Control.LayoutPreset.CenterBottom, new Vector2(0, -12));
         promptPanel.Name = "Prompt";
         root.AddChild(promptPanel);
 
@@ -78,67 +72,10 @@ public partial class Hud : CanvasLayer
         _notes.CustomMinimumSize = new Vector2(520, 0);
         root.AddChild(_notes);
 
-        var helpText = Rich(560);
-        helpText.Text = HelpText();
-        _help = Panel(helpText, Control.LayoutPreset.Center, Vector2.Zero);
-        _help.Visible = false;
-        root.AddChild(_help);
-
-        _debug = new Label { Visible = false, Position = new Vector2(14, 150) };
-        _debug.AddThemeColorOverride("font_color", new Color(0.7f, 0.95f, 0.7f));
-        _debug.AddThemeFontSizeOverride("font_size", 13);
+        _debug = Widgets.Label(variation: "DebugLabel");
+        _debug.Visible = false;
+        _debug.Position = new Vector2(14, 150);
         root.AddChild(_debug);
-    }
-
-    public void ToggleHelp() => _help.Visible = !_help.Visible;
-
-    // ------------------------------------------------------------------ Construction helpers
-
-    private static RichTextLabel Rich(float width)
-    {
-        var r = new RichTextLabel
-        {
-            BbcodeEnabled = true,
-            FitContent = true,
-            ScrollActive = false,
-            AutowrapMode = TextServer.AutowrapMode.Off,
-            CustomMinimumSize = new Vector2(width, 0),
-            MouseFilter = Control.MouseFilterEnum.Ignore,
-        };
-        r.AddThemeColorOverride("default_color", Text);
-        r.AddThemeFontSizeOverride("normal_font_size", 15);
-        r.AddThemeFontSizeOverride("bold_font_size", 15);
-        return r;
-    }
-
-    private static PanelContainer Panel(Control content, Control.LayoutPreset anchor, Vector2 offset)
-    {
-        var style = new StyleBoxFlat
-        {
-            BgColor = new Color(0.06f, 0.07f, 0.06f, 0.78f),
-            BorderColor = new Color(1f, 1f, 1f, 0.07f),
-            ContentMarginLeft = 12,
-            ContentMarginRight = 12,
-            ContentMarginTop = 8,
-            ContentMarginBottom = 8,
-        };
-        style.SetBorderWidthAll(1);
-        style.SetCornerRadiusAll(4);
-        var p = new PanelContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
-        p.AddThemeStyleboxOverride("panel", style);
-        p.AddChild(content);
-        p.SetAnchorsPreset(anchor);
-        // Grow away from the anchored edge so the panel stays on screen as its content changes.
-        p.GrowHorizontal = anchor is Control.LayoutPreset.TopRight or Control.LayoutPreset.BottomRight
-            ? Control.GrowDirection.Begin
-            : anchor is Control.LayoutPreset.CenterBottom or Control.LayoutPreset.Center or Control.LayoutPreset.CenterTop
-                ? Control.GrowDirection.Both
-                : Control.GrowDirection.End;
-        p.GrowVertical = anchor is Control.LayoutPreset.BottomLeft or Control.LayoutPreset.BottomRight or Control.LayoutPreset.CenterBottom
-            ? Control.GrowDirection.Begin
-            : anchor == Control.LayoutPreset.Center ? Control.GrowDirection.Both : Control.GrowDirection.End;
-        p.Position += offset;
-        return p;
     }
 
     // ------------------------------------------------------------------ Update
@@ -167,14 +104,14 @@ public partial class Hud : CanvasLayer
     {
         var c = Sim.Clock;
         var w = Sim.Weather;
-        var speed = c.Paused ? "[color=#e0a060]paused[/color]" : $"×{c.TimeScale:0}";
+        var speed = c.Paused ? Widgets.Colored("paused", Palette.Paused) : $"×{c.TimeScale:0}";
         var sb = new StringBuilder();
-        sb.Append($"[b]{c.Date}[/b]   {c.TimeString}   [color=#a8aba4]{speed} · {Calendar.SeasonOf(c.Month)}[/color]\n");
+        sb.Append($"[b]{c.Date}[/b]   {c.TimeString}   [color={Palette.Dim}]{speed} · {Calendar.SeasonOf(c.Month)}[/color]\n");
         sb.Append($"{Icon(w.Condition)} {w.Condition}  {w.Temperature:0}°C");
         if (w.Wind > 0.55f) sb.Append("  · windy");
         if (w.SnowCover > 0.05f) sb.Append($"  · snow {w.SnowCover * 100:0}%");
         sb.Append('\n');
-        sb.Append("[color=#a8aba4]");
+        sb.Append($"[color={Palette.Dim}]");
         foreach (var d in w.Forecast(c.DayIndex + 1, 3))
         {
             var date = Sim.Calendar.DateOfDay(d.DayIndex);
@@ -188,15 +125,10 @@ public partial class Hud : CanvasLayer
         _clock.Text = sb.ToString();
     }
 
-    private static string Icon(WeatherCondition c) => c switch
-    {
-        WeatherCondition.Clear => "[color=#e8cf6a]☀[/color]",
-        WeatherCondition.Cloudy => "[color=#b8bcc0]☁[/color]",
-        WeatherCondition.Rain => "[color=#7fa6d8]☂[/color]",
-        WeatherCondition.Storm => "[color=#9aa8e8]⚡[/color]",
-        WeatherCondition.Snow => "[color=#e8eef4]❄[/color]",
-        _ => "[color=#b0b4b0]≋[/color]",
-    };
+    /// <summary>The condition's icon (assets/icons is named after <see cref="WeatherCondition"/>).</summary>
+    private static string Icon(WeatherCondition c) => Widgets.Icon(c.ToString().ToLowerInvariant(), Palette.Weather(c));
+
+    private static string Warning(string text) => $"{Widgets.Icon("warning", Palette.Warning)} {Widgets.Colored(text, Palette.Warning)}";
 
     private void UpdateVehicle()
     {
@@ -205,16 +137,16 @@ public partial class Hud : CanvasLayer
         if (v == null) return;
         var sb = new StringBuilder();
         sb.Append($"[b]{v.Def.Name}[/b]   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
-        if (v.Def.HarvestTank != null) sb.Append(v.TurnedOn ? "   [color=#9fd67f]threshing[/color]" : "   [color=#a8aba4]off[/color]");
+        if (v.Def.HarvestTank != null) sb.Append("   " + (v.TurnedOn ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
         sb.Append('\n');
         if (v.Controller is FieldWorkController w)
-            sb.Append($"  [color=#8fc0e8]Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}[/color]\n");
+            sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}", Palette.Info)}\n");
         foreach (var m in v.Chain())
         {
             if (m != v) sb.Append($"  {m.Def.Name}");
             var bits = new List<string>();
-            if (m != v && m.Def.WorkArea is { RequiresLowered: true }) bits.Add(m.Lowered ? "[color=#9fd67f]lowered[/color]" : "raised");
-            if (m.Def.WorkArea is { RequiresOn: true }) bits.Add(m.TurnedOn ? "[color=#9fd67f]on[/color]" : "off");
+            if (m != v && m.Def.WorkArea is { RequiresLowered: true }) bits.Add(m.Lowered ? Widgets.Colored("lowered", Palette.Good) : "raised");
+            if (m.Def.WorkArea is { RequiresOn: true }) bits.Add(m.TurnedOn ? Widgets.Colored("on", Palette.Good) : "off");
             if (m.Def.SeedTank != null) bits.Add(Sim.Content.Crops[m.SelectedCrop].Name);
             foreach (var u in m.FillUnits)
             {
@@ -223,11 +155,11 @@ public partial class Hud : CanvasLayer
                 bits.Add($"{ft?.Name ?? "empty"} {u.Level:N0}/{u.Capacity:N0} {unit}");
             }
             if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
-            if (m.Tipping) bits.Add("[color=#e8c060]tipping[/color]");
-            if (m.PipeOut) bits.Add("[color=#e8c060]pipe out[/color]");
+            if (m.Tipping) bits.Add(Widgets.Colored("tipping", Palette.Busy));
+            if (m.PipeOut) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
             if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
             if (m != v || bits.Count > 0) sb.Append('\n');
-            if (m.Status != null) sb.Append($"  [color=#e89a60]⚠ {m.Status}[/color]\n");
+            if (m.Status != null) sb.Append($"  {Warning(m.Status)}\n");
         }
         _vehicle.Text = sb.ToString().TrimEnd('\n');
     }
@@ -235,7 +167,7 @@ public partial class Hud : CanvasLayer
     private void UpdatePrompt()
     {
         var lines = new List<string>();
-        string K(string action) => $"[color=#e8cf6a][{InputSetup.Label(action)}][/color]";
+        var K = Widgets.Key;
         var v = Sim.Player.Vehicle;
         if (v == null)
         {
@@ -273,10 +205,8 @@ public partial class Hud : CanvasLayer
         while (_notes.GetChildCount() > items.Count) _notes.GetChild(0).Free();
         while (_notes.GetChildCount() < items.Count)
         {
-            var l = new Label { HorizontalAlignment = HorizontalAlignment.Center };
-            l.AddThemeFontSizeOverride("font_size", 16);
-            l.AddThemeColorOverride("font_outline_color", new Color(0, 0, 0, 0.85f));
-            l.AddThemeConstantOverride("outline_size", 6);
+            var l = Widgets.Label();
+            l.HorizontalAlignment = HorizontalAlignment.Center;
             _notes.AddChild(l);
         }
         for (var i = 0; i < items.Count; i++)
@@ -284,12 +214,12 @@ public partial class Hud : CanvasLayer
             var n = items[i];
             var l = (Label)_notes.GetChild(i);
             l.Text = n.Text;
-            l.AddThemeColorOverride("font_color", n.Severity switch
+            l.ThemeTypeVariation = n.Severity switch
             {
-                Severity.Good => new Color(0.7f, 0.9f, 0.6f),
-                Severity.Warning => new Color(0.95f, 0.7f, 0.45f),
-                _ => Text,
-            });
+                Severity.Good => "NoteGoodLabel",
+                Severity.Warning => "NoteWarningLabel",
+                _ => "NoteLabel",
+            };
             var age = Sim.RealTime - n.RealTime;
             l.Modulate = new Color(1, 1, 1, Mathf.Clamp(8f - (float)age, 0f, 1f));
         }
@@ -315,12 +245,12 @@ public partial class Hud : CanvasLayer
         sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
         if (farmland != null)
             sb.Append(farmland.FarmId == Sim.Player.FarmId ? $" · {farmland.Label}, yours" : $" · {farmland.Label}, {Sim.Farms.OwnerName(farmland)}'s");
-        sb.Append($"   [color=#a8aba4]{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m[/color]\n");
+        sb.Append($"   {Widgets.Colored($"{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m", Palette.Dim)}\n");
         sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
         if (r.Crop != null)
         {
             var ripe = r.Crop.Stages.ElementAtOrDefault(r.Stage)?.Harvestable == true;
-            sb.Append($" · [b]{r.Crop.Name}[/b] — {r.StageName}{(ripe ? " [color=#9fd67f](ready to harvest)[/color]" : "")}");
+            sb.Append($" · [b]{r.Crop.Name}[/b] — {r.StageName}{(ripe ? " " + Widgets.Colored("(ready to harvest)", Palette.Good) : "")}");
         }
         sb.Append('\n');
         if (!WorldMap.IsSealed(r.Ground))
@@ -331,16 +261,16 @@ public partial class Hud : CanvasLayer
         }
         if (r.Crop is { VernalizationDays: > 0 } vc && r.StageName != "Dead" && r.Stage < Array.FindIndex(vc.Stages, s => s.RequiresVernalization))
             sb.Append(r.Chill >= vc.VernalizationDays
-                ? "[color=#8fc0e8]Vernalized: ready to shoot in spring[/color]\n"
-                : $"[color=#8fc0e8]Vernalization {r.Chill:0}/{vc.VernalizationDays:0} cold days[/color]\n");
+                ? Widgets.Colored("Vernalized: ready to shoot in spring", Palette.Info) + "\n"
+                : Widgets.Colored($"Vernalization {r.Chill:0}/{vc.VernalizationDays:0} cold days", Palette.Info) + "\n");
         if (r.Crop != null && !float.IsNaN(r.DaysToHarvest) && r.DaysToHarvest > 0)
         {
             var days = float.IsInfinity(r.DaysToHarvest) ? "over 2 years" : $"~{r.DaysToHarvest:0} days";
-            sb.Append($"[color=#a8aba4]Harvest in {days} · water factor {r.WaterFactor * 100:0}% · expected {r.Crop.YieldPerHa * r.Health:N0} L/ha[/color]\n");
+            sb.Append(Widgets.Colored($"Harvest in {days} · water factor {r.WaterFactor * 100:0}% · expected {r.Crop.YieldPerHa * r.Health:N0} L/ha", Palette.Dim) + "\n");
         }
         if (r.Crop == null && r.Soil != null && !WorldMap.IsSealed(r.Ground))
-            sb.Append($"[color=#a8aba4]{r.Soil.Description}[/color]\n");
-        foreach (var warn in r.Warnings) sb.Append($"[color=#e89a60]⚠ {warn}[/color]\n");
+            sb.Append(Widgets.Colored(r.Soil.Description, Palette.Dim) + "\n");
+        foreach (var warn in r.Warnings) sb.Append(Warning(warn) + "\n");
         _inspect.Text = sb.ToString().TrimEnd('\n');
     }
 
@@ -358,16 +288,4 @@ public partial class Hud : CanvasLayer
         GroundType.Water => "Water",
         _ => g.ToString(),
     };
-
-    private static string HelpText()
-    {
-        var sb = new StringBuilder("[b]Controls[/b]   [color=#a8aba4](keys follow your keyboard layout)[/color]\n\n");
-        foreach (var (action, _, help) in InputSetup.Bindings)
-            if (!action.StartsWith("time_") || action == "time_1")
-                sb.Append($"[color=#e8cf6a]{(action == "time_1" ? "1–6" : InputSetup.Label(action)),-8}[/color] {(action == "time_1" ? "Time speed ×1 … ×240" : help)}\n");
-        sb.Append("[color=#e8cf6a]Wheel[/color]    Zoom        [color=#e8cf6a]Middle drag[/color]  Pan\n\n");
-        sb.Append("[b]Loop[/b]: cultivate stubble → sow in season → let it grow → harvest with the right header →\n");
-        sb.Append("unload into a trailer → tip at the Grain Elevator. Hover the ground to inspect soil and crops.");
-        return sb.ToString();
-    }
 }

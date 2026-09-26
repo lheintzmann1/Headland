@@ -10,7 +10,8 @@ sounds contributed to this repository. You may share and adapt it, commercially 
 Headland and share your adaptations under the same license.
 
 **Third-party assets** keep their own licenses. They are listed with their sources in
-[`game/assets/CREDITS.md`](game/assets/CREDITS.md). At the moment all of them are CC0 (public domain).
+[`game/assets/CREDITS.md`](game/assets/CREDITS.md): CC0 (public domain) textures, the Barlow font (SIL Open Font
+License 1.1) and Material Symbols icons (Apache License 2.0).
 
 By contributing code you agree to license it under GPL-3.0-or-later; by contributing art you agree to license it
 under CC BY-SA 4.0, unless its entry in `CREDITS.md` says otherwise.

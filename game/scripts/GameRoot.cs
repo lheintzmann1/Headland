@@ -27,6 +27,7 @@ public partial class GameRoot : Node3D
     public Simulation Sim { get; private set; } = null!;
     public IsoCamera Camera { get; private set; } = null!;
     public Hud Hud { get; private set; } = null!;
+    public ScreenStack Screens { get; private set; } = null!;
     public SaveManager Saves { get; private set; } = null!;
 
     /// <summary>Simulation ticks per physics frame (scenarios fast-forward with this).</summary>
@@ -56,6 +57,8 @@ public partial class GameRoot : Node3D
         Camera.SnapTo(Sim.World.OnGround(Sim.Player.Position));
         Hud = new Hud { Sim = Sim, Name = "Hud" };
         AddChild(Hud);
+        Screens = new ScreenStack { Name = "Screens" };
+        AddChild(Screens);
         Saves = new SaveManager { Sim = Sim, Name = "Saves" };
         AddChild(Saves);
 
@@ -93,8 +96,16 @@ public partial class GameRoot : Node3D
 
     public override void _PhysicsProcess(double delta)
     {
-        if (PlayerInputEnabled) ApplyMovementInput();
+        if (PlayerInputEnabled && Screens.BlocksInput) ReleaseControls();
+        else if (PlayerInputEnabled) ApplyMovementInput();
         for (var i = 0; i < SimSubsteps; i++) Sim.Tick((float)delta);
+    }
+
+    /// <summary>A modal screen is open: the farmer stands still and the vehicle brakes.</summary>
+    private void ReleaseControls()
+    {
+        Sim.Player.MoveInput = NVec2.Zero;
+        Sim.Player.Controls.Input = new VehicleInput { Brake = true };
     }
 
     private void ApplyMovementInput()
@@ -140,7 +151,9 @@ public partial class GameRoot : Node3D
     public override void _UnhandledInput(InputEvent e)
     {
         if (!PlayerInputEnabled || e is not InputEventKey { Pressed: true, Echo: false }) return;
-        if (e.IsActionPressed("enter")) Sim.ToggleEnterExit();
+        if (e.IsActionPressed("toggle_help")) Screens.Toggle(() => new HelpScreen());
+        else if (Screens.BlocksInput) return;
+        else if (e.IsActionPressed("enter")) Sim.ToggleEnterExit();
         // Before next_vehicle: Shift+Tab also matches the plain Tab binding.
         else if (e.IsActionPressed("prev_vehicle")) Sim.SwitchVehicle(-1);
         else if (e.IsActionPressed("next_vehicle")) Sim.SwitchVehicle(1);
@@ -157,7 +170,6 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("skip_day")) SleepUntilMorning();
         else if (e.IsActionPressed("quicksave")) Saves.Save(SaveManager.QuickSlot);
         else if (e.IsActionPressed("quickload")) Saves.Load(SaveManager.QuickSlot);
-        else if (e.IsActionPressed("toggle_help")) Hud.ToggleHelp();
         else if (e.IsActionPressed("toggle_debug")) Hud.DebugVisible = !Hud.DebugVisible;
         else if (e.IsActionPressed("screenshot")) SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png");
         else

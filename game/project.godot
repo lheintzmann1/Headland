@@ -27,6 +27,10 @@ window/vsync/vsync_mode=1
 project/assembly_name="Headland"
 project/solution_directory="../"
 
+[gui]
+
+theme/custom="res://ui/theme.tres"
+
 [physics]
 
 common/physics_ticks_per_second=60

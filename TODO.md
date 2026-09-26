@@ -43,7 +43,7 @@ Rules for every item:
       Polygon shapes, not only rectangles. Field ids are a byte today (max 255).
 - [x] **Event bus in Core.** Typed events (time ticks, weather, field work, harvest, sale, purchase,
       attach…) feeding notifications, sounds, statistics and Lua.
-- [ ] **UI framework.** A `Theme` resource and a credited OFL/CC0 font, a screen stack (Esc closes),
+- [x] **UI framework.** A `Theme` resource and a credited OFL/CC0 font, a screen stack (Esc closes),
       shared widgets; replaces the per-control styles in `Hud.cs`.
 - [ ] **User settings file** (`user://settings.cfg`): graphics, audio, controls, gameplay.
 

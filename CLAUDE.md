@@ -9,8 +9,9 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
   world/field layers, crops, machines, economy, player. Godot only renders and feeds input.
 - `tests/Headland.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
 - `game/`: the Godot project (assembly `Headland`, namespaces `Headland.Game.*`). `scripts/` (C# presentation),
-  `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, soils, climates, maps),
-  `assets/` (textures, future models, `CREDITS.md`), `export_presets.cfg` (Linux/Windows/macOS, used by CI).
+  `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, soils, climates, maps, npcs),
+  `ui/theme.tres` (the project `Theme`), `assets/` (textures, fonts, icons, future models, `CREDITS.md`),
+  `export_presets.cfg` (Linux/Windows/macOS, used by CI).
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports; tags `v*` publish a release).
 - `tools/`: asset pipeline (Python + PIL/numpy): `convert_tiles.py` (iso tiles → top-down atlases),
   `fetch_textures.py` (CC0 ambientCG ground textures), `gen_crop_cards.py` (procedural crop atlas).
@@ -46,6 +47,9 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Godot C#: one Node class per file (file name = class name), parameterless constructors with `init` properties
   (`new TerrainRenderer { Sim = sim }`), `FileAccess` means Godot's (global alias in `scripts/GlobalUsings.cs`).
 - Input actions use **physical keys** (AZERTY gets ZQSD automatically); labels come from `InputSetup.Label`.
+- UI: build controls with `UI/Widgets`, style them through `ui/theme.tres` type variations (no per-control theme
+  overrides), BBCode colors from `UI/Palette`, icons as `Widgets.Icon` (Material Symbols SVGs in `assets/icons`,
+  white so they can be tinted). Screens derive from `Screen` and go on the `ScreenStack` (Esc closes the top one).
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
   Machines are procedural placeholders until `.glb` models (Blockbench exports) are set in a machine's
   `visual.model`; conventions and part roles are in `docs/MODELING.md`.
