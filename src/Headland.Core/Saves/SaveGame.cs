@@ -440,7 +440,7 @@ public static class SaveGame
                 helper.Driver.Index = Math.Clamp(h.Waypoint, 0, route.Points.Count);
                 helper.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
             }
-            else helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes); // planned again from where it is
+            else helper = new FieldWorkController(sim, vehicle, field, h.SpeedKmh, h.MaxLanes); // planned again from where it is
             helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
             helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
             helper.WagesPaid = Math.Max(0f, h.WagesPaid);

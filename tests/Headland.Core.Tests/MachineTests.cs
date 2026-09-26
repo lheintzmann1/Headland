@@ -292,7 +292,7 @@ public class MachineTests
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f);
         sim.Machines.Attach(t, "rear", c);
-        var helper = new FieldWorkController(t, Plot);
+        var helper = new FieldWorkController(sim, t, Plot);
         t.Controller = helper;
         return (sim, t, helper);
     }
@@ -477,5 +477,41 @@ public class MachineTests
         // What was left behind the tractor on its lane is done too.
         RunHelper(sim, helper);
         Assert.True(PlotShare(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated) > 0.99f);
+    }
+
+    [Fact]
+    public void AHelperTakesOverAPartlyWorkedField()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        // The left half of the plot is cultivated already.
+        Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ, (cx, cz) =>
+        {
+            if (sim.World.CellCenter(cx, cz).X < Plot.Center.X) WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0);
+        });
+        var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
+        sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f));
+        var helper = sim.HireHelper(t, Plot);
+
+        // Nine lanes cover the plot: the helper does the five over its right half (one of them straddling the middle).
+        Assert.Equal(5, helper.Path.LaneCount);
+        RunHelper(sim, helper);
+        Assert.True(PlotShare(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated) > 0.99f);
+    }
+
+    [Fact]
+    public void NoHelperIsHiredForAFieldWithNothingLeftToDo()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        var field = sim.World.FieldById(4)!;
+        field.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
+            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+        var t = sim.Machines.Spawn("tractor_125", field.Center, 0f);
+        sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", field.Center - new Vector2(0f, 2f), 0f));
+        sim.Player.Enter(t);
+        sim.CommandHelper();
+        Assert.Same(sim.Player.Controls, t.Controller);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Nothing left for the Tiller 300 to do on Field 4");
     }
 }

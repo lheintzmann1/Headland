@@ -267,18 +267,31 @@ public sealed class Simulation
             Notifications.Post("Not enough money to pay a helper", Severity.Warning);
             return;
         }
-        HireHelper(v, field);
+        var helper = new FieldWorkController(this, v, field);
+        if (helper.Path.LaneCount == 0)
+        {
+            Notifications.Post($"Nothing left for the {tool.Def.Name} to do on {field.Label}", Severity.Warning);
+            return;
+        }
+        Hire(v, helper);
     });
 
     /// <summary>What a helper hired now earns per hour of work.</summary>
     public float HelperWage => Content.Economy.HelperWagePerHour * Economy.PriceLevel;
 
-    /// <summary>Puts a helper in the vehicle to work <paramref name="field"/> (optionally only its first lanes).</summary>
-    public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null)
+    /// <summary>
+    /// Puts a helper in the vehicle to work what's left of <paramref name="field"/> (optionally only its first
+    /// lanes), going on from where the vehicle stands.
+    /// </summary>
+    public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null) =>
+        Hire(v, new FieldWorkController(this, v, field, maxLanes: maxLanes));
+
+    private FieldWorkController Hire(Machine v, FieldWorkController helper)
     {
-        var helper = new FieldWorkController(v, field, maxLanes: maxLanes) { WagePerHour = HelperWage };
+        helper.WagePerHour = HelperWage;
+        helper.TakeOver();
         v.Controller = helper;
-        Events.Publish(new HelperHired(v, field));
+        Events.Publish(new HelperHired(v, helper.Field));
         return helper;
     }
 

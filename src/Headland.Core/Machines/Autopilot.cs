@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Content;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
@@ -173,7 +174,7 @@ public sealed record FieldPath(List<Vector2> Points, List<PathSegment> Segments)
     public int LaneCount => Enumerable.Range(0, Segments.Count).Count(EndsLane);
 }
 
-/// <summary>What a field route is planned for: the implements and the vehicle.</summary>
+/// <summary>What a field route is planned for: the implements, the vehicle, and what's left to do.</summary>
 /// <param name="WorkWidth">Distance between lanes at most (the swath, less a little overlap).</param>
 /// <param name="TurnRadius">The tightest circle the vehicle drives in turns.</param>
 /// <param name="Margin">
@@ -190,6 +191,8 @@ public sealed record LanePlan(float WorkWidth, float TurnRadius, float Margin)
     public int? MaxLanes { get; init; }
     /// <summary>The vehicle may back up (it pulls no trailed implement), so close lanes are joined by three-point turns.</summary>
     public bool Reverse { get; init; }
+    /// <summary>Whether the swath of the given width along a → b (over the field) still needs working; lanes that don't are left out.</summary>
+    public Func<Vector2, Vector2, float, bool>? NeedsWork { get; init; }
 }
 
 public static class FieldPlanner
@@ -233,7 +236,8 @@ public static class FieldPlanner
         var (us, anchor) = frame.LaneCenters(dir != 0f ? pos.u : null);
         (float lo, float hi) FieldSpan(float u) => frame.Span(u - width * 0.5f, u + width * 0.5f, 0f);
         (float near, float far) Span(float u) => frame.Span(u - width * 0.5f, u + width * 0.5f, plan.Margin);
-        var todo = us.Select(_ => true).ToList();
+        bool Needs(float u, float a, float b) => plan.NeedsWork?.Invoke(frame.ToWorld(u, a), frame.ToWorld(u, b), width) ?? true;
+        var todo = us.Select(u => FieldSpan(u) is var (lo, hi) && Needs(u, lo, hi)).ToList();
 
         var pts = new List<Vector2>();
         var segs = new List<PathSegment>();
@@ -256,16 +260,17 @@ public static class FieldPlanner
             var (fieldStart, fieldEnd) = dir > 0f ? (fieldLo, fieldHi) : (fieldHi, fieldLo);
             var split = Math.Clamp(pos.v - dir * plan.Trail, fieldLo, fieldHi); // where the work area is
             if ((fieldEnd - split) * dir <= 1f) prev = pos;
-            else
+            else if (Needs(u, split, fieldEnd))
             {
                 if ((start - pos.v) * dir > 0.5f) Add(u, start, PathSegment.Drive);
                 else if (MathF.Abs(pos.u - u) > 0.05f && pos.v + dir * MathF.Max(4f, 6f * MathF.Abs(pos.u - u)) is var join && (end - join) * dir > 1f)
                     Add(u, join, PathSegment.Work); // onto the lane line
                 Add(u, end, PathSegment.Work);
                 prev = (u, end);
-                todo[anchor] = (split - fieldStart) * dir > 1f;
+                todo[anchor] = (split - fieldStart) * dir > 1f && Needs(u, fieldStart, split);
                 lanes--;
             }
+            else dir = 0f; // nothing to do ahead: start over from a corner
             forward = dir < 0f;
         }
 
@@ -413,28 +418,27 @@ public sealed class FieldWorkController : IVehicleController
     private const float RunIn = 2.5f;
     private const float TurnSpeedKmh = 7f;
     private const float ReverseSpeedKmh = 5f;
+    /// <summary>A lane is left out when less than this share of the field under it is left to do.</summary>
+    private const float MinShareLeft = 0.03f;
     private readonly List<Machine> _tools;
     private readonly float _workSpeedKmh;
 
     /// <summary>
-    /// Plans the route from where the vehicle stands and takes over the implements: seeders and threshers on, each
-    /// lowered as it reaches the field (one working its lane already stays down).
+    /// Plans the route from where the vehicle stands, leaving out the lanes its implements have nothing left to do on.
+    /// The implements are left alone until <see cref="TakeOver"/>.
     /// </summary>
-    public FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh = 0f, int? maxLanes = null)
-        : this(vehicle, field, speedKmh, maxLanes, null, null)
+    public FieldWorkController(Simulation sim, Machine vehicle, FieldInfo field, float speedKmh = 0f, int? maxLanes = null)
+        : this(vehicle, field, speedKmh, maxLanes, null, null, sim)
     {
-        foreach (var t in _tools)
-            if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
-        if (vehicle.Def.HarvestTank != null) vehicle.TurnedOn = true;
     }
 
     /// <summary>Resumes a saved route, with the margin it was planned with.</summary>
     internal FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, float margin, FieldPath path)
-        : this(vehicle, field, speedKmh, maxLanes, (float?)margin, path)
+        : this(vehicle, field, speedKmh, maxLanes, margin, path, null)
     {
     }
 
-    private FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, float? margin, FieldPath? path)
+    private FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, float? margin, FieldPath? path, Simulation? sim)
     {
         Vehicle = vehicle;
         Field = field;
@@ -458,6 +462,7 @@ public sealed class FieldWorkController : IVehicleController
         Path = path ?? FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin)
         {
             From = vehicle.Position, Heading = vehicle.Heading, Trail = reach, MaxLanes = maxLanes, Reverse = canReverse,
+            NeedsWork = (a, b, w) => ShareLeft(sim!.World, sim.Content.Crops, a, b, w) >= MinShareLeft,
         });
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Segments);
     }
@@ -492,6 +497,14 @@ public sealed class FieldWorkController : IVehicleController
     public float WagesPaid { get; internal set; }
 
     public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
+
+    /// <summary>Takes over the implements: seeders and threshers on. Each is lowered as it reaches the field.</summary>
+    internal void TakeOver()
+    {
+        foreach (var t in _tools)
+            if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
+        if (Vehicle.Def.HarvestTank != null) Vehicle.TurnedOn = true;
+    }
 
     public VehicleInput GetInput(Machine v, float dt)
     {
@@ -545,4 +558,22 @@ public sealed class FieldWorkController : IVehicleController
     private bool Touches(Vector2 center, Vector2 side) =>
         Field.Contains(center) || Field.Contains(center + side) || Field.Contains(center - side);
 
+    /// <summary>Share of the field under a swath <paramref name="width"/> wide along a → b that the implements would still change.</summary>
+    private float ShareLeft(WorldMap world, IReadOnlyList<CropDef> crops, Vector2 a, Vector2 b, float width)
+    {
+        var length = Vector2.Distance(a, b);
+        if (length < 0.01f) return 0f;
+        Span<Vector2> corners = stackalloc Vector2[4];
+        MathUtil.RectCorners((a + b) * 0.5f, MathUtil.HeadingOf(b - a), width * 0.5f, length * 0.5f, corners);
+        var cells = new List<int>();
+        Geometry.RasterizeConvex(corners, WorldMap.CellSize, world.CellsX, world.CellsZ, cells);
+        int inside = 0, left = 0;
+        foreach (var i in cells)
+        {
+            if (!Field.Contains(world.CellCenter(i % world.CellsX, i / world.CellsX))) continue;
+            inside++;
+            if (_tools.Any(t => WorkOps.WouldChange(world, crops, t.Def.WorkArea!.Type, i))) left++;
+        }
+        return inside > 0 ? (float)left / inside : 0f;
+    }
 }

@@ -1,3 +1,4 @@
+using Headland.Core.Content;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
@@ -5,12 +6,32 @@ namespace Headland.Core.Machines;
 /// <summary>Per-cell state transitions applied by implements. Each returns true when the cell changed.</summary>
 public static class WorkOps
 {
-    public static bool Cultivate(WorldMap world, int i, byte angle)
+    /// <summary>
+    /// True when a work area of type <paramref name="work"/> would still change cell <paramref name="i"/>: what a
+    /// helper checks to leave out the lanes done already. A harvester counts ripe and dead crops, whatever its header.
+    /// </summary>
+    public static bool WouldChange(WorldMap world, IReadOnlyList<CropDef> crops, string work, int i)
     {
         var L = world.Layers;
-        var g = (GroundType)L.Ground[i];
-        if (!world.IsWorkable(g)) return false;
-        if (g == GroundType.Cultivated && L.Crop[i] == 0) return false;
+        return work switch
+        {
+            "cultivator" => CanCultivate(world, i),
+            "seeder" => CanSow(world, i),
+            "harvester" => L.Crop[i] != 0 && (L.Stage[i] == CropStage.Dead || crops[L.Crop[i] - 1].Stages[L.Stage[i]].Harvestable),
+            _ => true,
+        };
+    }
+
+    public static bool CanCultivate(WorldMap world, int i)
+    {
+        var g = (GroundType)world.Layers.Ground[i];
+        return world.IsWorkable(g) && (g != GroundType.Cultivated || world.Layers.Crop[i] != 0);
+    }
+
+    public static bool Cultivate(WorldMap world, int i, byte angle)
+    {
+        if (!CanCultivate(world, i)) return false;
+        var L = world.Layers;
         L.Ground[i] = (byte)GroundType.Cultivated;
         ClearCrop(L, i);
         L.WorkAngle[i] = angle;
