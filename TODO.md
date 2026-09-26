@@ -28,7 +28,7 @@ Rules for every item:
 - [ ] **Switch-vehicle key** (FS: Tab / Shift+Tab): jump into the next/previous farm vehicle. Physical
       key, label via `InputSetup.Label`, listed in F1 help and README controls. A helper driving a vehicle
       keeps working.
-- [ ] Fix the stale `scripts/Core/InputSetup.cs` path in the `game/project.godot` header comment.
+- [x] Fix the stale `scripts/Core/InputSetup.cs` path in the `game/project.godot` header comment.
 
 ## Foundations
 
