@@ -54,10 +54,14 @@ public partial class ScreenStack : CanvasLayer
         GetViewport().SetInputAsHandled();
     }
 
+    /// <summary>Puts the backdrop right under the topmost modal screen, so it dims what's below and not the screen.</summary>
     private void UpdateBackdrop()
     {
         var modal = _screens.FindLast(s => s.Modal);
         _backdrop.Visible = modal != null;
-        if (modal != null) MoveChild(_backdrop, modal.GetIndex());
+        if (modal == null) return;
+        // Moving the backdrop from below the screen shifts the screen down one index first.
+        var index = modal.GetIndex();
+        MoveChild(_backdrop, _backdrop.GetIndex() < index ? index - 1 : index);
     }
 }
