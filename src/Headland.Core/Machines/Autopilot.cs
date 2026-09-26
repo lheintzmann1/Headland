@@ -182,8 +182,11 @@ public sealed record FieldPath(List<Vector2> Points, List<PathSegment> Segments)
 /// </param>
 public sealed record LanePlan(float WorkWidth, float TurnRadius, float Margin)
 {
-    /// <summary>Where the vehicle stands (null: from the field's first corner).</summary>
+    /// <summary>Where the vehicle stands and which way it points (null: from the field's first corner).</summary>
     public Vector2? From { get; init; }
+    public float? Heading { get; init; }
+    /// <summary>How far behind <see cref="From"/> the rearmost work area ends (negative when it is ahead, like a header).</summary>
+    public float Trail { get; init; }
     public int? MaxLanes { get; init; }
     /// <summary>The vehicle may back up (it pulls no trailed implement), so close lanes are joined by three-point turns.</summary>
     public bool Reverse { get; init; }
@@ -191,10 +194,17 @@ public sealed record LanePlan(float WorkWidth, float TurnRadius, float Margin)
 
 public static class FieldPlanner
 {
+    /// <summary>How closely a vehicle must point along the lanes (cos 20°) to go on along its own line.</summary>
+    private const float LinedUp = 0.94f;
+
     /// <summary>
     /// Back-and-forth lanes worked one after the other, along the field's longer side from the corner nearest the
-    /// vehicle. Lanes at least a turning circle apart are joined by two quarter circles and a straight; closer ones by
-    /// a three-point turn when the vehicle can reverse, else by a bulb turn that loops out and back in. On a field that
+    /// vehicle. A vehicle pointing along either side of the field (within 20°) over it or just outside goes on along
+    /// its own line instead: the lanes are laid out from it and the first one starts where it stands (standing at a
+    /// lane's end facing out, it turns into the next one); it works toward the nearer edge first, then crosses over to
+    /// the other side, taking in on the way what was left behind it on its first lane.
+    /// Lanes at least a turning circle apart are joined by two quarter circles and a straight; closer ones by a
+    /// three-point turn when the vehicle can reverse, else by a bulb turn that loops out and back in. On a field that
     /// isn't a rectangle each lane spans the field under its whole swath, and a turn goes out to the farthest lane end
     /// it passes.
     /// </summary>
@@ -203,8 +213,27 @@ public static class FieldPlanner
         var shape = f.Shape;
         var width = plan.WorkWidth;
         var frame = new Frame(shape, shape.Size.Y >= shape.Size.X, width);
-        var us = frame.LaneCenters();
+        var pos = (u: 0f, v: 0f);
+        var dir = 0f; // along v when lined up on a lane
+        if (plan.From is { } p)
+        {
+            pos = frame.ToFrame(p);
+            if (plan.Heading is { } h && MathUtil.Forward(h) is var fwd && MathF.Max(MathF.Abs(fwd.X), MathF.Abs(fwd.Y)) >= LinedUp)
+            {
+                var lined = new Frame(shape, MathF.Abs(fwd.Y) > MathF.Abs(fwd.X), width);
+                var lp = lined.ToFrame(p);
+                if (lp.u >= lined.U0 - width * 0.5f && lp.u <= lined.U0 + lined.Across + width * 0.5f)
+                {
+                    (frame, pos) = (lined, lp);
+                    dir = MathF.Sign(lined.AlongZ ? fwd.Y : fwd.X);
+                }
+            }
+        }
+
+        var (us, anchor) = frame.LaneCenters(dir != 0f ? pos.u : null);
+        (float lo, float hi) FieldSpan(float u) => frame.Span(u - width * 0.5f, u + width * 0.5f, 0f);
         (float near, float far) Span(float u) => frame.Span(u - width * 0.5f, u + width * 0.5f, plan.Margin);
+        var todo = us.Select(_ => true).ToList();
 
         var pts = new List<Vector2>();
         var segs = new List<PathSegment>();
@@ -214,18 +243,54 @@ public static class FieldPlanner
             segs.Add(s);
         }
 
-        var order = Enumerable.Range(0, us.Count).ToList();
+        (float u, float v)? prev = null; // where the last lane ended, heading out of the field
         var forward = true; // the next lane is driven toward increasing v
-        if (plan.From is { } p)
+        var lanes = plan.MaxLanes ?? int.MaxValue;
+        if (dir != 0f)
         {
-            var pos = frame.ToFrame(p);
-            if (MathF.Abs(pos.u - us[^1]) < MathF.Abs(pos.u - us[0])) order.Reverse();
+            // Lined up on lane `anchor`: work the rest of it from here, or turn from here if the work area is past it.
+            var u = us[anchor];
+            var (near, far) = Span(u);
+            var (start, end) = dir > 0f ? (near, far) : (far, near);
+            var (fieldLo, fieldHi) = FieldSpan(u);
+            var (fieldStart, fieldEnd) = dir > 0f ? (fieldLo, fieldHi) : (fieldHi, fieldLo);
+            var split = Math.Clamp(pos.v - dir * plan.Trail, fieldLo, fieldHi); // where the work area is
+            if ((fieldEnd - split) * dir <= 1f) prev = pos;
+            else
+            {
+                if ((start - pos.v) * dir > 0.5f) Add(u, start, PathSegment.Drive);
+                else if (MathF.Abs(pos.u - u) > 0.05f && pos.v + dir * MathF.Max(4f, 6f * MathF.Abs(pos.u - u)) is var join && (end - join) * dir > 1f)
+                    Add(u, join, PathSegment.Work); // onto the lane line
+                Add(u, end, PathSegment.Work);
+                prev = (u, end);
+                todo[anchor] = (split - fieldStart) * dir > 1f;
+                lanes--;
+            }
+            forward = dir < 0f;
+        }
+
+        var order = Enumerable.Range(0, us.Count).Where(l => todo[l]).ToList();
+        if (prev is { } at)
+        {
+            // Toward the nearer edge first, then the other side. A lane under way (what's left behind the vehicle on
+            // it) is done on the way back over, or right away when there is only one side left.
+            var same = order.Where(l => MathF.Abs(us[l] - at.u) <= 0.01f).ToList();
+            var below = order.Where(l => us[l] < at.u - 0.01f).Reverse().ToList();
+            var above = order.Where(l => us[l] > at.u + 0.01f).ToList();
+            var (first, second) = below.Count > 0 && (above.Count == 0 || at.u - us[below[^1]] <= us[above[^1]] - at.u)
+                ? (below, above)
+                : (above, below);
+            (second.Count > 0 ? second : first).InsertRange(0, same);
+            order = [.. first, .. second];
+        }
+        else if (plan.From != null && order.Count > 0)
+        {
+            if (MathF.Abs(pos.u - us[order[^1]]) < MathF.Abs(pos.u - us[order[0]])) order.Reverse();
             var (near, far) = Span(us[order[0]]);
             forward = MathF.Abs(pos.v - near) <= MathF.Abs(pos.v - far);
         }
 
-        (float u, float v)? prev = null; // where the last lane ended, heading out of the field
-        foreach (var l in order.Take(plan.MaxLanes ?? int.MaxValue))
+        foreach (var l in order.Take(Math.Max(0, lanes)))
         {
             var u = us[l];
             var (near, far) = Span(u);
@@ -312,14 +377,25 @@ public static class FieldPlanner
             return (lo - margin, hi + margin);
         }
 
-        /// <summary>Lane centers, ascending, evenly spaced from edge to edge at most a lane width apart.</summary>
-        public List<float> LaneCenters()
+        /// <summary>
+        /// Lane centers, ascending, at most a lane width apart and evenly spaced: edge to edge, or through
+        /// <paramref name="anchor"/> and evenly on each side of it (an anchor within half a lane of the edge lane moves
+        /// onto it rather than leave a sliver). Also returns the index of the anchor's lane.
+        /// </summary>
+        public (List<float> us, int anchor) LaneCenters(float? anchor)
         {
             var lo = U0 + width * 0.5f;
             var hi = U0 + Across - width * 0.5f;
-            if (hi - lo < 0.01f) return [U0 + Across * 0.5f];
-            var n = Math.Max(1, (int)MathF.Ceiling((hi - lo) / width - 0.01f));
-            return Enumerable.Range(0, n + 1).Select(i => lo + (hi - lo) * i / n).ToList();
+            if (hi - lo < 0.01f) return ([U0 + Across * 0.5f], 0);
+            var a = anchor ?? lo;
+            a = a < lo + width * 0.5f ? lo : a > hi - width * 0.5f ? hi : a;
+            var below = (int)MathF.Ceiling((a - lo) / width - 0.01f);
+            var above = (int)MathF.Ceiling((hi - a) / width - 0.01f);
+            var us = new List<float>();
+            for (var i = below; i > 0; i--) us.Add(a - (a - lo) * i / below);
+            us.Add(a);
+            for (var i = 1; i <= above; i++) us.Add(a + (hi - a) * i / above);
+            return (us, below);
         }
     }
 }
@@ -340,28 +416,30 @@ public sealed class FieldWorkController : IVehicleController
     private readonly List<Machine> _tools;
     private readonly float _workSpeedKmh;
 
+    /// <summary>
+    /// Plans the route from where the vehicle stands and takes over the implements: seeders and threshers on, each
+    /// lowered as it reaches the field (one working its lane already stays down).
+    /// </summary>
     public FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh = 0f, int? maxLanes = null)
-        : this(vehicle, field, speedKmh, maxLanes, vehicle.Position, null)
+        : this(vehicle, field, speedKmh, maxLanes, null, null)
     {
         foreach (var t in _tools)
-        {
-            t.Lowered = false;
             if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
-        }
         if (vehicle.Def.HarvestTank != null) vehicle.TurnedOn = true;
     }
 
-    /// <summary>
-    /// Plans the route from <paramref name="plannedFrom"/> without touching the implements: a saved helper
-    /// resumes with the same route and margin it had.
-    /// </summary>
-    internal FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, Vector2 plannedFrom, float? margin)
+    /// <summary>Resumes a saved route, with the margin it was planned with.</summary>
+    internal FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, float margin, FieldPath path)
+        : this(vehicle, field, speedKmh, maxLanes, (float?)margin, path)
+    {
+    }
+
+    private FieldWorkController(Machine vehicle, FieldInfo field, float speedKmh, int? maxLanes, float? margin, FieldPath? path)
     {
         Vehicle = vehicle;
         Field = field;
         SpeedKmh = speedKmh;
         MaxLanes = maxLanes;
-        PlannedFrom = plannedFrom;
         _tools = vehicle.Chain().Where(m => m.Def.WorkArea != null).ToList();
         if (_tools.Count == 0) throw new InvalidOperationException($"{vehicle.Def.Name} has no implement to work with");
 
@@ -377,7 +455,10 @@ public sealed class FieldWorkController : IVehicleController
         _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.Def.WorkArea!.MaxWorkSpeedKmh) * 0.9f;
         // Backing up with a trailed implement would jackknife it.
         var canReverse = vehicle.Chain().All(m => m == vehicle || m.Def.Attacher?.Mode == "mounted");
-        Path = FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin) { From = plannedFrom, MaxLanes = maxLanes, Reverse = canReverse });
+        Path = path ?? FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin)
+        {
+            From = vehicle.Position, Heading = vehicle.Heading, Trail = reach, MaxLanes = maxLanes, Reverse = canReverse,
+        });
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Segments);
     }
 
@@ -393,8 +474,6 @@ public sealed class FieldWorkController : IVehicleController
     /// <summary>Work speed asked for (0 = the implements' own).</summary>
     public float SpeedKmh { get; }
     public int? MaxLanes { get; }
-    /// <summary>Where the vehicle was when the route was planned.</summary>
-    public Vector2 PlannedFrom { get; }
     public FieldPath Path { get; }
     public WaypointController Driver { get; }
     /// <summary>Headland distance driven past the field edge before turning.</summary>
@@ -465,4 +544,5 @@ public sealed class FieldWorkController : IVehicleController
     /// </summary>
     private bool Touches(Vector2 center, Vector2 side) =>
         Field.Contains(center) || Field.Contains(center + side) || Field.Contains(center - side);
+
 }

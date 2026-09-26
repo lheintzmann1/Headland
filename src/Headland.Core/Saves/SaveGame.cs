@@ -25,6 +25,9 @@ public static class SaveGame
     /// <summary>Save format version. Bump it (and migrate older saves in <see cref="Load"/>) on breaking changes.</summary>
     public const int Format = 1;
 
+    /// <summary>A helper's route segments as saved, one letter per <see cref="PathSegment"/> value.</summary>
+    private const string SegmentLetters = "dwr";
+
     public static readonly JsonSerializerOptions Json = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -196,8 +199,9 @@ public static class SaveGame
                 Shape = h.Field.Shape.Points.Select(p => new[] { p.X, p.Y }).ToArray(),
                 SpeedKmh = h.SpeedKmh,
                 MaxLanes = h.MaxLanes,
-                PlannedFrom = [h.PlannedFrom.X, h.PlannedFrom.Y],
                 Margin = h.Margin,
+                Route = h.Path.Points.Select(p => new[] { p.X, p.Y }).ToArray(),
+                Segments = string.Concat(h.Path.Segments.Select(s => SegmentLetters[(int)s])),
                 Waypoint = h.Driver.Index,
                 DriveStart = h.Driver.Start is { } s ? [s.X, s.Y] : null,
                 WagePerHour = h.WagePerHour,
@@ -415,11 +419,11 @@ public static class SaveGame
                 sim.Pois.Loadings[machine] = new Loading(spout, l.FillType, l.Amount);
         }
 
-        // Helpers last: their route depends on the implements attached.
+        // Helpers last: they work with the implements attached.
         foreach (var m in s.Machines)
         {
             if (m.Helper is not { } h || !byId.TryGetValue(m.Id, out var vehicle)) continue;
-            if (!vehicle.IsMotorized || h.Shape.Length < 3 || h.PlannedFrom.Length != 2 || !vehicle.Chain().Any(c => c.Def.WorkArea != null))
+            if (!vehicle.IsMotorized || h.Shape.Length < 3 || !vehicle.Chain().Any(c => c.Def.WorkArea != null))
             {
                 warnings.Add($"The helper on {vehicle.Def.Name} could not resume");
                 continue;
@@ -429,14 +433,28 @@ public static class SaveGame
             var field = mapField != null && mapField.Shape.Points.SequenceEqual(shape.Points)
                 ? mapField
                 : new FieldInfo { Id = h.Field, Shape = shape, FarmlandId = mapField?.FarmlandId ?? 0 };
-            var helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes, new Vector2(h.PlannedFrom[0], h.PlannedFrom[1]), h.Margin);
-            helper.Driver.Index = Math.Clamp(h.Waypoint, 0, helper.Path.Points.Count);
-            helper.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
+            FieldWorkController helper;
+            if (RestoreRoute(h) is { } route)
+            {
+                helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes, h.Margin, route);
+                helper.Driver.Index = Math.Clamp(h.Waypoint, 0, route.Points.Count);
+                helper.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
+            }
+            else helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes); // planned again from where it is
             helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
             helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
             helper.WagesPaid = Math.Max(0f, h.WagesPaid);
             vehicle.Controller = helper;
         }
         return byId;
+    }
+
+    /// <summary>A helper's saved route, or null when there is none (an older save) or it doesn't read.</summary>
+    private static FieldPath? RestoreRoute(HelperSave h)
+    {
+        if (h.Route.Length == 0 || h.Route.Length != h.Segments.Length || h.Route.Any(p => p.Length != 2)) return null;
+        var segments = h.Segments.Select(c => SegmentLetters.IndexOf(c)).ToList();
+        if (segments.Contains(-1)) return null;
+        return new FieldPath(h.Route.Select(p => new Vector2(p[0], p[1])).ToList(), segments.Select(k => (PathSegment)k).ToList());
     }
 }

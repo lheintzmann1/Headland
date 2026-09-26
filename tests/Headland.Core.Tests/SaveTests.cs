@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text.Json;
 using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.Ownership;
@@ -75,7 +76,9 @@ public class SaveTests
         Assert.Same(combine, loaded.Player.Vehicle);
         Assert.True(combine.Unit("tank")!.Level > 100f);
         var (h1, h2) = ((FieldWorkController)sim.Player.Vehicle!.Controller!, Assert.IsType<FieldWorkController>(combine.Controller));
+        // The route itself is kept: planned again, it would start from where the combine is now.
         Assert.Equal(h1.Path.Points, h2.Path.Points);
+        Assert.Equal(h1.Path.Segments, h2.Path.Segments);
         Assert.Equal(h1.Driver.Index, h2.Driver.Index);
         Assert.Equal(h1.Margin, h2.Margin);
         Assert.Equal((h1.WagePerHour, h1.WorkedSeconds, h1.WagesPaid), (h2.WagePerHour, h2.WorkedSeconds, h2.WagesPaid));
@@ -95,6 +98,25 @@ public class SaveTests
             s.SkipHours(5);
         }
         AssertSameWorld(sim, loaded);
+    }
+
+    [Fact]
+    public void AHelperFromASaveWithoutItsRoutePlansAgainFromWhereItIs()
+    {
+        var sim = BusyGame();
+        var file = SaveGame.Capture(sim, "test");
+        // Older saves didn't keep the route.
+        var state = JsonSerializer.Deserialize<SaveState>(file.State, SaveGame.Json)!;
+        foreach (var m in state.Machines)
+            if (m.Helper is { } h) h.Route = [];
+        var loaded = SaveGame.Load(sim.Content, file with { State = JsonSerializer.SerializeToUtf8Bytes(state, SaveGame.Json) }).Sim;
+
+        var combine = loaded.Machines.All.First(m => m.Def.Id == "combine_7");
+        var helper = Assert.IsType<FieldWorkController>(combine.Controller);
+        // Planned again from where the combine is: on along the lane it was harvesting.
+        Assert.Equal(0, helper.Driver.Index);
+        Assert.Equal(PathSegment.Work, helper.Path.Segments[0]);
+        Assert.InRange(helper.Path.Points[0].X, combine.Position.X - 0.2f, combine.Position.X + 0.2f);
     }
 
     [Fact]

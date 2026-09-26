@@ -452,4 +452,30 @@ public class MachineTests
         RunHelper(sim, helper);
         Assert.True(PlotShare(sim, i => sim.World.Layers.Crop[i] != 0) > 0.99f);
     }
+
+    [Fact]
+    public void AHelperHiredMidFieldGoesOnFromWhereTheVehicleIs()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        // Halfway up the plot, left of its middle, pointing up the lanes (not quite straight).
+        var start = new Vector2(250.2f, 310f);
+        var t = sim.Machines.Spawn("tractor_125", start, 0.05f);
+        sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", start - new Vector2(0f, 2f), 0.05f));
+        var helper = sim.HireHelper(t, Plot);
+
+        // The first lane runs on from the tractor to the far headland, then the helper works toward the nearer edge.
+        Assert.Equal(PathSegment.Work, helper.Path.Segments[0]);
+        Assert.Equal(start.X, helper.Path.Points[0].X, 2);
+        Assert.True(helper.Path.Points[0].Y > Plot.Shape.Max.Y);
+        var lanes = Enumerable.Range(0, helper.Path.Points.Count).Where(helper.Path.EndsLane).Select(k => helper.Path.Points[k].X).ToList();
+        Assert.True(lanes[1] < lanes[0]);
+
+        Run(sim, 4f);
+        Assert.True(t.Position.Y > start.Y + 5f, "the helper should drive straight on");
+        Assert.Equal(GroundType.Cultivated, sim.World.GroundAt(start + new Vector2(0f, 1f)));
+        // What was left behind the tractor on its lane is done too.
+        RunHelper(sim, helper);
+        Assert.True(PlotShare(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated) > 0.99f);
+    }
 }

@@ -234,7 +234,10 @@ public sealed class LoadingSave
     public float Amount { get; set; }
 }
 
-/// <summary>A field helper, with what it needs to plan the very same route again.</summary>
+/// <summary>
+/// A field helper and its route. The route is kept rather than planned again: it was planned from the vehicle's pose
+/// and from what was left to do on the field when the helper was hired.
+/// </summary>
 public sealed class HelperSave
 {
     public int Field { get; set; }
@@ -242,9 +245,14 @@ public sealed class HelperSave
     public float[][] Shape { get; set; } = [];
     public float SpeedKmh { get; set; }
     public int? MaxLanes { get; set; }
-    /// <summary>[x, z] the route was planned from, and the headland margin used.</summary>
-    public float[] PlannedFrom { get; set; } = [];
+    /// <summary>The headland margin used.</summary>
     public float Margin { get; set; }
+    /// <summary>
+    /// The route's waypoints as [x, z], and one letter per waypoint for how the segment arriving at it is driven:
+    /// d(rive), w(ork) or r(everse). Missing in older saves: the route is then planned again from where the vehicle is.
+    /// </summary>
+    public float[][] Route { get; set; } = [];
+    public string Segments { get; set; } = "";
     /// <summary>Index of the waypoint being driven to, and [x, z] where driving started.</summary>
     public int Waypoint { get; set; }
     public float[]? DriveStart { get; set; }
