@@ -99,7 +99,7 @@ conditions. Money is just another input or output:
 - [ ] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
       delivering a share to a given POI.
 - [ ] Cancel penalty, contract board screen, notifications.
-- [ ] Contract types in data; new types in Lua.
+- [x] Contract types in data (`data/contracts.json`). New types in Lua come with the Lua extension points.
 
 ## Vehicles
 

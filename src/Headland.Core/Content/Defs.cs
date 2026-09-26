@@ -294,6 +294,68 @@ public sealed class MachineDef
     public string Description { get; set; } = "";
 }
 
+// ---- Contracts (contracts.json)
+
+/// <summary>
+/// A kind of job the neighbors offer. A field job is done on one of their fields with a work area of type
+/// <see cref="Work"/>; a delivery job (no work) asks for goods at a POI that buys them.
+/// </summary>
+public sealed class ContractTypeDef
+{
+    public string Id { get; set; } = "";
+    /// <summary>What the job is called on the board: "Cultivate", "Harvest".</summary>
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    /// <summary>Work area type doing a field job (cultivator, seeder, harvester); empty for a delivery job.</summary>
+    public string Work { get; set; } = "";
+    /// <summary>Months it is offered in (1..12). Empty: all year.</summary>
+    public int[] Months { get; set; } = [];
+    /// <summary>Field jobs: the state a field must mostly be in for the job to be offered.</summary>
+    public FieldStateDef Offer { get; set; } = new();
+    /// <summary>Field jobs: the state of a cell once the job is done there.</summary>
+    public FieldStateDef Done { get; set; } = new();
+    /// <summary>Field jobs: what the job pays for each hectare of the field.</summary>
+    public float RewardPerHa { get; set; }
+    /// <summary>[min, max] game days to finish the job once taken.</summary>
+    public int[] Days { get; set; } = [3, 6];
+    /// <summary>How often it comes up among the jobs that fit, relative to the others.</summary>
+    public float Weight { get; set; } = 1f;
+    /// <summary>Goods to bring to a buyer: a harvest's crop, or the goods of a delivery job.</summary>
+    public ContractDeliveryDef? Deliver { get; set; }
+}
+
+/// <summary>
+/// What a field's cells look like: any of <see cref="Ground"/> and any of <see cref="Crop"/>, each ignored when empty.
+/// </summary>
+public sealed class FieldStateDef
+{
+    /// <summary>Crop states: none, dead, sown (a living crop at any stage), growing (not ripe yet), harvestable.</summary>
+    public static readonly string[] CropStates = ["none", "dead", "sown", "growing", "harvestable"];
+
+    /// <summary>Ground types of fields: grass, cultivated, seeded, stubble, plowed.</summary>
+    public string[] Ground { get; set; } = [];
+    /// <summary>
+    /// Crop states (<see cref="CropStates"/>). In a job's done state, sown, growing and harvestable mean the job's own
+    /// crop: the one ripe on the field, or the one to sow.
+    /// </summary>
+    public string[] Crop { get; set; } = [];
+
+    public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0;
+}
+
+/// <summary>Goods a contract wants brought to a buyer on the map (a POI with a sell action for them).</summary>
+public sealed class ContractDeliveryDef
+{
+    /// <summary>Harvest jobs: the share of the crop harvested on the field that must reach the buyer.</summary>
+    public float Share { get; set; }
+    /// <summary>Delivery jobs: [min, max] units asked for, rounded to the thousand.</summary>
+    public float[] Amount { get; set; } = [];
+    /// <summary>Delivery jobs: the fill types it may ask for (empty: any a buyer takes).</summary>
+    public string[] FillTypes { get; set; } = [];
+    /// <summary>Delivery jobs: the reward, as the market price of the goods times this.</summary>
+    public float PriceFactor { get; set; } = 1f;
+}
+
 // ---- Map layout (hand-authored), combined with procedural height/soil/trees ----
 
 public sealed class RectDef

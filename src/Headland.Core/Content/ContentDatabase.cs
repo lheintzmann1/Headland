@@ -58,6 +58,7 @@ public sealed class ContentDatabase
     public List<CropDef> Crops { get; } = [];
     public Dictionary<string, MachineDef> Machines { get; } = new();
     public Dictionary<string, PoiDef> Pois { get; } = new();
+    public Dictionary<string, ContractTypeDef> ContractTypes { get; } = new();
     public Dictionary<string, ClimateDef> Climates { get; } = new();
     public Dictionary<string, MapDef> Maps { get; } = new();
     /// <summary>Mods layered over the base game, in load order (none until the mod loader exists).</summary>
@@ -88,6 +89,7 @@ public sealed class ContentDatabase
         foreach (var file in src.ListJson("pois"))
         foreach (var p in ReadMany<PoiDef>(src, file))
             db.AddUnique(db.Pois, p.Id, p, "poi");
+        foreach (var c in ReadMany<ContractTypeDef>(src, "contracts.json")) db.AddUnique(db.ContractTypes, c.Id, c, "contract type");
         foreach (var file in src.ListJson("climates"))
         foreach (var c in ReadMany<ClimateDef>(src, file))
             db.AddUnique(db.Climates, c.Id, c, "climate");
@@ -141,6 +143,7 @@ public sealed class ContentDatabase
         var e = new List<string>();
         string[] jointTypes = ["threePoint", "drawbar", "header"];
         string[] workTypes = ["cultivator", "seeder", "harvester"];
+        string[] fieldGrounds = ["grass", "cultivated", "seeded", "stubble", "plowed"];
         string[] triggerTypes = ["unload", "load", "fill", "wash", "repair", "delivery"];
         // The trigger types each POI action works through (process works on its own).
         var actionTriggers = new Dictionary<string, string[]>
@@ -289,6 +292,39 @@ public sealed class ContentDatabase
                 foreach (var o in a.Outputs.Where(o => o.Mode is not ("store" or "sell")))
                     e.Add($"{what}: output '{o.FillType}' mode must be store or sell");
             }
+        }
+
+        foreach (var t in ContractTypes.Values)
+        {
+            var what = $"contract type '{t.Id}'";
+            if (string.IsNullOrWhiteSpace(t.Name)) e.Add($"{what}: needs a name");
+            if (t.Months.Any(m => m is < 1 or > 12)) e.Add($"{what}: months must be 1..12");
+            if (t.Days is not [>= 1, var dMax] || dMax < t.Days[0]) e.Add($"{what}: days needs [min, max] >= 1");
+            if (t.Weight <= 0 || t.RewardPerHa < 0) e.Add($"{what}: weight must be > 0 and rewardPerHa >= 0");
+            foreach (var (name, state) in new[] { ("offer", t.Offer), ("done", t.Done) })
+            {
+                foreach (var g in state.Ground.Where(g => !fieldGrounds.Contains(g)))
+                    e.Add($"{what}: {name} ground '{g}' is not a field's ({string.Join(", ", fieldGrounds)})");
+                foreach (var c in state.Crop.Where(c => !FieldStateDef.CropStates.Contains(c)))
+                    e.Add($"{what}: {name} crop state '{c}' is unknown ({string.Join(", ", FieldStateDef.CropStates)})");
+            }
+            var d = t.Deliver;
+            if (t.Work == "")
+            {
+                if (d is not { Amount: [> 0f, var aMax] } || aMax < d.Amount[0]) e.Add($"{what}: a delivery job (no work) needs deliver.amount [min, max] > 0");
+                if (!t.Offer.IsEmpty || !t.Done.IsEmpty) e.Add($"{what}: offer and done are for field jobs");
+                if (d?.Share > 0) e.Add($"{what}: deliver.share is for harvest jobs");
+            }
+            else
+            {
+                if (!workTypes.Contains(t.Work)) e.Add($"{what}: unknown work '{t.Work}'");
+                if (t.Offer.IsEmpty || t.Done.IsEmpty) e.Add($"{what}: a field job needs offer and done states");
+                if (d?.Amount.Length > 0) e.Add($"{what}: deliver.amount is for delivery jobs (no work)");
+                if (d != null && (d.Share is <= 0 or > 1 || t.Work != "harvester")) e.Add($"{what}: deliver.share must be in (0, 1], on harvester jobs");
+            }
+            if (d == null) continue;
+            if (d.PriceFactor <= 0) e.Add($"{what}: deliver.priceFactor must be > 0");
+            foreach (var ft in d.FillTypes.Where(f => !FillTypes.ContainsKey(f))) e.Add($"{what}: unknown fill type '{ft}'");
         }
 
         foreach (var map in Maps.Values)

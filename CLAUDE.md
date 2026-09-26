@@ -9,7 +9,7 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
   world/field layers, crops, machines, economy, player. Godot only renders and feeds input.
 - `tests/Headland.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
 - `game/`: the Godot project (assembly `Headland`, namespaces `Headland.Game.*`). `scripts/` (C# presentation),
-  `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, POIs, soils, climates, maps, npcs),
+  `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, POIs, contracts, soils, climates, maps, npcs),
   `ui/theme.tres` (the project `Theme`), `assets/` (textures, fonts, icons, future models, `CREDITS.md`),
   `export_presets.cfg` (Linux/Windows/macOS, used by CI).
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports; tags `v*` publish a release).
