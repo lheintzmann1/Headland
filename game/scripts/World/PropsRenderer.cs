@@ -1,6 +1,7 @@
 using Headland.Game.Common;
 using Headland.Core;
 using Headland.Core.Content;
+using Headland.Core.Events;
 using Headland.Core.World;
 using Godot;
 
@@ -12,6 +13,8 @@ public partial class PropsRenderer : Node3D
     public Simulation Sim { get; init; } = null!;
     private MultiMesh? _broadleafCanopy;
     private int _shownMonth = -1;
+    private readonly Dictionary<FieldInfo, Label3D> _signs = new();
+    private IDisposable? _ownerChanges;
 
     public override void _Ready()
     {
@@ -19,8 +22,16 @@ public partial class PropsRenderer : Node3D
         BuildTrees();
         foreach (var a in Sim.World.SellPoints) AddChild(BuildArea(a, new Color(0.86f, 0.68f, 0.2f), $"{a.Name}\nSells grain · tip here (U)"));
         foreach (var a in Sim.World.Shops) AddChild(BuildArea(a, new Color(0.35f, 0.6f, 0.85f), $"{a.Name}\nBuy seed here (R)"));
-        foreach (var f in Sim.World.Fields) AddChild(FieldSign(f));
+        foreach (var f in Sim.World.Fields)
+        {
+            _signs[f] = FieldSign(f);
+            AddChild(_signs[f]);
+            UpdateSign(f);
+        }
+        _ownerChanges = Sim.Events.Subscribe<FarmlandOwnerChanged>(e => e.Farmland.Fields.ForEach(UpdateSign));
     }
+
+    public override void _ExitTree() => _ownerChanges?.Dispose();
 
     public override void _Process(double delta)
     {
@@ -235,19 +246,24 @@ public partial class PropsRenderer : Node3D
         return root;
     }
 
-    private Label3D FieldSign(FieldInfo f)
+    private Label3D FieldSign(FieldInfo f) => new()
     {
-        return new Label3D
-        {
-            Name = $"Field_{f.Id}",
-            Text = $"{f.Label}\n{f.AreaHa:0.00} ha",
-            Position = Sim.World.OnGround(f.Center, 6f),
-            Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
-            FontSize = 48,
-            PixelSize = 0.025f,
-            OutlineSize = 12,
-            Modulate = new Color(1f, 1f, 1f, 0.75f),
-            NoDepthTest = true,
-        };
+        Name = $"Field_{f.Id}",
+        Position = Sim.World.OnGround(f.Center, 6f),
+        Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+        FontSize = 48,
+        PixelSize = 0.025f,
+        OutlineSize = 12,
+        NoDepthTest = true,
+    };
+
+    /// <summary>Your fields read bright; the neighbors' are dimmer and name their owner.</summary>
+    private void UpdateSign(FieldInfo f)
+    {
+        var land = Sim.World.FarmlandById(f.FarmlandId);
+        var yours = land?.FarmId == Sim.Player.FarmId;
+        var sign = _signs[f];
+        sign.Text = yours || land == null ? $"{f.Label}\n{f.AreaHa:0.00} ha" : $"{f.Label}\n{f.AreaHa:0.00} ha · {Sim.Farms.OwnerName(land)}";
+        sign.Modulate = yours ? new Color(1f, 1f, 1f, 0.75f) : new Color(0.82f, 0.82f, 0.78f, 0.55f);
     }
 }

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Ownership;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
@@ -23,10 +24,10 @@ public sealed class MachineSystem
     private ContentDatabase Content => _sim.Content;
     private EventBus Events => _sim.Events;
 
-    public Machine Spawn(string defId, Vector2 position, float heading)
+    public Machine Spawn(string defId, Vector2 position, float heading, int farmId = Farm.PlayerId)
     {
         var def = Content.Machines[defId];
-        var m = new Machine(_nextId++, def, position, heading);
+        var m = new Machine(_nextId++, def, position, heading, farmId);
         if (def.SeedTank != null) m.SelectedCrop = DefaultSeedCrop();
         All.Add(m);
         return m;
@@ -89,7 +90,7 @@ public sealed class MachineSystem
         Events.Publish(new ImplementDetached(parent, jointId, child));
     }
 
-    /// <summary>Nearest free joint in the vehicle's chain that an unattached implement can hook onto.</summary>
+    /// <summary>Nearest free joint in the vehicle's chain that an unattached implement of the same farm can hook onto.</summary>
     public (Machine parent, AttacherJointDef joint, Machine child)? FindAttachable(Machine vehicle)
     {
         (Machine, AttacherJointDef, Machine)? best = null;
@@ -102,6 +103,7 @@ public sealed class MachineSystem
             foreach (var c in All)
             {
                 if (c.Parent != null || c.Def.Attacher == null || c.IsMotorized || c.Root == vehicle.Root) continue;
+                if (c.FarmId != vehicle.FarmId) continue;
                 if (c.Def.Attacher.Type != j.Type) continue;
                 var aw = c.LocalToWorld(c.Def.Attacher.X, c.Def.Attacher.Z);
                 var d = Vector2.Distance(jw, aw);

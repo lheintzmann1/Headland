@@ -48,6 +48,7 @@ public sealed class ContentDatabase
     public List<FillTypeDef> FillTypeList { get; } = [];
     public Dictionary<string, FillTypeDef> FillTypes { get; } = new();
     public List<SoilDef> Soils { get; } = [];
+    public Dictionary<string, NpcDef> Npcs { get; } = new();
     /// <summary>Crop index + 1 is stored in cells (0 = no crop).</summary>
     public List<CropDef> Crops { get; } = [];
     public Dictionary<string, MachineDef> Machines { get; } = new();
@@ -69,6 +70,7 @@ public sealed class ContentDatabase
         foreach (var f in ReadMany<FillTypeDef>(src, "filltypes.json")) db.AddUnique(db.FillTypes, f.Id, f, "fill type");
         db.FillTypeList.AddRange(db.FillTypes.Values);
         db.Soils.AddRange(ReadMany<SoilDef>(src, "soils.json"));
+        foreach (var n in ReadMany<NpcDef>(src, "npcs.json")) db.AddUnique(db.Npcs, n.Id, n, "npc");
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
         foreach (var m in ReadMany<MachineDef>(src, file))
@@ -133,6 +135,7 @@ public sealed class ContentDatabase
         if (Soils.Count == 0) e.Add("no soils defined");
         if (Soils.Count > 16) e.Add("at most 16 soils are supported");
         if (Crops.Count is 0 or > 254) e.Add("need between 1 and 254 crops");
+        if (Npcs.Count == 0) e.Add("no npcs defined");
 
         foreach (var f in FillTypeList)
             if (f.MonthlyPriceFactor is { Length: not 12 })
@@ -208,6 +211,8 @@ public sealed class ContentDatabase
             foreach (var f in map.Farmlands)
             {
                 if (f.Id is < 1 or > ushort.MaxValue) e.Add($"map '{map.Id}': farmland ids must be 1..{ushort.MaxValue}");
+                if (!Npcs.ContainsKey(f.Npc)) e.Add($"map '{map.Id}' farmland {f.Id}: unknown npc '{f.Npc}'");
+                if (!ValidFarm(f.Farm)) e.Add($"map '{map.Id}' farmland {f.Id}: {FarmRule}");
                 if (f.ShapeError() is { } err) e.Add($"map '{map.Id}' farmland {f.Id}: {err}");
                 else farmlands.Add(f.Shape());
             }
@@ -232,10 +237,17 @@ public sealed class ContentDatabase
             {
                 var sp = map.Machines[i];
                 if (!Machines.ContainsKey(sp.Def)) e.Add($"map '{map.Id}': unknown machine '{sp.Def}'");
+                if (!ValidFarm(sp.Farm)) e.Add($"map '{map.Id}' machine {i}: {FarmRule}");
+                if (sp.AttachToIndex is { } q && q >= 0 && q < i && map.Machines[q].Farm != sp.Farm)
+                    e.Add($"map '{map.Id}': machine {i} must belong to the same farm as the machine it attaches to");
                 if (sp.AttachToIndex is { } p && (p < 0 || p >= i)) e.Add($"map '{map.Id}': machine {i} attachToIndex must refer to an earlier machine");
             }
         }
 
         return e;
     }
+
+    private const string FarmRule = "farm must be 0 (an NPC's) or 1 (the player's farm)";
+
+    private static bool ValidFarm(int farm) => farm is Ownership.Farm.None or Ownership.Farm.PlayerId;
 }

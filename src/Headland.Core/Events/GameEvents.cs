@@ -41,6 +41,11 @@ public sealed record FillSold(Machine Machine, string SellPoint, string FillType
 /// <summary>Supplies bought at a shop into a machine's fill unit.</summary>
 public sealed record FillBought(Machine Machine, string Shop, string FillType, float Amount, float Cost) : IGameEvent;
 
+// ---- Ownership
+
+/// <summary>A parcel changed hands (<see cref="Ownership.Farm.None"/> = its NPC).</summary>
+public sealed record FarmlandOwnerChanged(Farmland Farmland, int FromFarm, int ToFarm) : IGameEvent;
+
 // ---- Machines
 
 public sealed record ImplementAttached(Machine Parent, string Joint, Machine Implement) : IGameEvent;

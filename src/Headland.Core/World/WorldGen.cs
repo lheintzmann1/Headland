@@ -260,7 +260,7 @@ public static class WorldGen
 
         foreach (var def in map.Farmlands)
         {
-            var farmland = new Farmland { Id = def.Id, Shape = def.Shape() };
+            var farmland = new Farmland { Id = def.Id, Shape = def.Shape(), Npc = content.Npcs[def.Npc], FarmId = def.Farm };
             world.Farmlands.Add(farmland);
             Fill(world, farmland.Shape, (i, _, _) => L.FarmlandId[i] = (ushort)farmland.Id);
         }

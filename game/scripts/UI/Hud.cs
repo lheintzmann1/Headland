@@ -313,7 +313,8 @@ public partial class Hud : CanvasLayer
         var field = r.FieldId != 0 ? Sim.World.FieldById(r.FieldId) : null;
         var farmland = r.FarmlandId != 0 ? Sim.World.FarmlandById(r.FarmlandId) : null;
         sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
-        if (farmland != null) sb.Append($" · {farmland.Label}");
+        if (farmland != null)
+            sb.Append(farmland.FarmId == Sim.Player.FarmId ? $" · {farmland.Label}, yours" : $" · {farmland.Label}, {Sim.Farms.OwnerName(farmland)}'s");
         sb.Append($"   [color=#a8aba4]{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m[/color]\n");
         sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
         if (r.Crop != null)

@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Ownership;
 using Headland.Core.World;
 
 namespace Headland.Core;
@@ -13,6 +14,8 @@ public sealed class PlayerCharacter(EventBus events)
     public const float RunSpeed = 5f;
     public const float EnterDistance = 2.2f;
 
+    /// <summary>The farm the player works for: its vehicles are the ones they can drive.</summary>
+    public int FarmId { get; set; } = Farm.PlayerId;
     public Vector2 Position { get; set; }
     public float Heading { get; set; }
     public Vector2 Velocity { get; private set; }
@@ -118,8 +121,10 @@ public sealed class PlayerCharacter(EventBus events)
         return next == Vehicle ? null : next;
     }
 
-    /// <summary>Free vehicles, or ones a helper is driving (the helper keeps control until dismissed).</summary>
-    private static bool CanEnter(Machine m) => m.Controller is null or FieldWorkController;
+    /// <summary>
+    /// The farm's vehicles that are free or driven by a helper (the helper keeps control until dismissed).
+    /// </summary>
+    private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Controller is null or FieldWorkController;
 
     public bool Enter(Machine m)
     {

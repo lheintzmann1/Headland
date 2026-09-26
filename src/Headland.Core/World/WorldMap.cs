@@ -1,4 +1,6 @@
 using System.Numerics;
+using Headland.Core.Content;
+using Headland.Core.Ownership;
 
 namespace Headland.Core.World;
 
@@ -163,11 +165,15 @@ public sealed class Area
 }
 
 /// <summary>A parcel of land bought and sold as a whole; the fields inside it are its crop areas.</summary>
-public sealed class Farmland
+public sealed class Farmland : IOwnable
 {
     /// <summary>Parcel number (1..65535, stored in <see cref="FieldLayers.FarmlandId"/>).</summary>
     public int Id { get; init; }
     public required Polygon Shape { get; init; }
+    /// <summary>Owns the parcel whenever no farm does.</summary>
+    public required NpcDef Npc { get; init; }
+    /// <summary>Owning farm (<see cref="Farm.None"/> = its NPC). Changed through <see cref="Farms.SetOwner"/>.</summary>
+    public int FarmId { get; internal set; }
     public float AreaHa => Shape.Area / 10000f;
     public List<FieldInfo> Fields { get; } = [];
     public string Label => $"Farmland {Id}";
@@ -228,7 +234,7 @@ public sealed class WorldMap
     public List<Area> Shops { get; } = [];
     public List<Farmland> Farmlands { get; } = [];
     public List<FieldInfo> Fields { get; } = [];
-    public List<Content.BuildingDef> Buildings { get; } = [];
+    public List<BuildingDef> Buildings { get; } = [];
 
     /// <summary>Chunk needs its ground data texture re-uploaded.</summary>
     public bool[] GroundDirty { get; }

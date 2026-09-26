@@ -83,7 +83,7 @@ public class FarmlandTests
         db.Maps["big"] = new MapDef
         {
             Id = "big", Size = 64, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,
-            Farmlands = [new FarmlandDef { Id = 1000, X = 0, Z = 0, W = 64, H = 64 }],
+            Farmlands = [new FarmlandDef { Id = 1000, Npc = "hendricks", X = 0, Z = 0, W = 64, H = 64 }],
             Fields = [new FieldDef { Id = 300, X = 8, Z = 8, W = 20, H = 20 }],
         };
         Assert.Empty(db.Validate());
@@ -99,7 +99,11 @@ public class FarmlandTests
         db.Maps["bad"] = new MapDef
         {
             Id = "bad",
-            Farmlands = [new FarmlandDef { Id = 1, W = 50, H = 50 }, new FarmlandDef { Id = 2, Polygon = [[0, 0], [10, 0]] }],
+            Farmlands =
+            [
+                new FarmlandDef { Id = 1, Npc = "hendricks", W = 50, H = 50 },
+                new FarmlandDef { Id = 2, Npc = "hendricks", Polygon = [[0, 0], [10, 0]] },
+            ],
             Fields =
             [
                 new FieldDef { Id = 1, X = 10, Z = 10, W = 10, H = 10 },

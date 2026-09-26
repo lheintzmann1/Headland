@@ -11,6 +11,7 @@ public sealed class GameConfig
     public int StartDay { get; set; } = 1;
     public float StartHour { get; set; } = 7f;
     public float StartMoney { get; set; } = 100_000f;
+    public string FarmName { get; set; } = "My Farm";
     public string Map { get; set; } = "default";
     public string Climate { get; set; } = "temperate";
     public ulong WeatherSeed { get; set; } = 42;
@@ -27,6 +28,13 @@ public sealed class FillTypeDef
     /// <summary>12 multipliers, January first. Missing means flat price.</summary>
     public float[]? MonthlyPriceFactor { get; set; }
     public string Color { get; set; } = "#c8a860";
+}
+
+/// <summary>A neighbor who owns the land no farm owns: sells it, and later offers contracts on it.</summary>
+public sealed class NpcDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
 }
 
 public sealed class SoilDef
@@ -315,6 +323,10 @@ public sealed class FarmlandDef : ShapeDef
 {
     /// <summary>Parcel number, unique per map (1..65535).</summary>
     public int Id { get; set; }
+    /// <summary>NPC owning the parcel whenever no farm does (npcs.json id).</summary>
+    public string Npc { get; set; } = "";
+    /// <summary>Farm owning it at the start: 0 = its NPC (for sale), 1 = the player's farm.</summary>
+    public int Farm { get; set; }
 }
 
 public sealed class FieldDef : ShapeDef
@@ -371,6 +383,8 @@ public sealed class MachineSpawnDef
     public float X { get; set; }
     public float Z { get; set; }
     public float HeadingDeg { get; set; }
+    /// <summary>Owning farm: 1 = the player's (default), 0 = an NPC's (can't be driven or hitched).</summary>
+    public int Farm { get; set; } = Ownership.Farm.PlayerId;
     /// <summary>Optional: attach to the machine spawned at this index, on this joint.</summary>
     public int? AttachToIndex { get; set; }
     public string? Joint { get; set; }

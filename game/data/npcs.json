@@ -1,0 +1,7 @@
+[
+  // Neighbors. Farmland no farm owns belongs to one of them: they sell it and, later, offer contracts on it.
+  { "id": "hendricks", "name": "Walt Hendricks" },
+  { "id": "morrow",    "name": "Ada Morrow" },
+  { "id": "aldridge",  "name": "Tom Aldridge" },
+  { "id": "brandt",    "name": "Jonas Brandt" }
+]

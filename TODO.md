@@ -36,7 +36,7 @@ Rules for every item:
       autosave, game version and mod list recorded. Covers clock, weather (anomaly, generated days,
       snowpack), crop mineralization accumulators, field layers, machines (pose, attachments, fill,
       configuration, wear, fuel), economy, player, POI storage, contracts, loans.
-- [ ] **Ownership.** Farm id on machines, farmland and storage; NPC owners for the rest. Needed by the
+- [x] **Ownership.** Farm id on machines, farmland and storage; NPC owners for the rest. Needed by the
       shop, contracts, vehicle switching and field access.
 - [x] **Farmland and fields** (FS model): farmland parcels are bought, fields are the crop areas inside.
       Polygon shapes, not only rectangles. Field ids are a byte today (max 255).

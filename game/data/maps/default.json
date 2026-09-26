@@ -36,14 +36,15 @@
   ],
   // Parcels of land (FS farmland): bought and sold whole. Fields are the crop areas inside them.
   // Shapes are rectangles (x, z, w, h) or "polygon": [[x, z], ...]. Roads, forests and the elevator stay outside.
+  // "npc" owns a parcel whenever no farm does; "farm": 1 gives it to the player at the start.
   "farmlands": [
-    { "id": 1, "x": 112, "z": 174, "w": 82,  "h": 69 },
-    { "id": 2, "x": 34,  "z": 26,  "w": 160, "h": 148 },
-    { "id": 3, "x": 210, "z": 26,  "w": 124, "h": 212 },
-    { "id": 4, "x": 36,  "z": 258, "w": 154, "h": 126 },
-    { "id": 5, "x": 210, "z": 258, "w": 126, "h": 114 },
-    { "id": 6, "x": 340, "z": 258, "w": 130, "h": 120 },
-    { "id": 7, "polygon": [[212, 378], [338, 378], [338, 382], [472, 382], [472, 504], [212, 504]] }
+    { "id": 1, "npc": "hendricks", "farm": 1, "x": 112, "z": 174, "w": 82,  "h": 69 },
+    { "id": 2, "npc": "hendricks", "farm": 1, "x": 34,  "z": 26,  "w": 160, "h": 148 },
+    { "id": 3, "npc": "morrow",    "farm": 1, "x": 210, "z": 26,  "w": 124, "h": 212 },
+    { "id": 4, "npc": "hendricks", "farm": 1, "x": 36,  "z": 258, "w": 154, "h": 126 },
+    { "id": 5, "npc": "aldridge",  "x": 210, "z": 258, "w": 126, "h": 114 },
+    { "id": 6, "npc": "morrow",    "x": 340, "z": 258, "w": 130, "h": 120 },
+    { "id": 7, "npc": "brandt",    "polygon": [[212, 378], [338, 378], [338, 382], [472, 382], [472, 504], [212, 504]] }
   ],
   "fields": [
     { "id": 1, "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
@@ -72,6 +73,7 @@
   "shops": [
     { "id": "supplies", "name": "Farm Supplies", "x": 122, "z": 221, "w": 18, "h": 17, "sells": ["seeds"] }
   ],
+  // Machines belong to the player's farm unless "farm": 0 (an NPC's).
   "machines": [
     { "def": "tractor_125",    "x": 152, "z": 206, "headingDeg": 90 },
     { "def": "cultivator_3",   "attachToIndex": 0, "joint": "rear" },

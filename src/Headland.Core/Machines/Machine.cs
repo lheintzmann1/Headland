@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Ownership;
 
 namespace Headland.Core.Machines;
 
@@ -63,19 +64,22 @@ public sealed class ManualController : IVehicleController
     public VehicleInput GetInput(Machine vehicle, float dt) => Input;
 }
 
-public sealed class Machine
+public sealed class Machine : IOwnable
 {
-    public Machine(int id, MachineDef def, Vector2 position, float heading)
+    public Machine(int id, MachineDef def, Vector2 position, float heading, int farmId = Farm.PlayerId)
     {
         Id = id;
         Def = def;
         Position = position;
         Heading = heading;
+        FarmId = farmId;
         FillUnits = def.FillUnits.Select(u => new FillUnit(u)).ToArray();
     }
 
     public int Id { get; }
     public MachineDef Def { get; }
+    /// <summary>Owning farm; only its members drive it or hitch to it (<see cref="Farm.None"/> = an NPC's).</summary>
+    public int FarmId { get; set; }
 
     /// <summary>Center of the non-steered axle (the kinematic reference point).</summary>
     public Vector2 Position { get; set; }

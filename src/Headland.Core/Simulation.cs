@@ -5,6 +5,7 @@ using Headland.Core.Crops;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Ownership;
 using Headland.Core.Time;
 using Headland.Core.Weather;
 using Headland.Core.World;
@@ -31,6 +32,7 @@ public sealed class Simulation
         Clock = new GameClock(Calendar, new GameDate(g.StartYear, g.StartMonth, g.StartDay), g.StartHour);
         Weather = new WeatherSystem(content.Climate, Calendar, g.WeatherSeed);
         World = WorldGen.Generate(content.Map, content);
+        Farms = new Farms(World, Events, g.FarmName);
         Crops = new CropSystem(content, World, Calendar);
         Economy = new Economy(content, g.StartMoney);
         Machines = new MachineSystem(this);
@@ -48,6 +50,7 @@ public sealed class Simulation
     public GameClock Clock { get; }
     public WeatherSystem Weather { get; }
     public WorldMap World { get; }
+    public Farms Farms { get; }
     public CropSystem Crops { get; }
     public Economy Economy { get; }
     public MachineSystem Machines { get; }
@@ -70,7 +73,7 @@ public sealed class Simulation
         var spawned = new List<Machine>();
         foreach (var sp in Content.Map.Machines)
         {
-            var m = Machines.Spawn(sp.Def, new Vector2(sp.X, sp.Z), sp.HeadingDeg * MathUtil.Deg2Rad);
+            var m = Machines.Spawn(sp.Def, new Vector2(sp.X, sp.Z), sp.HeadingDeg * MathUtil.Deg2Rad, sp.Farm);
             spawned.Add(m);
             if (sp.AttachToIndex is not { } idx) continue;
             var parent = spawned[idx];
