@@ -1,10 +1,10 @@
-using FarmSim.Game.Common;
-using FarmSim.Core;
-using FarmSim.Core.Content;
-using FarmSim.Core.World;
+using Headland.Game.Common;
+using Headland.Core;
+using Headland.Core.Content;
+using Headland.Core.World;
 using Godot;
 
-namespace FarmSim.Game.World;
+namespace Headland.Game.World;
 
 /// <summary>Buildings, trees (seasonal colors), sell/shop area markers and field signs.</summary>
 public partial class PropsRenderer : Node3D

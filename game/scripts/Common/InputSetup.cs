@@ -1,6 +1,6 @@
 using Godot;
 
-namespace FarmSim.Game.Common;
+namespace Headland.Game.Common;
 
 /// <summary>
 /// Registers input actions on physical key positions, so AZERTY users get ZQSD where QWERTY users get WASD.

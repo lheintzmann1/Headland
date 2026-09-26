@@ -1,9 +1,9 @@
-using FarmSim.Core;
-using FarmSim.Core.Content;
-using FarmSim.Core.World;
+using Headland.Core;
+using Headland.Core.Content;
+using Headland.Core.World;
 using Godot;
 
-namespace FarmSim.Game.World;
+namespace Headland.Game.World;
 
 /// <summary>
 /// Crops as MultiMesh clumps: one instance of three crossed alpha cards per 1 m block (2x2 cells),
@@ -167,5 +167,5 @@ public partial class CropRenderer : Node3D
 
     private static float MaxHeight(CropDef def) => def.Stages.Max(s => s.Height);
 
-    private static float Hash(int x, int z, int seed) => FarmSim.Core.Rng.Hash01(x, z, seed);
+    private static float Hash(int x, int z, int seed) => Headland.Core.Rng.Hash01(x, z, seed);
 }

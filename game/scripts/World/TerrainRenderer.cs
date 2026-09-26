@@ -1,8 +1,8 @@
-using FarmSim.Core;
-using FarmSim.Core.World;
+using Headland.Core;
+using Headland.Core.World;
 using Godot;
 
-namespace FarmSim.Game.World;
+namespace Headland.Game.World;
 
 /// <summary>
 /// One mesh per 32 m chunk (1 m vertex grid) with a padded 66x66 data texture describing its 0.5 m cells.

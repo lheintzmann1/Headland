@@ -1,9 +1,9 @@
 using System.Text.Json;
-using FarmSim.Core;
-using FarmSim.Core.World;
+using Headland.Core;
+using Headland.Core.World;
 using Godot;
 
-namespace FarmSim.Game.World;
+namespace Headland.Game.World;
 
 /// <summary>
 /// Draws every tile network (roads, tracks, streams) as terrain-hugging decals using the converted atlases.

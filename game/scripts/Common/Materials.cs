@@ -1,6 +1,6 @@
 using Godot;
 
-namespace FarmSim.Game.Common;
+namespace Headland.Game.Common;
 
 /// <summary>Shared StandardMaterial3D cache for placeholder meshes, keyed by look.</summary>
 public static class Materials

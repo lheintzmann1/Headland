@@ -1,9 +1,9 @@
-using FarmSim.Core.World;
+using Headland.Core.World;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 using NVec3 = System.Numerics.Vector3;
 
-namespace FarmSim.Game.Common;
+namespace Headland.Game.Common;
 
 /// <summary>Core (System.Numerics, ground plane X/Y) ⇄ Godot (X/Z with Y up).</summary>
 public static class Conv

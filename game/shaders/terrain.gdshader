@@ -1,4 +1,4 @@
-// Terrain: blends ground materials from a per-chunk data texture written by FarmSim.Core
+// Terrain: blends ground materials from a per-chunk data texture written by Headland.Core
 // (WorldMap.FillChunkTexture): R = ground | soil << 4, G = moisture, B = work angle, A = crop cover.
 shader_type spatial;
 render_mode cull_back, depth_draw_opaque;
@@ -11,7 +11,7 @@ const int L_RESIDUE = 3;
 const int L_GRAVEL = 4;
 const int L_SNOW = 5;
 
-// FarmSim.Core.World.GroundType
+// Headland.Core.World.GroundType
 const int G_GRASS = 0;
 const int G_CULTIVATED = 1;
 const int G_SEEDED = 2;

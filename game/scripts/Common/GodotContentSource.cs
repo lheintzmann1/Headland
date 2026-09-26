@@ -1,7 +1,7 @@
-using FarmSim.Core.Content;
+using Headland.Core.Content;
 using Godot;
 
-namespace FarmSim.Game.Common;
+namespace Headland.Game.Common;
 
 /// <summary>Reads JSON content from res://data through Godot's virtual file system (works in exports too).</summary>
 public sealed class GodotContentSource(string root) : IContentSource

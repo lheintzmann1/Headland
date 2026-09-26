@@ -5,10 +5,10 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 
 ## Layout
 
-- `src/FarmSim.Core/`: the whole simulation in plain C# (net8.0, **no Godot references**): time, weather,
+- `src/Headland.Core/`: the whole simulation in plain C# (net8.0, **no Godot references**): time, weather,
   world/field layers, crops, machines, economy, player. Godot only renders and feeds input.
-- `tests/FarmSim.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
-- `game/`: the Godot project (assembly `Headland`, namespaces `FarmSim.Game.*`). `scripts/` (C# presentation),
+- `tests/Headland.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
+- `game/`: the Godot project (assembly `Headland`, namespaces `Headland.Game.*`). `scripts/` (C# presentation),
   `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, soils, climates, maps),
   `assets/` (textures, future models, `CREDITS.md`), `export_presets.cfg` (Linux/Windows/macOS, used by CI).
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports; tags `v*` publish a release).
@@ -19,7 +19,7 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 
 ```sh
 dotnet build Headland.sln                                         # everything
-dotnet test tests/FarmSim.Core.Tests                              # ~30 s
+dotnet test tests/Headland.Core.Tests                             # ~30 s
 ~/.local/bin/godot --headless --path game --import                # after changing textures (re-import)
 ~/.local/bin/godot --path game                                    # play
 ~/.local/bin/godot --path game -- --scenario=loop --shots=/abs/dir  # scripted end-to-end run + screenshots

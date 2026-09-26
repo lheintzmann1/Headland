@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using FarmSim.Core;
-using FarmSim.Core.Machines;
-using FarmSim.Core.Time;
-using FarmSim.Core.World;
+using Headland.Core;
+using Headland.Core.Machines;
+using Headland.Core.Time;
+using Headland.Core.World;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 
-namespace FarmSim.Game.Debug;
+namespace Headland.Game.Debug;
 
 /// <summary>
 /// Scripted end-to-end run used for verification (godot --path game -- --scenario=loop [--shots=DIR]).

@@ -1,9 +1,9 @@
-using FarmSim.Core;
-using FarmSim.Core.Weather;
+using Headland.Core;
+using Headland.Core.Weather;
 using Godot;
 using GEnvironment = Godot.Environment;
 
-namespace FarmSim.Game.Weather;
+namespace Headland.Game.Weather;
 
 /// <summary>
 /// Sun/moon from time of day and season, ambient light, haze and fog, muted color grading,

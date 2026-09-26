@@ -1,8 +1,8 @@
-using FarmSim.Game.Common;
-using FarmSim.Core.Content;
+using Headland.Game.Common;
+using Headland.Core.Content;
 using Godot;
 
-namespace FarmSim.Game.Vehicles;
+namespace Headland.Game.Vehicles;
 
 /// <summary>Moving parts of a machine visual, animated by <see cref="MachineView"/>.</summary>
 public sealed class MachineRig

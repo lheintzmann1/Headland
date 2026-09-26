@@ -1,7 +1,7 @@
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 
-namespace FarmSim.Game.Camera;
+namespace Headland.Game.Camera;
 
 /// <summary>
 /// Orthographic camera at the classic 2:1 angle (30° pitch, 45° yaw), rotating in 90° steps.

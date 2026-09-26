@@ -31,7 +31,7 @@ jobs:
       # Includes content validation of every JSON file in game/data and the agronomy calibration runs.
       - name: Test
         run: >
-          dotnet test tests/FarmSim.Core.Tests --no-build
+          dotnet test tests/Headland.Core.Tests --no-build
           --logger "trx;LogFileName=test-results.trx" --logger "console;verbosity=normal"
           --results-directory TestResults
 

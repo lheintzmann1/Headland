@@ -27,7 +27,7 @@ LAYERS = [
     ("gravel", "Gravel041"),
     ("snow", "Snow014"),
 ]
-UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) FarmSimAssetFetch/1.0"}
+UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) HeadlandAssetFetch/1.0"}
 
 IMPORT_TEMPLATE = """[remap]
 

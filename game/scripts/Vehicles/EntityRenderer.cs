@@ -1,7 +1,7 @@
-using FarmSim.Core;
+using Headland.Core;
 using Godot;
 
-namespace FarmSim.Game.Vehicles;
+namespace Headland.Game.Vehicles;
 
 /// <summary>Keeps one view per Core machine and draws the farmer.</summary>
 public partial class EntityRenderer : Node3D

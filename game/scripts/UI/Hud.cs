@@ -1,14 +1,14 @@
 using System.Text;
-using FarmSim.Game.Common;
-using FarmSim.Core;
-using FarmSim.Core.Machines;
-using FarmSim.Core.Time;
-using FarmSim.Core.Weather;
-using FarmSim.Core.World;
+using Headland.Game.Common;
+using Headland.Core;
+using Headland.Core.Machines;
+using Headland.Core.Time;
+using Headland.Core.Weather;
+using Headland.Core.World;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 
-namespace FarmSim.Game.UI;
+namespace Headland.Game.UI;
 
 /// <summary>
 /// Heads-up display: clock/weather/forecast, money, vehicle panel, DF-style cell inspector,

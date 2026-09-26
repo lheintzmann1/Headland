@@ -1,11 +1,11 @@
-using FarmSim.Game.Common;
-using FarmSim.Core;
-using FarmSim.Core.Content;
-using FarmSim.Core.Machines;
+using Headland.Game.Common;
+using Headland.Core;
+using Headland.Core.Content;
+using Headland.Core.Machines;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 
-namespace FarmSim.Game.Vehicles;
+namespace Headland.Game.Vehicles;
 
 /// <summary>
 /// Follows a Core machine: pose on the terrain (with pitch/roll), wheels, lift, pipe, reel, tipper and load.

@@ -1,8 +1,8 @@
-using FarmSim.Game.Common;
-using FarmSim.Core;
+using Headland.Game.Common;
+using Headland.Core;
 using Godot;
 
-namespace FarmSim.Game.Vehicles;
+namespace Headland.Game.Vehicles;
 
 /// <summary>Placeholder farmer: body, head, cap, swinging legs; plus a ground ring so it reads when zoomed out.</summary>
 public partial class PlayerView : Node3D

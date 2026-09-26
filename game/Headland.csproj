@@ -3,13 +3,13 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <EnableDynamicLoading>true</EnableDynamicLoading>
-    <RootNamespace>FarmSim.Game</RootNamespace>
+    <RootNamespace>Headland.Game</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../src/FarmSim.Core/FarmSim.Core.csproj" />
+    <ProjectReference Include="../src/Headland.Core/Headland.Core.csproj" />
   </ItemGroup>
 
 </Project>

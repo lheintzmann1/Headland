@@ -64,7 +64,7 @@ dotnet build Headland.sln
 godot --path game            # or open game/project.godot in the editor and press Play
 ```
 
-Run the tests with `dotnet test tests/FarmSim.Core.Tests`. They include content validation and multi-year crop
+Run the tests with `dotnet test tests/Headland.Core.Tests`. They include content validation and multi-year crop
 calibration runs.
 
 Linux, Windows and macOS builds from every push to `main` are available as artifacts of the
@@ -78,8 +78,8 @@ allow it under System Settings → Privacy & Security → Open Anyway, or run `x
 
 | Path | Contents |
 |---|---|
-| `src/FarmSim.Core` | The simulation in plain C#, with no Godot dependency: time, weather, world, crops, machines, economy. |
-| `tests/FarmSim.Core.Tests` | xUnit tests, including agronomy calibration and field-helper coverage. |
+| `src/Headland.Core` | The simulation in plain C#, with no Godot dependency: time, weather, world, crops, machines, economy. |
+| `tests/Headland.Core.Tests` | xUnit tests, including agronomy calibration and field-helper coverage. |
 | `game` | The Godot project: C# presentation scripts, shaders, JSON content and assets. |
 | `tools` | Python asset pipeline: isometric tile conversion, ground textures, procedural crop cards. |
 | `.github/workflows` | CI (build and tests) and game exports. |
