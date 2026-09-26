@@ -10,6 +10,10 @@
   { "id": "machine_shed", "name": "Machine shed", "icon": "agriculture", "w": 28, "d": 16,
     "parts": [
       { "shape": "shed", "w": 26, "d": 14, "h": 8, "color": "#6f6a62" }
+    ],
+    // New machines appear in front of the shed.
+    "triggers": [
+      { "id": "delivery", "type": "delivery", "x": 10, "z": 13, "w": 10, "d": 10 }
     ] },
   { "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 20, "d": 10,
     "parts": [

@@ -174,7 +174,7 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("turn_on")) Sim.CommandTurnOn();
         else if (e.IsActionPressed("unload")) Sim.CommandUnload();
         else if (e.IsActionPressed("cycle_seed")) Sim.CommandCycleSeed();
-        else if (e.IsActionPressed("use")) Sim.CommandUse();
+        else if (e.IsActionPressed("use")) Use();
         else if (e.IsActionPressed("helper")) Sim.CommandHelper();
         else if (e.IsActionPressed("cam_rotate_left")) Camera.RotateStep(-1);
         else if (e.IsActionPressed("cam_rotate_right")) Camera.RotateStep(1);
@@ -193,6 +193,14 @@ public partial class GameRoot : Node3D
                 Sim.Clock.Paused = false;
             }
         }
+    }
+
+    /// <summary>The use key: asks what to load when a silo holds several goods the trailer takes.</summary>
+    private void Use()
+    {
+        if (Sim.PlayerVehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
+            Screens.Push(new LoadScreen { Sim = Sim, Vehicle = v, Choices = choices });
+        else Sim.CommandUse();
     }
 
     public void SleepUntilMorning()

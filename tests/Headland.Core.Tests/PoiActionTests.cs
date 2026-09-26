@@ -157,6 +157,106 @@ public class PoiActionTests
         Assert.Equal([t, trailer], repaired.Select(e => e.Machine));
     }
 
+    /// <summary>A silo keeping wheat and barley: tip into its pit, load from its spout.</summary>
+    private static readonly PoiDef Silo = new()
+    {
+        Id = "test_silo", Name = "Silo", W = 24, D = 30,
+        Triggers =
+        [
+            new PoiTriggerDef { Id = "pit", Type = "unload", Z = -8, W = 20, D = 12 },
+            new PoiTriggerDef { Id = "spout", Type = "load", Z = 8, W = 20, D = 12, Rate = 500 },
+        ],
+        Storage = new PoiStorageDef { FillTypes = ["wheat", "barley"] },
+        Actions = [new PoiActionDef { Type = "store", Trigger = "pit" }],
+    };
+
+    [Fact]
+    public void ThePipeUnloadsTheCombineIntoAnUnloadingArea()
+    {
+        var sim = TestContent.NewSim();
+        var sold = Record<FillSold>(sim);
+        var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
+        var pipe = sim.Content.Machines["combine_7"].Pipe!;
+        var combine = sim.Machines.Spawn("combine_7", pit.Area.Center - new Vector2(pipe.X, pipe.Z), 0f);
+        combine.Unit("tank")!.Add("wheat", 3000f);
+        var money = sim.Economy.Money;
+        combine.PipeOut = true;
+        Run(sim, 40f);
+
+        Assert.True(combine.Unit("tank")!.IsEmpty);
+        Assert.Equal((combine, 3000f), (Assert.Single(sold).Machine, MathF.Round(sold[0].Amount)));
+        Assert.Equal(3000f * sim.Economy.Price("wheat", sim.Clock.Month), sold[0].Income, 1);
+        Assert.InRange(sim.Economy.Money - money, sold[0].Income - 5f, sold[0].Income + 5f);
+    }
+
+    [Fact]
+    public void TheOwnersTrailerLoadsFromStorageAcrossASave()
+    {
+        var sim = SimWith([Silo],
+            new PoiPlacementDef { Id = "ours", Type = "test_silo", X = 20, Z = 30, Farm = Farm.PlayerId },
+            new PoiPlacementDef { Id = "theirs", Type = "test_silo", X = 46, Z = 30 });
+        var silo = sim.World.PoiById("ours")!;
+        silo.Storage!.Add("wheat", 5000f);
+        silo.Storage.Add("barley", 3000f);
+        var (t, trailer) = TrailerAt(sim, silo.Trigger("spout")!.Area.Center, "wheat", 0f);
+        sim.Player.Enter(t);
+        Assert.Equal(["wheat", "barley"], sim.Pois.LoadChoices(t));
+        Assert.Equal(["Load…"], sim.Pois.UseOptions(t));
+
+        sim.CommandUse();
+        Assert.True(sim.Pois.IsLoading(t));
+        Run(sim, 5f);
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        var events = Record<FillLoaded>(loaded);
+        var same = loaded.Machines.ById(trailer.Id)!;
+        Run(loaded, 10f);
+
+        Assert.Equal(("wheat", 5000f), (same.Unit("main")!.FillType, MathF.Round(same.Unit("main")!.Level)));
+        Assert.Equal(0f, loaded.World.PoiById("ours")!.Storage!.Level("wheat"));
+        Assert.False(loaded.Pois.IsLoading(same.Parent!));
+        Assert.Equal(("wheat", 5000f), (Assert.Single(events).FillType, MathF.Round(events[0].Amount)));
+
+        // Barley doesn't mix with the wheat on board, and the neighbor's silo is not ours.
+        loaded.CommandUse();
+        Assert.Contains(loaded.Notifications.Items, n => n.Text == "Nothing stored here fits Tipper 16");
+        loaded.Machines.Teleport(same.Parent!, loaded.World.PoiById("theirs")!.Trigger("spout")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
+        loaded.CommandUse();
+        Assert.Contains(loaded.Notifications.Items, n => n.Text == "Silo belongs to another farm");
+    }
+
+    [Fact]
+    public void TheUseKeyStopsLoading()
+    {
+        var sim = SimWith([Silo], new PoiPlacementDef { Id = "ours", Type = "test_silo", X = 20, Z = 30, Farm = Farm.PlayerId });
+        sim.World.PoiById("ours")!.Storage!.Add("barley", 8000f);
+        var (t, trailer) = TrailerAt(sim, sim.World.PoiById("ours")!.Trigger("spout")!.Area.Center, "wheat", 0f);
+        var loaded = Record<FillLoaded>(sim);
+        sim.Player.Enter(t);
+        sim.CommandUse();
+        Run(sim, 2f);
+        sim.CommandUse();
+        Assert.False(sim.Pois.IsLoading(t));
+        Assert.InRange(Assert.Single(loaded).Amount, 900f, 1100f);
+        Assert.Equal(loaded[0].Amount, trailer.Unit("main")!.Level);
+    }
+
+    [Fact]
+    public void NewMachinesAreDeliveredToFreeSpots()
+    {
+        var sim = TestContent.NewSim();
+        var shed = sim.World.PoiById("shed")!;
+        var spot = shed.Trigger("delivery")!;
+        var delivered = new List<Machines.Machine>();
+        while (sim.Pois.Deliver("tractor_125", Farm.PlayerId, shed) is { } m) delivered.Add(m);
+
+        Assert.Equal(3, delivered.Count);
+        Assert.All(delivered, m => Assert.True(spot.Contains(m.Footprint.Center) && m.Heading == shed.Heading));
+        for (var i = 0; i < delivered.Count; i++)
+        for (var j = i + 1; j < delivered.Count; j++)
+            Assert.False(Machines.Geometry.Overlaps(delivered[i].Footprint, delivered[j].Footprint));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Fieldmaster 125 delivered at Machine shed");
+    }
+
     [Fact]
     public void ConditionAndDirtAreSaved()
     {

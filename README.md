@@ -52,9 +52,9 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | G | Attach or detach an implement |
 | V | Lower or raise implements |
 | B | Turn on or off (seed drill, combine) |
-| U | Unfold the combine's pipe, or tip a trailer at a sell point |
+| U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |
-| R | Use the POI you are parked at: buy supplies, refuel, repair, wash |
+| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair, wash |
 | H | Hire or dismiss a field helper |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |

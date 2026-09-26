@@ -111,7 +111,7 @@ public sealed class Simulation
         UpdateWeather();
 
         Machines.Update(dt);
-        Pois.Update();
+        Pois.Update(dt);
         foreach (var m in Machines.All)
             if (m.Controller is FieldWorkController { Finished: true } w)
                 DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);

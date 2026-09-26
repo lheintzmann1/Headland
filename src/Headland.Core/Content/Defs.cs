@@ -394,14 +394,15 @@ public sealed class FillAmountDef
     public float Amount { get; set; }
 }
 
-/// <summary>An area of a POI where machines do something: tip a load, fill up, get washed or repaired.</summary>
+/// <summary>An area of a POI where machines do something: unload, load, fill up, get washed or repaired, get delivered.</summary>
 public sealed class PoiTriggerDef
 {
     /// <summary>Unique within the POI; actions refer to it.</summary>
     public string Id { get; set; } = "";
     /// <summary>
-    /// How machines use it: "unload" (a tipping trailer inside it), or "fill", "wash" and "repair" (machines parked
-    /// inside it, with the use key).
+    /// How machines use it: "unload" (a trailer tipping inside it, a combine's pipe over it); "load" (the owner's
+    /// trailers inside it fill up from the POI's storage), "fill", "wash" and "repair" (machines parked inside it,
+    /// with the use key); "delivery" (where new machines appear).
     /// </summary>
     public string Type { get; set; } = "unload";
     /// <summary>Center in the POI's local space; width along x, depth along z.</summary>
@@ -409,6 +410,8 @@ public sealed class PoiTriggerDef
     public float Z { get; set; }
     public float W { get; set; } = 10f;
     public float D { get; set; } = 10f;
+    /// <summary>Load: units per second poured into a trailer.</summary>
+    public float Rate { get; set; } = 400f;
 }
 
 /// <summary>

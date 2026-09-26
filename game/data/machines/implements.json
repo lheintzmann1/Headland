@@ -35,6 +35,6 @@
     "fillUnits": [ { "id": "main", "capacity": 16000, "fillTypes": ["wheat", "barley", "canola", "corn"] } ],
     "tipper": { "fillUnit": "main", "ratePerSecond": 450 },
     "visual": { "placeholder": "trailer", "color": "#5b6770" },
-    "description": "Tandem-axle grain tipper. Park it under the combine pipe, then tip it at a sell point (U)."
+    "description": "Tandem-axle grain tipper. Park it under the combine pipe, then tip it into an unloading area (U)."
   }
 ]

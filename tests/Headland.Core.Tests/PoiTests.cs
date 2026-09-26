@@ -74,7 +74,11 @@ public class PoiTests
         db.Pois["bad"] = new PoiDef
         {
             Id = "bad",
-            Triggers = [new PoiTriggerDef { Id = "pit", Type = "fill" }, new PoiTriggerDef { Id = "pit", Type = "teleport" }],
+            Triggers =
+            [
+                new PoiTriggerDef { Id = "pit", Type = "fill" }, new PoiTriggerDef { Id = "pit", Type = "teleport" },
+                new PoiTriggerDef { Id = "spout", Type = "load" },
+            ],
             Actions =
             [
                 new PoiActionDef { Type = "sell", Trigger = "pit", FillTypes = ["wheat"] },
@@ -87,6 +91,7 @@ public class PoiTests
         var errors = db.Validate();
         Assert.Contains("poi 'bad': trigger 'pit' is defined more than once", errors);
         Assert.Contains("poi 'bad' trigger 'pit': unknown type 'teleport'", errors);
+        Assert.Contains("poi 'bad' trigger 'spout': load triggers need a storage", errors);
         Assert.Contains("poi 'bad' sell action: works at unload triggers, not fill", errors);
         Assert.Contains("poi 'bad' buy action: trigger 'gate' not found", errors);
         Assert.Contains("poi 'bad' buy action: unknown fill type 'gold'", errors);
@@ -110,7 +115,7 @@ public class PoiTests
 
         sim.Pois.Use(seeder);
         Assert.True(tank.IsEmpty);
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in the marked area of a shop, gas station, workshop or wash bay first");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in a marked area first: a shop, silo, gas station, workshop or wash bay");
 
         sim.Machines.Teleport(seeder, yard.Area.Center, 0f);
         sim.Pois.Use(seeder);

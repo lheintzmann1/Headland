@@ -153,6 +153,8 @@ public static class SaveGame
         };
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
             save.Delivery = new DeliverySave { Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income, Stored = d.Stored };
+        if (sim.Pois.Loadings.TryGetValue(m, out var l))
+            save.Loading = new LoadingSave { Poi = l.Trigger.Poi.Id, Trigger = l.Trigger.Id, FillType = l.FillType, Amount = l.Amount };
         if (m.Controller is FieldWorkController h)
             save.Helper = new HelperSave
             {
@@ -316,6 +318,8 @@ public static class SaveGame
             }
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
                 sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored);
+            if (m.Loading is { } l && sim.Pois.ById(l.Poi)?.Trigger(l.Trigger) is { Type: "load" } spout && content.FillTypes.ContainsKey(l.FillType))
+                sim.Pois.Loadings[machine] = new Loading(spout, l.FillType, l.Amount);
         }
 
         // Helpers last: their route depends on the implements attached.

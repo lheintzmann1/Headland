@@ -137,7 +137,7 @@ public sealed class ContentDatabase
         var e = new List<string>();
         string[] jointTypes = ["threePoint", "drawbar", "header"];
         string[] workTypes = ["cultivator", "seeder", "harvester"];
-        string[] triggerTypes = ["unload", "fill", "wash", "repair"];
+        string[] triggerTypes = ["unload", "load", "fill", "wash", "repair", "delivery"];
         // The trigger types each POI action works through (process works on its own).
         var actionTriggers = new Dictionary<string, string[]>
         {
@@ -222,6 +222,8 @@ public sealed class ContentDatabase
                 if (!triggers.TryAdd(t.Id, t)) e.Add($"poi '{p.Id}': trigger '{t.Id}' is defined more than once");
                 if (!triggerTypes.Contains(t.Type)) e.Add($"poi '{p.Id}' trigger '{t.Id}': unknown type '{t.Type}'");
                 if (t.W <= 0 || t.D <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': w and d must be > 0");
+                if (t.Type == "load" && p.Storage == null) e.Add($"poi '{p.Id}' trigger '{t.Id}': load triggers need a storage");
+                if (t.Rate <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': rate must be > 0");
             }
             var stored = p.Storage?.FillTypes ?? [];
             foreach (var ft in stored)

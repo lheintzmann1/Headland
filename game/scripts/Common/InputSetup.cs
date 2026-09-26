@@ -32,7 +32,7 @@ public static class InputSetup
         ("turn_on", Key.B, "Turn on / off"),
         ("unload", Key.U, "Pipe / tip trailer"),
         ("cycle_seed", Key.X, "Change seed"),
-        ("use", Key.R, "Use a POI: buy, refuel, repair, wash"),
+        ("use", Key.R, "Use a POI: buy, load, refuel, repair, wash"),
         ("helper", Key.H, "Hire / dismiss a field helper"),
         ("time_1", Key.Key1, "Time ×1"),
         ("time_2", Key.Key2, "Time ×5"),

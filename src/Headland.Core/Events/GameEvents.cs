@@ -42,6 +42,9 @@ public sealed record FillSold(Machine Machine, Poi Poi, string FillType, float A
 /// <summary>A whole load put into a POI's storage by its owner (published when the machine stops unloading).</summary>
 public sealed record FillStored(Machine Machine, Poi Poi, string FillType, float Amount) : IGameEvent;
 
+/// <summary>A whole load taken from a POI's storage by its owner (published when loading stops).</summary>
+public sealed record FillLoaded(Machine Machine, Poi Poi, string FillType, float Amount) : IGameEvent;
+
 /// <summary>Supplies or fuel bought at a POI into a machine's fill unit.</summary>
 public sealed record FillBought(Machine Machine, Poi Poi, string FillType, float Amount, float Cost) : IGameEvent;
 
@@ -53,6 +56,9 @@ public sealed record PoiProduced(Poi Poi, string FillType, float Amount) : IGame
 public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
 public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGameEvent;
+
+/// <summary>A new machine put at a POI's delivery spot.</summary>
+public sealed record MachineDelivered(Machine Machine, Poi Poi) : IGameEvent;
 
 // ---- Ownership
 

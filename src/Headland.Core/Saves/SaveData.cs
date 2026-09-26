@@ -139,6 +139,8 @@ public sealed class MachineSave
     public float[]? WorkPose { get; set; }
     /// <summary>A load being unloaded at a POI, totalled so far.</summary>
     public DeliverySave? Delivery { get; set; }
+    /// <summary>A load being taken from a POI's storage, totalled so far.</summary>
+    public LoadingSave? Loading { get; set; }
     public HelperSave? Helper { get; set; }
 }
 
@@ -158,6 +160,15 @@ public sealed class DeliverySave
     public float Income { get; set; }
     /// <summary>Put into the POI's storage by its owner rather than sold.</summary>
     public bool Stored { get; set; }
+}
+
+public sealed class LoadingSave
+{
+    /// <summary>Placement id of the POI, and its load trigger.</summary>
+    public string Poi { get; set; } = "";
+    public string Trigger { get; set; } = "";
+    public string FillType { get; set; } = "";
+    public float Amount { get; set; }
 }
 
 /// <summary>A field helper, with what it needs to plan the very same route again.</summary>

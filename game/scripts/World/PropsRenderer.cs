@@ -331,6 +331,8 @@ public partial class PropsRenderer : Node3D
     private static Color TriggerColor(string type) => type switch
     {
         "unload" => new Color(0.86f, 0.68f, 0.2f),
+        "load" => new Color(0.55f, 0.8f, 0.4f),
+        "delivery" => new Color(0.78f, 0.78f, 0.72f),
         "wash" => new Color(0.45f, 0.78f, 0.82f),
         "repair" => new Color(0.86f, 0.5f, 0.3f),
         _ => new Color(0.35f, 0.6f, 0.85f),
@@ -339,7 +341,8 @@ public partial class PropsRenderer : Node3D
     /// <summary>How to use a trigger, with the key on the player's layout.</summary>
     private static string Hint(string type) => type switch
     {
-        "unload" => $"tip here ({InputSetup.Label("unload")})",
+        "unload" => $"tip or pipe here ({InputSetup.Label("unload")})",
+        "delivery" => "keep clear",
         _ => $"park here ({InputSetup.Label("use")})",
     };
 

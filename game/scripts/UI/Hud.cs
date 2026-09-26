@@ -156,6 +156,7 @@ public partial class Hud : CanvasLayer
             }
             if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
             if (m.Tipping) bits.Add(Widgets.Colored("tipping", Palette.Busy));
+            if (Sim.Pois.LoadingFillType(m) is { } loading) bits.Add(Widgets.Colored($"loading {Sim.Content.FillTypes[loading].Name.ToLowerInvariant()}", Palette.Busy));
             if (m.PipeOut) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
             if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
             if (m != v || bits.Count > 0) sb.Append('\n');

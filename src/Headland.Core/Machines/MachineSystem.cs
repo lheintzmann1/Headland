@@ -565,11 +565,11 @@ public sealed class MachineSystem
         var tank = m.Unit(pipe.FillUnit)!;
         if (!m.PipeOut || m.PipeAnim < 0.95f || tank.IsEmpty) return;
         var outlet = m.LocalToWorld(pipe.X, pipe.Z);
-        var target = FindReceiver(outlet, tank.FillType!, m);
-        if (target == null) return;
         var ft = tank.FillType!;
-        var moved = target.Add(ft, MathF.Min(pipe.RatePerSecond * dt, tank.Level));
-        tank.Remove(moved);
+        var amount = MathF.Min(pipe.RatePerSecond * dt, tank.Level);
+        // A machine under the pipe first, else a POI's unloading area.
+        if (FindReceiver(outlet, ft, m) is { } target) tank.Remove(target.Add(ft, amount));
+        else if (Pois.TriggerAt(outlet, "unload") is { } pit && Pois.UnloadBlocker(m, pit, ft) == null) tank.Remove(Pois.Unload(m, pit, ft, amount));
     }
 
     private void UpdateTipper(Machine m, float dt)

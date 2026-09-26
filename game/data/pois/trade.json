@@ -1,8 +1,10 @@
 [
   // Places that buy from and sell to farmers. See farm.json for the POI layout.
-  // Triggers are areas (center x, z; size w, d) where machines use the POI: "unload" (tip a trailer into it) or
-  // "fill" (park inside and press the fill key). Actions say what happens there, from the farmer's side: "sell"
-  // (the POI buys loads of its fillTypes tipped at an unload trigger) or "buy" (it sells them at a fill trigger).
+  // Triggers are areas (center x, z; size w, d) where machines use the POI: "unload" (tip a trailer into it, or
+  // point a combine's pipe over it), "load" (the owner's trailers parked inside fill up from the storage, "rate"
+  // units a second), "fill" (park inside and press the use key) or "delivery" (new machines appear there). Actions
+  // say what happens, from the farmer's side: "sell" (the POI buys loads of its fillTypes tipped at an unload
+  // trigger), "store" (its owner's loads go into its storage) or "buy" (it sells its fillTypes at a fill trigger).
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },
