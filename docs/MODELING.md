@@ -1,36 +1,40 @@
 # Making models for Headland
 
-Machines, buildings and the farmer are procedural placeholders until real models replace them. Models are made in
-[Blockbench](https://www.blockbench.net) (free, and easy to pick up) and exported as **glTF binary (`.glb`)**.
+Machines, buildings and the farmer are procedural placeholders until real models replace them. The game loads models
+as **glTF binary (`.glb`)**: glTF keeps named parts with their pivots, so wheels can turn and pipes can swing, and it
+embeds the textures.
 
-Why glTF: it keeps Blockbench's groups as named parts with their pivots, so wheels can turn and pipes can swing, and
-it embeds the textures. OBJ flattens everything into one mesh (nothing could move), and Blockbench's own `.bbmodel`
-format would need a custom importer. Keep the `.bbmodel` next to the export as the editable source.
+Headland's own models are made in [Blockbench](https://www.blockbench.net) (free, and easy to pick up). Mods (modding
+support is planned) can use any tool that exports glTF, such as Blender or 3ds Max, at any level of detail. The
+conventions below are the same whatever the tool.
 
 ## Style
 
-Realistic proportions, low polycount, muted colors, like *Project Zomboid*. Avoid a toy look. Keep vehicles under
-about 10,000 triangles and textures at 512 px or less.
+Headland's own models have realistic proportions, a low polycount and muted colors, like *Project Zomboid*, without a
+toy look: vehicles stay under about 10,000 triangles, with textures at 512 px or less. Mods are free to go further.
 
 ## Setting up the model
 
-1. Create a **Generic Model** project. It allows free rotations and has no Minecraft restrictions.
-2. **Scale:** one block (16 pixels) is one meter. A tractor is about 4.7 m long, so about 75 pixels. If the model
-   arrives in the game 16 times too big or too small, set `"scale"` in its JSON (for example `0.0625` or `16`).
-3. **Orientation:** the front of the machine faces **South** (+Z in Blockbench). If yours faces North, set
-   `"yawDeg": 180` in the machine's JSON instead of rebuilding it.
-4. **Origin:** put the model's origin on the ground at the machine's reference point, which is the same one its
-   JSON uses:
+In Blockbench, start a **Generic Model** project: it allows free rotations and has no Minecraft restrictions.
+
+1. **Scale:** one unit is one meter. In Blockbench that is one block (16 pixels), so a 4.7 m tractor is about
+   75 pixels long. If the model arrives in the game 16 times too big or too small, set `"scale"` in its JSON (for
+   example `0.0625` or `16`).
+2. **Orientation:** Y is up and the front of the machine faces **+Z** (South in Blockbench). If yours faces the other
+   way, set `"yawDeg": 180` in the machine's JSON instead of rebuilding it.
+3. **Origin:** put the model's origin on the ground at the machine's reference point, which is the same one its JSON
+   uses:
    - tractors, trailers and trailed implements: the center of the rear (non-steered) axle,
    - combines: the center of the front axle,
    - mounted implements and headers: the hitch point.
 
    If that is inconvenient, use `"offset": [x, y, z]` (meters; +Z forward, +X left).
-5. **Moving parts:** put each one in its own group, with the group's pivot where it rotates:
+4. **Moving parts:** make each one a separate node (a group in Blockbench, an object in Blender) with its pivot where
+   it rotates:
 
    | Role | Pivot | Modeled as |
    |---|---|---|
-   | `wheel0`, `wheel1`, … | wheel center | one group per wheel, in the same order as `wheels` in the JSON |
+   | `wheel0`, `wheel1`, … | wheel center | one node per wheel, in the same order as `wheels` in the JSON |
    | `pipe` | base hinge of the combine's unloading pipe | folded backward; it swings 90° out to the left |
    | `tipper` | rear hinge of a trailer's bed | the bed; it tilts its front up by 42° |
    | `reel` | reel axle of a header | spins while the combine is threshing |
@@ -38,8 +42,9 @@ about 10,000 triangles and textures at 512 px or less.
 
 ## Exporting and hooking it up
 
-1. **File → Export → Export glTF Model**, as `.glb`, into `game/assets/models/<category>/`, for example
-   `game/assets/models/tractors/fieldmaster_125.glb`. Save the `.bbmodel` beside it.
+1. Export the model as `.glb` into `game/assets/models/<category>/`, for example
+   `game/assets/models/tractors/fieldmaster_125.glb`. In Blockbench, use **File → Export → Export glTF Model** and save
+   the `.bbmodel` beside the export as the editable source.
 2. In the machine's JSON (`game/data/machines/*.json`), point `visual` at it and name its moving parts:
 
    ```json

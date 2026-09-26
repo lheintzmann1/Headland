@@ -87,11 +87,12 @@ allow it under System Settings → Privacy & Security → Open Anyway, or run `x
 The scripted scenario `godot --path game -- --scenario=loop --shots=<dir>` plays the whole loop with helpers and
 saves a screenshot at each step.
 
-## Contributing models
+## Models
 
-Models are made in [Blockbench](https://www.blockbench.net) and exported as `.glb`. See
-[`docs/MODELING.md`](docs/MODELING.md) for the conventions (scale, orientation, moving parts) and how to hook a model
-up to a machine.
+Headland's own models are made in [Blockbench](https://www.blockbench.net), low poly and in one style. The game loads
+any glTF (`.glb`) model, so mods (modding support is planned) can use Blender, 3ds Max or any other tool, at any level
+of detail. [`docs/MODELING.md`](docs/MODELING.md) covers the conventions (scale, orientation, moving parts) and how to
+hook a model up to a machine.
 
 ## Credits
 
