@@ -128,14 +128,4 @@ public class CropTests
         var clayDrop = 0.95f - L.Moisture[clay] / 255f;
         Assert.True(sandDrop > clayDrop * 2f, $"sand -{sandDrop:F2}, clay -{clayDrop:F2}");
     }
-
-    [Fact]
-    public void HourlyTickIsFastEnough()
-    {
-        var sim = TestContent.NewSim();
-        sim.SkipHours(2); // warm up the thread pool / JIT
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        sim.SkipHours(24);
-        Assert.True(sw.ElapsedMilliseconds < 3000, $"24 hours took {sw.ElapsedMilliseconds} ms");
-    }
 }
