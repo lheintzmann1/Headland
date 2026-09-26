@@ -443,7 +443,7 @@ public sealed class MachineSystem
             Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
             if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
             var refused = KeepAllowed(root.FarmId, m, wa);
-            var fieldId = FieldIdAt(center);
+            var fieldId = WorkedFieldId(center);
             var changed = wa.Type switch
             {
                 "cultivator" => Cultivate(m),
@@ -479,10 +479,17 @@ public sealed class MachineSystem
         return refused >= 0 ? _sim.Farms.WorkBlocker(farmId, refused, wa.Type, crop) : null;
     }
 
-    private int FieldIdAt(Vector2 p)
+    /// <summary>
+    /// The field worked: the one under the work area's center, else the first one under its cells (the work area
+    /// straddling the edge on its way in or out).
+    /// </summary>
+    private int WorkedFieldId(Vector2 center)
     {
-        var (cx, cz) = World.WorldToCell(p);
-        return World.InBounds(cx, cz) ? World.Layers.FieldId[World.CellIndex(cx, cz)] : 0;
+        var (cx, cz) = World.WorldToCell(center);
+        if (World.InBounds(cx, cz) && World.Layers.FieldId[World.CellIndex(cx, cz)] is var id and > 0) return id;
+        foreach (var i in _cells)
+            if (World.Layers.FieldId[i] is var cell and > 0) return cell;
+        return 0;
     }
 
     private int Cultivate(Machine m)
