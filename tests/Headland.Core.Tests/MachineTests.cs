@@ -379,8 +379,9 @@ public class MachineTests
         var mot = t.Def.Motorized!;
         var turnRadius = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
         var worst = helper.Path.Points.Max(Plot.Shape.Distance);
-        // Past the edge by the implement's offset, plus at most a turning circle.
-        Assert.True(worst <= helper.Margin + 2f * turnRadius + 0.5f, $"path reaches {worst:F1} m outside the field");
+        // Past the edge by the implement's offset, plus a turning radius: a mounted implement backs up in its turns.
+        Assert.Contains(PathSegment.Reverse, helper.Path.Segments);
+        Assert.True(worst <= helper.Margin + turnRadius + 0.5f, $"path reaches {worst:F1} m outside the field");
         Assert.True(helper.Margin < 4.5f, $"margin {helper.Margin:F1} m");
     }
 
@@ -388,9 +389,67 @@ public class MachineTests
     public void HelperLanesRunAlongTheLongSide()
     {
         var wide = FieldInfo.Rect(1, 0, 0, 60, 20);
-        var path = FieldPlanner.Lanes(wide, 3f, 3.5f, 2f);
+        var path = FieldPlanner.Lanes(wide, new LanePlan(3f, 3.5f, 2f));
         var lane = path.Points[1] - path.Points[0];
         Assert.True(MathF.Abs(lane.X) > MathF.Abs(lane.Y), "lanes should run along x for a wide field");
         Assert.Equal(7, path.LaneCount);
+    }
+
+    [Fact]
+    public void HelperLanesFollowOneAnother()
+    {
+        // 3 m lanes and a 3.5 m turning radius: still each lane next to the one before, like a farmer works.
+        var path = FieldPlanner.Lanes(FieldInfo.Rect(1, 0, 0, 20, 60), new LanePlan(3f, 3.5f, 2f));
+        var lanes = Enumerable.Range(0, path.Points.Count).Where(path.EndsLane).Select(k => path.Points[k].X).ToList();
+        Assert.Equal(7, lanes.Count);
+        Assert.All(lanes.Zip(lanes.Skip(1)), l => Assert.InRange(l.Second - l.First, 2.5f, 3f));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void CloseLanesAreJoinedByBackingUpOrByABulbTurn(bool reverse)
+    {
+        var field = FieldInfo.Rect(1, 0, 0, 20, 60);
+        var path = FieldPlanner.Lanes(field, new LanePlan(3f, 3.5f, 2f) { Reverse = reverse });
+        Assert.Equal(reverse ? path.LaneCount - 1 : 0, path.Segments.Count(s => s == PathSegment.Reverse));
+        // Past the 2 m margin: one turning radius backing up, up to 1 + √3 of them looping out.
+        var worst = path.Points.Max(field.Shape.Distance);
+        if (reverse) Assert.InRange(worst, 2f + 3.5f - 0.01f, 2f + 3.5f + 0.01f);
+        else Assert.InRange(worst, 2f + 2f * 3.5f, 2f + (1f + MathF.Sqrt(3f)) * 3.5f);
+    }
+
+    /// <summary>Share of the plot's cells for which <paramref name="done"/> holds.</summary>
+    private static float PlotShare(Simulation sim, Func<int, bool> done)
+    {
+        int inside = 0, n = 0;
+        Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ, (cx, cz) =>
+        {
+            inside++;
+            if (done(sim.World.CellIndex(cx, cz))) n++;
+        });
+        return (float)n / inside;
+    }
+
+    private static void RunHelper(Simulation sim, FieldWorkController helper)
+    {
+        for (var s = 0f; s < 900f && !helper.Finished; s += Dt) sim.Tick(Dt);
+        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
+        Assert.False(helper.Stopped, helper.StopReason);
+    }
+
+    [Fact]
+    public void ATrailedSeederHelperLoopsInItsTurnsAndSowsTheWholePlot()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
+            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+        var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
+        Assert.True(sim.Machines.Attach(t, "drawbar", sim.Machines.Spawn("seeder_3", Plot.Shape.Min + new Vector2(2f, -14f), 0f)));
+        var helper = sim.HireHelper(t, Plot);
+        Assert.DoesNotContain(PathSegment.Reverse, helper.Path.Segments);
+        RunHelper(sim, helper);
+        Assert.True(PlotShare(sim, i => sim.World.Layers.Crop[i] != 0) > 0.99f);
     }
 }

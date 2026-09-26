@@ -3,24 +3,42 @@ using Headland.Core.World;
 
 namespace Headland.Core.Machines;
 
+/// <summary>How the segment arriving at a waypoint is driven.</summary>
+public enum PathSegment : byte
+{
+    /// <summary>Forward with the implements raised: to the field, and turns.</summary>
+    Drive,
+    /// <summary>Forward along a working lane, driven to its end before turning.</summary>
+    Work,
+    /// <summary>Backward: the middle leg of a turn with reversing.</summary>
+    Reverse,
+}
+
 /// <summary>
-/// Pure-pursuit waypoint follower. The lookahead shrinks with speed for tight tracking, and it never looks past
-/// the end of a "hard end" segment (a working lane), so the vehicle does not start turning before the lane ends.
+/// Pure-pursuit waypoint follower, forward and backward. The lookahead shrinks with speed for tight tracking, and it
+/// never looks past the end of a working lane or a change of direction: the vehicle does not start turning before
+/// the lane ends, and it comes to a stop where it starts reversing (or stops reversing).
 /// </summary>
 public sealed class WaypointController : IVehicleController
 {
+    /// <summary>Braking planned for stopping where the direction changes (m/s²).</summary>
+    private const float StopDecel = 1.5f;
+    /// <summary>Speed kept up to such a stop, so the vehicle doesn't stall short of it (m/s).</summary>
+    private const float CreepSpeed = 0.4f;
+    /// <summary>Steering error (rad) a standing vehicle waits out before pulling away.</summary>
+    private const float SteerTolerance = 0.25f;
     private Vector2? _start;
 
-    public WaypointController(IReadOnlyList<Vector2> waypoints, float speedKmh, IReadOnlyList<bool>? hardEnds = null)
+    public WaypointController(IReadOnlyList<Vector2> waypoints, float speedKmh, IReadOnlyList<PathSegment>? segments = null)
     {
         Waypoints = waypoints;
         SpeedKmh = speedKmh;
-        HardEnds = hardEnds;
+        Segments = segments;
     }
 
     public IReadOnlyList<Vector2> Waypoints { get; }
-    /// <summary>Per waypoint: true if the segment arriving at it must be driven to its end before turning.</summary>
-    public IReadOnlyList<bool>? HardEnds { get; }
+    /// <summary>Per waypoint: how the segment arriving at it is driven (all <see cref="PathSegment.Drive"/> when null).</summary>
+    public IReadOnlyList<PathSegment>? Segments { get; }
     /// <summary>Index of the waypoint being driven to (the current segment ends there).</summary>
     public int Index { get; internal set; }
     /// <summary>Where the vehicle was when it started driving (the first segment starts there).</summary>
@@ -48,25 +66,45 @@ public sealed class WaypointController : IVehicleController
         AdvancePastReachedWaypoints(v.Position);
         if (Finished) return new VehicleInput { Brake = true };
 
+        var reverse = Segment(Index) == PathSegment.Reverse;
         var lookahead = Math.Clamp(1.6f + 0.55f * MathF.Abs(v.Speed), MinLookahead, MaxLookahead);
         var target = LookaheadPoint(v.Position, lookahead);
         var local = MathUtil.WorldToLocal(v.Position, v.Heading, target);
         var d2 = MathF.Max(local.LengthSquared(), 0.01f);
+        // The same law steers backward: the non-steered axle then leads, and steering left swings it left.
         var curvature = 2f * local.X / d2;
         var mot = v.Def.Motorized!;
-        var steer = MathF.Atan(curvature * mot.Wheelbase) / (mot.MaxSteerDeg * MathUtil.Deg2Rad);
+        var maxSteer = mot.MaxSteerDeg * MathUtil.Deg2Rad;
+        var steer = Math.Clamp(MathF.Atan(curvature * mot.Wheelbase) / maxSteer, -1f, 1f);
+        var input = new VehicleInput { Steer = steer };
+        // Standing, turn the wheels first: pulling away with them far off would leave the path.
+        if (MathF.Abs(v.Speed) < 0.1f && MathF.Abs(steer * maxSteer - v.SteerAngle) > SteerTolerance)
+        {
+            input.Brake = true;
+            return input;
+        }
 
-        // Slow down for sharp turns.
+        // Slow down for sharp turns, and to a stop where the direction changes.
         var targetSpeed = SpeedKmh * MathUtil.KmhToMs * MathUtil.Lerp(1f, 0.45f, MathUtil.Saturate(MathF.Abs(steer)));
-        var input = new VehicleInput { Steer = Math.Clamp(steer, -1f, 1f) };
-        if (v.Speed > targetSpeed + 0.5f) input.Brake = true;
-        else input.Throttle = Math.Clamp((targetSpeed - v.Speed) * 2f + targetSpeed / (mot.MaxSpeedKmh * MathUtil.KmhToMs), 0.05f, 1f);
+        if (DistanceToStop(v.Position) is { } stop) targetSpeed = MathF.Min(targetSpeed, MathF.Max(CreepSpeed, MathF.Sqrt(2f * StopDecel * stop)));
+        var speed = reverse ? -v.Speed : v.Speed;
+        var top = (reverse ? mot.MaxReverseKmh : mot.MaxSpeedKmh) * MathUtil.KmhToMs;
+        if (speed > targetSpeed + 0.5f) input.Brake = true;
+        else input.Throttle = Math.Clamp((targetSpeed - speed) * 2f + targetSpeed / top, 0.05f, 1f) * (reverse ? -1f : 1f);
         return input;
     }
 
     private Vector2 SegmentStart => Index == 0 ? _start!.Value : Waypoints[Index - 1];
 
-    private bool IsHardEnd(int k) => HardEnds != null && k < HardEnds.Count && HardEnds[k];
+    private PathSegment Segment(int k) => Segments != null && k < Segments.Count ? Segments[k] : PathSegment.Drive;
+
+    /// <summary>True if the vehicle changes direction at waypoint <paramref name="k"/>.</summary>
+    private bool IsCusp(int k) =>
+        k + 1 < Waypoints.Count && (Segment(k) == PathSegment.Reverse) != (Segment(k + 1) == PathSegment.Reverse);
+
+    /// <summary>A lane's end or a change of direction: reached by driving past it, never by cutting the corner.</summary>
+    private bool IsHardEnd(int k) =>
+        IsCusp(k) || Segment(k) == PathSegment.Work && (k + 1 >= Waypoints.Count || Segment(k + 1) != PathSegment.Work);
 
     /// <summary>A waypoint is reached once the vehicle's projection passes the end of its segment.</summary>
     private void AdvancePastReachedWaypoints(Vector2 pos)
@@ -78,9 +116,22 @@ public sealed class WaypointController : IVehicleController
             var seg = b - a;
             var len2 = seg.LengthSquared();
             var t = len2 < 1e-6f ? 1f : Vector2.Dot(pos - a, seg) / len2;
-            // Hard-end segments are finished by passing their end, never by cutting the corner.
             if (t < 1f && (IsHardEnd(Index) || Vector2.Distance(pos, b) >= ArriveRadius)) return;
             Index++;
+        }
+    }
+
+    /// <summary>Distance along the path to the next change of direction, when one is close.</summary>
+    private float? DistanceToStop(Vector2 pos)
+    {
+        var seg = Waypoints[Index] - SegmentStart;
+        var len = seg.Length();
+        var d = len > 1e-3f ? MathF.Max(0f, Vector2.Dot(Waypoints[Index] - pos, seg / len)) : 0f;
+        for (var k = Index; ; k++)
+        {
+            if (IsCusp(k)) return d;
+            if (k + 1 >= Waypoints.Count || d > 15f) return null;
+            d += Vector2.Distance(Waypoints[k], Waypoints[k + 1]);
         }
     }
 
@@ -98,7 +149,8 @@ public sealed class WaypointController : IVehicleController
             var step = Waypoints[k] - from;
             var len = step.Length();
             if (len >= remaining) return from + step / len * remaining;
-            // Stay on a working lane until its end: extend straight ahead instead of peeking into the turn.
+            // Stay on a working lane (or a leg ending in a stop) until its end: extend straight ahead instead of
+            // peeking into what comes next.
             if (IsHardEnd(k))
             {
                 var dir = Waypoints[k] - (k == 0 ? _start!.Value : Waypoints[k - 1]);
@@ -111,130 +163,164 @@ public sealed class WaypointController : IVehicleController
     }
 }
 
-/// <summary>A planned field route: waypoints, and whether the segment arriving at each one is a working lane.</summary>
-public sealed record FieldPath(List<Vector2> Points, List<bool> Work)
+/// <summary>A planned field route: waypoints, and how the segment arriving at each one is driven.</summary>
+public sealed record FieldPath(List<Vector2> Points, List<PathSegment> Segments)
 {
-    public int LaneCount => Work.Count(w => w);
+    /// <summary>True if waypoint <paramref name="k"/> ends a working lane.</summary>
+    public bool EndsLane(int k) =>
+        Segments[k] == PathSegment.Work && (k + 1 == Segments.Count || Segments[k + 1] != PathSegment.Work);
+
+    public int LaneCount => Enumerable.Range(0, Segments.Count).Count(EndsLane);
+}
+
+/// <summary>What a field route is planned for: the implements and the vehicle.</summary>
+/// <param name="WorkWidth">Distance between lanes at most (the swath, less a little overlap).</param>
+/// <param name="TurnRadius">The tightest circle the vehicle drives in turns.</param>
+/// <param name="Margin">
+/// How far past the field edge the vehicle drives before turning: it should cover the implement's distance behind
+/// the vehicle so the work area clears the edge.
+/// </param>
+public sealed record LanePlan(float WorkWidth, float TurnRadius, float Margin)
+{
+    /// <summary>Where the vehicle stands (null: from the field's first corner).</summary>
+    public Vector2? From { get; init; }
+    public int? MaxLanes { get; init; }
+    /// <summary>The vehicle may back up (it pulls no trailed implement), so close lanes are joined by three-point turns.</summary>
+    public bool Reverse { get; init; }
 }
 
 public static class FieldPlanner
 {
     /// <summary>
-    /// Back-and-forth lanes along the field's longer side, starting at the corner nearest <paramref name="startNear"/>.
-    /// Lanes are visited in interleaved sets so most U-turns are plain semicircles wider than the turning circle;
-    /// when two consecutive lanes are closer than that, an omega loop is used instead.
-    /// <paramref name="margin"/> is how far past the field edge the vehicle drives before turning: it should cover
-    /// the implement's distance behind the vehicle so the work area clears the edge. On a field that isn't a
-    /// rectangle each lane spans the field under its whole swath, and a turn goes out to the farther lane end.
+    /// Back-and-forth lanes worked one after the other, along the field's longer side from the corner nearest the
+    /// vehicle. Lanes at least a turning circle apart are joined by two quarter circles and a straight; closer ones by
+    /// a three-point turn when the vehicle can reverse, else by a bulb turn that loops out and back in. On a field that
+    /// isn't a rectangle each lane spans the field under its whole swath, and a turn goes out to the farthest lane end
+    /// it passes.
     /// </summary>
-    public static FieldPath Lanes(FieldInfo f, float workWidth, float minTurnRadius, float margin,
-        Vector2? startNear = null, int? maxLanes = null)
+    public static FieldPath Lanes(FieldInfo f, LanePlan plan)
     {
-        // Plan in (u, v): u across the lanes, v along them.
         var shape = f.Shape;
-        var alongZ = shape.Size.Y >= shape.Size.X;
-        var across = alongZ ? shape.Size.X : shape.Size.Y;
-        var along = alongZ ? shape.Size.Y : shape.Size.X;
-        var u0 = alongZ ? shape.Min.X : shape.Min.Y;
-        var v0 = alongZ ? shape.Min.Y : shape.Min.X;
-        Vector2 ToWorld(float u, float v) => alongZ ? new Vector2(u, v) : new Vector2(v, u);
-
-        var laneCount = Math.Max(1, (int)MathF.Ceiling(across / workWidth - 0.01f));
-        var skip = Math.Clamp((int)MathF.Ceiling(2f * minTurnRadius / workWidth), 1, laneCount);
-        var order = new List<int>();
-        for (var s = 0; s < skip; s++)
-        {
-            var set = Enumerable.Range(0, laneCount).Where(l => l % skip == s).ToList();
-            if (s % 2 == 1) set.Reverse();
-            order.AddRange(set);
-        }
-
-        var mirror = false;
-        var startFar = false;
-        if (startNear is { } p)
-        {
-            var pu = alongZ ? p.X : p.Y;
-            var pv = alongZ ? p.Y : p.X;
-            mirror = pu > u0 + across * 0.5f;
-            startFar = pv > v0 + along * 0.5f;
-        }
-        if (mirror) order = order.Select(l => laneCount - 1 - l).ToList();
-        if (maxLanes is { } max) order = order.Take(max).ToList();
-
-        float LaneU(int l) => MathF.Min(u0 + (l + 0.5f) * workWidth, u0 + across - workWidth * 0.5f);
-        (float near, float far) LaneSpan(float u)
-        {
-            var (lo, hi) = shape.Extent(alongZ, u - workWidth * 0.5f, u + workWidth * 0.5f) ?? (v0, v0 + along);
-            return (lo - margin, hi + margin);
-        }
+        var width = plan.WorkWidth;
+        var frame = new Frame(shape, shape.Size.Y >= shape.Size.X, width);
+        var us = frame.LaneCenters();
+        (float near, float far) Span(float u) => frame.Span(u - width * 0.5f, u + width * 0.5f, plan.Margin);
 
         var pts = new List<Vector2>();
-        var work = new List<bool>();
-        var forward = !startFar; // forward = driving toward increasing v
-        var prevEnd = (u: 0f, v: 0f);
-        for (var k = 0; k < order.Count; k++)
+        var segs = new List<PathSegment>();
+        void Add(float u, float v, PathSegment s)
         {
-            var u = LaneU(order[k]);
-            var (near, far) = LaneSpan(u);
-            var start = (u, v: forward ? near : far);
-            var end = (u, v: forward ? far : near);
-            if (k > 0)
+            pts.Add(frame.ToWorld(u, v));
+            segs.Add(s);
+        }
+
+        var order = Enumerable.Range(0, us.Count).ToList();
+        var forward = true; // the next lane is driven toward increasing v
+        if (plan.From is { } p)
+        {
+            var pos = frame.ToFrame(p);
+            if (MathF.Abs(pos.u - us[^1]) < MathF.Abs(pos.u - us[0])) order.Reverse();
+            var (near, far) = Span(us[order[0]]);
+            forward = MathF.Abs(pos.v - near) <= MathF.Abs(pos.v - far);
+        }
+
+        (float u, float v)? prev = null; // where the last lane ended, heading out of the field
+        foreach (var l in order.Take(plan.MaxLanes ?? int.MaxValue))
+        {
+            var u = us[l];
+            var (near, far) = Span(u);
+            var (start, end) = forward ? (near, far) : (far, near);
+            if (prev is { } pe)
             {
-                // The previous lane ended on this lane's start side; turn outward (away from the field), level with
-                // whichever of the two lane ends reaches farther out.
+                // Turn outward (away from the field), level with the farthest lane end in between.
                 var outward = forward ? -1f : 1f;
-                var turnV = forward ? MathF.Min(prevEnd.v, start.v) : MathF.Max(prevEnd.v, start.v);
-                if (MathF.Abs(turnV - prevEnd.v) > 0.01f)
-                {
-                    prevEnd.v = turnV;
-                    pts.Add(ToWorld(prevEnd.u, turnV));
-                    work.Add(false);
-                }
-                start.v = turnV;
-                foreach (var (tu, tv) in Turn(prevEnd, start, outward, minTurnRadius))
-                {
-                    pts.Add(ToWorld(tu, tv));
-                    work.Add(false);
-                }
+                var (lo, hi) = frame.Span(MathF.Min(pe.u, u) - width * 0.5f, MathF.Max(pe.u, u) + width * 0.5f, plan.Margin);
+                var turnV = forward ? MathF.Min(pe.v, lo) : MathF.Max(pe.v, hi);
+                if (MathF.Abs(turnV - pe.v) > 0.01f) Add(pe.u, turnV, PathSegment.Drive);
+                Turn(pe.u, u, turnV, outward, plan.TurnRadius, plan.Reverse, Add);
             }
-            pts.Add(ToWorld(start.u, start.v));
-            work.Add(false);
-            pts.Add(ToWorld(end.u, end.v));
-            work.Add(true);
-            prevEnd = end;
+            else Add(u, start, PathSegment.Drive);
+            Add(u, end, PathSegment.Work);
+            prev = (u, end);
             forward = !forward;
         }
-        return new FieldPath(pts, work);
+        return new FieldPath(pts, segs);
     }
 
     /// <summary>
-    /// Arc from lane end <paramref name="a"/> to lane start <paramref name="b"/> (same v), bulging toward
-    /// <paramref name="outward"/>: a semicircle when the lanes are at least two turning radii apart, else an omega loop.
+    /// Turn from a lane end at <paramref name="ua"/>, heading <paramref name="outward"/> along v, into the lane at
+    /// <paramref name="ub"/>, both ends at <paramref name="v"/>; adds every waypoint after the lane end up to the next
+    /// lane's start. Two quarter circles joined by a straight, driven backward when the lanes are closer than a turning
+    /// circle and the vehicle can reverse; else, that close, a bulb: out away from the next lane, around, and back in.
     /// </summary>
-    private static IEnumerable<(float u, float v)> Turn((float u, float v) a, (float u, float v) b, float outward, float minR)
+    private static void Turn(float ua, float ub, float v, float outward, float r, bool reverse, Action<float, float, PathSegment> add)
     {
-        var half = MathF.Abs(b.u - a.u) * 0.5f;
-        var r = MathF.Max(half, minR);
-        var h = MathF.Sqrt(MathF.Max(0f, r * r - half * half));
-        var cu = (a.u + b.u) * 0.5f;
-        var cv = a.v + outward * h;
-        var angA = MathF.Atan2(a.v - cv, a.u - cu);
-        var angB = MathF.Atan2(b.v - cv, b.u - cu);
-        var angOut = MathF.Atan2(outward, 0f);
-        var ccw = Wrap2Pi(angB - angA);
-        var sweep = Wrap2Pi(angOut - angA) <= ccw ? ccw : -(MathF.Tau - ccw);
-        var n = Math.Max(4, (int)MathF.Ceiling(MathF.Abs(sweep) / 0.3f));
-        for (var i = 1; i < n; i++)
+        var side = ub >= ua ? 1f : -1f;
+        var d = MathF.Abs(ub - ua);
+        if (d >= 2f * r || reverse)
         {
-            var t = angA + sweep * i / n;
-            yield return (cu + r * MathF.Cos(t), cv + r * MathF.Sin(t));
+            var quarter = -side * outward * MathF.PI * 0.5f;
+            Arc(add, (ua + side * r, v), r, side > 0f ? MathF.PI : 0f, quarter);
+            var across = d - 2f * r;
+            if (MathF.Abs(across) > 0.05f) add(ub - side * r, v + outward * r, across > 0f ? PathSegment.Drive : PathSegment.Reverse);
+            Arc(add, (ub - side * r, v), r, outward * MathF.PI * 0.5f, quarter);
+            return;
+        }
+        // Out by α, around by π + 2α, in by α: three arcs of radius r, the middle one centered halfway between the lanes.
+        var alpha = MathF.Acos((d + 2f * r) / (4f * r));
+        var turn = side * outward;
+        var c = (u: ua - side * r, v);
+        var a = side > 0f ? 0f : MathF.PI;
+        ReadOnlySpan<float> sweeps = [turn * alpha, -turn * (MathF.PI + 2f * alpha), turn * alpha];
+        foreach (var sweep in sweeps)
+        {
+            Arc(add, c, r, a, sweep);
+            // The next arc bends the other way: its center mirrors this one's through the point reached.
+            a += sweep;
+            c = (c.u + 2f * r * MathF.Cos(a), c.v + 2f * r * MathF.Sin(a));
+            a += MathF.PI;
         }
     }
 
-    private static float Wrap2Pi(float a)
+    /// <summary>Forward along a circle from angle <paramref name="a0"/> by <paramref name="sweep"/>, the start left out.</summary>
+    private static void Arc(Action<float, float, PathSegment> add, (float u, float v) c, float r, float a0, float sweep)
     {
-        a %= MathF.Tau;
-        return a < 0f ? a + MathF.Tau : a;
+        var n = Math.Max(2, (int)MathF.Ceiling(MathF.Abs(sweep) / 0.3f));
+        for (var i = 1; i <= n; i++)
+        {
+            var t = a0 + sweep * i / n;
+            add(c.u + r * MathF.Cos(t), c.v + r * MathF.Sin(t), PathSegment.Drive);
+        }
+    }
+
+    /// <summary>The field seen along one of its sides: u across the lanes, v along them.</summary>
+    private sealed class Frame(Polygon shape, bool alongZ, float width)
+    {
+        public bool AlongZ { get; } = alongZ;
+        public float U0 { get; } = alongZ ? shape.Min.X : shape.Min.Y;
+        public float V0 { get; } = alongZ ? shape.Min.Y : shape.Min.X;
+        public float Across { get; } = alongZ ? shape.Size.X : shape.Size.Y;
+        public float Along { get; } = alongZ ? shape.Size.Y : shape.Size.X;
+
+        public Vector2 ToWorld(float u, float v) => AlongZ ? new Vector2(u, v) : new Vector2(v, u);
+        public (float u, float v) ToFrame(Vector2 p) => AlongZ ? (p.X, p.Y) : (p.Y, p.X);
+
+        /// <summary>The field's extent along v under the strip <paramref name="u1"/>..<paramref name="u2"/>, widened by <paramref name="margin"/>.</summary>
+        public (float lo, float hi) Span(float u1, float u2, float margin)
+        {
+            var (lo, hi) = shape.Extent(AlongZ, u1, u2) ?? (V0, V0 + Along);
+            return (lo - margin, hi + margin);
+        }
+
+        /// <summary>Lane centers, ascending, evenly spaced from edge to edge at most a lane width apart.</summary>
+        public List<float> LaneCenters()
+        {
+            var lo = U0 + width * 0.5f;
+            var hi = U0 + Across - width * 0.5f;
+            if (hi - lo < 0.01f) return [U0 + Across * 0.5f];
+            var n = Math.Max(1, (int)MathF.Ceiling((hi - lo) / width - 0.01f));
+            return Enumerable.Range(0, n + 1).Select(i => lo + (hi - lo) * i / n).ToList();
+        }
     }
 }
 
@@ -250,6 +336,7 @@ public sealed class FieldWorkController : IVehicleController
     /// <summary>Meters of straight lane before a front work area reaches the field, to line up and lower it.</summary>
     private const float RunIn = 2.5f;
     private const float TurnSpeedKmh = 7f;
+    private const float ReverseSpeedKmh = 5f;
     private readonly List<Machine> _tools;
     private readonly float _workSpeedKmh;
 
@@ -288,8 +375,10 @@ public sealed class FieldWorkController : IVehicleController
         // lined up in time to lower a front one (a combine's header) before it reaches the field.
         Margin = margin ?? MathF.Max(MathF.Max(0f, reach) + 0.8f, ahead + RunIn);
         _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.Def.WorkArea!.MaxWorkSpeedKmh) * 0.9f;
-        Path = FieldPlanner.Lanes(field, width, minR, Margin, plannedFrom, maxLanes);
-        Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Work);
+        // Backing up with a trailed implement would jackknife it.
+        var canReverse = vehicle.Chain().All(m => m == vehicle || m.Def.Attacher?.Mode == "mounted");
+        Path = FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin) { From = plannedFrom, MaxLanes = maxLanes, Reverse = canReverse });
+        Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Segments);
     }
 
     /// <summary>How far ahead of the vehicle's reference point the front (0.5) or rear (-0.5) edge of a tool's work area is.</summary>
@@ -323,7 +412,7 @@ public sealed class FieldWorkController : IVehicleController
     /// <summary>The part of <see cref="Wages"/> paid already: whole dollars as they add up, the rest when the job ends.</summary>
     public float WagesPaid { get; internal set; }
 
-    public int LanesDone => Path.Work.Take(Math.Min(Driver.Index, Path.Work.Count)).Count(w => w);
+    public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
 
     public VehicleInput GetInput(Machine v, float dt)
     {
@@ -340,8 +429,14 @@ public sealed class FieldWorkController : IVehicleController
             return new VehicleInput { Brake = true };
         }
 
-        var onLane = Path.Work[Driver.Index];
-        Driver.SpeedKmh = onLane ? _workSpeedKmh : TurnSpeedKmh;
+        var segment = Path.Segments[Driver.Index];
+        var onLane = segment == PathSegment.Work;
+        Driver.SpeedKmh = segment switch
+        {
+            PathSegment.Work => _workSpeedKmh,
+            PathSegment.Reverse => ReverseSpeedKmh,
+            _ => TurnSpeedKmh,
+        };
         var input = Driver.GetInput(v, dt);
         var laneDir = onLane ? Driver.SegmentDirection : Vector2.Zero;
 

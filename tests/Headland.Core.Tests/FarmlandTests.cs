@@ -157,15 +157,16 @@ public class FarmlandTests
     [Fact]
     public void LanesOfAPolygonEndPastItsEdgeUnderTheWholeSwath()
     {
-        var path = FieldPlanner.Lanes(Trapezoid, 3f, 4f, 2f);
+        var path = FieldPlanner.Lanes(Trapezoid, new LanePlan(3f, 4f, 2f));
         Assert.Equal(10, path.LaneCount);
         for (var k = 1; k < path.Points.Count; k++)
         {
-            if (!path.Work[k]) continue;
+            if (path.Segments[k] != PathSegment.Work) continue;
             // Every working lane starts and ends outside the field.
             Assert.False(Trapezoid.Contains(path.Points[k - 1]));
             Assert.False(Trapezoid.Contains(path.Points[k]));
         }
-        Assert.True(path.Points.Max(Trapezoid.Shape.Distance) <= 2f + 2f * 4f + 0.5f);
+        // Lanes closer than a turning circle, no reversing: bulb turns, out 1 + √3 turning radii at most.
+        Assert.True(path.Points.Max(Trapezoid.Shape.Distance) <= 2f + (1f + MathF.Sqrt(3f)) * 4f + 0.5f);
     }
 }
