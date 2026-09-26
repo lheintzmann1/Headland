@@ -243,7 +243,7 @@ public sealed class Simulation
         }
         var p = v.Footprint.Center;
         return World.Fields
-            .Select(f => (f, d: Vector2.Distance(p, Vector2.Clamp(p, new Vector2(f.X, f.Z), new Vector2(f.X + f.W, f.Z + f.H)))))
+            .Select(f => (f, d: f.Shape.Distance(p)))
             .Where(x => x.d < 25f)
             .OrderBy(x => x.d)
             .Select(x => x.f)
@@ -274,6 +274,7 @@ public sealed class Simulation
             Height = World.HeightAt(p),
             Ground = (GroundType)L.Ground[i],
             Soil = Content.Soils[L.Soil[i]],
+            FarmlandId = L.FarmlandId[i],
             FieldId = L.FieldId[i],
             Moisture = L.Moisture[i] / 255f,
             Nitrogen = L.Nitrogen[i],
@@ -307,6 +308,7 @@ public sealed class CellReport(bool valid)
     public float Height { get; init; }
     public GroundType Ground { get; init; }
     public SoilDef? Soil { get; init; }
+    public int FarmlandId { get; init; }
     public int FieldId { get; init; }
     public float Moisture { get; init; }
     public float Nitrogen { get; init; }

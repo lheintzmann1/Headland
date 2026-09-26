@@ -35,6 +35,7 @@ internal static class TestContent
         db.Maps["test"] = new MapDef
         {
             Id = "test", Name = "Test", Size = 64, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,
+            Farmlands = [new FarmlandDef { Id = 1, X = 4, Z = 4, W = 56, H = 56 }],
             Fields = [new FieldDef { Id = 1, X = 8, Z = 8, W = 48, H = 48, Ground = "cultivated" }],
             PlayerX = 2, PlayerZ = 2,
         };

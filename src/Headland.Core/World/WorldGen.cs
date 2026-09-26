@@ -104,7 +104,7 @@ public static class WorldGen
         }
         // Fields: gently smoothed so work areas stay even.
         foreach (var f in map.Fields)
-            Stamp(weight, n, f.X, f.Z, f.W, f.H, 10f, 0.55f);
+            StampShape(weight, n, f.Shape(), 10f, 0.55f);
 
         for (var i = 0; i < weight.Length; i++)
             hm.Heights[i] = MathUtil.Lerp(hm.Heights[i], blurred[i], weight[i]) - carve[i];
@@ -159,6 +159,22 @@ public static class WorldGen
             var dz = MathF.Max(0f, MathF.Max(rz - z, z - (rz + rh)));
             var d = MathF.Sqrt(dx * dx + dz * dz);
             var w = strength * (1f - MathUtil.SmoothStep(0f, margin, d));
+            var i = z * n + x;
+            if (w > weight[i]) weight[i] = w;
+        }
+    }
+
+    /// <summary><see cref="Stamp"/> for any polygon: full weight inside, easing out over the margin.</summary>
+    private static void StampShape(float[] weight, int n, Polygon shape, float margin, float strength)
+    {
+        var x0 = Math.Max(0, (int)MathF.Floor(shape.Min.X - margin));
+        var x1 = Math.Min(n - 1, (int)MathF.Ceiling(shape.Max.X + margin));
+        var z0 = Math.Max(0, (int)MathF.Floor(shape.Min.Y - margin));
+        var z1 = Math.Min(n - 1, (int)MathF.Ceiling(shape.Max.Y + margin));
+        for (var z = z0; z <= z1; z++)
+        for (var x = x0; x <= x1; x++)
+        {
+            var w = strength * (1f - MathUtil.SmoothStep(0f, margin, shape.Distance(new Vector2(x, z))));
             var i = z * n + x;
             if (w > weight[i]) weight[i] = w;
         }
@@ -242,9 +258,20 @@ public static class WorldGen
             });
         }
 
+        foreach (var def in map.Farmlands)
+        {
+            var farmland = new Farmland { Id = def.Id, Shape = def.Shape() };
+            world.Farmlands.Add(farmland);
+            Fill(world, farmland.Shape, (i, _, _) => L.FarmlandId[i] = (ushort)farmland.Id);
+        }
+
         foreach (var f in map.Fields)
         {
-            world.Fields.Add(new FieldInfo { Id = f.Id, X = f.X, Z = f.Z, W = f.W, H = f.H });
+            var shape = f.Shape();
+            var farmland = world.Farmlands.LastOrDefault(l => l.Shape.Contains(shape.Centroid));
+            var field = new FieldInfo { Id = f.Id, Shape = shape, FarmlandId = farmland?.Id ?? 0 };
+            world.Fields.Add(field);
+            farmland?.Fields.Add(field);
             var ground = ParseGround(f.Ground);
             var cropIdx = f.Crop != null ? content.CropIndex(f.Crop) : -1;
             var crop = cropIdx >= 0 ? content.Crops[cropIdx] : null;
@@ -253,9 +280,9 @@ public static class WorldGen
                 stage = f.Stage == "harvestable" ? (byte)crop.HarvestableStage : byte.Parse(f.Stage);
             var angle = AngleToByte(f.AngleDeg * MathUtil.Deg2Rad);
 
-            FillRect(world, f.X, f.Z, f.W, f.H, (i, cx, cz) =>
+            Fill(world, shape, (i, cx, cz) =>
             {
-                L.FieldId[i] = (byte)f.Id;
+                L.FieldId[i] = (ushort)f.Id;
                 L.Ground[i] = (byte)(crop != null ? GroundType.Seeded : ground);
                 L.WorkAngle[i] = angle;
                 if (crop == null) return;
@@ -289,6 +316,9 @@ public static class WorldGen
         "water" => GroundType.Water,
         _ => throw new ContentException($"Unknown ground type '{s}'"),
     };
+
+    private static void Fill(WorldMap world, Polygon shape, Action<int, int, int> set) =>
+        shape.Rasterize(WorldMap.CellSize, world.CellsX, world.CellsZ, (cx, cz) => set(world.CellIndex(cx, cz), cx, cz));
 
     private static void FillRect(WorldMap world, float x, float z, float w, float h, Action<int, int, int> set)
     {

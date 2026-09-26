@@ -122,17 +122,19 @@ public static class FieldPlanner
     /// Lanes are visited in interleaved sets so most U-turns are plain semicircles wider than the turning circle;
     /// when two consecutive lanes are closer than that, an omega loop is used instead.
     /// <paramref name="margin"/> is how far past the field edge the vehicle drives before turning: it should cover
-    /// the implement's distance behind the vehicle so the work area clears the edge.
+    /// the implement's distance behind the vehicle so the work area clears the edge. On a field that isn't a
+    /// rectangle each lane spans the field under its whole swath, and a turn goes out to the farther lane end.
     /// </summary>
     public static FieldPath Lanes(FieldInfo f, float workWidth, float minTurnRadius, float margin,
         Vector2? startNear = null, int? maxLanes = null)
     {
         // Plan in (u, v): u across the lanes, v along them.
-        var alongZ = f.H >= f.W;
-        var across = alongZ ? f.W : f.H;
-        var along = alongZ ? f.H : f.W;
-        var u0 = alongZ ? f.X : f.Z;
-        var v0 = alongZ ? f.Z : f.X;
+        var shape = f.Shape;
+        var alongZ = shape.Size.Y >= shape.Size.X;
+        var across = alongZ ? shape.Size.X : shape.Size.Y;
+        var along = alongZ ? shape.Size.Y : shape.Size.X;
+        var u0 = alongZ ? shape.Min.X : shape.Min.Y;
+        var v0 = alongZ ? shape.Min.Y : shape.Min.X;
         Vector2 ToWorld(float u, float v) => alongZ ? new Vector2(u, v) : new Vector2(v, u);
 
         var laneCount = Math.Max(1, (int)MathF.Ceiling(across / workWidth - 0.01f));
@@ -158,8 +160,11 @@ public static class FieldPlanner
         if (maxLanes is { } max) order = order.Take(max).ToList();
 
         float LaneU(int l) => MathF.Min(u0 + (l + 0.5f) * workWidth, u0 + across - workWidth * 0.5f);
-        var vNear = v0 - margin;
-        var vFar = v0 + along + margin;
+        (float near, float far) LaneSpan(float u)
+        {
+            var (lo, hi) = shape.Extent(alongZ, u - workWidth * 0.5f, u + workWidth * 0.5f) ?? (v0, v0 + along);
+            return (lo - margin, hi + margin);
+        }
 
         var pts = new List<Vector2>();
         var work = new List<bool>();
@@ -168,12 +173,22 @@ public static class FieldPlanner
         for (var k = 0; k < order.Count; k++)
         {
             var u = LaneU(order[k]);
-            var start = (u, v: forward ? vNear : vFar);
-            var end = (u, v: forward ? vFar : vNear);
+            var (near, far) = LaneSpan(u);
+            var start = (u, v: forward ? near : far);
+            var end = (u, v: forward ? far : near);
             if (k > 0)
             {
-                // The previous lane ended on this lane's start side; turn outward (away from the field).
+                // The previous lane ended on this lane's start side; turn outward (away from the field), level with
+                // whichever of the two lane ends reaches farther out.
                 var outward = forward ? -1f : 1f;
+                var turnV = forward ? MathF.Min(prevEnd.v, start.v) : MathF.Max(prevEnd.v, start.v);
+                if (MathF.Abs(turnV - prevEnd.v) > 0.01f)
+                {
+                    prevEnd.v = turnV;
+                    pts.Add(ToWorld(prevEnd.u, turnV));
+                    work.Add(false);
+                }
+                start.v = turnV;
                 foreach (var (tu, tv) in Turn(prevEnd, start, outward, minTurnRadius))
                 {
                     pts.Add(ToWorld(tu, tv));
@@ -302,21 +317,26 @@ public sealed class FieldWorkController : IVehicleController
             var fwd = t.Forward;
             var aligned = onLane && Vector2.Dot(fwd, laneDir) > 0.94f;
             var center = t.LocalToWorld(wa.X, wa.Z);
+            var side = MathUtil.Left(t.Heading) * (wa.Width * 0.45f);
             if (t.Lowered)
             {
                 // Lift as soon as the work area leaves the field (or the implement swings off the lane).
-                if (!aligned || !Contains(center)) t.Lowered = false;
+                if (!aligned || !Touches(center, side)) t.Lowered = false;
             }
             else
             {
                 // Lower just before the work area's leading edge reaches the field.
                 var lead = wa.Length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds;
-                if (aligned && Contains(center + fwd * lead)) t.Lowered = true;
+                if (aligned && Touches(center + fwd * lead, side)) t.Lowered = true;
             }
         }
         return input;
     }
 
-    private bool Contains(Vector2 p) =>
-        p.X >= Field.X && p.X <= Field.X + Field.W && p.Y >= Field.Z && p.Y <= Field.Z + Field.H;
+    /// <summary>
+    /// True if any part of a line across the work area is over the field. Work never spills out of the field
+    /// (MachineSystem clips a helper's work to it), so on slanted edges the implement stays down across the edge.
+    /// </summary>
+    private bool Touches(Vector2 center, Vector2 side) =>
+        Field.Contains(center) || Field.Contains(center + side) || Field.Contains(center - side);
 }

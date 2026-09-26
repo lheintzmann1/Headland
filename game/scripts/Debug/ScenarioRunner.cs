@@ -63,12 +63,12 @@ public partial class ScenarioRunner : Node
         var combine = Find("combine_7");
         var header = combine.Attached.Values.First();
         var tank = combine.Unit(combine.Def.HarvestTank)!;
-        var f2 = Sim.World.FieldById(2)!;
+        var f2 = Sim.World.FieldById(2)!.Shape;
 
         // --- Harvest three lanes of ripe wheat.
         Sim.Player.Enter(combine);
-        Ms.Teleport(combine, new NVec2(f2.X + 3f, f2.Z - 8f), 0f);
-        var helper = Sim.HireHelper(combine, new FieldInfo { Id = f2.Id, X = f2.X, Z = f2.Z, W = 18f, H = f2.H }, maxLanes: 3);
+        Ms.Teleport(combine, f2.Min + new NVec2(3f, -8f), 0f);
+        var helper = Sim.HireHelper(combine, FieldInfo.Rect(2, f2.Min.X, f2.Min.Y, 18f, f2.Size.Y), maxLanes: 3);
         Game.FocusOverride = () => combine.Footprint.Center;
         Game.Camera.Zoom = 34f;
         Game.SimSubsteps = 4;
@@ -115,10 +115,10 @@ public partial class ScenarioRunner : Node
         Sim.Player.Exit(Sim);
         var t125 = Find("tractor_125");
         var cultivator = t125.Attached.Values.First();
-        var f1 = Sim.World.FieldById(1)!;
-        var strip = new FieldInfo { Id = f1.Id, X = f1.X, Z = f1.Z, W = 15f, H = f1.H };
+        var f1 = Sim.World.FieldById(1)!.Shape;
+        var strip = FieldInfo.Rect(1, f1.Min.X, f1.Min.Y, 15f, f1.Size.Y);
         Sim.Player.Enter(t125);
-        Ms.Teleport(t125, new NVec2(f1.X + 1.5f, f1.Z - 8f), 0f);
+        Ms.Teleport(t125, f1.Min + new NVec2(1.5f, -8f), 0f);
         helper = Sim.HireHelper(t125, strip, maxLanes: 5);
         Game.FocusOverride = () => t125.Footprint.Center;
         Game.Camera.Zoom = 40f;
@@ -128,16 +128,16 @@ public partial class ScenarioRunner : Node
         await Until(() => helper.Finished, 120f);
         Game.SimSubsteps = 1;
         Log($"cultivated {cultivator.WorkedHa:0.00} ha, headland margin {helper.Margin:0.0} m, worked outside field: {OutsideCells(strip)} cells");
-        Game.FocusOverride = () => new NVec2(strip.X + strip.W * 0.5f, strip.Z + 12f);
+        Game.FocusOverride = () => new NVec2(strip.Center.X, strip.Shape.Min.Y + 12f);
         Game.Camera.Zoom = 60f;
         await Frames(20);
         await Shot("cultivate_edges");
 
         // --- Swap to the seed drill and sow canola (in season in August).
         Ms.Detach(cultivator);
-        Ms.Teleport(cultivator, new NVec2(f1.X - 10f, f1.Z - 12f), 0f);
+        Ms.Teleport(cultivator, f1.Min + new NVec2(-10f, -12f), 0f);
         var seeder = Find("seeder_3");
-        Ms.Teleport(t125, new NVec2(f1.X + 1.5f, f1.Z - 16f), 0f);
+        Ms.Teleport(t125, f1.Min + new NVec2(1.5f, -16f), 0f);
         Ms.Teleport(seeder, t125.LocalToWorld(0f, t125.Joint("drawbar")!.Z) - MathUtil.Forward(0f) * seeder.Def.Attacher!.Z, 0f);
         if (!Ms.Attach(t125, "drawbar", seeder)) throw new InvalidOperationException("could not attach the seeder");
         seeder.SelectedCrop = Sim.Content.CropIndex("canola");
@@ -153,7 +153,7 @@ public partial class ScenarioRunner : Node
 
         // --- Let the seasons run.
         Sim.Player.Exit(Sim);
-        var sown = new NVec2(f1.X + 6f, f1.Z + 30f);
+        var sown = f1.Min + new NVec2(6f, 30f);
         Sim.Player.Position = sown - new NVec2(10f, 0f);
         Game.FocusOverride = () => sown;
         Game.Camera.Zoom = 30f;
@@ -193,7 +193,7 @@ public partial class ScenarioRunner : Node
 
     private Machine Find(string defId) => Ms.All.First(m => m.Def.Id == defId);
 
-    /// <summary>Cultivated cells within 20 m of a field rectangle but outside it.</summary>
+    /// <summary>Cultivated cells within 20 m of a field but outside it.</summary>
     private int OutsideCells(FieldInfo f)
     {
         var w = Sim.World;
@@ -202,9 +202,8 @@ public partial class ScenarioRunner : Node
         for (var cx = 0; cx < w.CellsX; cx++)
         {
             var p = w.CellCenter(cx, cz);
-            var inside = p.X > f.X && p.X < f.X + f.W && p.Y > f.Z && p.Y < f.Z + f.H;
-            var near = p.X > f.X - 20 && p.X < f.X + f.W + 20 && p.Y > f.Z - 20 && p.Y < f.Z + f.H + 20;
-            if (!inside && near && w.Layers.Ground[w.CellIndex(cx, cz)] == (byte)GroundType.Cultivated) n++;
+            var d = f.Shape.Distance(p);
+            if (d > 0f && d < 20f && w.Layers.Ground[w.CellIndex(cx, cz)] == (byte)GroundType.Cultivated) n++;
         }
         return n;
     }

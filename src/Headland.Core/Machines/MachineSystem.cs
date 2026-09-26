@@ -435,6 +435,8 @@ public sealed class MachineSystem
 
     private void ProcessWorkAreas(Machine root)
     {
+        // A helper only works the field it was hired for.
+        var limit = (root.Controller as FieldWorkController)?.Field.Shape;
         Span<Vector2> pts = stackalloc Vector2[8];
         foreach (var m in root.Chain())
         {
@@ -459,6 +461,7 @@ public sealed class MachineSystem
 
             _cells.Clear();
             Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
+            if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
             var fieldId = FieldIdAt(center);
             var changed = wa.Type switch
             {

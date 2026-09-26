@@ -237,12 +237,11 @@ public partial class PropsRenderer : Node3D
 
     private Label3D FieldSign(FieldInfo f)
     {
-        var center = new System.Numerics.Vector2(f.X + f.W * 0.5f, f.Z + f.H * 0.5f);
         return new Label3D
         {
             Name = $"Field_{f.Id}",
             Text = $"{f.Label}\n{f.AreaHa:0.00} ha",
-            Position = Sim.World.OnGround(center, 6f),
+            Position = Sim.World.OnGround(f.Center, 6f),
             Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
             FontSize = 48,
             PixelSize = 0.025f,

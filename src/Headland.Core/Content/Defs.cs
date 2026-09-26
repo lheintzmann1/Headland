@@ -286,14 +286,41 @@ public sealed class TileNetworkDef
     public TileRunDef[] Runs { get; set; } = [];
 }
 
-public sealed class FieldDef
+/// <summary>A map area given as a rectangle (x, z, w, h) or, when <see cref="Polygon"/> is set, as a polygon.</summary>
+public abstract class ShapeDef
 {
-    /// <summary>Field number shown to the player, unique per map (1..255).</summary>
-    public int Id { get; set; }
     public float X { get; set; }
     public float Z { get; set; }
     public float W { get; set; }
     public float H { get; set; }
+    /// <summary>Outline as [x, z] points in meters, in order (either winding). Replaces the rectangle.</summary>
+    public float[][]? Polygon { get; set; }
+
+    /// <summary>Why the shape can't be built, or null when it's valid.</summary>
+    public string? ShapeError()
+    {
+        if (Polygon == null) return W > 0 && H > 0 ? null : "needs w and h > 0, or a polygon";
+        if (Polygon.Length < 3) return "polygon needs at least 3 points";
+        if (Polygon.Any(p => p.Length != 2)) return "polygon points are [x, z] pairs";
+        return Shape().Area < 1f ? "polygon has no area" : null;
+    }
+
+    public World.Polygon Shape() => Polygon != null
+        ? new World.Polygon(Polygon.Select(p => new System.Numerics.Vector2(p[0], p[1])))
+        : World.Polygon.Rect(X, Z, W, H);
+}
+
+/// <summary>A parcel of land bought and sold as a whole (FS farmland). Fields are the crop areas inside it.</summary>
+public sealed class FarmlandDef : ShapeDef
+{
+    /// <summary>Parcel number, unique per map (1..65535).</summary>
+    public int Id { get; set; }
+}
+
+public sealed class FieldDef : ShapeDef
+{
+    /// <summary>Field number shown to the player, unique per map (1..65535).</summary>
+    public int Id { get; set; }
     /// <summary>Initial ground: grass, cultivated, stubble, seeded, plowed.</summary>
     public string Ground { get; set; } = "stubble";
     public string? Crop { get; set; }
@@ -370,6 +397,9 @@ public sealed class MapDef
     public float TileSize { get; set; } = 16f;
     public TileNetworkDef[] Networks { get; set; } = [];
     public RectDef[] Yards { get; set; } = [];
+    /// <summary>Parcels; where two overlap, the later one wins. Land outside every parcel can't be bought.</summary>
+    public FarmlandDef[] Farmlands { get; set; } = [];
+    /// <summary>Each field lies inside a farmland (the one holding its centroid).</summary>
     public FieldDef[] Fields { get; set; } = [];
     public BuildingDef[] Buildings { get; set; } = [];
     public SellPointDef[] SellPoints { get; set; } = [];

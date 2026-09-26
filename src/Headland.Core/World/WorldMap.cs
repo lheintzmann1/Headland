@@ -69,7 +69,8 @@ public sealed class FieldLayers
     {
         Ground = new byte[count];
         Soil = new byte[count];
-        FieldId = new byte[count];
+        FarmlandId = new ushort[count];
+        FieldId = new ushort[count];
         Crop = new byte[count];
         Stage = new byte[count];
         Progress = new float[count];
@@ -82,8 +83,10 @@ public sealed class FieldLayers
 
     public byte[] Ground { get; }
     public byte[] Soil { get; }
+    /// <summary>0 = outside every farmland (roads, towns: land that can't be bought).</summary>
+    public ushort[] FarmlandId { get; }
     /// <summary>0 = not part of a field.</summary>
-    public byte[] FieldId { get; }
+    public ushort[] FieldId { get; }
     /// <summary>Crop index + 1 (0 = none).</summary>
     public byte[] Crop { get; }
     public byte[] Stage { get; }
@@ -159,16 +162,31 @@ public sealed class Area
     public Vector2 Center => new(X + W * 0.5f, Z + H * 0.5f);
 }
 
+/// <summary>A parcel of land bought and sold as a whole; the fields inside it are its crop areas.</summary>
+public sealed class Farmland
+{
+    /// <summary>Parcel number (1..65535, stored in <see cref="FieldLayers.FarmlandId"/>).</summary>
+    public int Id { get; init; }
+    public required Polygon Shape { get; init; }
+    public float AreaHa => Shape.Area / 10000f;
+    public List<FieldInfo> Fields { get; } = [];
+    public string Label => $"Farmland {Id}";
+}
+
 public sealed class FieldInfo
 {
-    /// <summary>Field number shown to the player (1..255, stored in <see cref="FieldLayers.FieldId"/>).</summary>
+    /// <summary>Field number shown to the player (1..65535, stored in <see cref="FieldLayers.FieldId"/>).</summary>
     public int Id { get; init; }
-    public float X { get; init; }
-    public float Z { get; init; }
-    public float W { get; init; }
-    public float H { get; init; }
-    public float AreaHa => W * H / 10000f;
+    public required Polygon Shape { get; init; }
+    /// <summary>The farmland holding the field (0 = none).</summary>
+    public int FarmlandId { get; init; }
+    public float AreaHa => Shape.Area / 10000f;
+    public Vector2 Center => Shape.Centroid;
     public string Label => $"Field {Id}";
+
+    public bool Contains(Vector2 p) => Shape.Contains(p);
+
+    public static FieldInfo Rect(int id, float x, float z, float w, float h) => new() { Id = id, Shape = Polygon.Rect(x, z, w, h) };
 }
 
 public sealed class WorldMap
@@ -208,6 +226,7 @@ public sealed class WorldMap
     public float TileSize { get; set; } = 16f;
     public List<Area> SellPoints { get; } = [];
     public List<Area> Shops { get; } = [];
+    public List<Farmland> Farmlands { get; } = [];
     public List<FieldInfo> Fields { get; } = [];
     public List<Content.BuildingDef> Buildings { get; } = [];
 
@@ -271,6 +290,13 @@ public sealed class WorldMap
     public Area? SellPointAt(Vector2 p) => SellPoints.Find(a => a.Contains(p));
     public Area? ShopAt(Vector2 p) => Shops.Find(a => a.Contains(p));
     public FieldInfo? FieldById(int id) => Fields.Find(f => f.Id == id);
+    public Farmland? FarmlandById(int id) => Farmlands.Find(f => f.Id == id);
+
+    public Farmland? FarmlandAt(Vector2 p)
+    {
+        var (cx, cz) = WorldToCell(p);
+        return InBounds(cx, cz) && Layers.FarmlandId[CellIndex(cx, cz)] is var id and > 0 ? FarmlandById(id) : null;
+    }
 
     /// <summary>
     /// Fills a (64+2)² RGBA8 data texture for a chunk, including a 1-cell border from neighbors.

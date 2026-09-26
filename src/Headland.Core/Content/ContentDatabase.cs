@@ -204,10 +204,21 @@ public sealed class ContentDatabase
                     e.Add($"map '{map.Id}' network '{net.Id}': width must be between 0 and tileSize");
                 if (string.IsNullOrWhiteSpace(net.Style)) e.Add($"map '{map.Id}' network '{net.Id}': style is required");
             }
+            var farmlands = new List<World.Polygon>();
+            foreach (var f in map.Farmlands)
+            {
+                if (f.Id is < 1 or > ushort.MaxValue) e.Add($"map '{map.Id}': farmland ids must be 1..{ushort.MaxValue}");
+                if (f.ShapeError() is { } err) e.Add($"map '{map.Id}' farmland {f.Id}: {err}");
+                else farmlands.Add(f.Shape());
+            }
+            foreach (var id in map.Farmlands.GroupBy(f => f.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                e.Add($"map '{map.Id}': farmland {id} is defined more than once");
             foreach (var f in map.Fields)
             {
                 if (f.Crop != null && CropById(f.Crop) == null) e.Add($"map '{map.Id}' field {f.Id}: unknown crop '{f.Crop}'");
-                if (f.Id is < 1 or > 255) e.Add($"map '{map.Id}': field ids must be 1..255");
+                if (f.Id is < 1 or > ushort.MaxValue) e.Add($"map '{map.Id}': field ids must be 1..{ushort.MaxValue}");
+                if (f.ShapeError() is { } err) e.Add($"map '{map.Id}' field {f.Id}: {err}");
+                else if (!farmlands.Any(l => l.Contains(f.Shape().Centroid))) e.Add($"map '{map.Id}' field {f.Id}: not inside a farmland");
             }
             foreach (var id in map.Fields.GroupBy(f => f.Id).Where(g => g.Count() > 1).Select(g => g.Key))
                 e.Add($"map '{map.Id}': field {id} is defined more than once");

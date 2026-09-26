@@ -34,12 +34,25 @@
     { "x": 120, "z": 178, "w": 72, "h": 62 },
     { "x": 414, "z": 200, "w": 58, "h": 40 }
   ],
+  // Parcels of land (FS farmland): bought and sold whole. Fields are the crop areas inside them.
+  // Shapes are rectangles (x, z, w, h) or "polygon": [[x, z], ...]. Roads, forests and the elevator stay outside.
+  "farmlands": [
+    { "id": 1, "x": 112, "z": 174, "w": 82,  "h": 69 },
+    { "id": 2, "x": 34,  "z": 26,  "w": 160, "h": 148 },
+    { "id": 3, "x": 210, "z": 26,  "w": 124, "h": 212 },
+    { "id": 4, "x": 36,  "z": 258, "w": 154, "h": 126 },
+    { "id": 5, "x": 210, "z": 258, "w": 126, "h": 114 },
+    { "id": 6, "x": 340, "z": 258, "w": 130, "h": 120 },
+    { "id": 7, "polygon": [[212, 378], [338, 378], [338, 382], [472, 382], [472, 504], [212, 504]] }
+  ],
   "fields": [
     { "id": 1, "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
     { "id": 2, "x": 214, "z": 96,  "w": 110, "h": 120, "ground": "seeded", "crop": "wheat", "stage": "harvestable", "angleDeg": 0 },
     { "id": 3, "x": 40,  "z": 264, "w": 100, "h": 110, "ground": "cultivated", "angleDeg": 0 },
     { "id": 4, "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass",      "angleDeg": 0 },
-    { "id": 5, "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 }
+    { "id": 5, "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 },
+    { "id": 6, "polygon": [[222, 392], [326, 386], [456, 396], [446, 474], [304, 492], [228, 466]],
+      "ground": "stubble", "angleDeg": 90 }
   ],
   "buildings": [
     { "type": "farmhouse", "name": "Farmhouse",     "x": 124, "z": 183, "w": 12, "d": 10, "h": 7,  "color": "#b9ab94" },

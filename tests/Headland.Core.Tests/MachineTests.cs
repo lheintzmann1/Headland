@@ -281,13 +281,13 @@ public class MachineTests
     }
 
     // A plot inside field 4 (grass), so headland turns stay on open grass (which the cultivator would happily work).
-    private static readonly FieldInfo Plot = new() { Id = 4, X = 240, Z = 290, W = 24, H = 40 };
+    private static readonly FieldInfo Plot = FieldInfo.Rect(4, 240, 290, 24, 40);
 
     private static (Simulation sim, Machine tractor, FieldWorkController helper) HireCultivatorHelper()
     {
         var sim = TestContent.NewSim();
-        var t = sim.Machines.Spawn("tractor_125", new Vector2(Plot.X + 2f, Plot.Z - 10f), 0f);
-        var c = sim.Machines.Spawn("cultivator_3", new Vector2(Plot.X + 2f, Plot.Z - 12f), 0f);
+        var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
+        var c = sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f);
         sim.Machines.Attach(t, "rear", c);
         var helper = new FieldWorkController(t, Plot);
         t.Controller = helper;
@@ -332,14 +332,13 @@ public class MachineTests
         {
             var p = sim.World.CellCenter(cx, cz);
             var cultivated = sim.World.Layers.Ground[sim.World.CellIndex(cx, cz)] == (byte)GroundType.Cultivated;
-            var inField = p.X > Plot.X && p.X < Plot.X + Plot.W && p.Y > Plot.Z && p.Y < Plot.Z + Plot.H;
-            var nearField = p.X > Plot.X - 20 && p.X < Plot.X + Plot.W + 20 && p.Y > Plot.Z - 20 && p.Y < Plot.Z + Plot.H + 20;
-            if (inField)
+            var distance = Plot.Shape.Distance(p);
+            if (distance == 0f)
             {
                 inside++;
                 if (cultivated) insideDone++;
             }
-            else if (nearField && cultivated) outsideDone++;
+            else if (distance < 20f && cultivated) outsideDone++;
         }
         Assert.True(insideDone > inside * 0.95f, $"coverage {insideDone * 100f / inside:F1}%");
         Assert.True(outsideDone < inside * 0.02f, $"worked outside the field: {outsideDone * 100f / inside:F1}% of its area");
@@ -351,12 +350,7 @@ public class MachineTests
         var (_, t, helper) = HireCultivatorHelper();
         var mot = t.Def.Motorized!;
         var turnRadius = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
-        var worst = helper.Path.Points.Max(p =>
-        {
-            var dx = MathF.Max(0f, MathF.Max(Plot.X - p.X, p.X - (Plot.X + Plot.W)));
-            var dz = MathF.Max(0f, MathF.Max(Plot.Z - p.Y, p.Y - (Plot.Z + Plot.H)));
-            return MathF.Sqrt(dx * dx + dz * dz);
-        });
+        var worst = helper.Path.Points.Max(Plot.Shape.Distance);
         // Past the edge by the implement's offset, plus at most a turning circle.
         Assert.True(worst <= helper.Margin + 2f * turnRadius + 0.5f, $"path reaches {worst:F1} m outside the field");
         Assert.True(helper.Margin < 4.5f, $"margin {helper.Margin:F1} m");
@@ -365,7 +359,7 @@ public class MachineTests
     [Fact]
     public void HelperLanesRunAlongTheLongSide()
     {
-        var wide = new FieldInfo { X = 0, Z = 0, W = 60, H = 20 };
+        var wide = FieldInfo.Rect(1, 0, 0, 60, 20);
         var path = FieldPlanner.Lanes(wide, 3f, 3.5f, 2f);
         var lane = path.Points[1] - path.Points[0];
         Assert.True(MathF.Abs(lane.X) > MathF.Abs(lane.Y), "lanes should run along x for a wide field");
