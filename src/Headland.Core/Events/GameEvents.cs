@@ -1,4 +1,5 @@
 using Headland.Core.Machines;
+using Headland.Core.Pois;
 using Headland.Core.Time;
 using Headland.Core.Weather;
 using Headland.Core.World;
@@ -35,11 +36,11 @@ public sealed record CropHarvested(Machine Harvester, string Crop, string FillTy
 
 // ---- Trade
 
-/// <summary>A whole load tipped at a sell point (published when tipping stops).</summary>
-public sealed record FillSold(Machine Machine, string SellPoint, string FillType, float Amount, float Income) : IGameEvent;
+/// <summary>A whole load sold at a POI (published when the machine stops unloading).</summary>
+public sealed record FillSold(Machine Machine, Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
 
-/// <summary>Supplies bought at a shop into a machine's fill unit.</summary>
-public sealed record FillBought(Machine Machine, string Shop, string FillType, float Amount, float Cost) : IGameEvent;
+/// <summary>Supplies bought at a POI into a machine's fill unit.</summary>
+public sealed record FillBought(Machine Machine, Poi Poi, string FillType, float Amount, float Cost) : IGameEvent;
 
 // ---- Ownership
 

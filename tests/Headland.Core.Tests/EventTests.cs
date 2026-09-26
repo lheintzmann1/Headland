@@ -113,7 +113,7 @@ public class GameEventTests
         for (var s = 0f; s < 60f && (trailer.Tipping || trailer.TipAnim > 0f); s += Dt) sim.Tick(Dt);
 
         var sale = Assert.Single(sold);
-        Assert.Equal(("elevator", "wheat", trailer), (sale.SellPoint, sale.FillType, sale.Machine));
+        Assert.Equal(("elevator", "wheat", trailer), (sale.Poi.Id, sale.FillType, sale.Machine));
         Assert.Equal(8000f, sale.Amount, 1);
         Assert.Equal(8000f, sim.Statistics.Sold["wheat"], 1);
     }

@@ -122,8 +122,8 @@ public sealed class MachineSave
     public List<FillUnitSave> FillUnits { get; set; } = [];
     /// <summary>Work area pose of the last tick [x, z, heading], so the next tick sweeps without a gap.</summary>
     public float[]? WorkPose { get; set; }
-    /// <summary>A load being tipped at a sell point, totalled so far.</summary>
-    public SaleSave? Sale { get; set; }
+    /// <summary>A load being unloaded at a POI, totalled so far.</summary>
+    public DeliverySave? Delivery { get; set; }
     public HelperSave? Helper { get; set; }
 }
 
@@ -134,9 +134,10 @@ public sealed class FillUnitSave
     public float Level { get; set; }
 }
 
-public sealed class SaleSave
+public sealed class DeliverySave
 {
-    public string SellPoint { get; set; } = "";
+    /// <summary>Placement id of the POI.</summary>
+    public string Poi { get; set; } = "";
     public string FillType { get; set; } = "";
     public float Amount { get; set; }
     public float Income { get; set; }

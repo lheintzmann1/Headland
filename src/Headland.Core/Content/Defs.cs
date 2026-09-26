@@ -366,6 +366,37 @@ public sealed class PoiDef
     public PoiPartDef[] Parts { get; set; } = [];
     /// <summary>Optional model drawn instead of the parts (which still collide).</summary>
     public ModelDef? Visual { get; set; }
+    /// <summary>Areas where machines use the POI.</summary>
+    public PoiTriggerDef[] Triggers { get; set; } = [];
+    /// <summary>What the POI does for the machines at its triggers.</summary>
+    public PoiActionDef[] Actions { get; set; } = [];
+}
+
+/// <summary>An area of a POI where machines do something: tip a load, fill up.</summary>
+public sealed class PoiTriggerDef
+{
+    /// <summary>Unique within the POI; actions refer to it.</summary>
+    public string Id { get; set; } = "";
+    /// <summary>
+    /// How machines use it: "unload" (a tipping trailer inside it) or "fill" (machines parked inside it fill up
+    /// with the fill key).
+    /// </summary>
+    public string Type { get; set; } = "unload";
+    /// <summary>Center in the POI's local space; width along x, depth along z.</summary>
+    public float X { get; set; }
+    public float Z { get; set; }
+    public float W { get; set; } = 10f;
+    public float D { get; set; } = 10f;
+}
+
+/// <summary>Something a POI does at one of its triggers, seen from the farmer's side: sell there, buy there.</summary>
+public sealed class PoiActionDef
+{
+    /// <summary>"sell": the POI buys loads of <see cref="FillTypes"/> tipped at an unload trigger. "buy": it sells them at a fill trigger.</summary>
+    public string Type { get; set; } = "sell";
+    /// <summary>Id of the trigger machines use.</summary>
+    public string Trigger { get; set; } = "";
+    public string[] FillTypes { get; set; } = [];
 }
 
 /// <summary>One placeholder block of a POI: a building, a silo, a stack of pallets.</summary>
@@ -404,28 +435,6 @@ public sealed class PoiPlacementDef
     public float HeadingDeg { get; set; }
     /// <summary>Owning farm: 0 = an NPC's (default), 1 = the player's.</summary>
     public int Farm { get; set; }
-}
-
-public sealed class SellPointDef
-{
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float W { get; set; }
-    public float H { get; set; }
-    public string[] Accepts { get; set; } = [];
-}
-
-public sealed class ShopDef
-{
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float W { get; set; }
-    public float H { get; set; }
-    public string[] Sells { get; set; } = [];
 }
 
 public sealed class MachineSpawnDef
@@ -467,8 +476,6 @@ public sealed class MapDef
     /// <summary>Each field lies inside a farmland (the one holding its centroid).</summary>
     public FieldDef[] Fields { get; set; } = [];
     public PoiPlacementDef[] Pois { get; set; } = [];
-    public SellPointDef[] SellPoints { get; set; } = [];
-    public ShopDef[] Shops { get; set; } = [];
     public MachineSpawnDef[] Machines { get; set; } = [];
     public ForestDef[] Forests { get; set; } = [];
     /// <summary>Scattered trees per hectare on open grass.</summary>

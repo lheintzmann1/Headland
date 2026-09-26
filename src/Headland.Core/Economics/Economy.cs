@@ -2,6 +2,7 @@ using Headland.Core.Content;
 
 namespace Headland.Core.Economics;
 
+/// <summary>The player's farm money, and market prices.</summary>
 public sealed class Economy(ContentDatabase content, float startMoney)
 {
     public float Money { get; private set; } = startMoney;
@@ -15,6 +16,7 @@ public sealed class Economy(ContentDatabase content, float startMoney)
         TotalExpenses = totalExpenses;
     }
 
+    /// <summary>Market price of a unit of <paramref name="fillType"/> in <paramref name="month"/> (the monthly curve).</summary>
     public float Price(string fillType, int month)
     {
         var def = content.FillTypes[fillType];
@@ -22,23 +24,19 @@ public sealed class Economy(ContentDatabase content, float startMoney)
         return def.PricePerUnit * factor;
     }
 
-    public float Sell(string fillType, float amount, int month)
+    public void Earn(float amount)
     {
-        var income = amount * Price(fillType, month);
-        Money += income;
-        TotalIncome += income;
-        return income;
+        Money += amount;
+        TotalIncome += amount;
     }
 
-    /// <summary>Buys up to <paramref name="amount"/> units; returns how many were affordable.</summary>
-    public float Buy(string fillType, float amount, int month)
+    public void Spend(float amount)
     {
-        var price = Price(fillType, month);
-        if (price <= 0f) return amount;
-        var affordable = MathF.Min(amount, MathF.Max(0f, Money) / price);
-        var cost = affordable * price;
-        Money -= cost;
-        TotalExpenses += cost;
-        return affordable;
+        Money -= amount;
+        TotalExpenses += amount;
     }
+
+    /// <summary>How many of <paramref name="amount"/> units at <paramref name="unitPrice"/> the money pays for.</summary>
+    public float Affordable(float amount, float unitPrice) =>
+        unitPrice <= 0f ? amount : MathF.Min(amount, MathF.Max(0f, Money) / unitPrice);
 }

@@ -2,18 +2,18 @@ using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Ownership;
+using Headland.Core.Pois;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
 
-/// <summary>Vehicle kinematics, hitching, work areas and fill transfers.</summary>
+/// <summary>Vehicle kinematics, hitching, work areas and fill transfers (between machines, and into POIs).</summary>
 public sealed class MachineSystem
 {
     private const float AttachDistance = 1.6f;
     private readonly Simulation _sim;
     private readonly List<int> _cells = [];
     private readonly List<(Machine m, Vector2 pos, float heading)> _saved = [];
-    private readonly Dictionary<int, (string sellPoint, string fillType, float amount, float income)> _sales = new();
     private int _nextId = 1;
 
     public MachineSystem(Simulation sim) => _sim = sim;
@@ -22,12 +22,11 @@ public sealed class MachineSystem
 
     /// <summary>Id of the next machine spawned (ids are never reused).</summary>
     internal int NextId { get => _nextId; set => _nextId = value; }
-    /// <summary>Loads being tipped, totalled until tipping stops (by machine id).</summary>
-    internal Dictionary<int, (string sellPoint, string fillType, float amount, float income)> Sales => _sales;
 
     private WorldMap World => _sim.World;
     private ContentDatabase Content => _sim.Content;
     private EventBus Events => _sim.Events;
+    private PoiSystem Pois => _sim.Pois;
 
     public Machine Spawn(string defId, Vector2 position, float heading, int farmId = Farm.PlayerId)
     {
@@ -184,11 +183,10 @@ public sealed class MachineSystem
                 continue;
             }
             var unit = t.Unit(t.Def.Tipper!.FillUnit)!;
-            var sell = World.SellPointAt(t.Footprint.Center);
+            var pit = Pois.TriggerAt(t.Footprint.Center, "unload");
             if (unit.IsEmpty) _sim.Notifications.Post($"{t.Def.Name} is empty");
-            else if (sell == null) _sim.Notifications.Post("Drive the trailer into a sell point to tip", Severity.Warning);
-            else if (!sell.FillTypes.Contains(unit.FillType!))
-                _sim.Notifications.Post($"{sell.Name} does not buy {Content.FillTypes[unit.FillType!].Name}", Severity.Warning);
+            else if (pit == null) _sim.Notifications.Post("Drive the trailer into an unloading area to tip", Severity.Warning);
+            else if (Pois.UnloadBlocker(t, pit, unit.FillType!) is { } why) _sim.Notifications.Post(why, Severity.Warning);
             else t.Tipping = true;
         }
     }
@@ -211,31 +209,6 @@ public sealed class MachineSystem
 
     public static string Months(int[] months) =>
         months.Length == 0 ? "any time" : string.Join(", ", months.Select(m => Time.Calendar.MonthNames[m - 1][..3]));
-
-    /// <summary>Refills every machine of the chain parked inside a shop with what the shop sells.</summary>
-    public void BuyAtShop(Machine vehicle)
-    {
-        var bought = false;
-        foreach (var m in vehicle.Chain())
-        {
-            var shop = World.ShopAt(m.Footprint.Center);
-            if (shop == null) continue;
-            foreach (var unit in m.FillUnits)
-            foreach (var ft in shop.FillTypes)
-            {
-                if (!unit.CanAccept(ft)) continue;
-                var price = _sim.Economy.Price(ft, _sim.Clock.Month);
-                var amount = _sim.Economy.Buy(ft, unit.Free, _sim.Clock.Month);
-                unit.Add(ft, amount);
-                if (amount > 0.5f)
-                {
-                    bought = true;
-                    Events.Publish(new FillBought(m, shop.Id, ft, amount, amount * price));
-                }
-            }
-        }
-        if (!bought) _sim.Notifications.Post("Park the implement inside a shop area to buy supplies");
-    }
 
     // ------------------------------------------------------------------ Simulation
 
@@ -601,30 +574,15 @@ public sealed class MachineSystem
 
     private void UpdateTipper(Machine m, float dt)
     {
+        if (!m.Tipping) return;
         var unit = m.Unit(m.Def.Tipper!.FillUnit)!;
-        if (!m.Tipping)
-        {
-            FlushSale(m);
-            return;
-        }
-        var sell = World.SellPointAt(m.Footprint.Center);
-        if (unit.IsEmpty || sell == null || !sell.FillTypes.Contains(unit.FillType!))
+        var pit = Pois.TriggerAt(m.Footprint.Center, "unload");
+        if (unit.IsEmpty || pit == null || Pois.UnloadBlocker(m, pit, unit.FillType!) != null)
         {
             m.Tipping = false;
-            FlushSale(m);
             return;
         }
         if (m.TipAnim < 0.6f) return;
-        var ft = unit.FillType!;
-        var amount = unit.Remove(m.Def.Tipper.RatePerSecond * dt);
-        var income = _sim.Economy.Sell(ft, amount, _sim.Clock.Month);
-        var prev = _sales.GetValueOrDefault(m.Id, (sellPoint: sell.Id, fillType: ft, amount: 0f, income: 0f));
-        _sales[m.Id] = (sell.Id, ft, prev.amount + amount, prev.income + income);
-    }
-
-    private void FlushSale(Machine m)
-    {
-        if (!_sales.Remove(m.Id, out var sale) || sale.amount < 1f) return;
-        Events.Publish(new FillSold(m, sale.sellPoint, sale.fillType, sale.amount, sale.income));
+        unit.Remove(Pois.Unload(m, pit, unit.FillType!, MathF.Min(m.Def.Tipper.RatePerSecond * dt, unit.Level)));
     }
 }

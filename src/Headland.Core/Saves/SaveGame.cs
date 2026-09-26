@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
 using Headland.Core.Machines;
+using Headland.Core.Pois;
 using Headland.Core.World;
 
 namespace Headland.Core.Saves;
@@ -142,8 +143,8 @@ public static class SaveGame
             FillUnits = m.FillUnits.Select(u => new FillUnitSave { Id = u.Def.Id, FillType = u.FillType, Level = u.Level }).ToList(),
             WorkPose = m.HasWorkPose ? [m.PrevWorkCenter.X, m.PrevWorkCenter.Y, m.PrevWorkHeading] : null,
         };
-        if (sim.Machines.Sales.TryGetValue(m.Id, out var sale))
-            save.Sale = new SaleSave { SellPoint = sale.sellPoint, FillType = sale.fillType, Amount = sale.amount, Income = sale.income };
+        if (sim.Pois.Deliveries.TryGetValue(m, out var d))
+            save.Delivery = new DeliverySave { Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income };
         if (m.Controller is FieldWorkController h)
             save.Helper = new HelperSave
             {
@@ -280,8 +281,8 @@ public static class SaveGame
                 machine.PrevWorkCenter = new Vector2(x, z);
                 machine.PrevWorkHeading = heading;
             }
-            if (m.Sale is { } sale && content.FillTypes.ContainsKey(sale.FillType))
-                ms.Sales[machine.Id] = (sale.SellPoint, sale.FillType, sale.Amount, sale.Income);
+            if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
+                sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income);
         }
 
         // Helpers last: their route depends on the implements attached.

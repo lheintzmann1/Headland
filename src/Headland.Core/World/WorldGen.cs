@@ -15,7 +15,6 @@ public static class WorldGen
         BuildNetworks(world, map);
         BuildHeights(world, map);
         BuildGround(world, map, content);
-        BuildAreas(world, map);
         BuildPois(world, map, content);
         BuildTrees(world, map, rng);
         world.MarkAllDirty(crop: true);
@@ -330,14 +329,6 @@ public static class WorldGen
         for (var cz = cz0; cz < cz1; cz++)
         for (var cx = cx0; cx < cx1; cx++)
             set(world.CellIndex(cx, cz), cx, cz);
-    }
-
-    private static void BuildAreas(WorldMap world, MapDef map)
-    {
-        foreach (var s in map.SellPoints)
-            world.SellPoints.Add(new Area { Id = s.Id, Name = s.Name, X = s.X, Z = s.Z, W = s.W, H = s.H, FillTypes = s.Accepts });
-        foreach (var s in map.Shops)
-            world.Shops.Add(new Area { Id = s.Id, Name = s.Name, X = s.X, Z = s.Z, W = s.W, H = s.H, FillTypes = s.Sells });
     }
 
     private static void BuildPois(WorldMap world, MapDef map, ContentDatabase content)

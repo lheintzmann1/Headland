@@ -64,13 +64,6 @@
     { "id": "supplies",  "type": "farm_shop",      "x": 131, "z": 226 },
     { "id": "elevator",  "type": "grain_elevator", "x": 443, "z": 220 }
   ],
-  "sellPoints": [
-    { "id": "elevator", "name": "Grain Elevator", "x": 422, "z": 220, "w": 28, "h": 20,
-      "accepts": ["wheat", "barley", "canola", "corn"] }
-  ],
-  "shops": [
-    { "id": "supplies", "name": "Farm Supplies", "x": 122, "z": 221, "w": 18, "h": 17, "sells": ["seeds"] }
-  ],
   // Machines belong to the player's farm unless "farm": 0 (an NPC's).
   "machines": [
     { "def": "tractor_125",    "x": 152, "z": 206, "headingDeg": 90 },

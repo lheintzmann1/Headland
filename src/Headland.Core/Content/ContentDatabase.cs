@@ -137,6 +137,9 @@ public sealed class ContentDatabase
         var e = new List<string>();
         string[] jointTypes = ["threePoint", "drawbar", "header"];
         string[] workTypes = ["cultivator", "seeder", "harvester"];
+        string[] triggerTypes = ["unload", "fill"];
+        // The trigger types each POI action works through.
+        var actionTriggers = new Dictionary<string, string[]> { ["sell"] = ["unload"], ["buy"] = ["fill"] };
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
         if (!Climates.ContainsKey(Game.Climate)) e.Add($"game.climate '{Game.Climate}' not found");
@@ -208,6 +211,27 @@ public sealed class ContentDatabase
         {
             if (p.W <= 0 || p.D <= 0) e.Add($"poi '{p.Id}': w and d must be > 0");
             if (p.Parts.Any(q => q.W <= 0 || q.D <= 0 || q.H <= 0)) e.Add($"poi '{p.Id}': parts need w, d and h > 0");
+            var triggers = new Dictionary<string, PoiTriggerDef>();
+            foreach (var t in p.Triggers)
+            {
+                if (!triggers.TryAdd(t.Id, t)) e.Add($"poi '{p.Id}': trigger '{t.Id}' is defined more than once");
+                if (!triggerTypes.Contains(t.Type)) e.Add($"poi '{p.Id}' trigger '{t.Id}': unknown type '{t.Type}'");
+                if (t.W <= 0 || t.D <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': w and d must be > 0");
+            }
+            foreach (var a in p.Actions)
+            {
+                var what = $"poi '{p.Id}' {a.Type} action";
+                if (!actionTriggers.TryGetValue(a.Type, out var allowed))
+                {
+                    e.Add($"poi '{p.Id}': unknown action type '{a.Type}'");
+                    continue;
+                }
+                if (!triggers.TryGetValue(a.Trigger, out var trigger)) e.Add($"{what}: trigger '{a.Trigger}' not found");
+                else if (!allowed.Contains(trigger.Type)) e.Add($"{what}: works at {string.Join(" or ", allowed)} triggers, not {trigger.Type}");
+                if (a.FillTypes.Length == 0) e.Add($"{what}: needs fillTypes");
+                foreach (var ft in a.FillTypes)
+                    if (!FillTypes.ContainsKey(ft)) e.Add($"{what}: unknown fill type '{ft}'");
+            }
         }
 
         foreach (var map in Maps.Values)
@@ -251,12 +275,6 @@ public sealed class ContentDatabase
             }
             foreach (var id in map.Pois.GroupBy(p => p.Id).Where(g => g.Count() > 1).Select(g => g.Key))
                 e.Add($"map '{map.Id}': poi '{id}' is defined more than once");
-            foreach (var s in map.SellPoints)
-            foreach (var ft in s.Accepts)
-                if (!FillTypes.ContainsKey(ft)) e.Add($"map '{map.Id}' sell point '{s.Id}': unknown fill type '{ft}'");
-            foreach (var s in map.Shops)
-            foreach (var ft in s.Sells)
-                if (!FillTypes.ContainsKey(ft)) e.Add($"map '{map.Id}' shop '{s.Id}': unknown fill type '{ft}'");
             for (var i = 0; i < map.Machines.Length; i++)
             {
                 var sp = map.Machines[i];

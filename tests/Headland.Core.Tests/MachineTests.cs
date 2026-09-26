@@ -246,7 +246,7 @@ public class MachineTests
     }
 
     [Fact]
-    public void TippingAtSellPointEarnsMoney()
+    public void TippingAtTheElevatorEarnsMoney()
     {
         var sim = TestContent.NewSim();
         var t = sim.Machines.Spawn("tractor_95", new Vector2(441f, 230f), MathF.PI / 2f);

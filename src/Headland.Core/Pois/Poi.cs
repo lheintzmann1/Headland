@@ -16,6 +16,7 @@ public sealed class Poi : IOwnable
         Heading = heading;
         FarmId = farmId;
         Name = name ?? def.Name;
+        Triggers = def.Triggers.Select(t => new PoiTrigger(this, t)).ToArray();
     }
 
     /// <summary>The placement id, unique on the map.</summary>
@@ -28,8 +29,11 @@ public sealed class Poi : IOwnable
     public float Heading { get; }
     /// <summary>Owning farm (<see cref="Farm.None"/> = an NPC's).</summary>
     public int FarmId { get; internal set; }
+    public IReadOnlyList<PoiTrigger> Triggers { get; }
 
     public Obb Footprint => new(Position, new Vector2(Def.W * 0.5f, Def.D * 0.5f), Heading);
+
+    public PoiTrigger? Trigger(string id) => Triggers.FirstOrDefault(t => t.Id == id);
 
     public Vector2 LocalToWorld(float x, float z) => MathUtil.LocalToWorld(Position, Heading, new Vector2(x, z));
 

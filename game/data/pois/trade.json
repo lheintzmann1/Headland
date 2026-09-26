@@ -1,14 +1,29 @@
 [
   // Places that buy from and sell to farmers. See farm.json for the POI layout.
+  // Triggers are areas (center x, z; size w, d) where machines use the POI: "unload" (tip a trailer into it) or
+  // "fill" (park inside and press the fill key). Actions say what happens there, from the farmer's side: "sell"
+  // (the POI buys loads of its fillTypes tipped at an unload trigger) or "buy" (it sells them at a fill trigger).
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "parts": [
       { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },
       { "shape": "pallets", "x": -4, "z": 0.5, "w": 4, "d": 3, "h": 1.2, "color": "#b89a6a", "solid": false }
+    ],
+    "triggers": [
+      { "id": "yard", "type": "fill", "z": 3.5, "w": 18, "d": 17 }
+    ],
+    "actions": [
+      { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"] }
     ] },
   { "id": "grain_elevator", "name": "Grain Elevator", "icon": "sell", "w": 58, "d": 40,
     "parts": [
       { "shape": "elevator", "x": 15,    "z": -10,   "w": 12, "d": 12, "h": 24, "color": "#9a9d9e" },
       { "shape": "silo",     "x": -0.5,  "z": -12.5, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" },
       { "shape": "silo",     "x": -12.5, "z": -12.5, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" }
+    ],
+    "triggers": [
+      { "id": "pit", "type": "unload", "x": -7, "z": 10, "w": 28, "d": 20 }
+    ],
+    "actions": [
+      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"] }
     ] }
 ]

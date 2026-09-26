@@ -10,7 +10,7 @@ using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game.World;
 
-/// <summary>POIs (buildings and sites), trees (seasonal colors), sell/shop area markers and field signs.</summary>
+/// <summary>POIs (buildings and sites) with their trigger areas, trees (seasonal colors) and field signs.</summary>
 public partial class PropsRenderer : Node3D
 {
     public Simulation Sim { get; init; } = null!;
@@ -21,10 +21,12 @@ public partial class PropsRenderer : Node3D
 
     public override void _Ready()
     {
-        foreach (var poi in Sim.World.Pois) AddChild(BuildPoi(poi));
+        foreach (var poi in Sim.World.Pois)
+        {
+            AddChild(BuildPoi(poi));
+            foreach (var trigger in poi.Triggers) AddChild(BuildTrigger(trigger));
+        }
         BuildTrees();
-        foreach (var a in Sim.World.SellPoints) AddChild(BuildArea(a, new Color(0.86f, 0.68f, 0.2f), $"{a.Name}\nSells grain · tip here (U)"));
-        foreach (var a in Sim.World.Shops) AddChild(BuildArea(a, new Color(0.35f, 0.6f, 0.85f), $"{a.Name}\nBuy seed here (R)"));
         foreach (var f in Sim.World.Fields)
         {
             _signs[f] = FieldSign(f);
@@ -264,27 +266,35 @@ public partial class PropsRenderer : Node3D
         }
     }
 
-    // ------------------------------------------------------------------ Areas and signs
+    // ------------------------------------------------------------------ Triggers and signs
 
-    private Node3D BuildArea(Area a, Color color, string label)
+    /// <summary>A trigger's outline on the ground, under the POI's icon, name and what the farmer can do there.</summary>
+    private Node3D BuildTrigger(PoiTrigger t)
     {
-        var w = Sim.World;
-        var root = new Node3D { Name = a.Id };
+        var area = t.Area;
+        var color = TriggerColor(t.Type);
+        var root = new Node3D
+        {
+            Name = $"{t.Poi.Id}_{t.Id}",
+            Position = Sim.World.OnGround(area.Center, 0.06f),
+            Rotation = new Vector3(0f, area.Heading, 0f),
+        };
         var mat = Materials.Get(color, 0.6f);
-        var y = w.HeightAt(a.Center) + 0.06f;
+        var (hx, hz) = (area.HalfExtents.X, area.HalfExtents.Y);
         (Vector3 pos, Vector3 size)[] edges =
         [
-            (new Vector3(a.X + a.W * 0.5f, y, a.Z), new Vector3(a.W, 0.04f, 0.25f)),
-            (new Vector3(a.X + a.W * 0.5f, y, a.Z + a.H), new Vector3(a.W, 0.04f, 0.25f)),
-            (new Vector3(a.X, y, a.Z + a.H * 0.5f), new Vector3(0.25f, 0.04f, a.H)),
-            (new Vector3(a.X + a.W, y, a.Z + a.H * 0.5f), new Vector3(0.25f, 0.04f, a.H)),
+            (new Vector3(0f, 0f, -hz), new Vector3(hx * 2f, 0.04f, 0.25f)),
+            (new Vector3(0f, 0f, hz), new Vector3(hx * 2f, 0.04f, 0.25f)),
+            (new Vector3(-hx, 0f, 0f), new Vector3(0.25f, 0.04f, hz * 2f)),
+            (new Vector3(hx, 0f, 0f), new Vector3(0.25f, 0.04f, hz * 2f)),
         ];
         foreach (var (pos, size) in edges)
             root.AddChild(new MeshInstance3D { Mesh = new BoxMesh { Size = size }, Position = pos, MaterialOverride = mat });
+        var what = string.Join(" · ", Sim.Pois.Describe(t).Append(Hint(t.Type)));
         root.AddChild(new Label3D
         {
-            Text = label,
-            Position = new Vector3(a.Center.X, y + 5f, a.Center.Y),
+            Text = $"{t.Poi.Name}\n{what}",
+            Position = new Vector3(0f, 5f, 0f),
             Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
             FontSize = 40,
             PixelSize = 0.02f,
@@ -292,8 +302,33 @@ public partial class PropsRenderer : Node3D
             Modulate = color.Lightened(0.3f),
             NoDepthTest = true,
         });
+        var icon = $"res://assets/icons/{t.Poi.Def.Icon}.svg";
+        if (t.Poi.Def.Icon != null && ResourceLoader.Exists(icon))
+            root.AddChild(new Sprite3D
+            {
+                Texture = GD.Load<Texture2D>(icon),
+                Position = new Vector3(0f, 7.4f, 0f),
+                Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+                PixelSize = 0.018f,
+                Modulate = color.Lightened(0.3f),
+                NoDepthTest = true,
+                TextureFilter = BaseMaterial3D.TextureFilterEnum.LinearWithMipmaps,
+            });
         return root;
     }
+
+    private static Color TriggerColor(string type) => type switch
+    {
+        "unload" => new Color(0.86f, 0.68f, 0.2f),
+        _ => new Color(0.35f, 0.6f, 0.85f),
+    };
+
+    /// <summary>How to use a trigger, with the key on the player's layout.</summary>
+    private static string Hint(string type) => type switch
+    {
+        "unload" => $"tip here ({InputSetup.Label("unload")})",
+        _ => $"park here ({InputSetup.Label("buy")})",
+    };
 
     private Label3D FieldSign(FieldInfo f) => new()
     {

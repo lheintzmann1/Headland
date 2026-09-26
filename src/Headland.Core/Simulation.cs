@@ -6,6 +6,7 @@ using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Ownership;
+using Headland.Core.Pois;
 using Headland.Core.Time;
 using Headland.Core.Weather;
 using Headland.Core.World;
@@ -37,6 +38,7 @@ public sealed class Simulation
         Farms = new Farms(World, Events, setup.FarmName);
         Crops = new CropSystem(content, World, Calendar, Climate);
         Economy = new Economy(content, setup.StartMoney);
+        Pois = new PoiSystem(this);
         Machines = new MachineSystem(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
         Statistics = new Statistics(Events);
@@ -59,6 +61,7 @@ public sealed class Simulation
     public Farms Farms { get; }
     public CropSystem Crops { get; }
     public Economy Economy { get; }
+    public PoiSystem Pois { get; }
     public MachineSystem Machines { get; }
     public PlayerCharacter Player { get; }
     public Statistics Statistics { get; }
@@ -108,6 +111,7 @@ public sealed class Simulation
         UpdateWeather();
 
         Machines.Update(dt);
+        Pois.Update();
         foreach (var m in Machines.All)
             if (m.Controller is FieldWorkController { Finished: true } w)
                 DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
@@ -217,7 +221,7 @@ public sealed class Simulation
     public void CommandTurnOn() => WithVehicle(Machines.ToggleOn);
     public void CommandUnload() => WithVehicle(Machines.ToggleUnload);
     public void CommandCycleSeed() => WithVehicle(Machines.CycleSeed);
-    public void CommandBuy() => WithVehicle(Machines.BuyAtShop);
+    public void CommandBuy() => WithVehicle(Pois.Fill);
 
     /// <summary>H: hire a helper to work the field the vehicle is in (or the nearest one), or dismiss it.</summary>
     public void CommandHelper() => WithVehicle(v =>

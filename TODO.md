@@ -72,7 +72,7 @@ conditions. Money is just another input or output:
 - [ ] Production output goes to POI storage: sold automatically or loaded into a trailer. Pallets and
       bales later.
 - [ ] Farm silo as a player-owned storage POI.
-- [ ] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;
+- [x] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;
       labels in `PropsRenderer` come from the POI def.
 - [ ] Later: buy and place POIs/buildings on your own farmland (FS construction mode).
 

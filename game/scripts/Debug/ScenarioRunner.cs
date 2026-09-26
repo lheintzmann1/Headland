@@ -100,8 +100,9 @@ public partial class ScenarioRunner : Node
 
         // --- Drive (teleport) the trailer to the elevator and tip it.
         Sim.Player.Exit(Sim);
-        var sell = Sim.World.SellPoints[0];
-        Ms.Teleport(t95, new NVec2(sell.X + sell.W - 2.5f, sell.Z + sell.H * 0.5f), MathF.PI / 2f);
+        // Along the pit's x axis, with the trailer inside it.
+        var pit = Sim.World.PoiById("elevator")!.Trigger("pit")!.Area;
+        Ms.Teleport(t95, pit.Center + pit.AxisX * (pit.HalfExtents.X - 2.5f), MathUtil.HeadingOf(pit.AxisX));
         Sim.Player.Enter(t95);
         Game.FocusOverride = null;
         var money = Sim.Economy.Money;

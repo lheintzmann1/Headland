@@ -151,20 +151,6 @@ public sealed class TileNetwork
     public List<NetworkTile> Tiles { get; } = [];
 }
 
-public sealed class Area
-{
-    public string Id { get; init; } = "";
-    public string Name { get; init; } = "";
-    public float X { get; init; }
-    public float Z { get; init; }
-    public float W { get; init; }
-    public float H { get; init; }
-    public string[] FillTypes { get; init; } = [];
-
-    public bool Contains(Vector2 p) => p.X >= X && p.X <= X + W && p.Y >= Z && p.Y <= Z + H;
-    public Vector2 Center => new(X + W * 0.5f, Z + H * 0.5f);
-}
-
 /// <summary>A parcel of land bought and sold as a whole; the fields inside it are its crop areas.</summary>
 public sealed class Farmland : IOwnable
 {
@@ -231,8 +217,6 @@ public sealed class WorldMap
     public List<TileNetwork> Networks { get; } = [];
     /// <summary>Edge of a network tile in meters (shared by every network).</summary>
     public float TileSize { get; set; } = 16f;
-    public List<Area> SellPoints { get; } = [];
-    public List<Area> Shops { get; } = [];
     public List<Farmland> Farmlands { get; } = [];
     public List<FieldInfo> Fields { get; } = [];
     public List<Poi> Pois { get; } = [];
@@ -294,8 +278,6 @@ public sealed class WorldMap
     /// <summary>Ground whose moisture never changes (paved, gravel, open water).</summary>
     public static bool IsSealed(GroundType g) => g is GroundType.Road or GroundType.Yard or GroundType.Water;
 
-    public Area? SellPointAt(Vector2 p) => SellPoints.Find(a => a.Contains(p));
-    public Area? ShopAt(Vector2 p) => Shops.Find(a => a.Contains(p));
     public FieldInfo? FieldById(int id) => Fields.Find(f => f.Id == id);
     public Poi? PoiById(string id) => Pois.Find(p => p.Id == id);
     public Farmland? FarmlandById(int id) => Farmlands.Find(f => f.Id == id);
