@@ -5,9 +5,14 @@ namespace Headland.Game.Common;
 /// <summary>
 /// Registers input actions on physical key positions, so AZERTY users get ZQSD where QWERTY users get WASD.
 /// Labels shown in the HUD are translated back to the user's layout with <see cref="Label"/>.
+/// A key may carry the Shift modifier (<see cref="Shift"/>).
 /// </summary>
 public static class InputSetup
 {
+    private const Key ShiftMask = (Key)KeyModifierMask.MaskShift;
+
+    private static Key Shift(Key key) => key | ShiftMask;
+
     public static readonly (string action, Key key, string help)[] Bindings =
     [
         ("move_forward", Key.W, "Move / accelerate"),
@@ -19,6 +24,8 @@ public static class InputSetup
         ("cam_rotate_left", Key.Q, "Rotate camera"),
         ("cam_rotate_right", Key.E, "Rotate camera"),
         ("enter", Key.F, "Enter / exit vehicle"),
+        ("next_vehicle", Key.Tab, "Switch to the next vehicle"),
+        ("prev_vehicle", Shift(Key.Tab), "Switch to the previous vehicle"),
         ("attach", Key.G, "Attach / detach implement"),
         ("lower", Key.V, "Lower / raise implements"),
         ("turn_on", Key.B, "Turn on / off"),
@@ -45,7 +52,7 @@ public static class InputSetup
         {
             if (InputMap.HasAction(action)) InputMap.EraseAction(action);
             InputMap.AddAction(action);
-            InputMap.ActionAddEvent(action, new InputEventKey { PhysicalKeycode = key });
+            InputMap.ActionAddEvent(action, new InputEventKey { PhysicalKeycode = key & ~ShiftMask, ShiftPressed = (key & ShiftMask) != 0 });
         }
     }
 

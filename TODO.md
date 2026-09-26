@@ -25,7 +25,7 @@ Rules for every item:
 - [x] **Number fields instead of naming them.** Drop `name` from `FieldDef`, `FieldInfo` and the map
       JSON; show the number on field signs (`PropsRenderer`), the HUD, helper notifications and the
       inspector.
-- [ ] **Switch-vehicle key** (FS: Tab / Shift+Tab): jump into the next/previous farm vehicle. Physical
+- [x] **Switch-vehicle key** (FS: Tab / Shift+Tab): jump into the next/previous farm vehicle. Physical
       key, label via `InputSetup.Label`, listed in F1 help and README controls. A helper driving a vehicle
       keeps working.
 - [x] Fix the stale `scripts/Core/InputSetup.cs` path in the `game/project.godot` header comment.

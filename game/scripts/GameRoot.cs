@@ -112,6 +112,9 @@ public partial class GameRoot : Node3D
     {
         if (!PlayerInputEnabled || e is not InputEventKey { Pressed: true, Echo: false }) return;
         if (e.IsActionPressed("enter")) Sim.ToggleEnterExit();
+        // Before next_vehicle: Shift+Tab also matches the plain Tab binding.
+        else if (e.IsActionPressed("prev_vehicle")) Sim.SwitchVehicle(-1);
+        else if (e.IsActionPressed("next_vehicle")) Sim.SwitchVehicle(1);
         else if (e.IsActionPressed("attach")) Sim.CommandAttach();
         else if (e.IsActionPressed("lower")) Sim.CommandLower();
         else if (e.IsActionPressed("turn_on")) Sim.CommandTurnOn();

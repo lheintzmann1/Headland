@@ -144,6 +144,18 @@ public sealed class Simulation
         else Notifications.Post("No vehicle nearby");
     }
 
+    /// <summary>Tab / Shift+Tab: jump into the next or previous vehicle. A helper keeps driving the one left behind.</summary>
+    public void SwitchVehicle(int step)
+    {
+        if (Player.NextVehicle(this, step) is not { } next)
+        {
+            Notifications.Post(Player.Vehicle != null ? "No other vehicle to switch to" : "No vehicle to switch to");
+            return;
+        }
+        Player.Exit(this);
+        Player.Enter(next);
+    }
+
     public Machine? PlayerVehicle => Player.Vehicle;
 
     public void CommandAttach() => WithVehicle(Machines.ToggleAttach);

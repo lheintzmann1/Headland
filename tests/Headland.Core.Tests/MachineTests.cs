@@ -295,6 +295,30 @@ public class MachineTests
     }
 
     [Fact]
+    public void SwitchVehicleCyclesAndLeavesHelpersWorking()
+    {
+        var (sim, t, helper) = HireCultivatorHelper();
+        var first = sim.Machines.All.First(m => m.IsMotorized);
+        Assert.Same(t, sim.Machines.All.Last(m => m.IsMotorized));
+
+        sim.SwitchVehicle(1);
+        Assert.Same(first, sim.Player.Vehicle);
+        Assert.Same(sim.Player.Controls, first.Controller);
+
+        sim.SwitchVehicle(-1);
+        Assert.Same(t, sim.Player.Vehicle);
+        Assert.Same(helper, t.Controller);
+        Assert.Null(first.Controller);
+
+        sim.SwitchVehicle(1);
+        Assert.Same(first, sim.Player.Vehicle);
+        Assert.Same(helper, t.Controller);
+        var start = t.Position;
+        Run(sim, 5f);
+        Assert.True(Vector2.Distance(start, t.Position) > 5f, "the helper stopped driving");
+    }
+
+    [Fact]
     public void HelperCoversTheFieldAndDoesNotWorkOutsideIt()
     {
         var (sim, _, helper) = HireCultivatorHelper();

@@ -41,6 +41,7 @@ Keys follow their position on the keyboard, so AZERTY players get ZQSD for movem
 |---|---|
 | W A S D | Walk, or drive the vehicle you are in |
 | F | Enter or leave a vehicle |
+| Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
 | V | Lower or raise implements |
 | B | Turn on or off (seed drill, combine) |

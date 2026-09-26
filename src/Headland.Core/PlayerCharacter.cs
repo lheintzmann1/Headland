@@ -104,6 +104,19 @@ public sealed class PlayerCharacter
         return best;
     }
 
+    /// <summary>
+    /// The vehicle after (step 1) or before (step -1) the current one in spawn order, wrapping around; on foot, the
+    /// first or the last. Null when there is no other vehicle to enter.
+    /// </summary>
+    public Machine? NextVehicle(Simulation sim, int step)
+    {
+        var vehicles = sim.Machines.All.Where(m => m.IsMotorized && (m == Vehicle || CanEnter(m))).ToList();
+        if (vehicles.Count == 0) return null;
+        var i = Vehicle != null ? vehicles.IndexOf(Vehicle) : step > 0 ? -1 : vehicles.Count;
+        var next = vehicles[((i + step) % vehicles.Count + vehicles.Count) % vehicles.Count];
+        return next == Vehicle ? null : next;
+    }
+
     /// <summary>Free vehicles, or ones a helper is driving (the helper keeps control until dismissed).</summary>
     private static bool CanEnter(Machine m) => m.Controller is null or FieldWorkController;
 
