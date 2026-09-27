@@ -128,11 +128,15 @@ public class SaveTests
         // The machines of BusyGame() as version 0.7.0 saved them, before components.
         var file = SaveGame.Capture(BusyGame(), "test");
         var state = JsonNode.Parse(file.State)!.AsObject();
+        var format1 = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "machines-format1.json")))!.AsArray();
         // Format 1 kept nothing of the motor (fuel burned but not yet taken from the tank): the game it matches is the
-        // same one without that.
-        foreach (var m in state["machines"]!.AsArray()) m!["components"]!.AsObject().Remove("motor");
+        // same one without that, and without the machines the map has gained since.
+        var ids = format1.Select(m => (int)m!["id"]!).ToHashSet();
+        var machines = state["machines"]!.AsArray();
+        foreach (var m in machines.Where(m => !ids.Contains((int)m!["id"]!)).ToList()) machines.Remove(m);
+        foreach (var m in machines) m!["components"]!.AsObject().Remove("motor");
         var sim = SaveGame.Load(TestContent.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) }).Sim;
-        state["machines"] = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "machines-format1.json")));
+        state["machines"] = format1;
         file.Meta.Format = 1;
         var loaded = SaveGame.Load(sim.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) });
         Assert.Empty(loaded.Warnings);
