@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>The tipping bed (tipper), hinged at its rear: its front lifts by the tipper's angle.</summary>
-public partial class TipperView : ComponentView
+public partial class TipperView : MachineComponentView
 {
     public Tipper Tipper { get; init; } = null!;
 

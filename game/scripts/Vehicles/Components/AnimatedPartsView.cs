@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>Parts moving between their rest and moved poses (roles: the parts' ids), eased at both ends.</summary>
-public partial class AnimatedPartsView : ComponentView
+public partial class AnimatedPartsView : MachineComponentView
 {
     public AnimatedParts Parts { get; init; } = null!;
 

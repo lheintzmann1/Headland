@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>The saw blade (saw), spinning about its own Y axis while turned on.</summary>
-public partial class SawView : ComponentView
+public partial class SawView : MachineComponentView
 {
     private float _angle;
 

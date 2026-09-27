@@ -1,5 +1,5 @@
 using System.Numerics;
-using System.Text.Json;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -30,29 +30,27 @@ public sealed class ManualController : IVehicleController
 
 /// <summary>
 /// A machine on the map: where it is, what it's hitched to, and the components its type is built from, which keep
-/// the rest of its state (<see cref="Get{T}"/>).
+/// the rest of its state (<see cref="Entity.Get{T}"/>).
 /// </summary>
-public sealed class Machine : IOwnable
+public sealed class Machine : Entity
 {
+    private MachineDef _def;
+
     public Machine(int id, MachineDef def, Vector2 position, float heading, int farmId = Farm.PlayerId)
     {
         Id = id;
-        Def = def;
+        _def = def;
         Position = position;
         Heading = heading;
         FarmId = farmId;
-        Components = def.Components.Select(c => c.Create(this)).ToArray();
+        CreateComponents();
     }
 
     public int Id { get; }
     /// <summary>Its type, with the options it has (see <see cref="MachineDef.Configure"/>).</summary>
-    public MachineDef Def { get; private set; }
-    /// <summary>Owning farm; only its members drive it or hitch to it (<see cref="Farm.None"/> = an NPC's).</summary>
-    public int FarmId { get; set; }
+    public override MachineDef Def => _def;
     /// <summary>The contract the machine is leased for (0: the farm's own); it goes back when the contract ends.</summary>
     public int LeaseContract { get; set; }
-
-    public IReadOnlyList<MachineComponent> Components { get; private set; }
 
     /// <summary>
     /// Gives the machine other options: <paramref name="def"/>, a def of its type. Its components are built anew, and
@@ -60,33 +58,13 @@ public sealed class Machine : IOwnable
     /// </summary>
     internal void Reconfigure(MachineDef def, ContentDatabase content)
     {
-        var states = new Dictionary<string, JsonElement>();
-        foreach (var c in Components)
-            if (c.SaveState(content) is { } state)
-                states[c.Definition.Kind] = state;
+        var states = SaveComponents(content);
         var driver = Get<Drivable>()?.Controller;
-        Def = def;
-        Components = def.Components.Select(c => c.Create(this)).ToArray();
-        var context = new SaveContext(content, []);
-        foreach (var c in Components)
-            if (states.TryGetValue(c.Definition.Kind, out var state))
-                c.LoadState(state, context);
+        _def = def;
+        CreateComponents();
+        LoadComponents(states, new SaveContext(content, []));
         if (Get<Drivable>() is { } seat) seat.Controller = driver;
     }
-
-    /// <summary>Its component of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
-    public T? Get<T>() where T : class
-    {
-        foreach (var c in Components)
-            if (c is T t) return t;
-        return null;
-    }
-
-    public bool Has<T>() where T : class => Get<T>() != null;
-
-    /// <summary>Where it turns about: the middle of its fixed axles (the kinematic reference point).</summary>
-    public Vector2 Position { get; set; }
-    public float Heading { get; set; }
 
     /// <summary>Signed speed in m/s along the heading (root machines drive; children copy the root's speed).</summary>
     public float Speed { get; set; }
@@ -115,9 +93,6 @@ public sealed class Machine : IOwnable
     public FillUnit? Unit(string? id) => Get<FillUnits>()?.Unit(id);
 
     public AttacherJointDef? Joint(string id) => Def.Joints.FirstOrDefault(j => j.Id == id);
-
-    public Vector2 LocalToWorld(Vector2 local) => MathUtil.LocalToWorld(Position, Heading, local);
-    public Vector2 LocalToWorld(float x, float z) => LocalToWorld(new Vector2(x, z));
 
     /// <summary>
     /// Where a point of the machine is, and which way the part it's on points: on an articulated machine, parts ahead

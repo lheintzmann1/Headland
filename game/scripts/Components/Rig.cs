@@ -1,17 +1,18 @@
 using Headland.Game.Common;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Godot;
 
-namespace Headland.Game.Vehicles;
+namespace Headland.Game.Components;
 
 /// <summary>A node a component view moves, with its rest pose (as modeled).</summary>
 public readonly record struct RigPart(Node3D Node, Vector3 Position, Vector3 Rotation, Vector3 Scale);
 
 /// <summary>
-/// How a machine is drawn: its glTF model, and the nodes its component views move, by role (wheel0L, pipe, tipper…).
-/// Views animate a part from its rest pose.
+/// How an entity (a machine, a POI) is drawn: its glTF model, and the nodes its component views move, by role
+/// (wheel0L, pipe, tipper…). Views animate a part from its rest pose.
 /// </summary>
-public sealed class MachineRig
+public sealed class Rig
 {
     private static readonly Dictionary<(BaseMaterial3D, Color), BaseMaterial3D> Tints = new();
     private readonly Dictionary<string, RigPart> _parts = new();
@@ -49,14 +50,15 @@ public sealed class MachineRig
                                                               && (name.Length == kind.Length || name[kind.Length] is '_' or '.' or (>= '0' and <= '9'));
 
     /// <summary>
-    /// The machine's glTF model (what its root node holds) with its moving parts found by name, the nodes it doesn't
-    /// have with its options hidden, and its paint in the machine's color (docs/MODELING.md). Empty if the model
+    /// The entity's glTF model (what its root node holds) with its moving parts found by name, the nodes a machine
+    /// doesn't have with its options hidden, and its paint in the entity's color (docs/MODELING.md). Empty if the model
     /// doesn't load: such machines are left out when the game starts.
     /// </summary>
-    public static MachineRig Model(MachineDef def)
+    public static Rig Model(EntityDef def)
     {
         var v = def.Visual;
-        var rig = new MachineRig { Scale = v.Scale };
+        var rig = new Rig { Scale = v.Scale };
+        var machine = def as MachineDef;
         if (Models.Load(v, def.Id) is not { } holder) return rig;
         rig.Root.AddChild(holder);
 
@@ -67,7 +69,7 @@ public sealed class MachineRig
             var name = node.Name.ToString();
             nodes.TryAdd(name, node);
             if (def.Hides(name)) node.Visible = false;
-            if (def.UnknownOption(name) is { } c)
+            if (machine?.UnknownOption(name) is { } c)
                 GD.PushWarning($"{def.Id}: model node '{name}' is named after configuration '{c.Id}' but none of its options " +
                                $"({string.Join(", ", c.Options.Select(o => $"{c.Id}_{o.Id}"))})");
             if (node is MeshInstance3D mesh) rig.Collect(mesh, paint);
@@ -84,14 +86,14 @@ public sealed class MachineRig
             else if (v.Nodes?.ContainsKey(role) == true) GD.PushWarning($"{def.Id}: model has no node '{def.NodeOf(role)}' for '{role}'");
             else missing.Add(role);
         }
-        foreach (var name in def.Configurations.SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct().Where(n => !nodes.ContainsKey(n)))
+        foreach (var name in (machine?.Configurations ?? []).SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct().Where(n => !nodes.ContainsKey(n)))
             GD.PushWarning($"{def.Id}: model has no node '{name}' that its options show");
         GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")}" +
                  $"{(missing.Count > 0 ? $"; not in the model: {string.Join(", ", missing)}" : "")})");
         return rig;
     }
 
-    /// <summary>Paints a mesh's paint materials in the machine's color, and keeps its fill materials for the load's color.</summary>
+    /// <summary>Paints a mesh's paint materials in the entity's color, and keeps its fill materials for the load's color.</summary>
     private void Collect(MeshInstance3D mesh, Color paint)
     {
         for (var i = 0; i < (mesh.Mesh?.GetSurfaceCount() ?? 0); i++)

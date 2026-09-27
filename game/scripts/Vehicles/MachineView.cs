@@ -1,5 +1,5 @@
 using Headland.Game.Common;
-using Headland.Game.Vehicles.Components;
+using Headland.Game.Components;
 using Headland.Core;
 using Headland.Core.Machines;
 using Godot;
@@ -18,7 +18,7 @@ public partial class MachineView : Node3D
     public override void _Ready()
     {
         Name = $"{Machine.Def.Id}_{Machine.Id}";
-        var rig = MachineRig.Model(Machine.Def);
+        var rig = Rig.Model(Machine.Def);
         AddChild(rig.Root);
         foreach (var c in Machine.Components)
             if (ComponentView.For(c, Sim, rig) is { } view)

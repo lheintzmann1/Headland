@@ -26,15 +26,21 @@ internal static class TestContent
     public static Simulation NewSim() => Simulation.Create(Content);
 
     /// <summary>The game's content with extra machines (a JSON array), written as a mod would.</summary>
-    public static ContentDatabase WithMachines(string json) => ContentDatabase.Load(new ExtraMachines(json));
+    public static ContentDatabase WithMachines(string json) => With("machines", json);
 
-    private sealed class ExtraMachines(string json) : IContentSource
+    /// <summary>The game's content with extra POI types (a JSON array), written as a mod would.</summary>
+    public static ContentDatabase WithPois(string json) => With("pois", json);
+
+    /// <summary>The game's content with an extra file in <paramref name="dir"/> (machines, pois…), as a mod would add.</summary>
+    public static ContentDatabase With(string dir, string json) => ContentDatabase.Load(new ExtraFile($"{dir}/test.json", json));
+
+    private sealed class ExtraFile(string path, string json) : IContentSource
     {
         private readonly FileSystemContentSource _game = new(DataDir);
 
-        public IReadOnlyList<string> ListJson(string dir) => dir == "machines" ? [.. _game.ListJson(dir), "machines/test.json"] : _game.ListJson(dir);
-        public string ReadText(string path) => path == "machines/test.json" ? json : _game.ReadText(path);
-        public bool Exists(string path) => path == "machines/test.json" || _game.Exists(path);
+        public IReadOnlyList<string> ListJson(string dir) => path.StartsWith(dir + "/", StringComparison.Ordinal) ? [.. _game.ListJson(dir), path] : _game.ListJson(dir);
+        public string ReadText(string p) => p == path ? json : _game.ReadText(p);
+        public bool Exists(string p) => p == path || _game.Exists(p);
     }
 
     /// <summary>

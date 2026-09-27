@@ -9,7 +9,7 @@ namespace Headland.Game.Vehicles.Components;
 /// A spot light per lamp, lit while its type is switched on; headlights also after dark. Beacons turn, and lamps on an
 /// articulated machine's front frame swing with it.
 /// </summary>
-public partial class LightsView : ComponentView
+public partial class LightsView : MachineComponentView
 {
     private readonly List<(LampDef lamp, SpotLight3D light)> _lamps = [];
     private RunningGear? _gear;

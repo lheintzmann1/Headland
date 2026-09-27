@@ -5,7 +5,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>The unloading pipe (pipe): rests folded backward and swings 90° out to the left; grain pours while it unloads.</summary>
-public partial class PipeView : ComponentView
+public partial class PipeView : MachineComponentView
 {
     private MeshInstance3D _stream = null!;
 

@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
 
@@ -27,7 +28,7 @@ public sealed class WorkAreaDef
 /// Where an implement works the ground: a cultivator's tines, a drill's coulters, a header's cutter bar. A harvester
 /// cuts for the thresher of the machine it hangs on; its reel turns while that one threshes.
 /// </summary>
-public sealed class WorkAreasDef : ComponentDef
+public sealed class WorkAreasDef : MachineComponentDef
 {
     public WorkAreaDef[] Areas { get; set; } = [];
 
@@ -51,7 +52,7 @@ public sealed class WorkAreasDef : ComponentDef
         }
     }
 
-    internal override MachineComponent Create(Machine machine) => new WorkAreas(machine, this);
+    internal override Component Create(Machine machine) => new WorkAreas(machine, this);
 }
 
 /// <summary>One work area of a machine, with where it was last tick so the ground swept in between has no gaps.</summary>

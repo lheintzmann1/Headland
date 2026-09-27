@@ -5,7 +5,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>The rope, hanging straight down from where it leaves the machine or crane, and the hook (hook) at its end.</summary>
-public partial class WinchView : ComponentView
+public partial class WinchView : MachineComponentView
 {
     private MeshInstance3D _rope = null!;
     private Node3D? _hook;

@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
 
@@ -7,7 +8,7 @@ namespace Headland.Core.Machines.Components;
 /// Consoles on a tractor's sides that a front loader arm hitches to, through a joint of type "frontLoader" between
 /// them: <see cref="X"/>, <see cref="Z"/> and <see cref="Y"/> place the arm's pivots, <see cref="Width"/> apart.
 /// </summary>
-public sealed class FrontLoaderBracketDef : ComponentDef, IJointSource
+public sealed class FrontLoaderBracketDef : MachineComponentDef, IJointSource
 {
     private AttacherJointDef[]? _joints;
 
@@ -27,7 +28,7 @@ public sealed class FrontLoaderBracketDef : ComponentDef, IJointSource
         if (Width <= 0f) yield return "width must be > 0";
     }
 
-    internal override MachineComponent Create(Machine machine) => new FrontLoaderBracket(machine, this);
+    internal override Component Create(Machine machine) => new FrontLoaderBracket(machine, this);
 }
 
 public sealed class FrontLoaderBracket(Machine machine, FrontLoaderBracketDef def) : MachineComponent<FrontLoaderBracketDef>(machine, def)

@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
@@ -12,7 +13,7 @@ public sealed class FillUnitDef
 }
 
 /// <summary>Tanks and bins: fuel, seed, a grain tank, a trailer's bed.</summary>
-public sealed class FillUnitsDef : ComponentDef
+public sealed class FillUnitsDef : MachineComponentDef
 {
     public FillUnitDef[] Units { get; set; } = [];
 
@@ -31,7 +32,7 @@ public sealed class FillUnitsDef : ComponentDef
         }
     }
 
-    internal override MachineComponent Create(Machine machine) => new FillUnits(machine, this);
+    internal override Component Create(Machine machine) => new FillUnits(machine, this);
 }
 
 public sealed class FillUnit(FillUnitDef def)

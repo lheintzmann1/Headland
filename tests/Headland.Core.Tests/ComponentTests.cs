@@ -93,7 +93,7 @@ public class ComponentTests
     public void UnknownComponentsAndBadSettingsAreRefusedByName()
     {
         var unknown = Assert.Throws<ContentException>(() => Content("""[{ "id": "x", "components": { "motorised": {} } }]"""));
-        Assert.Contains("unknown machine component 'motorised'", unknown.Message);
+        Assert.Contains("unknown component 'motorised'", unknown.Message);
         // The blocks machines had before components.
         var old = Assert.Throws<ContentException>(() => Content("""[{ "id": "x", "motorized": { "powerHp": 100 } }]"""));
         Assert.Contains("'motorized'", old.Message);
@@ -109,6 +109,16 @@ public class ComponentTests
         Assert.Contains("machine 'x' winch: crane joint 'boom' missing", bad.Message);
         Assert.Contains("machine 'x' workAreas: a seeder needs the fillUnit its seed comes from", bad.Message);
         Assert.Contains("machine 'x': visual.nodes role 'wheel0L' is not one of its components'", bad.Message);
+    }
+
+    [Fact]
+    public void AKindIsRefusedOnWhatItDoesNotGoOn()
+    {
+        var poi = Assert.Throws<ContentException>(() => TestContent.WithPois("""
+            [{ "id": "test_shed", "name": "Shed", "components": { "motor": {}, "tipper": {} } }]
+            """));
+        Assert.Contains("poi 'test_shed' motor: goes on machines only", poi.Message);
+        Assert.Contains("poi 'test_shed' tipper: goes on machines only", poi.Message);
     }
 
     [Fact]

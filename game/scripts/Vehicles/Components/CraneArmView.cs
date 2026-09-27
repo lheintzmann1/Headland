@@ -7,7 +7,7 @@ namespace Headland.Game.Vehicles.Components;
 /// A crane's joints (roles: the joints' ids), each moved from the pose it's modeled in (its value 0): turned (yaw, pitch)
 /// or slid along its own +Z (extend).
 /// </summary>
-public partial class CraneArmView : ComponentView
+public partial class CraneArmView : MachineComponentView
 {
     public CraneArm Crane { get; init; } = null!;
 

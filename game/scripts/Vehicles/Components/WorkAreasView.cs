@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>A header's reel (reel), turning while the combine it hangs on threshes.</summary>
-public partial class WorkAreasView : ComponentView
+public partial class WorkAreasView : MachineComponentView
 {
     private float _reel;
 

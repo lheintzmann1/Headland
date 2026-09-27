@@ -57,7 +57,7 @@ almost everything instead: machines, POIs and buildings, the farmer and other ch
 objects, animals, trees and props. A kind works on anything it makes sense for, so lights, moving parts or fill
 units are written once, and new kinds of things come from data (and later mods) rather than code.
 
-- [ ] One component base for every kind of thing, out of `MachineDef`/`Machine`: a def per kind (checked against
+- [x] One component base for every kind of thing, out of `MachineDef`/`Machine`: a def per kind (checked against
       what it's on), runtime state, save data, a view; `ComponentKinds` covers all. Machines move onto it first,
       unchanged.
 - [ ] Kinds shared as they apply: `lights` (switched by the driver, the time of day, the weather or a trigger, as

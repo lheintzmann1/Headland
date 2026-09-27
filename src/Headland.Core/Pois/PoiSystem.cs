@@ -244,11 +244,14 @@ public sealed class PoiSystem
     }
 
     /// <summary>
-    /// After the machines moved: machines that stopped unloading this tick publish their sale or delivery, and
-    /// loading trailers fill up.
+    /// After the machines moved: the POIs' components run, machines that stopped unloading this tick publish their
+    /// sale or delivery, and loading trailers fill up.
     /// </summary>
     internal void Update(float dt)
     {
+        foreach (var poi in All)
+        foreach (var c in poi.Components)
+            c.Update(_sim, dt);
         foreach (var m in _deliveries.Keys.Where(m => !_unloading.Contains(m)).ToList()) Flush(m);
         _unloading.Clear();
         UpdateLoading(dt);

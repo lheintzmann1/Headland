@@ -8,7 +8,7 @@ namespace Headland.Game.Vehicles.Components;
 /// The load (load): modeled full with its pivot at the bottom, and scaled with the fill level of the unit a tipper
 /// empties, else of the first unit that isn't fuel. Its fill materials take the fill type's color.
 /// </summary>
-public partial class FillUnitsView : ComponentView
+public partial class FillUnitsView : MachineComponentView
 {
     private FillUnit? _unit;
     private string? _color;

@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
@@ -16,7 +17,7 @@ public sealed class AttacherJointDef
 }
 
 /// <summary>Where implements hitch: three-point linkages, drawbars, fifth wheels, a combine's feeder house.</summary>
-public sealed class AttacherJointsDef : ComponentDef, IJointSource
+public sealed class AttacherJointsDef : MachineComponentDef, IJointSource
 {
     public AttacherJointDef[] Joints { get; set; } = [];
 
@@ -33,7 +34,7 @@ public sealed class AttacherJointsDef : ComponentDef, IJointSource
             yield return $"joint '{j.Id}' has unknown type '{j.Type}'";
     }
 
-    internal override MachineComponent Create(Machine machine) => new AttacherJoints(machine, this);
+    internal override Component Create(Machine machine) => new AttacherJoints(machine, this);
 }
 
 /// <summary>The joints of a machine. What hangs on each is <see cref="Machine.Attached"/>.</summary>

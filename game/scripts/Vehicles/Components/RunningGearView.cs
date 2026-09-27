@@ -9,7 +9,7 @@ namespace Headland.Game.Vehicles.Components;
 /// don't turn, but the links of their belt (under track0L_belt) run round. An articulated machine's front frame
 /// (frontFrame) swings.
 /// </summary>
-public partial class RunningGearView : ComponentView
+public partial class RunningGearView : MachineComponentView
 {
     private readonly List<(TrackBelt belt, List<Node3D> links, float x)> _belts = [];
 

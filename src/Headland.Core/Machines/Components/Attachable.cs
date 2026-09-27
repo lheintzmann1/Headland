@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
@@ -7,7 +8,7 @@ namespace Headland.Core.Machines.Components;
 /// eye or kingpin at x, z, following the hitch, with a share of its weight on it). A lowerable one is lowered and
 /// raised with the lower key; its work areas only work lowered.
 /// </summary>
-public sealed class AttachableDef : ComponentDef
+public sealed class AttachableDef : MachineComponentDef
 {
     public string Type { get; set; } = "threePoint";
     /// <summary>"mounted" or "trailed".</summary>
@@ -32,7 +33,7 @@ public sealed class AttachableDef : ComponentDef
         else if (HitchLoad > 0f && Mode != "trailed") yield return "hitchLoad is for trailed machines: a mounted one is carried whole";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Attachable(machine, this);
+    internal override Component Create(Machine machine) => new Attachable(machine, this);
 }
 
 public sealed class AttachableSave

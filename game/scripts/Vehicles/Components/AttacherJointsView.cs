@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>Three-point linkages (rearLinkage…), whose lower links follow the implement up and down.</summary>
-public partial class AttacherJointsView : ComponentView
+public partial class AttacherJointsView : MachineComponentView
 {
     public AttacherJoints Joints { get; init; } = null!;
 

@@ -1,9 +1,10 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
 
 /// <summary>A combine's threshing drum: turned on, it threshes what the header hanging on it cuts into a fill unit.</summary>
-public sealed class ThresherDef : ComponentDef
+public sealed class ThresherDef : MachineComponentDef
 {
     public string FillUnit { get; set; } = "tank";
 
@@ -12,7 +13,7 @@ public sealed class ThresherDef : ComponentDef
         if (!HasUnit(machine, FillUnit)) yield return $"fill unit '{FillUnit}' missing";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Thresher(machine, this);
+    internal override Component Create(Machine machine) => new Thresher(machine, this);
 }
 
 public sealed class ThresherSave

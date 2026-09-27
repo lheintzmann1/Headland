@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Economics;
@@ -139,7 +140,7 @@ public static class SaveGame
             Farmlands = sim.World.Farmlands.Select(l => new FarmlandSave { Id = l.Id, Farm = l.FarmId }).ToList(),
             Pois = sim.World.Pois.Select(p => new PoiSave
             {
-                Id = p.Id, Farm = p.FarmId,
+                Id = p.Id, Farm = p.FarmId, Components = p.SaveComponents(content),
                 Storage = p.Storage?.Levels.Where(kv => kv.Value > 0f).ToDictionary(kv => kv.Key, kv => kv.Value) ?? [],
                 Progress = p.Progress.Any(x => x > 0f) ? [.. p.Progress] : null,
                 Demand = new(p.Demand),
@@ -184,10 +185,8 @@ public static class SaveGame
             WorkedHa = m.WorkedHa,
             Condition = m.Condition,
             Dirt = m.Dirt,
+            Components = m.SaveComponents(sim.Content),
         };
-        foreach (var c in m.Components)
-            if (c.SaveState(sim.Content) is { } state)
-                save.Components[c.Definition.Kind] = state;
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
             save.Delivery = new DeliverySave
             {
@@ -291,6 +290,7 @@ public static class SaveGame
     private static void RestorePois(Simulation sim, SaveState s, List<string> warnings)
     {
         var content = sim.Content;
+        var context = new SaveContext(content, warnings);
         if (s.PoiRngState != 0) sim.Pois.Rng.State = s.PoiRngState;
         foreach (var p in s.Pois)
         {
@@ -312,6 +312,7 @@ public static class SaveGame
             if (p.Progress is { } progress)
                 for (var i = 0; i < Math.Min(progress.Length, poi.Progress.Length); i++)
                     if (poi.Def.Actions[i].Type == "process") poi.Progress[i] = Math.Clamp(progress[i], 0f, 1f);
+            poi.LoadComponents(p.Components, context);
         }
     }
 
@@ -391,19 +392,7 @@ public static class SaveGame
             machine.WorkedHa = m.WorkedHa;
             machine.Condition = Math.Clamp(m.Condition, 0f, 1f);
             machine.Dirt = Math.Clamp(m.Dirt, 0f, 1f);
-            // A component the machine no longer has loses its state; one it didn't have starts afresh.
-            foreach (var c in machine.Components)
-            {
-                if (!m.Components.TryGetValue(c.Definition.Kind, out var state)) continue;
-                try
-                {
-                    c.LoadState(state, context);
-                }
-                catch (JsonException)
-                {
-                    warnings.Add($"The {c.Definition.Kind} of {machine.Def.Name} could not be read: it starts afresh");
-                }
-            }
+            machine.LoadComponents(m.Components, context);
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
                 sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored, d.Contract is { } id ? sim.Contracts.ById(id) : null);
             if (m.Loading is { } l && sim.Pois.ById(l.Poi)?.Trigger(l.Trigger) is { Type: "load" } spout && content.FillTypes.ContainsKey(l.FillType))

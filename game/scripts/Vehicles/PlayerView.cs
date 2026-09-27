@@ -1,4 +1,5 @@
 using Headland.Game.Common;
+using Headland.Game.Components;
 using Headland.Core;
 using Godot;
 

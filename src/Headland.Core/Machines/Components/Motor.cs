@@ -1,10 +1,11 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines.Components;
 
 /// <summary>An engine: a machine with one drives itself (with a running gear that steers) rather than being pulled.</summary>
-public sealed class MotorDef : ComponentDef
+public sealed class MotorDef : MachineComponentDef
 {
     public float PowerHp { get; set; } = 100f;
     public float MaxSpeedKmh { get; set; } = 40f;
@@ -28,7 +29,7 @@ public sealed class MotorDef : ComponentDef
         if (FuelUnit != null && !HasUnit(machine, FuelUnit)) yield return $"fuel unit '{FuelUnit}' missing";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Motor(machine, this);
+    internal override Component Create(Machine machine) => new Motor(machine, this);
 }
 
 public sealed class MotorSave

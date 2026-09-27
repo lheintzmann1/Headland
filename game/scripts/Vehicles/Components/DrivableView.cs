@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>The steering wheel (steeringWheel), turned with the steered wheels: 270° either way at full lock.</summary>
-public partial class DrivableView : ComponentView
+public partial class DrivableView : MachineComponentView
 {
     private RunningGear? _gear;
 

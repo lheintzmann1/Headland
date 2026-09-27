@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
 
@@ -27,7 +28,7 @@ public sealed class CraneJointDef
 /// A chain of joints, each moving the ones after it: a forestry crane, a loader's boom and bucket. The joints are
 /// driven to targets (directly, or by inverse kinematics later); tools and ropes hang on their frames.
 /// </summary>
-public sealed class CraneArmDef : ComponentDef
+public sealed class CraneArmDef : MachineComponentDef
 {
     public CraneJointDef[] Joints { get; set; } = [];
 
@@ -47,7 +48,7 @@ public sealed class CraneArmDef : ComponentDef
         }
     }
 
-    internal override MachineComponent Create(Machine machine) => new CraneArm(machine, this);
+    internal override Component Create(Machine machine) => new CraneArm(machine, this);
 }
 
 public sealed class CraneJoint(CraneJointDef def)

@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
 
@@ -7,7 +8,7 @@ namespace Headland.Core.Machines.Components;
 /// A saw blade at <see cref="Offset"/>, on the machine or on a crane joint (a felling head). Turned on, it spins; it cuts
 /// trunks up to <see cref="MaxCut"/> thick once trees are more than props.
 /// </summary>
-public sealed class SawDef : ComponentDef
+public sealed class SawDef : MachineComponentDef
 {
     /// <summary>Crane joint carrying it (its frame); none: the machine.</summary>
     public string? Joint { get; set; }
@@ -26,7 +27,7 @@ public sealed class SawDef : ComponentDef
         if (Joint != null && machine.Get<CraneArmDef>()?.Joints.Any(j => j.Id == Joint) != true) yield return $"crane joint '{Joint}' missing";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Saw(machine, this);
+    internal override Component Create(Machine machine) => new Saw(machine, this);
 }
 
 public sealed class SawSave

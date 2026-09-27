@@ -1,9 +1,10 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
 
 /// <summary>A tipping bed: tips a fill unit into the POI unloading area the machine stands in, hinged at its rear.</summary>
-public sealed class TipperDef : ComponentDef
+public sealed class TipperDef : MachineComponentDef
 {
     public string FillUnit { get; set; } = "main";
     public float RatePerSecond { get; set; } = 400f;
@@ -18,7 +19,7 @@ public sealed class TipperDef : ComponentDef
         if (RatePerSecond <= 0f || AngleDeg is <= 0f or > 90f) yield return "ratePerSecond must be > 0 and angleDeg in (0, 90]";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Tipper(machine, this);
+    internal override Component Create(Machine machine) => new Tipper(machine, this);
 }
 
 public sealed class TipperSave

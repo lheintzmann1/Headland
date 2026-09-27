@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using Headland.Core.Components;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Content;
@@ -198,12 +199,13 @@ public class ModelDef
     public float[] Offset { get; set; } = [0f, 0f, 0f];
 }
 
+/// <summary>How an entity (a machine, a POI) looks: its model, its paint, and the model nodes its components move.</summary>
 public sealed class VisualDef : ModelDef
 {
     /// <summary>The paint: the color of its model's paint materials (see docs/MODELING.md).</summary>
     public string Color { get; set; } = "#7a3326";
     /// <summary>
-    /// Moving parts not named after their role in the model: role → node name. The machine's components give the roles
+    /// Moving parts not named after their role in the model: role → node name. The entity's components give the roles
     /// (wheel0L, wheel0R… for each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
@@ -216,23 +218,16 @@ public sealed class VisualDef : ModelDef
 /// wheels, workArea… at the top) doesn't load as an empty shell.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed class MachineDef
+public sealed class MachineDef : EntityDef
 {
     private Variants? _variants;
 
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
     public string Category { get; set; } = "";
     public string Brand { get; set; } = "";
     /// <summary>With the chosen options' prices and masses added.</summary>
     public float Price { get; set; }
     public float Mass { get; set; } = 3000f;
     public SizeDef Size { get; set; } = new();
-    /// <summary>Its components, by kind (see <see cref="ComponentKinds"/>), in the order they run.</summary>
-    [JsonConverter(typeof(ComponentDefsConverter))]
-    public List<ComponentDef> Components { get; set; } = [];
-    public VisualDef Visual { get; set; } = new();
-    public string Description { get; set; } = "";
     /// <summary>What it can be had with (FS configurations): wheels, engine, color… one option of each.</summary>
     public List<ConfigurationDef> Configurations { get; set; } = [];
 
@@ -247,22 +242,19 @@ public sealed class MachineDef
     /// <summary>Model nodes the chosen options are made of.</summary>
     private IReadOnlySet<string> _shownNodes = new HashSet<string>();
 
-    /// <summary>The model node that moves as <paramref name="role"/>: the one visual.nodes names, else the one named after the role.</summary>
-    public string NodeOf(string role) => Visual.Nodes?.GetValueOrDefault(role) ?? role;
-
     /// <summary>
     /// The model nodes that may move as <paramref name="role"/>, the first a model has winning: the chosen options' own
     /// versions of it (configuration_option_role, such as wheels_rowCrop_wheel0L for row-crop wheels), then
-    /// <see cref="NodeOf"/>, which a version found hides.
+    /// <see cref="EntityDef.NodeOf"/>, which a version found hides.
     /// </summary>
-    public IEnumerable<string> NodesOf(string role) => Choices.Select(c => $"{c.Key}_{c.Value}_{role}").Append(NodeOf(role));
+    public override IEnumerable<string> NodesOf(string role) => Choices.Select(c => $"{c.Key}_{c.Value}_{role}").Append(NodeOf(role));
 
     /// <summary>
     /// Whether the model node <paramref name="node"/> is hidden on this machine (see
     /// docs/MODELING.md): it's part of options it doesn't have and of none it has, or a moving part only other options
     /// have (the rear wheels of a machine with rear tracks).
     /// </summary>
-    public bool Hides(string node) =>
+    public override bool Hides(string node) =>
         (OptionNodes.Any(n => IsPartOf(node, n)) && !_shownNodes.Any(n => IsPartOf(node, n)))
         || (_variants?.MovedNodes.Contains(node) == true && !Roles.Any(r => NodeOf(r) == node));
 
@@ -354,14 +346,8 @@ public sealed class MachineDef
         }
     }
 
-    /// <summary>Its component def of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
-    public T? Get<T>() where T : class => Components.OfType<T>().FirstOrDefault();
-
     /// <summary>Every joint implements hitch to.</summary>
     public IEnumerable<AttacherJointDef> Joints => Components.OfType<IJointSource>().SelectMany(s => s.Joints);
-
-    /// <summary>Model node roles its components move.</summary>
-    public IEnumerable<string> Roles => Components.SelectMany(c => c.Roles);
 }
 
 /// <summary>A choice a machine is had with (FS: configurations), such as its wheels, engine or color: one of its options.</summary>
@@ -575,11 +561,8 @@ public sealed class FieldDef : ShapeDef
 /// A point of interest: a building or site maps place, from a farmhouse to a grain elevator, drawn by its model. Local
 /// space as for machines: +Z forward (the front), +X left, origin at the footprint's center.
 /// </summary>
-public sealed class PoiDef
+public sealed class PoiDef : EntityDef
 {
-    public string Id { get; set; } = "";
-    public string Name { get; set; } = "";
-    public string Description { get; set; } = "";
     /// <summary>Map icon: a Material Symbols icon in assets/icons, by file name (e.g. "storefront").</summary>
     public string? Icon { get; set; }
     /// <summary>Ground the POI covers, centered on its origin: width along x, depth along z (meters).</summary>
@@ -587,8 +570,6 @@ public sealed class PoiDef
     public float D { get; set; } = 10f;
     /// <summary>What machines and the farmer bump into.</summary>
     public PoiColliderDef[] Colliders { get; set; } = [];
-    /// <summary>Its model (see docs/MODELING.md).</summary>
-    public ModelDef Visual { get; set; } = new();
     /// <summary>Areas where machines use the POI.</summary>
     public PoiTriggerDef[] Triggers { get; set; } = [];
     /// <summary>Goods the POI keeps, which store and process actions use. Owned by the POI's farm.</summary>

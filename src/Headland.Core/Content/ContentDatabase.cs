@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Headland.Core.Components;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Content;
@@ -306,6 +307,7 @@ public sealed class ContentDatabase
 
         foreach (var p in Pois.Values)
         {
+            e.AddRange(EntityErrors(p).Select(error => $"poi '{p.Id}'{error}"));
             if (p.W <= 0 || p.D <= 0) e.Add($"poi '{p.Id}': w and d must be > 0");
             if (p.Colliders.Any(q => q.W <= 0 || q.D <= 0)) e.Add($"poi '{p.Id}': colliders need w and d > 0");
             var triggers = new Dictionary<string, PoiTriggerDef>();
@@ -478,15 +480,24 @@ public sealed class ContentDatabase
     private IEnumerable<string> MachineErrors(MachineDef m)
     {
         if (m.Price < 0f || m.Mass <= 0f) yield return ": price must be >= 0 and mass > 0";
-        foreach (var kind in m.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
-            yield return $": more than one {kind.First().Kind}";
-        foreach (var c in m.Components)
-        foreach (var error in c.Errors(m, this))
-            yield return $" {c.Kind}: {error}";
+        foreach (var error in EntityErrors(m)) yield return error;
         foreach (var id in m.Joints.GroupBy(j => j.Id).Where(g => g.Count() > 1).Select(g => g.Key))
             yield return $": joint '{id}' is defined more than once";
-        var roles = m.Roles.ToHashSet();
-        foreach (var role in (m.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
+    }
+
+    /// <summary>
+    /// What's wrong with an entity type's components (each checked against it) and the roles its visual.nodes names,
+    /// each starting as it follows the type's name: " motor: …", ": …".
+    /// </summary>
+    private IEnumerable<string> EntityErrors(EntityDef d)
+    {
+        foreach (var kind in d.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
+            yield return $": more than one {kind.First().Kind}";
+        foreach (var c in d.Components)
+        foreach (var error in c.Errors(d, this))
+            yield return $" {c.Kind}: {error}";
+        var roles = d.Roles.ToHashSet();
+        foreach (var role in (d.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
             yield return $": visual.nodes role '{role}' is not one of its components' ({string.Join(", ", roles)})";
     }
 

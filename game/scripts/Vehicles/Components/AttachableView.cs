@@ -4,7 +4,7 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>A mounted implement rides up on the linkage when raised.</summary>
-public partial class AttachableView : ComponentView
+public partial class AttachableView : MachineComponentView
 {
     public Attachable Hitch { get; init; } = null!;
 

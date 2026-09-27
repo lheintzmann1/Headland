@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
@@ -25,7 +26,7 @@ public sealed class LampDef
 }
 
 /// <summary>Headlights, work lights and beacons. Headlights also come on by themselves after dark.</summary>
-public sealed class LightsDef : ComponentDef
+public sealed class LightsDef : MachineComponentDef
 {
     public LampDef[] Lamps { get; set; } = [];
 
@@ -37,7 +38,7 @@ public sealed class LightsDef : ComponentDef
             yield return $"lamp '{id}' is defined more than once";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Lights(machine, this);
+    internal override Component Create(Machine machine) => new Lights(machine, this);
 }
 
 public sealed class LightsSave

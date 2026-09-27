@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
 
@@ -7,7 +8,7 @@ namespace Headland.Core.Machines.Components;
 /// A rope winch with a hook: the rope pays out from <see cref="Offset"/>, on the machine or at the end of a crane
 /// joint (<see cref="Joint"/>), and the hook hangs below it.
 /// </summary>
-public sealed class WinchDef : ComponentDef
+public sealed class WinchDef : MachineComponentDef
 {
     /// <summary>Crane joint the rope leaves from (its frame); none: the machine.</summary>
     public string? Joint { get; set; }
@@ -27,7 +28,7 @@ public sealed class WinchDef : ComponentDef
         if (Joint != null && machine.Get<CraneArmDef>()?.Joints.Any(j => j.Id == Joint) != true) yield return $"crane joint '{Joint}' missing";
     }
 
-    internal override MachineComponent Create(Machine machine) => new Winch(machine, this);
+    internal override Component Create(Machine machine) => new Winch(machine, this);
 }
 
 public sealed class WinchSave

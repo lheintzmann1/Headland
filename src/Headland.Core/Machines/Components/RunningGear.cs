@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
 using Headland.Core.World;
@@ -114,7 +115,7 @@ public enum SteeringKind : byte
 /// from before axles doesn't load as no wheels.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed class RunningGearDef : ComponentDef
+public sealed class RunningGearDef : MachineComponentDef
 {
     public AxleDef[] Axles { get; set; } = [];
     /// <summary>Full lock: the angle of the steered axle farthest from the turning center, or of the hinge.</summary>
@@ -258,7 +259,7 @@ public sealed class RunningGearDef : ComponentDef
         }
     }
 
-    internal override MachineComponent Create(Machine machine) => new RunningGear(machine, this);
+    internal override Component Create(Machine machine) => new RunningGear(machine, this);
 }
 
 public sealed class RunningGearSave

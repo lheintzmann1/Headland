@@ -124,6 +124,8 @@ public sealed class PoiSave
     /// <summary>Placement id on the map.</summary>
     public string Id { get; set; } = "";
     public int Farm { get; set; }
+    /// <summary>What each of its components keeps, by component kind.</summary>
+    public Dictionary<string, JsonElement> Components { get; set; } = new();
     /// <summary>Stored goods by fill type.</summary>
     public Dictionary<string, float> Storage { get; set; } = new();
     /// <summary>Part of a cycle done, by action index (process actions).</summary>

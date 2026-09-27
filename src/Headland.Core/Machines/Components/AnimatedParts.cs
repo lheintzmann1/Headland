@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
@@ -19,7 +20,7 @@ public sealed class AnimatedPartDef
 /// Parts that move between two poses: covers, support legs, and the wings of an implement that folds for transport.
 /// A folded machine (or one still unfolding) does not work and cannot go down; lowering it unfolds it first.
 /// </summary>
-public sealed class AnimatedPartsDef : ComponentDef
+public sealed class AnimatedPartsDef : MachineComponentDef
 {
     public AnimatedPartDef[] Parts { get; set; } = [];
     /// <summary>Comes folded (from the shop, on the map).</summary>
@@ -40,7 +41,7 @@ public sealed class AnimatedPartsDef : ComponentDef
         if (StartFolded && !Parts.Any(p => p.Fold)) yield return "startFolded needs parts that fold";
     }
 
-    internal override MachineComponent Create(Machine machine) => new AnimatedParts(machine, this);
+    internal override Component Create(Machine machine) => new AnimatedParts(machine, this);
 }
 
 /// <summary>A part's pose: 0 at rest … 1 moved, heading for <see cref="Target"/>.</summary>

@@ -1,7 +1,7 @@
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Machines;
-using Headland.Core.Ownership;
 
 namespace Headland.Core.Pois;
 
@@ -9,7 +9,7 @@ namespace Headland.Core.Pois;
 public sealed record HighDemand(string FillType, float Factor, int EndDay);
 
 /// <summary>A point of interest placed on the map: a building or site of some farm or NPC.</summary>
-public sealed class Poi : IOwnable
+public sealed class Poi : Entity
 {
     public Poi(string id, PoiDef def, Vector2 position, float heading, int farmId, string? name = null)
     {
@@ -22,18 +22,14 @@ public sealed class Poi : IOwnable
         Triggers = def.Triggers.Select(t => new PoiTrigger(this, t)).ToArray();
         Storage = def.Storage != null ? new PoiStorage(def.Storage) : null;
         Progress = new float[def.Actions.Length];
+        CreateComponents();
     }
 
     /// <summary>The placement id, unique on the map.</summary>
     public string Id { get; }
-    public PoiDef Def { get; }
-    public string Name { get; }
-    /// <summary>Center of the footprint (the POI's origin).</summary>
-    public Vector2 Position { get; }
-    /// <summary>Heading of the POI's front (+Z), as for machines.</summary>
-    public float Heading { get; }
-    /// <summary>Owning farm (<see cref="Farm.None"/> = an NPC's).</summary>
-    public int FarmId { get; internal set; }
+    public override PoiDef Def { get; }
+    /// <summary>The type's name, or the one the map gives it.</summary>
+    public override string Name { get; }
     public IReadOnlyList<PoiTrigger> Triggers { get; }
     public PoiStorage? Storage { get; }
     /// <summary>Process actions: the part of a cycle done so far, by action index.</summary>
@@ -53,8 +49,6 @@ public sealed class Poi : IOwnable
     public Obb Footprint => new(Position, new Vector2(Def.W * 0.5f, Def.D * 0.5f), Heading);
 
     public PoiTrigger? Trigger(string id) => Triggers.FirstOrDefault(t => t.Id == id);
-
-    public Vector2 LocalToWorld(float x, float z) => MathUtil.LocalToWorld(Position, Heading, new Vector2(x, z));
 
     /// <summary>The ground a collider covers (a round one: the box around it).</summary>
     public Obb ColliderBox(PoiColliderDef collider) =>
