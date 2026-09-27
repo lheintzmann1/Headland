@@ -21,18 +21,10 @@ public class ContentTests
     [Fact]
     public void InvalidReferencesAreReported()
     {
-        var db = TestContent.Content;
-        var crop = db.Crops[0];
-        var saved = crop.FillType;
-        try
-        {
-            crop.FillType = "unobtainium";
-            Assert.Contains(db.Validate(), e => e.Contains("unobtainium"));
-        }
-        finally
-        {
-            crop.FillType = saved;
-        }
+        // Content of its own: games of other tests run on the shared one meanwhile.
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Crops[0].FillType = "unobtainium";
+        Assert.Contains(db.Validate(), e => e.Contains("unobtainium"));
     }
 
     [Fact]
