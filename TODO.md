@@ -132,7 +132,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 - [x] `configurations` per machine; each option changes price, mass and components: wheels
       (single/dual/tracks), front loader (with/without), front hitch (3-point/weight/none), beacons
       (none/left/right/both/lightbar), engine power, color, fill capacity, work width.
-- [ ] Model node visibility per option so one `.glb` holds every variant; document in `docs/MODELING.md`.
+- [x] Model node visibility per option so one `.glb` holds every variant; document in `docs/MODELING.md`.
 - [ ] Chosen options stored per machine and saved; changeable at a workshop for a fee.
 
 ### Tools and special machines
@@ -176,7 +176,7 @@ What the component refactor left in place goes as its replacement lands. Each st
 its docs and tests in the same change; no fallback is kept for later.
 
 - [ ] Placeholders: once the 8 machines have their Blockbench models (Art), delete the placeholder archetypes
-      (`PlaceholderBuilder`, `visual.placeholder`) and the placeholder parts the component views build
+      (`PlaceholderBuilder`, `visual.placeholder`, `visual.parts`) and the placeholder parts the component views build
       (wheels, pipe, linkages, booms, hook, saw blade). A machine without a model shows a plain box of its
       `size`, and the content check warns about it. The farmer and POIs likewise once their models exist (POI
       `parts` stay as collision shapes).

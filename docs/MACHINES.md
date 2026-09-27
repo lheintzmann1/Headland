@@ -42,7 +42,8 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
 ```
 
 `visual` picks the procedural placeholder (`tractor`, `combine`, `trailer`, `cultivator`, `seeder`, `header`,
-`cornheader`, anything else is a box) or a glTF model with its moving parts: see [`MODELING.md`](MODELING.md).
+`cornheader`, anything else is a box) or a glTF model with its moving parts: see [`MODELING.md`](MODELING.md). Its
+`parts` add blocks to the placeholder for what some options have, such as a front weight.
 
 ## Components
 
@@ -312,6 +313,7 @@ each.
 | `default` | false | On an option: the machine comes with it. Without one marked, the first option. |
 | `price`, `mass` | 0 | What the option adds to the machine's price and mass, or takes off when negative. |
 | `changes` | none | What the option changes in the machine's JSON. |
+| `show` | none | Model nodes that make up the option, such as `["front_weight"]`: hidden without it, so that one model holds every option (see [`MODELING.md`](MODELING.md#one-model-for-every-configuration)). |
 
 `changes` is merged into the machine's JSON, any of it but its `id`, `price`, `mass` and `configurations`:
 

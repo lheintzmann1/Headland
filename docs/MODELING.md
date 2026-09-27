@@ -50,6 +50,36 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    A crane's joints are nested: each joint's node is a child of the previous one's, placed as the `offset`s in the
    JSON say, so that tools and ropes hang where the game expects them.
 
+## One model for every configuration
+
+A machine's options (its `configurations`, see [`MACHINES.md`](MACHINES.md#configurations)) all come from the same
+model: model everything any option adds, each piece a node of its own, and each option names the nodes it `show`s. A
+node that some option shows is hidden unless an option showing it is chosen; the rest of the model is always there.
+
+```jsonc
+{ "id": "frontHitch", "name": "Front hitch", "options": [
+  { "id": "threePoint", "name": "Front linkage", "show": ["front_linkage"], "changes": { … } },
+  { "id": "weight", "name": "Front weight", "show": ["front_weight"] },
+  { "id": "none", "name": "None" }
+] }
+```
+
+- Name those nodes after what they are (`front_weight`, `beacon_left`, `lightbar`, `loader_console_l`), and keep each
+  one's parts under it, so that hiding it hides them all.
+- An option can show several nodes, and several options the same node: with `"single": ["wheel_rl", "wheel_rr"]` and
+  `"dual": ["wheel_rl", "wheel_rr", "dual_rl", "dual_rr"]`, the inner tires show with both and the outer ones with
+  duals only.
+- A moving part that only some options have also needs its role: the tracks option maps `track0L` and `track0R` to its
+  track nodes with `"changes": { "visual": { "nodes": { "track0L": "track_rl", "track0R": "track_rr" } } }`, and the
+  wheels shown with the other options keep `wheel0L` and `wheel0R` in the machine's own `nodes`. Nodes that move are
+  moved whether shown or not.
+- Colors come from the textures, so a color option changes the machine's `visual.model` to a model of that color, or
+  shows one of several painted bodies.
+
+The console warns about any node an option shows that the model doesn't have. Until a machine has a model, its
+placeholder can draw such pieces as blocks: `visual.parts` lists them with an `id` (the name options show), a center
+`x`, `y`, `z`, a size `w`, `h`, `d` and a `color` (the machine's when missing).
+
 ## Exporting and hooking it up
 
 1. Export the model as `.glb` into `game/assets/models/<category>/`, for example

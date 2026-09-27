@@ -206,6 +206,26 @@ public sealed class VisualDef : ModelDef
     /// each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
+    /// <summary>
+    /// Placeholder blocks the archetype doesn't draw, such as a front weight: named like model nodes, so that options
+    /// show and hide them as they do a model's (<see cref="ConfigurationOptionDef.Show"/>).
+    /// </summary>
+    public PlaceholderPartDef[] Parts { get; set; } = [];
+}
+
+/// <summary>A block of a machine's placeholder, centered on x, y, z (machine space): w along x, h up, d along z.</summary>
+public sealed class PlaceholderPartDef
+{
+    /// <summary>Its node name, unique on the machine.</summary>
+    public string Id { get; set; } = "";
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Z { get; set; }
+    public float W { get; set; } = 0.5f;
+    public float H { get; set; } = 0.5f;
+    public float D { get; set; } = 0.5f;
+    /// <summary>Its paint; the machine's color when missing.</summary>
+    public string? Color { get; set; }
 }
 
 /// <summary>
@@ -238,6 +258,14 @@ public sealed class MachineDef
     /// <summary>The option chosen in each of its configurations, by configuration id.</summary>
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> Choices { get; private set; } = new Dictionary<string, string>();
+
+    /// <summary>Model nodes (and placeholder parts) its options show: each is visible with the options showing it.</summary>
+    [JsonIgnore]
+    public IEnumerable<string> OptionNodes => Configurations.SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct();
+
+    /// <summary>Model nodes (and placeholder parts) some option shows but none of the chosen ones: hidden on this machine.</summary>
+    [JsonIgnore]
+    public IReadOnlySet<string> HiddenNodes { get; private set; } = new HashSet<string>();
 
     /// <summary>The option chosen in <paramref name="configuration"/>.</summary>
     public ConfigurationOptionDef? Chosen(ConfigurationDef configuration) => configuration.Option(Choices.GetValueOrDefault(configuration.Id));
@@ -297,6 +325,8 @@ public sealed class MachineDef
             if (json["id"] is JsonValue id && id.TryGetValue<string>(out var own)) def.Id = own;
             def.Configurations = configurations;
             def.Choices = options.ToDictionary(x => x.configuration.Id, x => x.option.Id);
+            var shown = options.SelectMany(x => x.option.Show).ToHashSet();
+            def.HiddenNodes = def.OptionNodes.Where(n => !shown.Contains(n)).ToHashSet();
             def.Price += options.Sum(x => x.option.Price);
             def.Mass += options.Sum(x => x.option.Mass);
             def._variants = this;
@@ -345,6 +375,11 @@ public sealed class ConfigurationOptionDef
     public float Mass { get; set; }
     /// <summary>What it changes in the machine's JSON (its size, components, looks), merged in by <see cref="JsonMerge"/>.</summary>
     public JsonObject? Changes { get; set; }
+    /// <summary>
+    /// Model nodes (or placeholder parts) that make it up, such as a front weight or the tracks: hidden unless an option
+    /// showing them is chosen, so that one model holds every configuration.
+    /// </summary>
+    public string[] Show { get; set; } = [];
 }
 
 // ---- Contracts (contracts.json)

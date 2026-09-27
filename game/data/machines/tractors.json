@@ -28,7 +28,10 @@
         ]
       }
     },
-    "visual": { "placeholder": "tractor", "color": "#7b2f25" },
+    "visual": {
+      "placeholder": "tractor", "color": "#7b2f25",
+      "parts": [ { "id": "frontWeight", "x": 0, "y": 0.75, "z": 3.85, "w": 0.95, "h": 0.65, "d": 0.45, "color": "#2e3030" } ]
+    },
     "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer.",
     "configurations": [
       { "id": "wheels", "name": "Wheels", "options": [
@@ -48,7 +51,7 @@
       { "id": "frontHitch", "name": "Front hitch", "options": [
         { "id": "threePoint", "name": "Front linkage",
           "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "x": 0, "z": 3.75, "y": 0.55 } ] } } } },
-        { "id": "weight", "name": "Front weight", "price": -1800, "mass": 650 },
+        { "id": "weight", "name": "Front weight", "price": -1800, "mass": 650, "show": ["frontWeight"] },
         { "id": "none", "name": "None", "price": -3400, "mass": -220 }
       ] },
       { "id": "beacons", "name": "Beacons", "options": [
@@ -113,7 +116,10 @@
         ]
       }
     },
-    "visual": { "placeholder": "tractor", "color": "#4d5c38" },
+    "visual": {
+      "placeholder": "tractor", "color": "#4d5c38",
+      "parts": [ { "id": "frontWeight", "x": 0, "y": 0.7, "z": 3.5, "w": 0.85, "h": 0.6, "d": 0.4, "color": "#2e3030" } ]
+    },
     "description": "Compact all-rounder, ideal for trailer duty and light tillage.",
     "configurations": [
       { "id": "wheels", "name": "Wheels", "options": [
@@ -135,7 +141,7 @@
         { "id": "none", "name": "None" },
         { "id": "threePoint", "name": "Front linkage", "price": 3400, "mass": 220,
           "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "x": 0, "z": 3.45, "y": 0.5 } ] } } } },
-        { "id": "weight", "name": "Front weight", "price": 1100, "mass": 600 }
+        { "id": "weight", "name": "Front weight", "price": 1100, "mass": 600, "show": ["frontWeight"] }
       ] },
       { "id": "beacons", "name": "Beacons", "options": [
         { "id": "none", "name": "None" },

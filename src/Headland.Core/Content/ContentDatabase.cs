@@ -436,6 +436,10 @@ public sealed class ContentDatabase
         var roles = m.Roles.ToHashSet();
         foreach (var role in (m.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
             yield return $": visual.nodes role '{role}' is not one of its components' ({string.Join(", ", roles)})";
+        var parts = m.Visual.Parts;
+        if (parts.Any(p => string.IsNullOrWhiteSpace(p.Id) || p.W <= 0f || p.H <= 0f || p.D <= 0f)) yield return ": visual.parts need an id, and w, h and d > 0";
+        foreach (var id in parts.GroupBy(p => p.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+            yield return $": visual part '{id}' is defined more than once";
     }
 
     /// <summary>What's wrong with a machine's configurations, each starting as it follows the machine's name.</summary>
@@ -456,6 +460,7 @@ public sealed class ContentDatabase
             foreach (var o in c.Options)
             {
                 if (string.IsNullOrWhiteSpace(o.Id) || string.IsNullOrWhiteSpace(o.Name)) yield return $"{what}: options need an id and a name";
+                if (o.Show.Any(string.IsNullOrWhiteSpace)) yield return $"{what} option '{o.Id}': show needs node names";
                 if (o.Changes?.Select(kv => kv.Key).FirstOrDefault(k => fixedMembers.Contains(k, StringComparer.OrdinalIgnoreCase)) is { } key)
                     yield return $"{what} option '{o.Id}': changes can't set '{key}' (an option's price and mass add to the machine's)";
             }

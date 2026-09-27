@@ -47,7 +47,10 @@ public sealed class MachineRig
         part.Position = position;
     }
 
-    /// <summary>The machine's glTF model with its parts mapped by visual.nodes, or null to use the placeholder.</summary>
+    /// <summary>
+    /// The machine's glTF model with its parts mapped by visual.nodes, and the nodes of options it doesn't have hidden;
+    /// or null to use the placeholder.
+    /// </summary>
     public static MachineRig? Model(MachineDef def)
     {
         var v = def.Visual;
@@ -73,6 +76,11 @@ public sealed class MachineRig
         {
             if (instance.FindChild(nodeName, recursive: true, owned: false) is Node3D node) rig.Add(role, node);
             else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' for '{role}'");
+        }
+        foreach (var nodeName in def.OptionNodes)
+        {
+            if (instance.FindChild(nodeName, recursive: true, owned: false) is Node3D node) node.Visible = !def.HiddenNodes.Contains(nodeName);
+            else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' that its options show");
         }
         GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")})");
         return rig;

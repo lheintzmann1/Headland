@@ -7,9 +7,9 @@ namespace Headland.Game.Vehicles;
 
 /// <summary>
 /// Procedural stand-ins with realistic proportions: the body of the machine's placeholder archetype, built from its
-/// size (and its parts that move, as roles: tipper, load, reel). Component views add their own parts: wheels, pipe,
-/// linkages. Local space: +Z forward, +X left, origin at the definition's origin (reference axle or attacher), y = 0 on
-/// the ground.
+/// size (and its parts that move, as roles: tipper, load, reel), and the blocks of visual.parts its options show.
+/// Component views add their own parts: wheels, pipe, linkages. Local space: +Z forward, +X left, origin at the
+/// definition's origin (reference axle or attacher), y = 0 on the ground.
 /// </summary>
 public static class PlaceholderBuilder
 {
@@ -40,6 +40,9 @@ public static class PlaceholderBuilder
                         new Vector3(0, def.Size.Height * 0.5f, def.Size.CenterZ), body);
                 break;
         }
+        // Extra blocks (a front weight), unless they belong to options the machine doesn't have.
+        foreach (var p in def.Visual.Parts.Where(p => !def.HiddenNodes.Contains(p.Id)))
+            Box(rig, new Vector3(p.W, p.H, p.D), new Vector3(p.X, p.Y, p.Z), p.Color != null ? Conv.Hex(p.Color) : body).Name = p.Id;
         return rig;
     }
 

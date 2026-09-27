@@ -98,6 +98,37 @@ public class ConfigurationTests
     }
 
     [Fact]
+    public void OptionsShowTheModelNodesOfWhatTheyAdd()
+    {
+        var tractor = TestContent.Content.Machines["tractor_125"];
+        Assert.Equal(["frontWeight"], tractor.HiddenNodes);
+        Assert.Empty(tractor.Configure(Options(("frontHitch", "weight"))).HiddenNodes);
+
+        var x = TestContent.WithMachines("""
+            [{ "id": "x", "name": "X", "components": {},
+               "configurations": [
+                 { "id": "wheels", "name": "Wheels", "options": [
+                   { "id": "single", "name": "Single", "show": ["wheel_rl", "wheel_rr"] },
+                   { "id": "dual", "name": "Dual", "show": ["wheel_rl", "wheel_rr", "dual_rl", "dual_rr"] },
+                   { "id": "tracks", "name": "Tracks", "show": ["track_rl", "track_rr"] } ] },
+                 { "id": "hitch", "name": "Front hitch", "options": [
+                   { "id": "none", "name": "None" }, { "id": "weight", "name": "Weight", "show": ["front_weight"] } ] } ] }]
+            """).Machines["x"];
+        // A node is hidden unless one of the chosen options shows it.
+        Assert.Equal(["dual_rl", "dual_rr", "front_weight", "track_rl", "track_rr"], x.HiddenNodes.Order());
+        Assert.Equal(["front_weight", "track_rl", "track_rr"], x.Configure(Options(("wheels", "dual"))).HiddenNodes.Order());
+        Assert.Equal(["dual_rl", "dual_rr", "wheel_rl", "wheel_rr"], x.Configure(Options(("wheels", "tracks"), ("hitch", "weight"))).HiddenNodes.Order());
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [{ "id": "y", "name": "Y", "components": {}, "visual": { "parts": [ { "id": "a", "w": 0 }, { "id": "b" }, { "id": "b" } ] },
+               "configurations": [ { "id": "c", "name": "C", "options": [ { "id": "o", "name": "O", "show": [""] } ] } ] }]
+            """));
+        Assert.Contains("machine 'y': visual.parts need an id, and w, h and d > 0", bad.Message);
+        Assert.Contains("machine 'y': visual part 'b' is defined more than once", bad.Message);
+        Assert.Contains("machine 'y' configuration 'c' option 'o': show needs node names", bad.Message);
+    }
+
+    [Fact]
     public void EachOptionIsCheckedAndNamedWhenWrong()
     {
         var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
