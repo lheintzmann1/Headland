@@ -286,7 +286,7 @@ public sealed class MachineSystem
                     foreach (var area in w.Areas)
                         area.HasPose &= w.Working(area.Def);
             // An articulated vehicle's front frame swings standing too, with what hangs on it.
-            if (gear.Kind == SteeringKind.Articulated) UpdateChildren(v);
+            if (gear.SteeringKind == SteeringKind.Articulated) UpdateChildren(v);
             return;
         }
 

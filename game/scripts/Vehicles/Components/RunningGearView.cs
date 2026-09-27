@@ -50,7 +50,7 @@ public partial class RunningGearView : ComponentView
                 Turn(RunningGearDef.SideRole(axles[i], i, side), new Vector3(Gear.SideDistance(x) / axles[i].Wheels.Radius, Gear.WheelAngle(i, x), 0f));
         }
         foreach (var (track, x) in _tracks) track.Roll(Gear.SideDistance(x));
-        if (Gear.Kind == SteeringKind.Articulated) Turn("frontFrame", new Vector3(0f, Gear.SteerAngle, 0f));
+        if (Gear.SteeringKind == SteeringKind.Articulated) Turn("frontFrame", new Vector3(0f, Gear.SteerAngle, 0f));
     }
 
     /// <summary>An axle's two sides: role suffix and x of its (inner) wheels, +x being left.</summary>

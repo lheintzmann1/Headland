@@ -207,7 +207,7 @@ public class RunningGearTests
         var sim = OpenSim();
         var loader = sim.Machines.Spawn("test_wheel_loader", new Vector2(256f, 200f), 0f);
         var gear = loader.Get<RunningGear>()!;
-        Assert.Equal(SteeringKind.Articulated, gear.Kind);
+        Assert.Equal(SteeringKind.Articulated, gear.SteeringKind);
         var tool = sim.Machines.Spawn("cultivator_3", new Vector2(256f, 204.2f), 0f);
         Assert.True(sim.Machines.Attach(loader, "front", tool));
 
@@ -242,7 +242,7 @@ public class RunningGearTests
         var sim = OpenSim();
         var crawler = sim.Machines.Spawn("test_crawler", new Vector2(256f, 200f), 0f);
         var gear = crawler.Get<RunningGear>()!;
-        Assert.Equal(SteeringKind.SkidSteer, gear.Kind);
+        Assert.Equal(SteeringKind.SkidSteer, gear.SteeringKind);
 
         // Standing, it turns on the spot, its tracks running against each other.
         Drive(crawler, 0f, 1f);
@@ -267,7 +267,7 @@ public class RunningGearTests
         var sim = OpenSim();
         var halfTrack = sim.Machines.Spawn("test_halftrack", new Vector2(256f, 200f), 0f);
         var gear = halfTrack.Get<RunningGear>()!;
-        Assert.Equal(SteeringKind.Axles, gear.Kind);
+        Assert.Equal(SteeringKind.Axles, gear.SteeringKind);
         // It doesn't turn on the spot.
         Drive(halfTrack, 0f, 1f);
         Run(sim, 1f);

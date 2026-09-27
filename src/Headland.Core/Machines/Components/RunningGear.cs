@@ -104,7 +104,7 @@ public sealed class RunningGearDef : ComponentDef
     public float MaxSteer => MaxSteerDeg * MathUtil.Deg2Rad;
 
     [JsonIgnore]
-    public SteeringKind Kind =>
+    public SteeringKind SteeringKind =>
         Articulation != null ? SteeringKind.Articulated
         : Axles.Any(a => Steered(a, SteeringMode.Normal)) ? SteeringKind.Axles
         : Axles.Any(a => a.Wheels.IsTracks) ? SteeringKind.SkidSteer
@@ -175,7 +175,7 @@ public sealed class RunningGearDef : ComponentDef
     public float TrackLength => Axles.Where(a => a.Wheels.IsTracks).Select(a => a.Wheels.Length).DefaultIfEmpty(0f).Max();
 
     /// <summary>Radius of the tightest circle the turning center drives in normal steering (while moving).</summary>
-    public float TurnRadius => Kind switch
+    public float TurnRadius => SteeringKind switch
     {
         SteeringKind.Articulated => Frames is var (rear, front) ? (rear * MathF.Cos(MaxSteer) + front) / MathF.Sin(MaxSteer) : 0f,
         SteeringKind.SkidSteer => TrackLength / MathF.Tan(MaxSteer),
@@ -259,7 +259,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     /// <summary>How far the machine has turned while rolling (radians, positive left): the wheels on the outside roll further.</summary>
     public float Turned { get; set; }
     public SteeringMode Mode { get; set; }
-    public SteeringKind Kind { get; } = def.Kind;
+    public SteeringKind SteeringKind { get; } = def.SteeringKind;
 
     /// <summary>From the turning center to the farthest steered axle, going forward or backward in the current mode.</summary>
     public float WheelbaseFor(bool reverse) => Def.Wheelbase(Mode, reverse);
@@ -299,7 +299,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     /// <summary>The steering that makes the turning center drive a circle of <paramref name="curvature"/> (1/radius, positive left).</summary>
     public float SteerFor(float curvature, bool reverse)
     {
-        switch (Kind)
+        switch (SteeringKind)
         {
             case SteeringKind.Articulated:
                 // sin φ = κ (rear cos φ + front): a sine and a cosine make one shifted sine.
@@ -320,7 +320,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     /// </summary>
     internal (float turn, float sideways) Motion(float speed, float dt)
     {
-        switch (Kind)
+        switch (SteeringKind)
         {
             case SteeringKind.Articulated:
             {

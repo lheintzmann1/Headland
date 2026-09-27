@@ -24,7 +24,7 @@ public sealed class MotorDef : ComponentDef
         if (PowerHp <= 0f || MaxSpeedKmh <= 0f || MaxReverseKmh <= 0f || Acceleration <= 0f || Braking <= 0f)
             yield return "powerHp, speeds, acceleration and braking must be > 0";
         if (FuelPerHour <= 0f) yield return "fuelPerHour must be > 0";
-        if (machine.Get<RunningGearDef>() is not { Kind: not SteeringKind.None }) yield return "needs a runningGear that steers";
+        if (machine.Get<RunningGearDef>() is not { SteeringKind: not SteeringKind.None }) yield return "needs a runningGear that steers";
         if (FuelUnit != null && !HasUnit(machine, FuelUnit)) yield return $"fuel unit '{FuelUnit}' missing";
     }
 
