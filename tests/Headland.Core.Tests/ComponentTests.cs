@@ -104,6 +104,9 @@ public class ComponentTests
     {
         var unknown = Assert.Throws<ContentException>(() => Content("""[{ "id": "x", "components": { "motorised": {} } }]"""));
         Assert.Contains("unknown machine component 'motorised'", unknown.Message);
+        // The blocks machines had before components.
+        var old = Assert.Throws<ContentException>(() => Content("""[{ "id": "x", "motorized": { "powerHp": 100 } }]"""));
+        Assert.Contains("'motorized'", old.Message);
 
         var bad = Assert.Throws<ContentException>(() => Content("""
             [{ "id": "x", "components": {

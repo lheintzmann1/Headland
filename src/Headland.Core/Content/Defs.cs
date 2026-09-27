@@ -206,7 +206,12 @@ public sealed class VisualDef : ModelDef
     public Dictionary<string, string>? Nodes { get; set; }
 }
 
-/// <summary>A machine type: what it is, its size and looks, and the components it's built from.</summary>
+/// <summary>
+/// A machine type: what it is, its size and looks, and the components it's built from. Unknown properties are refused,
+/// so a machine written in the format from before components (motorized, wheels, workArea… at the top) doesn't load
+/// as an empty shell.
+/// </summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class MachineDef
 {
     public string Id { get; set; } = "";
@@ -230,19 +235,6 @@ public sealed class MachineDef
 
     /// <summary>Model node roles its components move.</summary>
     public IEnumerable<string> Roles => Components.SelectMany(c => c.Roles);
-
-    // ---- The format before components, read and then turned into components (LegacyMachines).
-
-    public LegacyMotorizedDef? Motorized { get; set; }
-    public WheelDef[]? Wheels { get; set; }
-    public AttacherJointDef[]? AttacherJoints { get; set; }
-    public LegacyAttacherDef? Attacher { get; set; }
-    public WorkAreaDef? WorkArea { get; set; }
-    public FillUnitDef[]? FillUnits { get; set; }
-    public PipeDef? Pipe { get; set; }
-    public TipperDef? Tipper { get; set; }
-    public string? HarvestTank { get; set; }
-    public string? SeedTank { get; set; }
 }
 
 // ---- Contracts (contracts.json)

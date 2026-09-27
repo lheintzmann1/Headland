@@ -112,7 +112,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 - [x] Components: running gear, motor, drivable, attacher joints, attachable, fill units, work areas,
       pipe, tipper, lights, animated/foldable parts, crane arm, hook/winch, saw, front-loader bracket. Each
       has its def, runtime state, save data and view.
-- [ ] Convert the 8 existing machines in one go.
+- [x] Convert the 8 existing machines in one go.
 
 ### Running gear
 

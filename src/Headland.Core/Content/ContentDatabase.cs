@@ -86,10 +86,7 @@ public sealed class ContentDatabase
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
         foreach (var m in ReadMany<MachineDef>(src, file))
-        {
-            LegacyMachines.Upgrade(m);
             db.AddUnique(db.Machines, m.Id, m, "machine");
-        }
         foreach (var file in src.ListJson("pois"))
         foreach (var p in ReadMany<PoiDef>(src, file))
             db.AddUnique(db.Pois, p.Id, p, "poi");
