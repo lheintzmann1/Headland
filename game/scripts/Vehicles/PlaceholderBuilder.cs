@@ -41,7 +41,7 @@ public static class PlaceholderBuilder
                 break;
         }
         // Extra blocks (a front weight), unless they belong to options the machine doesn't have.
-        foreach (var p in def.Visual.Parts.Where(p => !def.HiddenNodes.Contains(p.Id)))
+        foreach (var p in def.Visual.Parts.Where(p => !def.Hides(p.Id)))
             Box(rig, new Vector3(p.W, p.H, p.D), new Vector3(p.X, p.Y, p.Z), p.Color != null ? Conv.Hex(p.Color) : body).Name = p.Id;
         return rig;
     }

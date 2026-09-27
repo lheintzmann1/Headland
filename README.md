@@ -150,8 +150,8 @@ saves a screenshot at each step.
 
 Headland's own models are made in [Blockbench](https://www.blockbench.net), low poly and in one style. The game loads
 any glTF (`.glb`) model, so mods (modding support is planned) can use Blender, 3ds Max or any other tool, at any level
-of detail. [`docs/MODELING.md`](docs/MODELING.md) covers the conventions (scale, orientation, moving parts) and how to
-hook a model up to a machine.
+of detail. [`docs/MODELING.md`](docs/MODELING.md) covers the conventions (scale, orientation, the `root` node, how
+moving parts and option pieces are named) and how to hook a model up to a machine.
 
 ## Credits
 

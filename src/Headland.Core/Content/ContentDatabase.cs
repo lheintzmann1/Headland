@@ -505,6 +505,7 @@ public sealed class ContentDatabase
         {
             var what = $"configuration '{c.Id}'";
             if (string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name)) yield return $"{what}: needs an id and a name";
+            else if (!IsNodeName(c.Id)) yield return $"{what}: its id must be letters and digits, as model nodes are named after it";
             if (c.Options.Length == 0) yield return $"{what}: needs options";
             if (c.Options.Count(o => o.Default) > 1) yield return $"{what}: only one option can be the default";
             foreach (var id in c.Options.GroupBy(o => o.Id).Where(g => g.Count() > 1).Select(g => g.Key))
@@ -512,12 +513,16 @@ public sealed class ContentDatabase
             foreach (var o in c.Options)
             {
                 if (string.IsNullOrWhiteSpace(o.Id) || string.IsNullOrWhiteSpace(o.Name)) yield return $"{what}: options need an id and a name";
+                else if (!IsNodeName(o.Id)) yield return $"{what} option '{o.Id}': its id must be letters and digits, as model nodes are named after it";
                 if (o.Show.Any(string.IsNullOrWhiteSpace)) yield return $"{what} option '{o.Id}': show needs node names";
                 if (o.Changes?.Select(kv => kv.Key).FirstOrDefault(k => fixedMembers.Contains(k, StringComparer.OrdinalIgnoreCase)) is { } key)
                     yield return $"{what} option '{o.Id}': changes can't set '{key}' (an option's price and mass add to the machine's)";
             }
         }
     }
+
+    /// <summary>Letters and digits only: an option's model nodes are configuration_option(_…), see docs/MODELING.md.</summary>
+    private static bool IsNodeName(string id) => id.All(char.IsAsciiLetterOrDigit);
 
     private const string FarmRule = "farm must be 0 (an NPC's) or 1 (the player's farm)";
 

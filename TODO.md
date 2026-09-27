@@ -304,6 +304,8 @@ A mod is an add-on the game loads, never a fork.
 - [ ] Content layering: one `IContentSource` per mod after the base game; mods add ids and override or
       patch existing ones (duplicates throw today); validation names the mod at fault.
 - [ ] Runtime asset loading outside `res://`: `.glb` via `GLTFDocument`, textures, sounds.
+- [ ] Check models with the content: read each `.glb`'s node names (its JSON chunk) in Core, so a missing `root`,
+      moving parts and option pieces (`docs/MODELING.md`) are reported at startup and in CI, naming the mod.
 - [ ] Mods screen (enable, order, errors); saves record the mods they used.
 - [ ] Example mods (vehicle, crop, POI) and a modding guide in `docs/`.
 

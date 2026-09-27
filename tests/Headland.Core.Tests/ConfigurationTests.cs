@@ -103,24 +103,50 @@ public class ConfigurationTests
     [Fact]
     public void OptionsShowTheModelNodesOfWhatTheyAdd()
     {
+        // The front weight is the node named after its option: hidden unless the tractor has it.
         var tractor = TestContent.Content.Machines["tractor_125"];
-        Assert.Equal(["frontWeight"], tractor.HiddenNodes);
-        Assert.Empty(tractor.Configure(Options(("frontHitch", "weight"))).HiddenNodes);
+        Assert.True(tractor.Hides("frontHitch_weight"));
+        Assert.False(tractor.Configure(Options(("frontHitch", "weight"))).Hides("frontHitch_weight"));
+        Assert.False(tractor.Hides("cab"));
 
         var x = TestContent.WithMachines("""
-            [{ "id": "x", "name": "X", "components": {},
+            [{ "id": "x", "name": "X", "price": 1000, "size": { "length": 4, "width": 2 },
+               "components": {
+                 "runningGear": { "axles": [ { "z": 0 }, { "z": 2, "steering": "front" } ] }, "motor": {}, "drivable": {} },
+               "visual": { "nodes": { "steeringWheel": "wheel_steering" } },
                "configurations": [
                  { "id": "wheels", "name": "Wheels", "options": [
-                   { "id": "single", "name": "Single", "show": ["wheel_rl", "wheel_rr"] },
-                   { "id": "dual", "name": "Dual", "show": ["wheel_rl", "wheel_rr", "dual_rl", "dual_rr"] },
-                   { "id": "tracks", "name": "Tracks", "show": ["track_rl", "track_rr"] } ] },
-                 { "id": "hitch", "name": "Front hitch", "options": [
-                   { "id": "none", "name": "None" }, { "id": "weight", "name": "Weight", "show": ["front_weight"] } ] } ] }]
+                   { "id": "single", "name": "Single" },
+                   { "id": "dual", "name": "Dual",
+                     "changes": { "components": { "runningGear": { "axles": [ { "wheels": { "type": "dual" } } ] } } } },
+                   { "id": "tracks", "name": "Tracks",
+                     "changes": { "components": { "runningGear": { "axles": [ { "wheels": { "type": "tracks", "length": 1 } } ] } },
+                                  "visual": { "nodes": { "track0L": "crawler_l" } } } } ] },
+                 { "id": "beacons", "name": "Beacons", "options": [
+                   { "id": "none", "name": "None" }, { "id": "left", "name": "Left" }, { "id": "right", "name": "Right" },
+                   { "id": "both", "name": "Both", "show": ["beacons_left", "beacons_right"] } ] } ] }]
             """).Machines["x"];
-        // A node is hidden unless one of the chosen options shows it.
-        Assert.Equal(["dual_rl", "dual_rr", "front_weight", "track_rl", "track_rr"], x.HiddenNodes.Order());
-        Assert.Equal(["front_weight", "track_rl", "track_rr"], x.Configure(Options(("wheels", "dual"))).HiddenNodes.Order());
-        Assert.Equal(["dual_rl", "dual_rr", "wheel_rl", "wheel_rr"], x.Configure(Options(("wheels", "tracks"), ("hitch", "weight"))).HiddenNodes.Order());
+        // An option's pieces: the node named after it, and those named after it and _… (Blender's .001 imports as _001).
+        var dual = x.Configure(Options(("wheels", "dual")));
+        Assert.Equal((true, true, true), (x.Hides("wheels_dual"), x.Hides("wheels_dual_0L"), x.Hides("wheels_dual_001")));
+        Assert.Equal((false, false), (dual.Hides("wheels_dual"), dual.Hides("wheels_dual_0L")));
+        Assert.False(x.Hides("wheels_dualWide"));
+        Assert.Equal("wheels", x.UnknownOption("wheels_dualWide")?.Id);
+        Assert.Null(x.UnknownOption("wheels_dual_001"));
+        Assert.Null(x.UnknownOption("wheelsCover"));
+
+        // Moving parts only some options have, named after their role or as visual.nodes says.
+        var tracks = x.Configure(Options(("wheels", "tracks")));
+        Assert.Equal((false, true, true), (x.Hides("wheel0L"), x.Hides("crawler_l"), x.Hides("track0R")));
+        Assert.Equal((true, false, false), (tracks.Hides("wheel0L"), tracks.Hides("crawler_l"), tracks.Hides("track0R")));
+        Assert.Equal((false, false), (tracks.Hides("wheel1L"), tracks.Hides("wheel_steering")));
+
+        // Pieces options share: both beacons are the left one and the right one.
+        var left = x.Configure(Options(("beacons", "left")));
+        var both = x.Configure(Options(("beacons", "both")));
+        Assert.Equal((true, true), (x.Hides("beacons_left"), x.Hides("beacons_right")));
+        Assert.Equal((false, true), (left.Hides("beacons_left"), left.Hides("beacons_right")));
+        Assert.Equal((false, false), (both.Hides("beacons_left"), both.Hides("beacons_right")));
 
         var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
             [{ "id": "y", "name": "Y", "components": {}, "visual": { "parts": [ { "id": "a", "w": 0 }, { "id": "b" }, { "id": "b" } ] },
@@ -230,7 +256,8 @@ public class ConfigurationTests
                    { "id": "single", "name": "Again" } ] },
                  { "id": "engine", "name": "Engine", "options": [
                    { "id": "a", "name": "A" }, { "id": "b", "name": "B", "changes": { "id": "y" } } ] },
-                 { "id": "empty", "name": "Empty", "options": [] } ] }]
+                 { "id": "empty", "name": "Empty", "options": [] },
+                 { "id": "front hitch", "name": "Front hitch", "options": [ { "id": "3-point", "name": "Three-point" } ] } ] }]
             """));
         Assert.Contains("machine 'x' (wheels: tracks) runningGear: tracks don't steer: they go on fixed axles", bad.Message);
         Assert.Contains("machine 'x' (wheels: typo): The JSON property 'colour' could not be mapped", bad.Message);
@@ -238,6 +265,8 @@ public class ConfigurationTests
         Assert.Contains("machine 'x' configuration 'wheels': option 'single' is defined more than once", bad.Message);
         Assert.Contains("machine 'x' configuration 'engine' option 'b': changes can't set 'id'", bad.Message);
         Assert.Contains("machine 'x' configuration 'empty': needs options", bad.Message);
+        Assert.Contains("machine 'x' configuration 'front hitch': its id must be letters and digits, as model nodes are named after it", bad.Message);
+        Assert.Contains("machine 'x' configuration 'front hitch' option '3-point': its id must be letters and digits", bad.Message);
         // Only what an option gets wrong: the machine as it comes is fine.
         Assert.DoesNotContain("machine 'x' motor", bad.Message);
     }

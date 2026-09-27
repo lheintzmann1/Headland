@@ -49,8 +49,9 @@ public sealed class MachineRig
     }
 
     /// <summary>
-    /// The machine's glTF model (what its root node holds) with its parts mapped by visual.nodes, and the nodes of
-    /// options it doesn't have hidden. Empty if the model doesn't load: such machines are left out when the game starts.
+    /// The machine's glTF model (what its root node holds) with its moving parts found by name, and the nodes it doesn't
+    /// have with its options hidden (docs/MODELING.md). Empty if the model doesn't load: such machines are left out
+    /// when the game starts.
     /// </summary>
     public static MachineRig Model(MachineDef def)
     {
@@ -58,19 +59,38 @@ public sealed class MachineRig
         var rig = new MachineRig { Scale = v.Scale };
         if (Models.Load(v, def.Id) is not { } holder) return rig;
         rig.Root.AddChild(holder);
-        var root = holder.GetChild(0);
 
-        foreach (var (role, nodeName) in v.Nodes ?? new Dictionary<string, string>())
+        var nodes = new Dictionary<string, Node3D>();
+        foreach (var node in Descendants(holder.GetChild(0)))
         {
-            if (root.FindChild(nodeName, recursive: true, owned: false) is Node3D node) rig.Add(role, node);
-            else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' for '{role}'");
+            var name = node.Name.ToString();
+            nodes.TryAdd(name, node);
+            if (def.Hides(name)) node.Visible = false;
+            if (def.UnknownOption(name) is { } c)
+                GD.PushWarning($"{def.Id}: model node '{name}' is named after configuration '{c.Id}' but none of its options " +
+                               $"({string.Join(", ", c.Options.Select(o => $"{c.Id}_{o.Id}"))})");
         }
-        foreach (var nodeName in def.OptionNodes)
+        var missing = new List<string>();
+        foreach (var role in def.Roles)
         {
-            if (root.FindChild(nodeName, recursive: true, owned: false) is Node3D node) node.Visible = !def.HiddenNodes.Contains(nodeName);
-            else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' that its options show");
+            var name = def.NodeOf(role);
+            if (nodes.TryGetValue(name, out var node)) rig.Add(role, node);
+            else if (v.Nodes?.ContainsKey(role) == true) GD.PushWarning($"{def.Id}: model has no node '{name}' for '{role}'");
+            else missing.Add(role);
         }
-        GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")})");
+        foreach (var name in def.Configurations.SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct().Where(n => !nodes.ContainsKey(n)))
+            GD.PushWarning($"{def.Id}: model has no node '{name}' that its options show");
+        GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")}" +
+                 $"{(missing.Count > 0 ? $"; not in the model: {string.Join(", ", missing)}" : "")})");
         return rig;
+    }
+
+    private static IEnumerable<Node3D> Descendants(Node node)
+    {
+        foreach (var child in node.GetChildren())
+        {
+            if (child is Node3D n3) yield return n3;
+            foreach (var d in Descendants(child)) yield return d;
+        }
     }
 }

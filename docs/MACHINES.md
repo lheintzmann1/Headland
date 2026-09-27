@@ -42,8 +42,9 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
 ```
 
 `visual` picks the procedural placeholder (`tractor`, `combine`, `trailer`, `cultivator`, `seeder`, `header`,
-`cornheader`, anything else is a box) or a glTF model with its moving parts: see [`MODELING.md`](MODELING.md). Its
-`parts` add blocks to the placeholder for what some options have, such as a front weight.
+`cornheader`, anything else is a box) or a glTF model, whose parts the game finds by their names: see
+[`MODELING.md`](MODELING.md). A machine whose model doesn't load is left out of the game. Its `parts` add blocks to
+the placeholder for what some options have, such as a front weight (`frontHitch_weight`).
 
 ## Components
 
@@ -308,12 +309,12 @@ each.
 
 | Setting | Default | |
 |---|---|---|
-| `id`, `name` | | The choice: ids are unique on the machine, and saves refer to them. |
-| `options` | | Each with an `id` (unique in its choice) and a `name`. |
+| `id`, `name` | | The choice: ids are unique on the machine, and saves refer to them. Ids are letters and digits, as model nodes are named after them (`frontHitch_weight`). |
+| `options` | | Each with an `id` (unique in its choice, letters and digits) and a `name`. |
 | `default` | false | On an option: the machine comes with it. Without one marked, the first option. |
 | `price`, `mass` | 0 | What the option adds to the machine's price and mass, or takes off when negative. |
 | `changes` | none | What the option changes in the machine's JSON. |
-| `show` | none | Model nodes that make up the option, such as `["front_weight"]`: hidden without it, so that one model holds every option (see [`MODELING.md`](MODELING.md#one-model-for-every-configuration)). |
+| `show` | none | Model nodes the option shares with others, such as `["beacons_left", "beacons_right"]` for both beacons. Like its own node (`beacons_both`), they are hidden without it, so that one model holds every option (see [`MODELING.md`](MODELING.md#one-model-for-every-configuration)). |
 
 `changes` is merged into the machine's JSON, any of it but its `id`, `price`, `mass` and `configurations`:
 

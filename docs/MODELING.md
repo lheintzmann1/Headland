@@ -33,78 +33,141 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    - mounted implements and headers: the hitch point.
 
    If that is inconvenient, use `"offset": [x, y, z]` (meters; +Z forward, +X left).
-5. **Moving parts:** make each one a separate node (a group in Blockbench, an object in Blender) with its pivot where
-   it rotates. The machine's components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
+5. **Parts:** lay the model out and name its parts as below, so that the game finds them without any mapping in the
+   JSON.
 
-   | Role | Component | Pivot | Modeled as |
-   |---|---|---|---|
-   | `wheel0L`, `wheel0R`, `wheel1L`, … | `runningGear` | wheel center | one node per side of each axle (`L` left, `R` right), axles numbered as in its `axles`, holding both tires of a dual; it rolls, and steers when the axle does |
-   | `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved |
-   | `frontFrame` | `runningGear` with `articulation` | the hinge | the front frame with everything on it (its wheels too); it swings about Y, left when positive |
-   | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
-   | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
-   | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
-   | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
-   | `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
-   | a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold) |
-   | a joint's `id` | `craneArm` | the joint's pivot | at the joint's value 0; `extend` joints slide along their own Z |
-   | `hook` | `winch` | the hook's eye | anywhere: it is moved to the end of the rope |
-   | `saw` | `saw` | the blade's center | spins about its own Y axis while turned on |
+## Layout and names
 
-   A crane's joints are nested: each joint's node is a child of the previous one's, placed as the `offset`s in the
-   JSON say, so that tools and ropes hang where the game expects them.
+The game finds each part of a model by its name: moving parts are named after their role, and the pieces an option
+adds after that option. Here is the Fieldmaster 125 (`tractor_125`) with every option it can have:
+
+```text
+root                              origin on the ground, at the center of the rear axle
+├── body                          what is always there, under any names
+│   ├── cab
+│   └── hood
+├── runningGear
+│   ├── wheel0L                   rear left wheel: rolls
+│   │   └── wheels_dual_0L        its outer tire, with duals only: rolls with it
+│   ├── wheel0R
+│   │   └── wheels_dual_0R
+│   ├── wheel1L                   front left wheel: rolls and steers
+│   │   └── wheels_dual_1L
+│   ├── wheel1R
+│   │   └── wheels_dual_1R
+│   ├── track0L                   rear tracks: shown instead of wheel0L and wheel0R
+│   └── track0R
+├── steeringWheel
+└── options
+    ├── frontHitch
+    │   ├── frontHitch_threePoint
+    │   └── frontHitch_weight
+    ├── frontLoader
+    │   └── frontLoader_bracket
+    └── beacons
+        ├── beacons_left
+        ├── beacons_right
+        └── beacons_lightbar
+```
+
+- **Where a node sits** only matters for what moves together: a moving part carries whatever is under it (a dual's
+  outer tire, a front frame's wheels, a crane's next joint, the load in a tipper's bed). The game looks for each name
+  anywhere under `root`, so the groups that only sort things (`body`, `runningGear`, `options` and a group per
+  configuration in it) are a suggestion, not a requirement.
+- **Every name is unique** in the file. Blender insists on it, and Godot renames the second of two nodes with the
+  same name when it imports the model (`hood2`), after which the game doesn't find it.
+- **Names use letters, digits and `_` only**, and case matters (`frontHitch`, not `fronthitch`). Godot turns `.` `:`
+  `@` `/` `"` `%` into `_`, and reads endings such as `-col` or `-noimp` as import instructions.
+- **Reserved names:** `root`, the roles of moving parts (see [Moving parts](#moving-parts)), and any name starting
+  with a configuration's id and `_` (see [One model for every configuration](#one-model-for-every-configuration)).
+  Everything else is free: name parts after what they are (`cab`, `hood`, `exhaust`).
+
+## Moving parts
+
+Make each moving part a node of its own, named after its role, with its pivot (origin) where it turns. The machine's
+components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
+
+| Role | Component | Pivot | Modeled as |
+|---|---|---|---|
+| `wheel0L`, `wheel0R`, `wheel1L`, … | `runningGear` | wheel center | one node per side of each axle (`L` left, `R` right), axles numbered from 0 as in its `axles`, holding both tires of a dual; it rolls, and steers when the axle does |
+| `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved |
+| `frontFrame` | `runningGear` with `articulation` | the hinge | the front frame with everything on it (its wheels too); it swings about Y, left when positive |
+| `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
+| `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
+| `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
+| `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
+| `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
+| a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold) |
+| a joint's `id` | `craneArm` | the joint's pivot | at the joint's value 0; `extend` joints slide along their own Z |
+| `hook` | `winch` | the hook's eye | anywhere: it is moved to the end of the rope |
+| `saw` | `saw` | the blade's center | spins about its own Y axis while turned on |
+
+A crane's joints are nested: each joint's node is a child of the previous one's, placed as the `offset`s in the JSON
+say, so that tools and ropes hang where the game expects them.
+
+A moving part that only some options give the machine is hidden without them. An axle's sides are `wheel…` roles, or
+`track…` when that axle has tracks, so with rear tracks `wheel0L` and `wheel0R` are hidden, and without them `track0L`
+and `track0R`; likewise a crane joint or a pipe that comes with an option. Nothing needs to be written in the JSON for
+it.
 
 ## One model for every configuration
 
 A machine's options (its `configurations`, see [`MACHINES.md`](MACHINES.md#configurations)) all come from the same
-model: model everything any option adds, each piece a node of its own, and each option names the nodes it `show`s. A
-node that some option shows is hidden unless an option showing it is chosen; the rest of the model is always there.
+model: model everything any option adds, and put each option's pieces under a node named after it, its
+configuration's id, `_` and its own id, as written in the JSON. That node and everything under it are hidden unless the
+machine has that option; the rest of the model is always there.
 
 ```jsonc
 { "id": "frontHitch", "name": "Front hitch", "options": [
-  { "id": "threePoint", "name": "Front linkage", "show": ["front_linkage"], "changes": { … } },
-  { "id": "weight", "name": "Front weight", "show": ["front_weight"] },
-  { "id": "none", "name": "None" }
+  { "id": "threePoint", "name": "Front linkage", "changes": { … } },  // frontHitch_threePoint
+  { "id": "weight", "name": "Front weight" },                         // frontHitch_weight
+  { "id": "none", "name": "None" }                                    // nothing to model
 ] }
 ```
 
-- Name those nodes after what they are (`front_weight`, `beacon_left`, `lightbar`, `loader_console_l`), and keep each
-  one's parts under it, so that hiding it hides them all.
-- An option can show several nodes, and several options the same node: with `"single": ["wheel_rl", "wheel_rr"]` and
-  `"dual": ["wheel_rl", "wheel_rr", "dual_rl", "dual_rr"]`, the inner tires show with both and the outer ones with
-  duals only.
-- A moving part that only some options have also needs its role: the tracks option maps `track0L` and `track0R` to its
-  track nodes with `"changes": { "visual": { "nodes": { "track0L": "track_rl", "track0R": "track_rr" } } }`, and the
-  wheels shown with the other options keep `wheel0L` and `wheel0R` in the machine's own `nodes`. Nodes that move are
-  moved whether shown or not.
+- An option that adds nothing to see (none, an engine, a bigger tank) needs no node.
+- A piece that has to sit somewhere else, under a moving part, is named after its option followed by `_` and anything:
+  a dual's outer tire rolls with its wheel, so it is `wheels_dual_0L` under `wheel0L`. Any number of nodes can do
+  that (`frontLoader_bracket_l`, `frontLoader_bracket_r`), and Blender's `.001` endings, which import as `_001`, count
+  too.
+- Pieces that several options share are listed in `show`: both beacons are the left one and the right one, so
+  `{ "id": "both", "name": "Both sides", "show": ["beacons_left", "beacons_right"] }`. A node is shown when any chosen
+  option has it.
+- A name starting with a configuration's id and `_` belongs to its options: the console warns about one that matches
+  none of them, such as `frontHitch_wieght`.
 - Colors come from the textures, so a color option changes the machine's `visual.model` to a model of that color, or
-  shows one of several painted bodies.
+  has a painted body of its own (`color_green`).
 
-The console warns about any node an option shows that the model doesn't have. Until a machine has a model, its
-placeholder can draw such pieces as blocks: `visual.parts` lists them with an `id` (the name options show), a center
-`x`, `y`, `z`, a size `w`, `h`, `d` and a `color` (the machine's when missing).
+Until a machine has a model, its placeholder can draw option pieces as blocks: `visual.parts` lists them with an `id`
+(the node name, such as `frontHitch_weight`), a center `x`, `y`, `z`, a size `w`, `h`, `d` and a `color` (the
+machine's when missing).
 
 ## Exporting and hooking it up
 
 1. Export the model as `.glb` into `game/assets/models/<category>/`, for example
    `game/assets/models/tractors/fieldmaster_125.glb`. In Blockbench, use **File → Export → Export glTF Model** and save
-   the `.bbmodel` beside the export as the editable source.
-2. In the machine's JSON (`game/data/machines/*.json`), point `visual` at it and name its moving parts:
+   the `.bbmodel` beside the export as the editable source. If the exporter offers to turn groups into an armature or
+   bones, leave that off: the game looks for nodes.
+2. In the machine's JSON (`game/data/machines/*.json`), point `visual` at it:
 
    ```json
    "visual": {
      "placeholder": "tractor",
      "color": "#7b2f25",
-     "model": "res://assets/models/tractors/fieldmaster_125.glb",
-     "nodes": { "wheel0L": "wheel_rl", "wheel0R": "wheel_rr", "wheel1L": "wheel_fl", "wheel1R": "wheel_fr" }
+     "model": "res://assets/models/tractors/fieldmaster_125.glb"
    }
    ```
 
-   Optional: `"scale"` (default 1), `"yawDeg"` (default 0), `"offset"` (default `[0, 0, 0]`).
+   Optional: `"scale"` (default 1), `"yawDeg"` (default 0), `"offset"` (default `[0, 0, 0]`), and `"nodes"` for a model
+   whose moving parts aren't named after their roles, such as one made for something else:
+   `"nodes": { "wheel0L": "wheel_rl", "wheel0R": "wheel_rr" }` (role → node name; an option can change them in its
+   `changes`).
 3. Import it: open the project in the Godot editor once, or run `godot --headless --path game --import`.
-4. Run the game. The console lists the parts it found, for example
-   `tractor_125: model res://…/fieldmaster_125.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R)`, and warns about any
-   node name it could not find.
+4. Run the game. The console lists the parts it found and the roles it found no node for, for example for a trailer
+   whose load isn't modeled yet:
+   `trailer_16: model res://…/tipper_16.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R, tipper; not in the model: load)`.
+   It warns about the names in `nodes` and `show` it could not find, and about names that look like an option's but
+   match none.
 
 A machine whose model doesn't load (the file is missing or wasn't imported, or it has no `root` node), as it comes or
 with any of its options, is left out of the game: the console says why, and what went with it (its places on the map,

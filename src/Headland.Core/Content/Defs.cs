@@ -202,8 +202,8 @@ public sealed class VisualDef : ModelDef
     public string Placeholder { get; set; } = "tractor";
     public string Color { get; set; } = "#7a3326";
     /// <summary>
-    /// Moving parts: role → node name in the model. The machine's components give the roles (wheel0L, wheel0R… for
-    /// each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
+    /// Moving parts not named after their role in the model: role → node name. The machine's components give the roles
+    /// (wheel0L, wheel0R… for each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
     /// <summary>
@@ -259,13 +259,38 @@ public sealed class MachineDef
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> Choices { get; private set; } = new Dictionary<string, string>();
 
-    /// <summary>Model nodes (and placeholder parts) its options show: each is visible with the options showing it.</summary>
+    /// <summary>Model nodes (and placeholder parts) its options are made of: each is visible with the options it's in.</summary>
     [JsonIgnore]
-    public IEnumerable<string> OptionNodes => Configurations.SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct();
+    public IEnumerable<string> OptionNodes => Configurations.SelectMany(c => c.Options.SelectMany(o => o.Nodes(c))).Distinct();
 
-    /// <summary>Model nodes (and placeholder parts) some option shows but none of the chosen ones: hidden on this machine.</summary>
-    [JsonIgnore]
-    public IReadOnlySet<string> HiddenNodes { get; private set; } = new HashSet<string>();
+    /// <summary>Model nodes (and placeholder parts) the chosen options are made of.</summary>
+    private IReadOnlySet<string> _shownNodes = new HashSet<string>();
+
+    /// <summary>The model node that moves as <paramref name="role"/>: the one visual.nodes names, else the one named after the role.</summary>
+    public string NodeOf(string role) => Visual.Nodes?.GetValueOrDefault(role) ?? role;
+
+    /// <summary>
+    /// Whether the model node (or placeholder part) <paramref name="node"/> is hidden on this machine (see
+    /// docs/MODELING.md): it's part of options it doesn't have and of none it has, or a moving part only other options
+    /// have (the rear wheels of a machine with rear tracks).
+    /// </summary>
+    public bool Hides(string node) =>
+        (OptionNodes.Any(n => IsPartOf(node, n)) && !_shownNodes.Any(n => IsPartOf(node, n)))
+        || (_variants?.MovedNodes.Contains(node) == true && !Roles.Any(r => NodeOf(r) == node));
+
+    /// <summary>
+    /// The configuration a model node is named after (configuration_…) without being part of any of its options: a
+    /// typo, most likely. Null for any other node.
+    /// </summary>
+    public ConfigurationDef? UnknownOption(string node) =>
+        Configurations.FirstOrDefault(c => node.StartsWith(c.Id + "_", StringComparison.Ordinal))
+            is { } configuration && !OptionNodes.Any(n => IsPartOf(node, n))
+            ? configuration
+            : null;
+
+    /// <summary>Whether <paramref name="node"/> is <paramref name="name"/> or a piece of it: name_… (as Blender's name.001 imports).</summary>
+    private static bool IsPartOf(string node, string name) =>
+        node.StartsWith(name, StringComparison.Ordinal) && (node.Length == name.Length || node[name.Length] == '_');
 
     /// <summary>The option chosen in <paramref name="configuration"/>.</summary>
     public ConfigurationOptionDef? Chosen(ConfigurationDef configuration) => configuration.Option(Choices.GetValueOrDefault(configuration.Id));
@@ -297,6 +322,14 @@ public sealed class MachineDef
     private sealed class Variants(JsonObject json, List<ConfigurationDef> configurations)
     {
         private readonly Dictionary<string, MachineDef> _built = new();
+        private IReadOnlySet<string>? _moved;
+
+        /// <summary>The model nodes it moves as it comes or with any one of its options.</summary>
+        public IReadOnlySet<string> MovedNodes => _moved ??= configurations
+            .SelectMany(c => c.Options.Select(o => Get(new Dictionary<string, string> { [c.Id] = o.Id })))
+            .Prepend(Get(new Dictionary<string, string>()))
+            .SelectMany(d => d.Roles.Select(d.NodeOf))
+            .ToHashSet();
 
         /// <summary>The def with each configuration's chosen option, or its default.</summary>
         public MachineDef Get(IReadOnlyDictionary<string, string> choices)
@@ -325,8 +358,7 @@ public sealed class MachineDef
             if (json["id"] is JsonValue id && id.TryGetValue<string>(out var own)) def.Id = own;
             def.Configurations = configurations;
             def.Choices = options.ToDictionary(x => x.configuration.Id, x => x.option.Id);
-            var shown = options.SelectMany(x => x.option.Show).ToHashSet();
-            def.HiddenNodes = def.OptionNodes.Where(n => !shown.Contains(n)).ToHashSet();
+            def._shownNodes = options.SelectMany(x => x.option.Nodes(x.configuration)).ToHashSet();
             def.Price += options.Sum(x => x.option.Price);
             def.Mass += options.Sum(x => x.option.Mass);
             def._variants = this;
@@ -376,10 +408,16 @@ public sealed class ConfigurationOptionDef
     /// <summary>What it changes in the machine's JSON (its size, components, looks), merged in by <see cref="JsonMerge"/>.</summary>
     public JsonObject? Changes { get; set; }
     /// <summary>
-    /// Model nodes (or placeholder parts) that make it up, such as a front weight or the tracks: hidden unless an option
-    /// showing them is chosen, so that one model holds every configuration.
+    /// Model nodes (or placeholder parts) it shares with other options, such as the two beacons "both" shows, besides
+    /// its own (<see cref="Nodes"/>).
     /// </summary>
     public string[] Show { get; set; } = [];
+
+    /// <summary>
+    /// The model nodes (or placeholder parts) that make it up, hidden unless it's chosen so that one model holds every
+    /// configuration: the one named after it, configuration_option (frontHitch_weight), and those it shows.
+    /// </summary>
+    public IEnumerable<string> Nodes(ConfigurationDef configuration) => Show.Prepend($"{configuration.Id}_{Id}");
 }
 
 // ---- Contracts (contracts.json)
