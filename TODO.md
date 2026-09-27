@@ -73,6 +73,9 @@ units are written once, and new kinds of things come from data (and later mods) 
       `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
       placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
 - [x] The JSON reference of every kind in one place: `docs/COMPONENTS.md`.
+- [ ] Entity types (FS `placeableTypes` and `vehicleTypes`): named component sets with a parent, which machine and
+      POI JSON name with `type` and extend (several wind turbines sharing one preset), with their shop and
+      construction category. With construction mode.
 - [ ] Configurations on any entity, not only machines (FS's `ConfigurationManager` registers configuration types
       for vehicles and placeables alike): a silo's size, a shed's color. Each configuration type says how the
       shop shows it (a list of options, a color picker).
