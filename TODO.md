@@ -49,6 +49,30 @@ Rules for every item:
       shared widgets; replaces the per-control styles in `Hud.cs`.
 - [x] **User settings file** (`user://settings.cfg`): graphics, audio, controls, gameplay.
 
+## Components for everything (FS specializations)
+
+Machines are built from components (see Vehicles). FS builds vehicles and placeables from specializations too,
+but keeps two sets (`Lights` for vehicles, `PlaceableLights` for placeables). Headland uses one component model for
+almost everything instead: machines, POIs and buildings, the farmer and other characters, pallets, bales and other
+objects, animals, trees and props. A kind works on anything it makes sense for, so lights, moving parts or fill
+units are written once, and new kinds of things come from data (and later mods) rather than code.
+
+- [ ] One component base for every kind of thing, out of `MachineDef`/`Machine`: a def per kind (checked against
+      what it's on), runtime state, save data, a view; `ComponentKinds` covers all. Machines move onto it first,
+      unchanged.
+- [ ] Kinds shared as they apply: `lights` (switched by the driver, the time of day, the weather or a trigger, as
+      `Lights` and `PlaceableLights`), `animatedParts` (a folding boom, a shed door opening at a trigger, as
+      `PlaceableAnimatedObjects`), `fillUnits` (a trailer's bed, a silo, a pallet), `hotspots` (map icons).
+- [ ] POIs from components: today's triggers, storage and actions as `sellingStation` (sell at an unload
+      trigger), `buyingStation` (buy and refuel at a fill trigger), `silo` (storage with its unloading pit and
+      loading spout), `productionPoint` (process), `workshop` (repair, configure), `washingStation` (wash), and
+      the delivery spot for new and leased machines.
+- [ ] The rest on the same model as it comes: the farmer and NPCs, pallets and bales, animals, trees (what saws
+      cut), props; new POI kinds with their features (`husbandry`, `bunkerSilo`, `manureHeap`, `objectStorage`,
+      `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
+      placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
+- [ ] The JSON reference of every kind in one place, `docs/MACHINES.md` growing into it.
+
 ## Points of interest (POIs)
 
 One generic POI replaces `SellPointDef`, `ShopDef` and the visual-only `BuildingDef`. A POI has a
@@ -322,7 +346,7 @@ A mod is an add-on the game loads, never a fork.
 - [ ] Sandboxed runtime (no `io`/`os`, CPU and memory limits), errors isolated per mod.
 - [ ] API over Core: event bus subscriptions, read access to world, fields, machines and economy, safe
       commands.
-- [ ] Extension points: contract types, POI actions and conditions, machine components, weather
+- [ ] Extension points: contract types, POI actions and conditions, components, weather
       generation, season rules (move the hard-coded season months out of `GameClock` into data first),
       crop growth hooks. New crops and fill types stay plain JSON.
 - [ ] API reference docs; hot reload in development.
@@ -345,6 +369,12 @@ A mod is an add-on the game loads, never a fork.
 ## Links
 
 - FS vehicle types and specializations: <https://codeberg.org/Farming-Simulator/KNOWLEDGE-BASE/src/branch/main/Vehicle-Types/vehicle-types.md>
+- FS22 scripting, Specializations (the vehicles' and the `Placeable…` ones, with source), e.g.
+  `PlaceableAnimatedObjects`: <https://gdn.giants-software.com/documentation_scripting_fs22.php?version=script&category=48&class=482>
+  and `PlaceableLights`: <https://gdn.giants-software.com/documentation_scripting_fs22.php?version=script&category=48&class=514>
+- FS25 scripting, Specializations: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=616>
+- FS22 scripting, `Placeable` (the base class, how types and specializations load): <https://gdn.giants-software.com/documentation_scripting_fs22.php?version=script&category=39&class=384>
+- FS25 placeable XML (every setting of each specialization): <https://validation.gdn.giants-software.com/fs25/placeable.html>
 - GIANTS i3d format: <https://gdn.giants-software.com/documentation_i3d.php#i3d_introduction>
 - FS25 scripting, `TreeSaw`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?category=78&class=815&version=script>
 - FS19 scripting, `AIVehicleUtil`: <https://gdn.giants-software.com/documentation_scripting_fs19.php?version=script&category=41&class=441>
