@@ -359,7 +359,10 @@ public sealed class MachineSystem
             }
             else
             {
-                var dir = jw - child.Position;
+                // It turns about the middle of the axles holding it (self-steering ones too when backing up): that
+                // point is drawn straight toward the hitch.
+                var pivot = child.Get<RunningGear>()?.Def.Pivot(SteeringMode.Normal, parent.Root.Speed < 0f) ?? 0f;
+                var dir = jw - child.LocalToWorld(0f, pivot);
                 if (dir.LengthSquared() > 1e-6f)
                 {
                     var max = a.MaxArticulationDeg * MathUtil.Deg2Rad;

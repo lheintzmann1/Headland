@@ -4,8 +4,8 @@ namespace Headland.Core.Machines.Components;
 
 /// <summary>
 /// Hitches to a joint of its type: mounted (carried rigidly, lifted by the linkage) or trailed (pulled by its drawbar
-/// eye at x, z, following the hitch). A lowerable one is lowered and raised with the lower key; its work areas only
-/// work lowered.
+/// eye or kingpin at x, z, following the hitch, with a share of its weight on it). A lowerable one is lowered and
+/// raised with the lower key; its work areas only work lowered.
 /// </summary>
 public sealed class AttachableDef : ComponentDef
 {
@@ -18,13 +18,18 @@ public sealed class AttachableDef : ComponentDef
     public bool Lowerable { get; set; }
     /// <summary>Mounted: how high the linkage lifts it off the ground when raised.</summary>
     public float Lift { get; set; } = 0.45f;
+    /// <summary>Trailed: the share of its weight (with its load) resting on the hitch, a semi-trailer's on the fifth wheel.</summary>
+    public float HitchLoad { get; set; }
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (!AttacherJointDef.Types.Contains(Type)) yield return $"unknown type '{Type}'";
         if (Mode is not ("mounted" or "trailed")) yield return "mode must be mounted or trailed";
         if (Mode == "trailed" && Z <= 0.1f) yield return "a trailed one needs z > 0 (drawbar length)";
+        if (Mode == "trailed" && machine.Get<RunningGearDef>() == null) yield return "a trailed one needs a runningGear";
         if (Lift < 0f) yield return "lift must be >= 0";
+        if (HitchLoad is < 0f or >= 1f) yield return "hitchLoad must be in [0, 1)";
+        else if (HitchLoad > 0f && Mode != "trailed") yield return "hitchLoad is for trailed machines: a mounted one is carried whole";
     }
 
     internal override MachineComponent Create(Machine machine) => new Attachable(machine, this);

@@ -14,7 +14,7 @@ public class RunningGearTests
     private const string Machines = """
         [
           {
-            "id": "test_truck", "name": "Truck", "size": { "length": 8, "width": 2.5, "height": 3, "centerZ": 1.5 },
+            "id": "test_truck", "name": "Truck", "mass": 9000, "size": { "length": 8, "width": 2.5, "height": 3, "centerZ": 1.5 },
             "components": {
               "runningGear": { "maxSteerDeg": 35, "axles": [
                 { "z": 4.0, "track": 2.0, "steering": "front" },
@@ -22,7 +22,26 @@ public class RunningGearTests
                 { "z": 0.65, "track": 1.9 },
                 { "z": -0.65, "track": 1.9 } ] },
               "motor": { "powerHp": 300 },
-              "drivable": {}
+              "drivable": {},
+              "attacherJoints": { "joints": [
+                { "id": "fifth", "type": "fifthWheel", "z": 0.3, "y": 1.2 },
+                { "id": "drawbar", "type": "drawbar", "z": -2.7 } ] }
+            }
+          },
+          {
+            "id": "test_semi", "name": "Semi-trailer", "mass": 7000, "size": { "length": 13.6, "width": 2.55, "height": 3.5, "centerZ": 2.4 },
+            "components": {
+              "runningGear": { "axles": [ { "z": 0.65, "track": 2 }, { "z": -0.65, "track": 2 }, { "z": -1.95, "track": 2, "steering": "self" } ] },
+              "attachable": { "type": "fifthWheel", "mode": "trailed", "z": 8, "maxArticulationDeg": 90, "hitchLoad": 0.35 },
+              "fillUnits": { "units": [ { "id": "main", "capacity": 30000, "fillTypes": ["wheat"] } ] }
+            }
+          },
+          {
+            "id": "test_dolly", "name": "Dolly", "mass": 1500, "size": { "length": 3.2, "width": 2.5, "height": 1.2, "centerZ": 0.6 },
+            "components": {
+              "runningGear": { "axles": [ { "z": 0, "track": 2 } ] },
+              "attachable": { "type": "drawbar", "mode": "trailed", "z": 2.8 },
+              "attacherJoints": { "joints": [ { "id": "fifth", "type": "fifthWheel", "z": 0, "y": 1.1 } ] }
             }
           },
           {
@@ -222,6 +241,9 @@ public class RunningGearTests
         Drive(tractor, -0.3f);
         Run(sim, 3f);
         Assert.Equal(0f, gear.AxleAngle(2));
+        // Locked, it holds the trailer like the others: backing up, the trailer turns about the middle of all three.
+        Assert.Equal(0f, gear.Def.Pivot(SteeringMode.Normal, false));
+        Assert.Equal(-0.65f, gear.Def.Pivot(SteeringMode.Normal, true), 4);
     }
 
     /// <summary>A flat world of grass, nothing on it, with this soil moisture and a dry surface.</summary>
@@ -408,6 +430,73 @@ public class RunningGearTests
         for (var t = 0f; t < 60f && !path.Finished; t += Dt) sim.Tick(Dt);
         Assert.True(path.Finished, $"{machine} stuck at {m.Position}");
         Assert.True(MathF.Abs(m.Position.Y - 232f) < 1f, $"{machine} ended {m.Position.Y - 232f:0.00} m off the path");
+    }
+
+    /// <summary>How far a trailed machine's eye or kingpin is from the joint it hangs on.</summary>
+    private static float HitchGap(Machine child)
+    {
+        var joint = child.Parent!.Joint(child.ParentJoint!)!;
+        var a = child.Get<Attachable>()!.Def;
+        return Vector2.Distance(child.Parent.PartToWorld(joint.X, joint.Z).position, child.LocalToWorld(a.X, a.Z));
+    }
+
+    [Fact]
+    public void ASemiTrailerRestsOnTheFifthWheel()
+    {
+        var sim = FlatSim();
+        var truck = sim.Machines.Spawn("test_truck", new Vector2(100f, 60f), 0f);
+        var semi = sim.Machines.Spawn("test_semi", new Vector2(100f, 60f + 0.3f - 8f), 0f);
+        var gear = truck.Get<RunningGear>()!;
+        Run(sim, 0.1f);
+        var alone = gear.Pressure;
+
+        // Backed under it, the fifth wheel takes the kingpin, and a third of the loaded semi-trailer's weight.
+        Assert.Equal(("fifth", semi), (sim.Machines.FindAttachable(truck)?.joint.Id, sim.Machines.FindAttachable(truck)?.child));
+        sim.Machines.ToggleAttach(truck);
+        semi.Unit("main")!.Add("wheat", 30000f);
+        Run(sim, 0.1f);
+        var loaded = 7000f + 30000f * 0.78f;
+        Assert.Equal(alone * (9000f + 0.35f * loaded) / 9000f, gear.Pressure, 1);
+        var semiGear = semi.Get<RunningGear>()!;
+        Assert.Equal(0.65f * loaded * 9.81f / semiGear.Def.ContactArea / 1000f, semiGear.Pressure, 1);
+
+        // Turning, the kingpin stays on the fifth wheel as the semi-trailer swings behind.
+        Drive(truck, 0.3f, 0.6f);
+        Run(sim, 10f);
+        Assert.True(HitchGap(semi) < 0.01f);
+        Assert.True(MathF.Abs(MathUtil.WrapAngle(semi.Heading - truck.Heading)) > 10f * MathUtil.Deg2Rad);
+    }
+
+    [Fact]
+    public void ADollyCarriesASemiTrailerBehindADrawbar()
+    {
+        var sim = FlatSim();
+        var truck = sim.Machines.Spawn("test_truck", new Vector2(100f, 150f), 0f);
+        var dolly = sim.Machines.Spawn("test_dolly", new Vector2(100f, 150f - 2.7f - 2.8f), 0f);
+        var semi = sim.Machines.Spawn("test_semi", new Vector2(100f, 150f - 5.5f - 8f), 0f);
+        Assert.True(sim.Machines.Attach(truck, "drawbar", dolly));
+        Assert.True(sim.Machines.Attach(dolly, "fifth", semi));
+
+        Drive(truck, 0.3f, 0.5f);
+        Run(sim, 12f);
+        // Both joints hold, the dolly swings behind the truck and the semi-trailer behind the dolly.
+        Assert.True(HitchGap(dolly) < 0.01f && HitchGap(semi) < 0.01f);
+        Assert.True(MathF.Abs(MathUtil.WrapAngle(dolly.Heading - truck.Heading)) > 5f * MathUtil.Deg2Rad);
+        Assert.True(MathF.Abs(MathUtil.WrapAngle(semi.Heading - dolly.Heading)) > 5f * MathUtil.Deg2Rad);
+        // The dolly's wheels carry its own weight and the semi-trailer's share, the truck's none of it.
+        var dollyGear = dolly.Get<RunningGear>()!;
+        Assert.Equal((1500f + 0.35f * 7000f) * 9.81f / dollyGear.Def.ContactArea / 1000f, dollyGear.Pressure, 1);
+        Assert.Equal(9000f * 9.81f / truck.Get<RunningGear>()!.Def.ContactArea / 1000f, truck.Get<RunningGear>()!.Pressure, 1);
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [
+              { "id": "a", "components": { "attachable": { "mode": "trailed", "z": 3, "hitchLoad": 1 } } },
+              { "id": "b", "components": { "attachable": { "mode": "mounted", "hitchLoad": 0.2 } } }
+            ]
+            """));
+        Assert.Contains("machine 'a' attachable: a trailed one needs a runningGear", bad.Message);
+        Assert.Contains("machine 'a' attachable: hitchLoad must be in [0, 1)", bad.Message);
+        Assert.Contains("machine 'b' attachable: hitchLoad is for trailed machines: a mounted one is carried whole", bad.Message);
     }
 
     [Fact]

@@ -125,7 +125,7 @@ components so new machine kinds, including mod machines, are built from blocks.
       forwarders), skid steer for full tracks, half-tracks (steered front wheels + rear tracks).
 - [x] Ground effects: slip on wet ground, lower ground pressure with duals or tracks, slope affects speed
       and fuel.
-- [ ] Multi-axle trailers, dollies, semi-trailers.
+- [x] Multi-axle trailers, dollies, semi-trailers.
 
 ### Configurations (FS-like options)
 

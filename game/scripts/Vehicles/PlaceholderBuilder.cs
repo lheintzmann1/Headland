@@ -119,7 +119,8 @@ public static class PlaceholderBuilder
         var wallH = s.Height - bedY;
         // Chassis and drawbar.
         Box(r, new Vector3(1.0f, 0.3f, s.Length - 0.4f), new Vector3(0, 0.95f, s.CenterZ), Materials.DarkSteel);
-        if (d.Get<AttachableDef>() is { } a)
+        // A drawbar out to the eye; a semi-trailer's kingpin is under its own front.
+        if (d.Get<AttachableDef>() is { } a && a.Z > front)
         {
             var bar = Box(r, new Vector3(0.18f, 0.18f, a.Z - front + 0.3f), new Vector3(0, 0.65f, (a.Z + front) * 0.5f), Materials.DarkSteel);
             bar.RotationDegrees = new Vector3(-5f, 0, 0);
@@ -208,7 +209,7 @@ public static class PlaceholderBuilder
             var x = -s.Width * 0.5f + (k + 0.5f) * s.Width / n;
             Box(r, new Vector3(0.03f, 0.45f, 0.35f), new Vector3(x, 0.3f, -0.9f), Materials.DarkSteel);
         }
-        if (d.Get<AttachableDef>() is { } a)
+        if (d.Get<AttachableDef>() is { Z: > 1f } a)
             Box(r, new Vector3(0.16f, 0.16f, a.Z - 1.0f), new Vector3(0, 0.6f, (a.Z + 1.0f) * 0.5f), Materials.DarkSteel);
     }
 

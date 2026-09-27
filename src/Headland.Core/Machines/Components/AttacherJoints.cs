@@ -5,7 +5,7 @@ namespace Headland.Core.Machines.Components;
 public sealed class AttacherJointDef
 {
     /// <summary>Joint types; an implement hitches to a joint of its attachable's type.</summary>
-    public static readonly string[] Types = ["threePoint", "drawbar", "header", "frontLoader"];
+    public static readonly string[] Types = ["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"];
 
     public string Id { get; set; } = "";
     /// <summary>One of <see cref="Types"/>.</summary>
@@ -15,7 +15,7 @@ public sealed class AttacherJointDef
     public float Y { get; set; } = 0.6f;
 }
 
-/// <summary>Where implements hitch: three-point linkages, drawbars, a combine's feeder house.</summary>
+/// <summary>Where implements hitch: three-point linkages, drawbars, fifth wheels, a combine's feeder house.</summary>
 public sealed class AttacherJointsDef : ComponentDef, IJointSource
 {
     public AttacherJointDef[] Joints { get; set; } = [];

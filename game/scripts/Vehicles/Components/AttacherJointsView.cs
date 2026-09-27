@@ -4,7 +4,10 @@ using Godot;
 
 namespace Headland.Game.Vehicles.Components;
 
-/// <summary>Placeholder hitches: three-point linkages, whose links follow the implement up and down, and drawbar jaws.</summary>
+/// <summary>
+/// Placeholder hitches: three-point linkages, whose links follow the implement up and down, drawbar jaws and fifth-wheel
+/// plates.
+/// </summary>
 public partial class AttacherJointsView : ComponentView
 {
     private readonly List<(AttacherJointDef joint, Node3D links)> _linkages = [];
@@ -31,6 +34,9 @@ public partial class AttacherJointsView : ComponentView
                     break;
                 case "drawbar":
                     PlaceholderBuilder.Box(Rig, new Vector3(0.16f, 0.1f, 0.4f), new Vector3(j.X, j.Y, j.Z + inward * 0.18f), Materials.DarkSteel);
+                    break;
+                case "fifthWheel":
+                    PlaceholderBuilder.Box(Rig, new Vector3(1.1f, 0.12f, 1.0f), new Vector3(j.X, j.Y - 0.06f, j.Z), Materials.DarkSteel);
                     break;
             }
         }

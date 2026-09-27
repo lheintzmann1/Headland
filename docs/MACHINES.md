@@ -160,8 +160,8 @@ No settings. Needs a `motor`.
 
 ### attacherJoints
 
-`joints`: each has an `id`, a `type` (`threePoint`, `drawbar`, `header` or `frontLoader`) and its position `x`, `z`,
-`y` (0.6). Joint ids are unique on the machine.
+`joints`: each has an `id`, a `type` (`threePoint`, `drawbar`, `fifthWheel`, `header` or `frontLoader`) and its
+position `x`, `z`, `y` (0.6). Joint ids are unique on the machine.
 
 ### frontLoaderBracket
 
@@ -179,10 +179,20 @@ Adds a joint of type `frontLoader`, where a loader arm's pivots are.
 |---|---|---|
 | `type` | `threePoint` | The type of joint it hitches to. |
 | `mode` | `mounted` | `mounted`: carried rigidly. `trailed`: pulled by its drawbar eye, following the hitch. |
-| `x`, `z` | 0, 0 | The hitch point (mounted) or drawbar eye (trailed, with z > 0). |
+| `x`, `z` | 0, 0 | The hitch point (mounted), or the drawbar eye or kingpin (trailed, with z > 0). |
 | `maxArticulationDeg` | 80 | Trailed: how far it swings from the vehicle's heading. |
+| `hitchLoad` | 0 | Trailed: the share of its weight (with its load) resting on the hitch, below 1. |
 | `lowerable` | false | Lowered and raised with the lower key. Its work areas only work lowered. |
 | `lift` | 0.45 | Mounted: how high the linkage lifts it when raised. |
+
+A trailed machine needs a `runningGear`. It is drawn by its eye, turning about the middle of its fixed axles (its
+origin), and its self-steering axles follow; backing up they lock, and it turns about the middle of all its axles.
+Trailers are built from that:
+
+- **Multi-axle trailers**: a tandem or tridem axle group, the rear axle self-steering to spare the tires in turns.
+- **Semi-trailers**: the kingpin (type `fifthWheel`) far ahead of the axles, under the trailer's front, with a good share
+  of the weight on the fifth wheel (`hitchLoad` 0.3 or so): the towing vehicle's wheels carry it, and grip the better.
+- **Dollies**: a short trailer with a drawbar and a `fifthWheel` joint, to take a semi-trailer behind a drawbar.
 
 ### fillUnits
 

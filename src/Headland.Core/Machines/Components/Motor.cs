@@ -96,7 +96,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         {
             if (m.Get<RunningGear>() is { } gear)
             {
-                var weight = CarriedMass(m, sim.Content) * Gravity;
+                var weight = OnWheels(m, sim.Content) * Gravity;
                 gear.Touch(sim, weight);
                 rolling += gear.Rolling * weight;
                 climbing += gear.Grade * weight;
@@ -124,7 +124,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         _resistingForward = rolling + climbing + draft;
         _resistingBackward = rolling - climbing;
         var driven = v.Get<RunningGear>()!;
-        var weightDriven = CarriedMass(v, sim.Content) * Gravity;
+        var weightDriven = OnWheels(v, sim.Content) * Gravity;
         _slipForward = driven.SlipFor(_resistingForward, weightDriven);
         _slipBackward = driven.SlipFor(_resistingBackward, weightDriven);
         var wheelPower = MathF.Max(0.1f, 1f - _threshing / Def.PowerHp) * Def.PowerHp * WattsPerHp * Drivetrain;
@@ -177,17 +177,30 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     }
 
     /// <summary>
-    /// The mass a machine's wheels carry: its own with its load, and that of the implements mounted on it (or on those)
-    /// without wheels of their own.
+    /// The mass a machine's wheels carry: its own and what it carries, less the share of it resting on the hitch it hangs
+    /// on, plus the share of the trailers hitched to it resting on their hitches (a semi-trailer on a fifth wheel).
     /// </summary>
-    private static float CarriedMass(Machine m, ContentDatabase content)
+    private static float OnWheels(Machine m, ContentDatabase content)
+    {
+        var mass = Carried(m, content) * (1f - OnHitch(m));
+        foreach (var child in m.Attached.Values)
+            if (child.Get<Attachable>() is { Def.Mode: "trailed" } a)
+                mass += Carried(child, content) * a.Def.HitchLoad;
+        return mass;
+    }
+
+    /// <summary>Its own mass with its load, and that of the implements mounted on it (or on those) without wheels of their own.</summary>
+    private static float Carried(Machine m, ContentDatabase content)
     {
         var mass = m.SelfMassWithLoad(content);
         foreach (var child in m.Attached.Values)
             if (child.Get<Attachable>()?.Def.Mode == "mounted" && !child.Has<RunningGear>())
-                mass += CarriedMass(child, content);
+                mass += Carried(child, content);
         return mass;
     }
+
+    /// <summary>The share of a hitched trailer's weight resting on its hitch.</summary>
+    private static float OnHitch(Machine m) => m.Parent != null && m.Get<Attachable>() is { Def.Mode: "trailed" } a ? a.Def.HitchLoad : 0f;
 
     protected override MotorSave Capture(ContentDatabase content) => new() { Unburned = _unburned };
 
