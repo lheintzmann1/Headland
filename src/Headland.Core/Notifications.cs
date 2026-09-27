@@ -68,6 +68,7 @@ public sealed class Notifications
         events.Subscribe<LoanRepaid>(e => Post(e.Loan > 0f ? $"Repaid ${e.Amount:N0}: the loan is ${e.Loan:N0}" : "The loan is paid off", Severity.Good, 0));
         events.Subscribe<AccountOverdrawn>(_ => Post("The account is overdrawn: sell goods or borrow before buying anything", Severity.Warning));
         events.Subscribe<MachineRepaired>(e => Post($"Repaired {e.Machine.Def.Name} for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<MachineConfigured>(e => Post($"Refitted {e.Machine.Def.Name} ({Changes(e.From, e.Machine.Def)}) for ${e.Cost:N0}", Severity.Good));
         events.Subscribe<MachineWashed>(e => Post(e.Cost > 0.5f ? $"Washed {e.Machine.Def.Name} for ${e.Cost:N0}" : $"Washed {e.Machine.Def.Name}", Severity.Good));
         events.Subscribe<ImplementAttached>(e => Post($"Attached {e.Implement.Def.Name}", Severity.Good));
         events.Subscribe<ImplementDetached>(e => Post($"Detached {e.Implement.Def.Name}"));
@@ -83,4 +84,9 @@ public sealed class Notifications
             }
         });
     }
+
+    /// <summary>The options that differ: "wheels: Dual, engine: 145 hp".</summary>
+    private static string Changes(MachineDef from, MachineDef to) => string.Join(", ", to.Configurations
+        .Where(c => from.Chosen(c) != to.Chosen(c))
+        .Select(c => $"{c.Name.ToLowerInvariant()}: {to.Chosen(c)?.Name}"));
 }

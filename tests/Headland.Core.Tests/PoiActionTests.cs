@@ -208,7 +208,7 @@ public class PoiActionTests
         t.Condition = trailer.Condition = 0.5f;
         sim.Player.Enter(t);
         var cost = (72_000f + 21_000f) / 100f * 0.5f;
-        Assert.Equal([$"Repair (${cost:N0})"], sim.Pois.UseOptions(t));
+        Assert.Equal([$"Repair (${cost:N0})", "Change options…"], sim.Pois.UseOptions(t));
 
         sim.Economy.Spend(sim.Economy.Money - 100f, MoneyCategory.Other);
         sim.CommandUse();

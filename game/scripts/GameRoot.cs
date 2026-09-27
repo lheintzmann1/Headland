@@ -203,11 +203,16 @@ public partial class GameRoot : Node3D
         }
     }
 
-    /// <summary>The use key: asks what to load when a silo holds several goods the trailer takes.</summary>
+    /// <summary>
+    /// The use key: asks what to load when a silo holds several goods the trailer takes, and opens the workshop when
+    /// machines of the chain have options to change there.
+    /// </summary>
     private void Use()
     {
         if (Sim.PlayerVehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
             Screens.Push(new LoadScreen { Sim = Sim, Vehicle = v, Choices = choices });
+        else if (Sim.PlayerVehicle is { } w && Sim.Pois.Workshop(w) is var (bay, action) && w.Chain().Any(m => m.Def.Configurations.Count > 0))
+            Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = w, Bay = bay, Action = action });
         else Sim.CommandUse();
     }
 

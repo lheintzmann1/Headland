@@ -96,6 +96,21 @@ public sealed class MachineSystem
         Events.Publish(new ImplementDetached(parent, jointId, child));
     }
 
+    /// <summary>
+    /// Gives <paramref name="m"/> the options of <paramref name="def"/> (a def of its type). What hangs on a joint it no
+    /// longer has is unhitched, and so is the machine itself when it can't hang where it does any more; the rest of its
+    /// chain is placed again.
+    /// </summary>
+    internal void Reconfigure(Machine m, MachineDef def)
+    {
+        foreach (var (jointId, child) in m.Attached.ToList())
+            if (def.Joints.FirstOrDefault(j => j.Id == jointId)?.Type != m.Joint(jointId)!.Type)
+                Detach(child);
+        if (m.Parent is { } parent && def.Get<AttachableDef>()?.Type != parent.Joint(m.ParentJoint!)!.Type) Detach(m);
+        m.Reconfigure(def, Content);
+        UpdateChildren(m.Root);
+    }
+
     /// <summary>Nearest free joint in the vehicle's chain that an unattached implement of the same farm can hook onto.</summary>
     public (Machine parent, AttacherJointDef joint, Machine child)? FindAttachable(Machine vehicle)
     {

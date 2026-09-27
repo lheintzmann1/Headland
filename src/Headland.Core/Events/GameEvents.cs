@@ -76,6 +76,9 @@ public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGa
 
 public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
+/// <summary>A workshop changed a machine's options: <paramref name="From"/> is the def it had before.</summary>
+public sealed record MachineConfigured(Machine Machine, Poi Poi, Content.MachineDef From, float Cost) : IGameEvent;
+
 /// <summary>A new machine put at a POI's delivery spot.</summary>
 public sealed record MachineDelivered(Machine Machine, Poi Poi) : IGameEvent;
 

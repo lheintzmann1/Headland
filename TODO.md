@@ -133,7 +133,7 @@ components so new machine kinds, including mod machines, are built from blocks.
       (single/dual/tracks), front loader (with/without), front hitch (3-point/weight/none), beacons
       (none/left/right/both/lightbar), engine power, color, fill capacity, work width.
 - [x] Model node visibility per option so one `.glb` holds every variant; document in `docs/MODELING.md`.
-- [ ] Chosen options stored per machine and saved; changeable at a workshop for a fee.
+- [x] Chosen options stored per machine and saved; changeable at a workshop for a fee.
 
 ### Tools and special machines
 

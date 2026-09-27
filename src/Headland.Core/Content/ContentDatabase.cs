@@ -174,7 +174,7 @@ public sealed class ContentDatabase
         var actionTriggers = new Dictionary<string, string[]>
         {
             ["sell"] = ["unload"], ["store"] = ["unload"], ["buy"] = ["fill"], ["refuel"] = ["fill"],
-            ["repair"] = ["repair"], ["wash"] = ["wash"], ["lease"] = ["delivery"], ["process"] = [],
+            ["repair"] = ["repair"], ["configure"] = ["repair"], ["wash"] = ["wash"], ["lease"] = ["delivery"], ["process"] = [],
         };
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
@@ -298,6 +298,7 @@ public sealed class ContentDatabase
                 if (a.Months.Any(m => m is < 1 or > 12)) e.Add($"{what}: months must be 1..12");
                 if (a.MinAmount < 0) e.Add($"{what}: minAmount must be >= 0");
                 if (a.PriceFactor <= 0 || a.PriceFactors.Values.Any(f => f <= 0)) e.Add($"{what}: price factors must be > 0");
+                if (a.Price < 0) e.Add($"{what}: price must be >= 0");
                 foreach (var ft in a.PriceFactors.Keys.Where(f => !a.FillTypes.Contains(f) && a.Outputs.All(o => o.FillType != f)))
                     e.Add($"{what}: price factor for '{ft}', which it does not trade");
                 var d = a.Demand;
@@ -411,7 +412,11 @@ public sealed class ContentDatabase
             for (var i = 0; i < map.Machines.Length; i++)
             {
                 var sp = map.Machines[i];
-                if (!Machines.ContainsKey(sp.Def)) e.Add($"map '{map.Id}': unknown machine '{sp.Def}'");
+                if (!Machines.TryGetValue(sp.Def, out var machine)) e.Add($"map '{map.Id}': unknown machine '{sp.Def}'");
+                else
+                    foreach (var (c, o) in sp.Configuration ?? [])
+                        if (machine.Configurations.FirstOrDefault(x => x.Id == c)?.Option(o) == null)
+                            e.Add($"map '{map.Id}' machine {i}: {sp.Def} has no option '{o}' of '{c}'");
                 if (!ValidFarm(sp.Farm)) e.Add($"map '{map.Id}' machine {i}: {FarmRule}");
                 if (sp.AttachToIndex is { } q && q >= 0 && q < i && map.Machines[q].Farm != sp.Farm)
                     e.Add($"map '{map.Id}': machine {i} must belong to the same farm as the machine it attaches to");

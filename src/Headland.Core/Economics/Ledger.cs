@@ -12,6 +12,8 @@ public enum MoneyCategory
     Fuel,
     /// <summary>Repairs and washing.</summary>
     Maintenance,
+    /// <summary>Machines, and the options fitted to them.</summary>
+    Machines,
     /// <summary>Running costs of the farm's processing.</summary>
     Production,
     Wages,

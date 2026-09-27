@@ -19,19 +19,20 @@ Built with **Godot 4.7** and **C#**.
 - **The farming loop.** Cultivate stubble, sow in season, let the crop grow, harvest it with the right header,
   unload the combine into a trailer and tip the grain at the elevator.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator and a
-  trailed seed drill. Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch,
-  and working speed depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and
-  slip in wet fields, less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs
-  dry.
+  trailed seed drill, most with options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front
+  weight or loader consoles, beacons, a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color.
+  Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch, and working speed
+  depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and slip in wet fields,
+  less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed at the farm shop,
-  refuel and wash at the gas station, get machines repaired at the workshop, and lease them for contracts at the
-  machinery dealer. Prices follow the season, drop as
-  you flood a buyer and recover over time, and now and then a buyer pays more for a few days. Each place is a point
-  of interest defined in JSON: areas where machines unload, load, fill up or park, what happens there, opening
-  hours, storage and production that runs by the hour.
+  refuel and wash at the gas station, get machines repaired or their options changed at the workshop (new options
+  cost what they cost more than the old ones, and the work), and lease them for contracts at the machinery dealer.
+  Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
+  few days. Each place is a point of interest defined in JSON: areas where machines unload, load, fill up or park,
+  what happens there, opening hours, storage and production that runs by the hour.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, production costs, wages, land, loan interest, contracts. F2 shows them day by day or month by month, and is where the
+  maintenance, machines, production costs, wages, land, loan interest, contracts. F2 shows them day by day or month by month, and is where the
   farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.
@@ -84,7 +85,7 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
-| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair, wash |
+| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash |
 | H | Hire or dismiss a field helper |
 | F2 | Finances and loans |
 | L | Farmland: buy and sell parcels |

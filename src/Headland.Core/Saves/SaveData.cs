@@ -173,6 +173,8 @@ public sealed class MachineSave
 {
     public int Id { get; set; }
     public string Def { get; set; } = "";
+    /// <summary>The option chosen in each of its configurations (none when it has none; missing in older saves: the defaults).</summary>
+    public Dictionary<string, string>? Configuration { get; set; }
     public int Farm { get; set; }
     /// <summary>The contract it's leased for.</summary>
     public int? Lease { get; set; }

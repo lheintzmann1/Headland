@@ -79,6 +79,16 @@ public static class Widgets
         return button;
     }
 
+    /// <summary>A drop-down list of <paramref name="items"/>, showing the one at <paramref name="selected"/>.</summary>
+    public static OptionButton Dropdown(IEnumerable<string> items, int selected, Action<int> changed)
+    {
+        var dropdown = new OptionButton();
+        foreach (var item in items) dropdown.AddItem(item);
+        dropdown.Selected = selected;
+        dropdown.ItemSelected += index => changed((int)index);
+        return dropdown;
+    }
+
     /// <summary>One of a row of buttons that stay down while selected (the others in <paramref name="group"/> pop up).</summary>
     public static Button Tab(string text, ButtonGroup group, bool selected, Action select)
     {

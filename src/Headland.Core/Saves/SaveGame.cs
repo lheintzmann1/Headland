@@ -177,7 +177,8 @@ public static class SaveGame
     {
         var save = new MachineSave
         {
-            Id = m.Id, Def = m.Def.Id, Farm = m.FarmId, Lease = m.LeaseContract != 0 ? m.LeaseContract : null,
+            Id = m.Id, Def = m.Def.Id, Configuration = m.Def.Choices.Count > 0 ? new(m.Def.Choices) : null,
+            Farm = m.FarmId, Lease = m.LeaseContract != 0 ? m.LeaseContract : null,
             X = m.Position.X, Z = m.Position.Y, Heading = m.Heading, Speed = m.Speed,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
             WorkedHa = m.WorkedHa,
@@ -365,6 +366,7 @@ public static class SaveGame
                 warnings.Add($"The leased {def.Name} went back: its contract is over");
                 continue;
             }
+            if (m.Configuration is { } chosen) def = Configure(def, chosen, warnings);
             var machine = new Machine(m.Id, def, new Vector2(m.X, m.Z), m.Heading, m.Farm) { LeaseContract = m.Lease ?? 0 };
             ms.All.Add(machine);
             byId[m.Id] = machine;
@@ -436,6 +438,23 @@ public static class SaveGame
             seat.Controller = helper;
         }
         return byId;
+    }
+
+    /// <summary>A machine type with its saved options; an option that no longer exists gives the default.</summary>
+    private static MachineDef Configure(MachineDef def, Dictionary<string, string> chosen, List<string> warnings)
+    {
+        foreach (var (id, option) in chosen)
+            if (def.Configurations.FirstOrDefault(c => c.Id == id) is { } c && c.Option(option) == null)
+                warnings.Add($"The {def.Name}'s {c.Name.ToLowerInvariant()} '{option}' no longer exists: it has {c.Default?.Name ?? "none"}");
+        try
+        {
+            return def.Configure(chosen);
+        }
+        catch (JsonException)
+        {
+            warnings.Add($"The {def.Name}'s options no longer go together: it has the standard ones");
+            return def;
+        }
     }
 
     // ------------------------------------------------------------------ Migrations

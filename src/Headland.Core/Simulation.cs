@@ -95,7 +95,7 @@ public sealed class Simulation
         var spawned = new List<Machine>();
         foreach (var sp in Map.Machines)
         {
-            var m = Machines.Spawn(sp.Def, new Vector2(sp.X, sp.Z), sp.HeadingDeg * MathUtil.Deg2Rad, sp.Farm);
+            var m = Machines.Spawn(sp.Def, new Vector2(sp.X, sp.Z), sp.HeadingDeg * MathUtil.Deg2Rad, sp.Farm, sp.Configuration);
             spawned.Add(m);
             if (sp.AttachToIndex is not { } idx) continue;
             var parent = spawned[idx];

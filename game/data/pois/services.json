@@ -2,7 +2,8 @@
   // Services for machines. See farm.json for the POI layout and trade.json for triggers and actions. At a "fill"
   // trigger, "refuel" fills fuel tanks; "wash" and "repair" work at triggers of their own type, for the whole
   // machine chain parked there. Washing costs "price" for a fully dirty machine; a repair costs 1% of the machine's
-  // price for each 100% of wear.
+  // price for each 100% of wear. "configure", at a repair trigger, changes the options of the machines parked there:
+  // each option fitted costs what it costs more than the one it replaces (times "priceFactor"), and "price" for the work.
   { "id": "gas_station", "name": "Gas Station", "icon": "local_gas_station", "w": 34, "d": 30,
     "parts": [
       { "shape": "store",  "x": 11,   "z": -9, "w": 9,   "d": 7,   "h": 3.5, "color": "#a89a86" },
@@ -27,6 +28,7 @@
       { "id": "bay", "type": "repair", "z": 7, "w": 18, "d": 16 }
     ],
     "actions": [
-      { "type": "repair", "trigger": "bay", "openHours": [7, 20] }
+      { "type": "repair", "trigger": "bay", "openHours": [7, 20] },
+      { "type": "configure", "trigger": "bay", "openHours": [7, 20], "price": 250 }
     ] }
 ]

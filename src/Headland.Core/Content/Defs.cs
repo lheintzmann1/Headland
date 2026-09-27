@@ -656,14 +656,14 @@ public sealed class PoiActionDef
     /// <summary>
     /// Multiplies the price: for sell, buy and refuel the market price (the fill type's monthly curve), for process
     /// the market price of the outputs it sells, for repair the standard price (1% of the machine's price for each
-    /// 100% of wear).
+    /// 100% of wear), for configure the price of the options fitted.
     /// </summary>
     public float PriceFactor { get; set; } = 1f;
     /// <summary>Sell, buy, refuel, process: fill types whose factor differs from <see cref="PriceFactor"/>.</summary>
     public Dictionary<string, float> PriceFactors { get; set; } = new();
     /// <summary>Sell: how prices react to what farmers sell here.</summary>
     public DemandDef Demand { get; set; } = new();
-    /// <summary>Wash: price of washing a fully dirty machine.</summary>
+    /// <summary>Wash: price of washing a fully dirty machine. Configure: price of the work for each option changed.</summary>
     public float Price { get; set; }
     /// <summary>Process: what one cycle takes from storage and puts into it.</summary>
     public FillAmountDef[] Inputs { get; set; } = [];
@@ -720,6 +720,8 @@ public sealed class MachineSpawnDef
     public float HeadingDeg { get; set; }
     /// <summary>Owning farm: 1 = the player's (default), 0 = an NPC's (can't be driven or hitched).</summary>
     public int Farm { get; set; } = Ownership.Farm.PlayerId;
+    /// <summary>Its options (configuration id → option id); the defaults for the rest.</summary>
+    public Dictionary<string, string>? Configuration { get; set; }
     /// <summary>Optional: attach to the machine spawned at this index, on this joint.</summary>
     public int? AttachToIndex { get; set; }
     public string? Joint { get; set; }

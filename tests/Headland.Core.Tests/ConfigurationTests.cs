@@ -1,7 +1,10 @@
 using System.Numerics;
 using System.Text.Json.Nodes;
 using Headland.Core.Content;
+using Headland.Core.Economics;
+using Headland.Core.Events;
 using Headland.Core.Machines.Components;
+using Headland.Core.Saves;
 
 namespace Headland.Core.Tests;
 
@@ -126,6 +129,88 @@ public class ConfigurationTests
         Assert.Contains("machine 'y': visual.parts need an id, and w, h and d > 0", bad.Message);
         Assert.Contains("machine 'y': visual part 'b' is defined more than once", bad.Message);
         Assert.Contains("machine 'y' configuration 'c' option 'o': show needs node names", bad.Message);
+    }
+
+    [Fact]
+    public void TheWorkshopChangesOptionsForWhatTheyCostMoreAndTheWork()
+    {
+        var sim = TestContent.NewSim();
+        var configured = PoiTests.Record<MachineConfigured>(sim);
+        var bay = sim.World.PoiById("workshop")!.Trigger("bay")!;
+        var (t, trailer) = PoiTests.TrailerAt(sim, bay.Area.Center - new Vector2(4f, 0f), "wheat", 12_000f);
+        sim.Player.Enter(t);
+        Assert.Contains("Change options…", sim.Pois.UseOptions(t));
+        var money = sim.Economy.Money;
+
+        // Duals ($4,600) and a front linkage ($3,400), with $250 of work for each.
+        Assert.True(sim.Pois.Configure(t, Options(("wheels", "dual"), ("frontHitch", "threePoint"))));
+        Assert.Equal(money - 8500f, sim.Economy.Money, 1);
+        Assert.Equal(-8500f, sim.Economy.Ledger.Today[MoneyCategory.Machines], 1);
+        Assert.Equal(("dual", "threePoint"), (t.Def.Choices["wheels"], t.Def.Choices["frontHitch"]));
+        Assert.Equal("dual", t.Get<RunningGear>()!.Def.Axles[0].Wheels.Type);
+        Assert.NotNull(t.Joint("front"));
+        // Still hitched, and still driven.
+        Assert.Same(trailer, t.Attached["drawbar"]);
+        Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
+        Assert.Equal((t, 8500f), (configured.Single().Machine, configured.Single().Cost));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Refitted Fieldmaster 95 (wheels: Dual, front hitch: Front linkage) for $8,500");
+
+        // A cheaper option gives nothing back: only the work is paid.
+        money = sim.Economy.Money;
+        Assert.True(sim.Pois.Configure(t, Options(("wheels", "single"))));
+        Assert.Equal(money - 250f, sim.Economy.Money, 1);
+
+        // The trailer keeps its load; it can't take a smaller bed while it holds more than that.
+        Assert.True(sim.Pois.Configure(trailer, Options(("capacity", "20000"))));
+        Assert.Equal((20_000f, 12_000f), (trailer.Unit("main")!.Capacity, trailer.Unit("main")!.Level));
+        trailer.Unit("main")!.Add("wheat", 6_000f);
+        Assert.False(sim.Pois.Configure(trailer, Options(("capacity", "16000"))));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Unload the Tipper 16 first: it holds more than it would take");
+
+        // Elsewhere, nothing changes.
+        sim.Machines.Teleport(t, new Vector2(269f, 300f), 0f);
+        Assert.False(sim.Pois.Configure(t, Options(("color", "red"))));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park at a workshop first");
+        Assert.Equal("green", t.Def.Choices["color"]);
+    }
+
+    [Fact]
+    public void TakingAJointAwayUnhitchesWhatHangsOnIt()
+    {
+        var sim = TestContent.NewSim();
+        var bay = sim.World.PoiById("workshop")!.Trigger("bay")!;
+        var t = sim.Machines.Spawn("tractor_125", bay.Area.Center, 0f);
+        var front = sim.Machines.Spawn("cultivator_3", bay.Area.Center + new Vector2(0f, 4f), MathF.PI);
+        Assert.True(sim.Machines.Attach(t, "front", front));
+
+        Assert.True(sim.Pois.Configure(t, Options(("frontHitch", "weight"))));
+        Assert.Null(front.Parent);
+        Assert.Empty(t.Attached);
+        Assert.Null(t.Joint("front"));
+        Assert.Equal(5600f + 650f, t.Def.Mass);
+    }
+
+    [Fact]
+    public void ChosenOptionsAreSavedAndMapsPlaceMachinesWithThem()
+    {
+        var sim = TestContent.NewSim();
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 300f), 0f, configuration: Options(("wheels", "tracks"), ("engine", "145")));
+        var file = SaveGame.Capture(sim, "test");
+        var loaded = SaveGame.Load(TestContent.Content, file);
+        Assert.Same(t.Def, loaded.Sim.Machines.ById(t.Id)!.Def);
+        Assert.Empty(loaded.Warnings);
+
+        // An option that's gone gives the default.
+        var state = System.Text.Encoding.UTF8.GetString(file.State).Replace("\"tracks\"", "\"golden\"");
+        var changed = SaveGame.Load(TestContent.Content, file with { State = System.Text.Encoding.UTF8.GetBytes(state) });
+        Assert.Equal(("single", "145"), (changed.Sim.Machines.ById(t.Id)!.Def.Choices["wheels"], changed.Sim.Machines.ById(t.Id)!.Def.Choices["engine"]));
+        Assert.Contains("The Fieldmaster 125's wheels 'golden' no longer exists: it has Single", changed.Warnings);
+
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        db.Map.Machines[0].Configuration = Options(("wheels", "dual"));
+        Assert.Equal("dual", Simulation.Create(db).Machines.All[0].Def.Choices["wheels"]);
+        db.Map.Machines[0].Configuration = Options(("wheels", "golden"));
+        Assert.Contains("map 'default' machine 0: tractor_125 has no option 'golden' of 'wheels'", db.Validate());
     }
 
     [Fact]

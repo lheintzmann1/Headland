@@ -324,6 +324,11 @@ each.
   as it is: `"axles": [ {}, { "track": 2 } ]` changes the second axle), or is added past the end.
 - Anything else replaces what was there: a number, a text, a list of texts.
 
+Maps can place a machine with options (`"configuration": { "wheels": "dual" }` on it), and the workshop changes them
+for the farm: parked in its bay, the use key opens a screen with each machine's choices. An option costs what it costs
+more than the one it replaces (a cheaper one gives nothing back), plus the workshop's price for the work; what hangs on
+a joint the new options take away is unhitched.
+
 So a component the machine has with some options only (a front loader bracket, a front joint, beacons) goes in the
 options that have it, not in the machine. The machine as it comes and each option in turn are checked when the game
 starts, and errors name the option (`machine 'tractor_125' (wheels: tracks) runningGear: …`); options of different
@@ -331,6 +336,7 @@ choices are best kept to different settings, so that any combination holds.
 
 ## Saves
 
-A save keeps each machine's state under its components' kinds (the steering mode, the pipe unfolded, the level of
+A save keeps each machine's options (`configuration`: configuration id → option id; an option that no longer exists
+loads as the default), and its state under its components' kinds (the steering mode, the pipe unfolded, the level of
 each fill unit, the crane's joints…). A machine whose definition gains a component gets it fresh; one that loses a component loses its
 state.

@@ -21,7 +21,7 @@ internal sealed record Loading(PoiTrigger Trigger, string FillType, float Amount
 /// <summary>
 /// What POIs do. Loads tipped or piped into an unload trigger are sold or stored; the owner's trailers fill up from
 /// storage at a load trigger; machines parked in fill, repair and wash triggers buy supplies and fuel, get repaired
-/// and washed; processing turns stored goods into others every hour; new machines appear at delivery triggers.
+/// (or their options changed) and washed; processing turns stored goods into others every hour; new machines appear at delivery triggers.
 /// Machines move the goods (tipping, piping); the POI's actions decide what happens to them.
 /// </summary>
 public sealed class PoiSystem
@@ -104,6 +104,7 @@ public sealed class PoiSystem
             "buy" => $"Buy {Names(a.FillTypes)}",
             "refuel" => $"Refuel with {Names(a.FillTypes)}",
             "repair" => "Repair machines",
+            "configure" => "Change machines' options",
             "wash" => "Wash machines",
             _ => a.Type,
         };
@@ -134,6 +135,7 @@ public sealed class PoiSystem
         "store" => "stores",
         "refuel" => "refuels",
         "repair" => "repairs",
+        "configure" => "fits options",
         "wash" => "washes",
         _ => "works",
     };
@@ -499,6 +501,8 @@ public sealed class PoiSystem
         if (Bay(chain, "repair") is { } workshop && workshop.Actions.FirstOrDefault(a => a.Type == "repair" && Closed(workshop.Poi, a) == null) is { } fix
             && chain.Sum(m => RepairPrice(fix, m)) is var repair and > 0.5f)
             options.Add($"Repair (${repair:N0})");
+        if (Workshop(vehicle) is var (shop, configure) && Closed(shop.Poi, configure) == null && chain.Any(m => m.Def.Configurations.Count > 0))
+            options.Add("Change options…");
         if (Bay(chain, "wash") is { } bay && bay.Actions.Where(a => a.Type == "wash" && Closed(bay.Poi, a) == null).ToList() is { Count: > 0 } washes
             && chain.Any(m => m.Dirt > 0.005f))
             options.Add($"Wash (${chain.Sum(m => washes.Sum(a => WashPrice(a, m))):N0})");
@@ -579,6 +583,73 @@ public sealed class PoiSystem
             m.Dirt = 0f;
             _sim.Events.Publish(new MachineWashed(m, bay.Poi, cost));
         }
+        return true;
+    }
+
+    // ------------------------------------------------------------------ Options
+
+    /// <summary>The repair bay the vehicle's chain stands in where machines' options are changed, and that action.</summary>
+    public (PoiTrigger bay, PoiActionDef action)? Workshop(Machine vehicle)
+    {
+        foreach (var m in vehicle.Chain())
+            if (TriggerAt(m.Footprint.Center, "repair") is { } bay && bay.Actions.FirstOrDefault(a => a.Type == "configure") is { } action)
+                return (bay, action);
+        return null;
+    }
+
+    /// <summary>
+    /// What giving <paramref name="m"/> the options of <paramref name="def"/> costs: for each option changed, what it
+    /// costs more than the one it replaces (a cheaper one gives nothing back) times the action's price factor, and the
+    /// action's price for the work; times the price level.
+    /// </summary>
+    public float ConfigurePrice(PoiActionDef action, Machine m, MachineDef def)
+    {
+        var cost = 0f;
+        foreach (var c in def.Configurations)
+        {
+            var (from, to) = (m.Def.Chosen(c), def.Chosen(c));
+            if (from == to || to == null) continue;
+            cost += action.PriceFactor * MathF.Max(0f, to.Price - (from?.Price ?? 0f)) + action.Price;
+        }
+        return cost * Economy.PriceLevel;
+    }
+
+    /// <summary>Why <paramref name="m"/> can't be given the options of <paramref name="def"/> at <paramref name="bay"/>, or null when it can.</summary>
+    public string? ConfigureBlocker(Machine m, MachineDef def, PoiTrigger bay, PoiActionDef action)
+    {
+        if (def == m.Def) return "Nothing to change";
+        if (Closed(bay.Poi, action) is { } closed) return closed;
+        if (m.LeaseContract != 0) return "A leased machine goes back as it came";
+        if (m.Root.Get<Drivable>()?.Controller is FieldWorkController) return "The helper is working: dismiss them first";
+        foreach (var u in m.FillUnits)
+            if (u.Level > (def.Get<FillUnitsDef>()?.Units.FirstOrDefault(x => x.Id == u.Def.Id)?.Capacity ?? 0f) + 0.5f)
+                return $"Unload the {m.Def.Name} first: it holds more than it would take";
+        if (IsPlayers(m.FarmId) && ConfigurePrice(action, m, def) is var cost and > 0f && cost > Economy.Money) return "Not enough money";
+        return null;
+    }
+
+    /// <summary>
+    /// Gives <paramref name="m"/> the options <paramref name="choices"/> picks (configuration id → option id, over the
+    /// ones it has) at the workshop its chain stands in, for their price. False, with a notification, when it can't.
+    /// </summary>
+    public bool Configure(Machine m, IReadOnlyDictionary<string, string> choices)
+    {
+        var def = m.Def.Configure(choices);
+        if (Workshop(m.Root) is not var (bay, action))
+        {
+            _sim.Notifications.Post("Park at a workshop first");
+            return false;
+        }
+        if (ConfigureBlocker(m, def, bay, action) is { } why)
+        {
+            _sim.Notifications.Post(why, Severity.Warning);
+            return false;
+        }
+        var cost = ConfigurePrice(action, m, def);
+        var from = m.Def;
+        Spend(m.FarmId, cost, MoneyCategory.Machines);
+        _sim.Machines.Reconfigure(m, def);
+        _sim.Events.Publish(new MachineConfigured(m, bay.Poi, from, cost));
         return true;
     }
 

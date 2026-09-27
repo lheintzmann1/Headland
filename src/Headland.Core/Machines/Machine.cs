@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text.Json;
 using Headland.Core.Content;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -44,13 +45,34 @@ public sealed class Machine : IOwnable
     }
 
     public int Id { get; }
-    public MachineDef Def { get; }
+    /// <summary>Its type, with the options it has (see <see cref="MachineDef.Configure"/>).</summary>
+    public MachineDef Def { get; private set; }
     /// <summary>Owning farm; only its members drive it or hitch to it (<see cref="Farm.None"/> = an NPC's).</summary>
     public int FarmId { get; set; }
     /// <summary>The contract the machine is leased for (0: the farm's own); it goes back when the contract ends.</summary>
     public int LeaseContract { get; set; }
 
-    public IReadOnlyList<MachineComponent> Components { get; }
+    public IReadOnlyList<MachineComponent> Components { get; private set; }
+
+    /// <summary>
+    /// Gives the machine other options: <paramref name="def"/>, a def of its type. Its components are built anew, and
+    /// each takes back what it kept, as from a save (fill levels, a lowered implement, who drives).
+    /// </summary>
+    internal void Reconfigure(MachineDef def, ContentDatabase content)
+    {
+        var states = new Dictionary<string, JsonElement>();
+        foreach (var c in Components)
+            if (c.SaveState(content) is { } state)
+                states[c.Definition.Kind] = state;
+        var driver = Get<Drivable>()?.Controller;
+        Def = def;
+        Components = def.Components.Select(c => c.Create(this)).ToArray();
+        var context = new SaveContext(content, []);
+        foreach (var c in Components)
+            if (states.TryGetValue(c.Definition.Kind, out var state))
+                c.LoadState(state, context);
+        if (Get<Drivable>() is { } seat) seat.Controller = driver;
+    }
 
     /// <summary>Its component of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
     public T? Get<T>() where T : class
