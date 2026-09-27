@@ -56,11 +56,11 @@
   "def": "combine_7",
   "farm": 1,
   "x": 216.91028,
-  "z": 142.4856,
-  "heading": -9.6467695e-05,
-  "speed": 2.2782319,
-  "steerAngle": -3.6985546e-07,
-  "distance": 54.486378,
+  "z": 142.48555,
+  "heading": -9.6468306e-05,
+  "speed": 2.2745557,
+  "steerAngle": -5.2482403e-07,
+  "distance": 54.486332,
   "lowered": false,
   "turnedOn": true,
   "pipeOut": false,
@@ -80,7 +80,7 @@
    {
     "id": "fuel",
     "fillType": "diesel",
-    "level": 600
+    "level": 599.70764
    }
   ],
   "helper": {
@@ -188,9 +188,9 @@
   "def": "header_grain_6",
   "farm": 1,
   "x": 216.91013,
-  "z": 144.0856,
-  "heading": -9.6467695e-05,
-  "speed": 2.277832,
+  "z": 144.08556,
+  "heading": -9.6468306e-05,
+  "speed": 2.27417,
   "steerAngle": 0,
   "distance": 54.486397,
   "parent": 3,
@@ -208,8 +208,8 @@
   "fillUnits": [],
   "workPose": [
    216.91,
-   145.3856,
-   -9.6467695e-05
+   145.38556,
+   -9.6468306e-05
   ]
  },
  {

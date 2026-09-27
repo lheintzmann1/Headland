@@ -410,7 +410,7 @@ public static class FieldPlanner
 /// <summary>
 /// A field helper: drives a vehicle over a field lane by lane and handles its implements like a farmer would:
 /// lowers each one just before it enters the field, raises it when its work area leaves the field or while
-/// turning, turns seeders/threshers on, and stops when out of seed or when the grain tank is full.
+/// turning, turns seeders/threshers on, and stops when out of seed or fuel, or when the grain tank is full.
 /// </summary>
 public sealed class FieldWorkController : IVehicleController
 {
@@ -523,6 +523,11 @@ public sealed class FieldWorkController : IVehicleController
                 continue;
             Stopped = true;
             StopReason = s;
+        }
+        if (v.Get<Motor>() is { OutOfFuel: true })
+        {
+            Stopped = true;
+            StopReason = "Out of fuel";
         }
         if (Finished)
         {

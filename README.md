@@ -20,7 +20,8 @@ Built with **Godot 4.7** and **C#**.
   unload the combine into a trailer and tip the grain at the elevator.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator and a
   trailed seed drill. Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch,
-  and working speed depends on the implement, the engine's power, the load and soft ground.
+  and working speed depends on the implement, the engine's power, the load and soft ground. Engines burn fuel by the
+  power they deliver, and stop when the tank runs dry.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed at the farm shop,
   refuel and wash at the gas station, get machines repaired at the workshop, and lease them for contracts at the

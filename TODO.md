@@ -155,8 +155,9 @@ FS19 reference values; tune in data.
       seed use for seeders.
 - [ ] Repair at a workshop POI: price / 100 × (1 − condition), +20% when done remotely from the garage
       menu.
-- [ ] Fuel: tank per motor, use from power actually delivered, refuel at a gas station or farm tank,
-      engine stops when empty.
+- [x] Fuel: tank per motor, use from power actually delivered, refuel at a gas station, engine stops when
+      empty.
+- [ ] Farm fuel tank: diesel bought in bulk into a tank on the farm, refueling there.
 - [ ] Dirt from fields and wet weather, washing (cosmetic, shader).
 - [ ] Paint wear and repaint, operating hours, age.
 - [ ] Resale value from price, age, hours and condition.

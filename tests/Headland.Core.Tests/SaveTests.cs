@@ -126,9 +126,12 @@ public class SaveTests
     public void AFormat1SaveHandsItsMachineStateToTheirComponents()
     {
         // The machines of BusyGame() as version 0.7.0 saved them, before components.
-        var sim = BusyGame();
-        var file = SaveGame.Capture(sim, "test");
+        var file = SaveGame.Capture(BusyGame(), "test");
         var state = JsonNode.Parse(file.State)!.AsObject();
+        // Format 1 kept nothing of the motor (fuel burned but not yet taken from the tank): the game it matches is the
+        // same one without that.
+        foreach (var m in state["machines"]!.AsArray()) m!["components"]!.AsObject().Remove("motor");
+        var sim = SaveGame.Load(TestContent.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) }).Sim;
         state["machines"] = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "machines-format1.json")));
         file.Meta.Format = 1;
         var loaded = SaveGame.Load(sim.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) });
@@ -138,7 +141,7 @@ public class SaveTests
         var (combine, header, seeder) = (Find(loaded.Sim, "combine_7"), Find(loaded.Sim, "header_grain_6"), Find(loaded.Sim, "seeder_3"));
         Assert.True(combine.Get<Thresher>()!.On);
         Assert.Equal(242.77448f, combine.Unit("tank")!.Level, 3);
-        Assert.Equal(54.486378f, combine.Get<RunningGear>()!.Distance, 3);
+        Assert.Equal(54.486332f, combine.Get<RunningGear>()!.Distance, 3);
         Assert.Equal((true, 1f), (header.Get<Attachable>()!.Lowered, header.Get<Attachable>()!.LowerAnim));
         Assert.Equal(sim.Content.CropIndex("canola"), seeder.Get<WorkAreas>()!.Crop);
         Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);

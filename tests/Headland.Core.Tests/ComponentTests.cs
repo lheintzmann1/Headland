@@ -163,9 +163,9 @@ public class ComponentTests
         Assert.True(loaded.Get<Saw>()!.On);
         Assert.Equal(["workRear"], loaded.Get<Lights>()!.On);
 
-        // Saved per component kind; the motor and seat keep nothing.
+        // Saved per component kind; the seat keeps nothing.
         var saved = JsonSerializer.Deserialize<SaveState>(file.State, SaveGame.Json)!.Machines.Single(s => s.Id == m.Id);
-        Assert.Equal(["craneArm", "lights", "runningGear", "saw", "winch"], saved.Components.Keys.Order());
+        Assert.Equal(["craneArm", "lights", "motor", "runningGear", "saw", "winch"], saved.Components.Keys.Order());
     }
 
     [Fact]

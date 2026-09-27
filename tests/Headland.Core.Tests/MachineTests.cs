@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.World;
@@ -296,6 +297,55 @@ public class MachineTests
         var helper = new FieldWorkController(sim, t, Plot);
         t.Get<Drivable>()!.Controller = helper;
         return (sim, t, helper);
+    }
+
+    [Fact]
+    public void AnEngineBurnsFuelForItsLoadWhileSomeoneDrives()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        var parked = sim.Machines.Spawn("tractor_95", new Vector2(250f, 280f), 0f);
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
+        var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
+        sim.Machines.Attach(t, "rear", c);
+        var (motor, tank) = (t.Get<Motor>()!, t.Get<Motor>()!.FuelTank!);
+
+        // Idling it burns 8% of full power's 23.75 L/h: 1.9 L/h, 0.032 L a minute.
+        Drive(t, 0f);
+        Run(sim, 60f);
+        Assert.Equal(125f * 0.19f * 0.08f, motor.FuelPerHour, 3);
+        Assert.InRange(250f - tank.Level, 0.025f, 0.035f);
+
+        // Cultivating takes most of its power.
+        c.Get<Attachable>()!.Lowered = true;
+        Drive(t, 1f);
+        Run(sim, 10f);
+        Assert.True(motor.Load > 0.8f, $"load {motor.Load}");
+        Assert.True(motor.FuelPerHour > 19f, $"{motor.FuelPerHour} L/h");
+        // Nobody in it, the engine is off.
+        Assert.Equal((0f, 180f), (parked.Get<Motor>()!.FuelPerHour, parked.Get<Motor>()!.FuelTank!.Level));
+    }
+
+    [Fact]
+    public void AnEngineStopsWhenItsTankRunsDry()
+    {
+        var (sim, t, helper) = HireCultivatorHelper();
+        var tank = t.Get<Motor>()!.FuelTank!;
+        tank.Level = 0.05f;
+        HelperDismissed? dismissed = null;
+        sim.Events.Subscribe<HelperDismissed>(e => dismissed = e);
+        for (var s = 0f; s < 20f && !t.Get<Motor>()!.OutOfFuel; s += Dt) sim.Tick(Dt);
+        Assert.True(t.Get<Motor>()!.OutOfFuel);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Fieldmaster 125 ran out of fuel");
+        Run(sim, 5f);
+        Assert.Equal(0f, t.Speed);
+        Assert.Equal("Out of fuel", dismissed?.Reason);
+
+        // Refueled, it drives again.
+        tank.Add("diesel", 50f);
+        Drive(t, 1f);
+        Run(sim, 2f);
+        Assert.True(t.Speed > 1f);
     }
 
     [Fact]

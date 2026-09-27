@@ -135,6 +135,12 @@ Needs a `runningGear` that steers.
 | `maxSpeedKmh`, `maxReverseKmh` | 40, 15 | |
 | `acceleration`, `braking` | 2.5, 6 | m/s². |
 | `fuelUnit` | none | The fill unit holding its fuel, filled up at refuel stations. |
+| `fuelPerHour` | 0.19 × `powerHp` | Fuel it burns in an hour at full power. |
+
+While someone drives it (the farmer or a helper), the engine burns fuel from its `fuelUnit` by the power it delivers:
+what the working implements ask for (`requiredPowerHp`) and what it takes to keep its chain rolling and speed it up,
+from 8% of `fuelPerHour` idling to all of it at full power. With the tank empty the engine stops, and a helper with
+it. Without a `fuelUnit` it never runs out.
 
 ### drivable
 
