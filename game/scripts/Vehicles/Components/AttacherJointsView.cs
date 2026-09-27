@@ -5,13 +5,11 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>
-/// Placeholder hitches: three-point linkages, whose links follow the implement up and down, drawbar jaws and fifth-wheel
-/// plates.
+/// Three-point linkages (rearLinkage…), whose lower links follow the implement up and down. A placeholder builds its
+/// hitches: linkages, drawbar jaws and fifth-wheel plates.
 /// </summary>
 public partial class AttacherJointsView : ComponentView
 {
-    private readonly List<(AttacherJointDef joint, Node3D links)> _linkages = [];
-
     public AttacherJoints Joints { get; init; } = null!;
 
     public override void _Ready()
@@ -30,7 +28,7 @@ public partial class AttacherJointsView : ComponentView
                     foreach (var side in new[] { 0.38f, -0.38f })
                         PlaceholderBuilder.Box(links, new Vector3(0.07f, 0.07f, 0.45f), new Vector3(side, j.Y, inward * 0.22f), Materials.DarkSteel);
                     PlaceholderBuilder.Box(links, new Vector3(0.9f, 0.07f, 0.07f), new Vector3(0f, j.Y, 0f), Materials.Steel);
-                    _linkages.Add((j, links));
+                    Rig.Add(AttacherJointsDef.LinkageRole(j), links);
                     break;
                 case "drawbar":
                     PlaceholderBuilder.Box(Rig, new Vector3(0.16f, 0.1f, 0.4f), new Vector3(j.X, j.Y, j.Z + inward * 0.18f), Materials.DarkSteel);
@@ -44,11 +42,12 @@ public partial class AttacherJointsView : ComponentView
 
     public override void _Process(double delta)
     {
-        foreach (var (j, links) in _linkages)
+        foreach (var j in Joints.Def.Joints)
         {
+            if (Rig.Part(AttacherJointsDef.LinkageRole(j)) is not { } links) continue;
             // Up and down with the implement it carries; down without one.
             var lift = Machine.Attached.GetValueOrDefault(j.Id)?.Get<Attachable>() is { Def.Mode: "mounted" } a ? (1f - a.LowerAnim) * a.Def.Lift : 0f;
-            links.Position = links.Position with { Y = lift };
+            links.Node.Position = links.Position + new Vector3(0f, lift / Rig.Scale, 0f);
         }
     }
 }

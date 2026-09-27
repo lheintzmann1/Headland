@@ -22,6 +22,11 @@ public sealed class AttacherJointsDef : ComponentDef, IJointSource
 
     IReadOnlyList<AttacherJointDef> IJointSource.Joints => Joints;
 
+    /// <summary>A three-point linkage's lower links (rearLinkage…), lifted with the implement they carry.</summary>
+    public override IEnumerable<string> Roles => Joints.Where(j => j.Type == "threePoint").Select(LinkageRole);
+
+    public static string LinkageRole(AttacherJointDef joint) => $"{joint.Id}Linkage";
+
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         foreach (var j in Joints.Where(j => !AttacherJointDef.Types.Contains(j.Type)))

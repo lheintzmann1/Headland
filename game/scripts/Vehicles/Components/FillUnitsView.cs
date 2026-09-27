@@ -6,7 +6,7 @@ namespace Headland.Game.Vehicles.Components;
 
 /// <summary>
 /// The load (load): modeled full with its pivot at the bottom, and scaled with the fill level of the unit a tipper
-/// empties, else of the first unit that isn't fuel. A placeholder's load takes the fill type's color.
+/// empties, else of the first unit that isn't fuel. Its fill materials take the fill type's color.
 /// </summary>
 public partial class FillUnitsView : ComponentView
 {
@@ -28,9 +28,11 @@ public partial class FillUnitsView : ComponentView
         load.Node.Visible = !empty;
         if (empty) return;
         load.Node.Scale = load.Scale with { Y = load.Scale.Y * Mathf.Max(0.02f, _unit.Fraction) };
-        if (!Rig.IsPlaceholder || _unit.FillType == _color || !Sim.Content.FillTypes.TryGetValue(_unit.FillType!, out var ft)) return;
+        if (_unit.FillType == _color || !Sim.Content.FillTypes.TryGetValue(_unit.FillType!, out var ft)) return;
         _color = _unit.FillType;
-        foreach (var mesh in load.Node.GetChildren().OfType<MeshInstance3D>())
-            mesh.MaterialOverride = Materials.Get(Conv.Hex(ft.Color), 0.95f);
+        if (!Rig.IsPlaceholder) Rig.SetFillColor(Conv.Hex(ft.Color));
+        else
+            foreach (var mesh in load.Node.GetChildren().OfType<MeshInstance3D>())
+                mesh.MaterialOverride = Materials.Get(Conv.Hex(ft.Color), 0.95f);
     }
 }

@@ -140,6 +140,13 @@ public class ConfigurationTests
         Assert.Equal((false, true, true), (x.Hides("wheel0L"), x.Hides("crawler_l"), x.Hides("track0R")));
         Assert.Equal((true, false, false), (tracks.Hides("wheel0L"), tracks.Hides("crawler_l"), tracks.Hides("track0R")));
         Assert.Equal((false, false), (tracks.Hides("wheel1L"), tracks.Hides("wheel_steering")));
+        // The chosen options' own versions of a moving part come first.
+        Assert.Equal(["wheels_tracks_track0L", "beacons_none_track0L", "crawler_l"], tracks.NodesOf("track0L"));
+        Assert.Equal(["wheels_single_wheel0L", "beacons_none_wheel0L", "wheel0L"], x.NodesOf("wheel0L"));
+
+        // Three-point linkages lift: the front one comes with the front hitch that has it.
+        Assert.Equal(["rearLinkage", "frontLinkage"], tractor.Roles.Where(r => r.EndsWith("Linkage")));
+        Assert.Equal(["rearLinkage"], tractor.Configure(Options(("frontHitch", "none"))).Roles.Where(r => r.EndsWith("Linkage")));
 
         // Pieces options share: both beacons are the left one and the right one.
         var left = x.Configure(Options(("beacons", "left")));

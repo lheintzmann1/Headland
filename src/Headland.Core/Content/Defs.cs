@@ -270,6 +270,13 @@ public sealed class MachineDef
     public string NodeOf(string role) => Visual.Nodes?.GetValueOrDefault(role) ?? role;
 
     /// <summary>
+    /// The model nodes that may move as <paramref name="role"/>, the first a model has winning: the chosen options' own
+    /// versions of it (configuration_option_role, such as wheels_rowCrop_wheel0L for row-crop wheels), then
+    /// <see cref="NodeOf"/>, which a version found hides.
+    /// </summary>
+    public IEnumerable<string> NodesOf(string role) => Choices.Select(c => $"{c.Key}_{c.Value}_{role}").Append(NodeOf(role));
+
+    /// <summary>
     /// Whether the model node (or placeholder part) <paramref name="node"/> is hidden on this machine (see
     /// docs/MODELING.md): it's part of options it doesn't have and of none it has, or a moving part only other options
     /// have (the rear wheels of a machine with rear tracks).

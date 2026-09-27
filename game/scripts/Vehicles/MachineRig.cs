@@ -13,7 +13,9 @@ public readonly record struct RigPart(Node3D Node, Vector3 Position, Vector3 Rot
 /// </summary>
 public sealed class MachineRig
 {
+    private static readonly Dictionary<(BaseMaterial3D, Color), BaseMaterial3D> Tints = new();
     private readonly Dictionary<string, RigPart> _parts = new();
+    private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _fill = [];
     private Node3D? _frontFrame;
     private float _hinge;
 
@@ -26,6 +28,26 @@ public sealed class MachineRig
     public void Add(string role, Node3D node) => _parts[role] = new RigPart(node, node.Position, node.Rotation, node.Scale);
 
     public RigPart? Part(string role) => _parts.TryGetValue(role, out var p) ? p : null;
+
+    /// <summary>Gives a model's fill materials (the load) the color of what it holds, times their own.</summary>
+    public void SetFillColor(Color color)
+    {
+        foreach (var (mesh, surface, material) in _fill) mesh.SetSurfaceOverrideMaterial(surface, Tinted(material, color));
+    }
+
+    /// <summary><paramref name="material"/> with its color multiplied by <paramref name="color"/>, shared by the machines that use it.</summary>
+    private static BaseMaterial3D Tinted(BaseMaterial3D material, Color color)
+    {
+        if (Tints.TryGetValue((material, color), out var tinted)) return tinted;
+        tinted = (BaseMaterial3D)material.Duplicate();
+        tinted.AlbedoColor = material.AlbedoColor * color;
+        return Tints[(material, color)] = tinted;
+    }
+
+    /// <summary>Whether a material is <paramref name="kind"/> (paint, fill) or a shade of it (paint_dark, paint.001): see docs/MODELING.md.</summary>
+    private static bool IsKind(Material? material, string kind) =>
+        material is BaseMaterial3D { ResourceName: var name } && name.StartsWith(kind, StringComparison.Ordinal)
+                                                              && (name.Length == kind.Length || name[kind.Length] is '_' or '.');
 
     /// <summary>An articulated placeholder's front frame (role frontFrame), hinged at <paramref name="hinge"/>.</summary>
     public void SetFrontFrame(Node3D frame, float hinge)
@@ -49,9 +71,9 @@ public sealed class MachineRig
     }
 
     /// <summary>
-    /// The machine's glTF model (what its root node holds) with its moving parts found by name, and the nodes it doesn't
-    /// have with its options hidden (docs/MODELING.md). Empty if the model doesn't load: such machines are left out
-    /// when the game starts.
+    /// The machine's glTF model (what its root node holds) with its moving parts found by name, the nodes it doesn't
+    /// have with its options hidden, and its paint in the machine's color (docs/MODELING.md). Empty if the model
+    /// doesn't load: such machines are left out when the game starts.
     /// </summary>
     public static MachineRig Model(MachineDef def)
     {
@@ -60,6 +82,7 @@ public sealed class MachineRig
         if (Models.Load(v, def.Id) is not { } holder) return rig;
         rig.Root.AddChild(holder);
 
+        var paint = Conv.Hex(v.Color);
         var nodes = new Dictionary<string, Node3D>();
         foreach (var node in Descendants(holder.GetChild(0)))
         {
@@ -69,13 +92,18 @@ public sealed class MachineRig
             if (def.UnknownOption(name) is { } c)
                 GD.PushWarning($"{def.Id}: model node '{name}' is named after configuration '{c.Id}' but none of its options " +
                                $"({string.Join(", ", c.Options.Select(o => $"{c.Id}_{o.Id}"))})");
+            if (node is MeshInstance3D mesh) rig.Collect(mesh, paint);
         }
         var missing = new List<string>();
         foreach (var role in def.Roles)
         {
-            var name = def.NodeOf(role);
-            if (nodes.TryGetValue(name, out var node)) rig.Add(role, node);
-            else if (v.Nodes?.ContainsKey(role) == true) GD.PushWarning($"{def.Id}: model has no node '{name}' for '{role}'");
+            if (def.NodesOf(role).FirstOrDefault(nodes.ContainsKey) is { } name)
+            {
+                rig.Add(role, nodes[name]);
+                // An option's own version of the part hides the machine's.
+                if (name != def.NodeOf(role) && nodes.TryGetValue(def.NodeOf(role), out var replaced)) replaced.Visible = false;
+            }
+            else if (v.Nodes?.ContainsKey(role) == true) GD.PushWarning($"{def.Id}: model has no node '{def.NodeOf(role)}' for '{role}'");
             else missing.Add(role);
         }
         foreach (var name in def.Configurations.SelectMany(c => c.Options).SelectMany(o => o.Show).Distinct().Where(n => !nodes.ContainsKey(n)))
@@ -83,6 +111,17 @@ public sealed class MachineRig
         GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")}" +
                  $"{(missing.Count > 0 ? $"; not in the model: {string.Join(", ", missing)}" : "")})");
         return rig;
+    }
+
+    /// <summary>Paints a mesh's paint materials in the machine's color, and keeps its fill materials for the load's color.</summary>
+    private void Collect(MeshInstance3D mesh, Color paint)
+    {
+        for (var i = 0; i < (mesh.Mesh?.GetSurfaceCount() ?? 0); i++)
+        {
+            var material = mesh.GetActiveMaterial(i);
+            if (IsKind(material, "paint")) mesh.SetSurfaceOverrideMaterial(i, Tinted((BaseMaterial3D)material, paint));
+            else if (IsKind(material, "fill")) _fill.Add((mesh, i, (BaseMaterial3D)material));
+        }
     }
 
     private static IEnumerable<Node3D> Descendants(Node node)

@@ -58,6 +58,8 @@ root                              origin on the ground, at the center of the rea
 │   ├── track0L                   rear tracks: shown instead of wheel0L and wheel0R
 │   └── track0R
 ├── steeringWheel
+├── rearLinkage                   lower links of the rear three-point linkage: lift
+├── frontLinkage                  the front one's, shown with the front linkage only
 └── options
     ├── frontHitch
     │   ├── frontHitch_threePoint
@@ -90,10 +92,11 @@ components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
 | Role | Component | Pivot | Modeled as |
 |---|---|---|---|
 | `wheel0L`, `wheel0R`, `wheel1L`, … | `runningGear` | wheel center | one node per side of each axle (`L` left, `R` right), axles numbered from 0 as in its `axles`, holding both tires of a dual; it rolls, and steers when the axle does |
-| `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved |
+| `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved, but the links of its belt run round (see below) |
 | `frontFrame` | `runningGear` with `articulation` | the hinge | the front frame with everything on it (its wheels too); it swings about Y, left when positive |
 | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
-| `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
+| `rearLinkage`, … (a joint's `id` and `Linkage`) | `attacherJoints`, `threePoint` joints | anywhere | the linkage's lower links, lowered; they lift straight up with the implement they carry |
+| `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left, and the game pours the grain where it unloads |
 | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
 | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
 | `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
@@ -104,6 +107,10 @@ components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
 
 A crane's joints are nested: each joint's node is a child of the previous one's, placed as the `offset`s in the JSON
 say, so that tools and ropes hang where the game expects them.
+
+A track's belt is a node named after the track and `_belt` (`track0L_belt`) whose children are its links, each
+modeled flat and centered on its origin. The game spaces them evenly round the belt, as long and as round as the
+axle's wheel set says (`length`, `radius`), and runs them round as the machine drives.
 
 A moving part that only some options give the machine is hidden without them. An axle's sides are `wheel…` roles, or
 `track…` when that axle has tracks, so with rear tracks `wheel0L` and `wheel0R` are hidden, and without them `track0L`
@@ -126,6 +133,9 @@ machine has that option; the rest of the model is always there.
 ```
 
 - An option that adds nothing to see (none, an engine, a bigger tank) needs no node.
+- An option can have its own version of a moving part, named after the option and the role:
+  `wheels_rowCrop_wheel0L` holds the taller row-crop wheel, with its pivot at that wheel's center. With the option,
+  it moves instead of `wheel0L`, which is hidden.
 - A piece that has to sit somewhere else, under a moving part, is named after its option followed by `_` and anything:
   a dual's outer tire rolls with its wheel, so it is `wheels_dual_0L` under `wheel0L`. Any number of nodes can do
   that (`frontLoader_bracket_l`, `frontLoader_bracket_r`), and Blender's `.001` endings, which import as `_001`, count
@@ -135,8 +145,20 @@ machine has that option; the rest of the model is always there.
   option has it.
 - A name starting with a configuration's id and `_` belongs to its options: the console warns about one that matches
   none of them, such as `frontHitch_wieght`.
-- Colors come from the textures, so a color option changes the machine's `visual.model` to a model of that color, or
-  has a painted body of its own (`color_green`).
+- Color options change the machine's `visual.color`, which its paint takes (see [Materials](#materials)).
+
+## Materials
+
+Materials keep their colors and textures, except two kinds the game colors, matched by name:
+
+- **`paint`** takes the machine's color (its `visual.color`, which color options change), multiplied by the
+  material's own color: white gives the paint as it is, grey a darker shade of it. Shades are named `paint_` and
+  anything (`paint_dark`); a texture on them is tinted too, so white areas show the paint and darker ones dirt or
+  shadow.
+- **`fill`** (and `fill_…`), on the load, takes the color of what the machine holds (wheat, canola…), multiplied the
+  same way.
+
+An ending after a `.` counts too (`paint.png`, Blender's `paint.001`).
 
 Until a machine has a model, its placeholder can draw option pieces as blocks: `visual.parts` lists them with an `id`
 (the node name, such as `frontHitch_weight`), a center `x`, `y`, `z`, a size `w`, `h`, `d` and a `color` (the

@@ -7,14 +7,24 @@ namespace Headland.Game.Vehicles.Components;
 /// <summary>The unloading pipe (pipe): rests folded backward and swings 90° out to the left; grain pours while it unloads.</summary>
 public partial class PipeView : ComponentView
 {
-    private Node3D? _stream;
+    private MeshInstance3D _stream = null!;
 
     public Pipe Pipe { get; init; } = null!;
 
     public override void _Ready()
     {
-        if (!Rig.IsPlaceholder) return;
         var s = Machine.Def.Size;
+        // The grain falls where the pipe unloads, from about the machine's height.
+        _stream = new MeshInstance3D
+        {
+            Name = "Stream",
+            Mesh = new BoxMesh { Size = new Vector3(0.22f, 3.3f, 0.22f) },
+            Position = new Vector3(Pipe.Def.X, s.Height - 1.8f, Pipe.Def.Z),
+            MaterialOverride = Materials.Get(new Color(0.8f, 0.68f, 0.4f), 0.75f),
+            Visible = false,
+        };
+        AddChild(_stream);
+        if (!Rig.IsPlaceholder) return;
         var pivotX = s.Width * 0.36f;
         var pivot = new Node3D { Name = "Pipe", Position = new Vector3(pivotX, s.Height, Pipe.Def.Z), Rotation = new Vector3(0f, Mathf.Pi, 0f) };
         Rig.Root.AddChild(pivot);
@@ -27,15 +37,12 @@ public partial class PipeView : ComponentView
             MaterialOverride = Materials.Get(Body, 0.6f, 0.2f),
         });
         PlaceholderBuilder.Box(pivot, new Vector3(0.35f, 0.55f, 0.35f), new Vector3(0, 0.05f, reach), Body * 0.8f);
-        _stream = new Node3D { Name = "Stream", Position = new Vector3(0, -1.8f, reach), Visible = false };
-        PlaceholderBuilder.Box(_stream, new Vector3(0.22f, 3.3f, 0.22f), Vector3.Zero, new Color(0.8f, 0.68f, 0.4f));
-        pivot.AddChild(_stream);
         Rig.Add("pipe", pivot);
     }
 
     public override void _Process(double delta)
     {
         Turn("pipe", new Vector3(0f, -Mathf.Pi / 2f * Ease(Pipe.Anim), 0f));
-        if (_stream != null) _stream.Visible = Pipe.Flowing;
+        _stream.Visible = Pipe.Flowing;
     }
 }
