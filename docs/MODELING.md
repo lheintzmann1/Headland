@@ -36,6 +36,7 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    |---|---|---|---|
    | `wheel0L`, `wheel0R`, `wheel1L`, … | `runningGear` | wheel center | one node per side of each axle (`L` left, `R` right), axles numbered as in its `axles`, holding both tires of a dual; it rolls, and steers when the axle does |
    | `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved |
+   | `frontFrame` | `runningGear` with `articulation` | the hinge | the front frame with everything on it (its wheels too); it swings about Y, left when positive |
    | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
    | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
    | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |

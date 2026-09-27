@@ -59,23 +59,56 @@ public enum SteeringMode : byte
     Crab,
 }
 
+/// <summary>An articulated machine's hinge: its front frame, with the axles ahead of the hinge, swings about it to steer.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class ArticulationDef
+{
+    public float Z { get; set; }
+}
+
+/// <summary>How a running gear steers, from what it is built of.</summary>
+public enum SteeringKind : byte
+{
+    /// <summary>It doesn't: a trailer, which its hitch pulls round.</summary>
+    None,
+    /// <summary>Steered axles, turning about the fixed ones (or about the middle of the steered ones).</summary>
+    Axles,
+    /// <summary>A hinge between a front and a rear frame, each with fixed axles.</summary>
+    Articulated,
+    /// <summary>Tracks and no steered axle: one track runs faster than the other, and it can turn on the spot.</summary>
+    SkidSteer,
+}
+
 /// <summary>
-/// Axles, and how the steered ones turn. The machine turns about a point on its length, the turning center: the middle
+/// Axles, and how the machine steers. The machine turns about a point on its length, the turning center: the middle
 /// of the axles that hold it on its line (the fixed ones), else the middle of those that steer. Each steered axle turns
 /// so that its wheels roll around that point, the farthest one at <see cref="MaxSteerDeg"/> at full lock: ahead of the
 /// center into the turn, behind it the other way. A self-steering axle turns freely after the path, and locks straight
-/// when reversing. Unknown properties are refused, so the wheel list from before axles doesn't load as no wheels.
+/// when reversing. An articulated machine steers by swinging its front frame about a hinge instead, and a tracked one
+/// without steered axles by running one track faster than the other. Unknown properties are refused, so the wheel list
+/// from before axles doesn't load as no wheels.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class RunningGearDef : ComponentDef
 {
     public AxleDef[] Axles { get; set; } = [];
-    /// <summary>Angle of the steered wheels farthest from the turning center at full lock.</summary>
+    /// <summary>Full lock: the angle of the steered axle farthest from the turning center, or of the hinge.</summary>
     public float MaxSteerDeg { get; set; } = 38f;
-    /// <summary>How fast the steered wheels turn (degrees per second).</summary>
+    /// <summary>How fast the steering turns (degrees per second).</summary>
     public float SteerRateDeg { get; set; } = 90f;
+    /// <summary>Articulated steering: the hinge.</summary>
+    public ArticulationDef? Articulation { get; set; }
+    /// <summary>Skid steer: how fast it turns on the spot at full lock (degrees per second).</summary>
+    public float SpinRateDeg { get; set; } = 30f;
 
     public float MaxSteer => MaxSteerDeg * MathUtil.Deg2Rad;
+
+    [JsonIgnore]
+    public SteeringKind Kind =>
+        Articulation != null ? SteeringKind.Articulated
+        : Axles.Any(a => Steered(a, SteeringMode.Normal)) ? SteeringKind.Axles
+        : Axles.Any(a => a.Wheels.IsTracks) ? SteeringKind.SkidSteer
+        : SteeringKind.None;
 
     /// <summary>The steering modes the driver switches between: with all-wheel axles, all-wheel and crab too.</summary>
     public SteeringMode[] Modes =>
@@ -89,12 +122,19 @@ public sealed class RunningGearDef : ComponentDef
     public static bool Holds(AxleDef a, SteeringMode mode, bool reverse) =>
         a.Steering == "fixed" || a.Steering == "allWheel" && mode == SteeringMode.Normal || a.Steering == "self" && reverse;
 
-    /// <summary>Where along its length the machine turns about: the middle of the axles holding it, else of those steering.</summary>
+    /// <summary>The axle is on an articulated machine's front frame.</summary>
+    public bool OnFrontFrame(float z) => Articulation != null && z > Articulation.Z;
+
+    /// <summary>
+    /// Where along its length the machine turns about: the middle of the axles holding it (on an articulated machine,
+    /// of those of its rear frame), else of those steering.
+    /// </summary>
     public float Pivot(SteeringMode mode, bool reverse)
     {
         float sum = 0f, n = 0f, min = float.MaxValue, max = float.MinValue;
         foreach (var a in Axles)
         {
+            if (OnFrontFrame(a.Z)) continue;
             if (Holds(a, mode, reverse))
             {
                 sum += a.Z;
@@ -120,10 +160,30 @@ public sealed class RunningGearDef : ComponentDef
         return wheelbase;
     }
 
-    /// <summary>Radius of the tightest circle the turning center drives in normal steering.</summary>
-    public float TurnRadius => Wheelbase() / MathF.Tan(MaxSteer);
+    /// <summary>Articulated: from the rear frame's axles to the hinge, and from the hinge to the front frame's axles.</summary>
+    public (float rear, float front) Frames
+    {
+        get
+        {
+            if (Articulation is not { } h) return (0f, 0f);
+            var front = Axles.Where(a => OnFrontFrame(a.Z)).Select(a => a.Z).DefaultIfEmpty(h.Z).Average();
+            return (h.Z - Pivot(SteeringMode.Normal, false), front - h.Z);
+        }
+    }
 
-    public override IEnumerable<string> Roles => Axles.SelectMany((a, i) => new[] { SideRole(a, i, "L"), SideRole(a, i, "R") });
+    /// <summary>Skid steer turns like a wheelbase as long as its tracks.</summary>
+    public float TrackLength => Axles.Where(a => a.Wheels.IsTracks).Select(a => a.Wheels.Length).DefaultIfEmpty(0f).Max();
+
+    /// <summary>Radius of the tightest circle the turning center drives in normal steering (while moving).</summary>
+    public float TurnRadius => Kind switch
+    {
+        SteeringKind.Articulated => Frames is var (rear, front) ? (rear * MathF.Cos(MaxSteer) + front) / MathF.Sin(MaxSteer) : 0f,
+        SteeringKind.SkidSteer => TrackLength / MathF.Tan(MaxSteer),
+        _ => Wheelbase() / MathF.Tan(MaxSteer),
+    };
+
+    public override IEnumerable<string> Roles =>
+        Axles.SelectMany((a, i) => new[] { SideRole(a, i, "L"), SideRole(a, i, "R") }).Concat(Articulation != null ? ["frontFrame"] : []);
 
     /// <summary>The model node role of one side of an axle: wheel0L (the tires) or track0L.</summary>
     public static string SideRole(AxleDef axle, int index, string side) => $"{(axle.Wheels.IsTracks ? "track" : "wheel")}{index}{side}";
@@ -139,9 +199,18 @@ public sealed class RunningGearDef : ComponentDef
         if (Axles.Any(a => a.Wheels.Gap < 0f)) yield return "a dual's gap must be >= 0";
         if (Axles.Any(a => a.Wheels.IsTracks && a.Wheels.Length <= 0f)) yield return "tracks need a length > 0";
         if (Axles.Any(a => a.Wheels.IsTracks && a.Steering != "fixed")) yield return "tracks don't steer: they go on fixed axles";
-        if (MaxSteerDeg is <= 0f or >= 80f || SteerRateDeg <= 0f) yield return "maxSteerDeg must be in (0, 80) and steerRateDeg > 0";
+        if (MaxSteerDeg is <= 0f or >= 80f || SteerRateDeg <= 0f || SpinRateDeg <= 0f)
+            yield return "maxSteerDeg must be in (0, 80), steerRateDeg and spinRateDeg > 0";
         if (Axles.Length == 0 || Axles.Any(a => !AxleDef.SteeringTypes.Contains(a.Steering))) yield break;
 
+        if (Articulation is { } hinge)
+        {
+            if (Axles.Any(a => a.Steering != "fixed")) yield return "an articulated machine steers with its hinge: its axles are fixed";
+            if (!Axles.Any(a => a.Z < hinge.Z) || !Axles.Any(a => a.Z > hinge.Z)) yield return "the hinge needs axles on both sides of it";
+            else if (MathF.Abs(Pivot(SteeringMode.Normal, false)) > 0.01f)
+                yield return $"the origin must be where it turns about: z = {Pivot(SteeringMode.Normal, false):0.##}, the middle of its rear frame's axles";
+            yield break;
+        }
         var holds = Axles.Any(a => Holds(a, SteeringMode.Normal, false));
         if (!holds && !(Axles.Any(a => a.Steering == "front") && Axles.Any(a => a.Steering == "rear")))
             yield return "needs a fixed axle to turn about (or front and rear steered ones)";
@@ -163,30 +232,86 @@ public sealed class RunningGearSave
 {
     public float SteerAngle { get; set; }
     public float Distance { get; set; }
+    public float Turned { get; set; }
     /// <summary>The steering mode, when not normal: allWheel or crab.</summary>
     public string? Mode { get; set; }
 }
 
 public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineComponent<RunningGearDef, RunningGearSave>(machine, def)
 {
+    /// <summary>Skid steer turns on the spot up to this speed (m/s), less the faster it goes.</summary>
+    private const float SpinSpeed = 1f;
+
     /// <summary>Angles of the self-steering axles (the others follow the steering), radians, positive left.</summary>
     private readonly float[] _selfAngles = new float[def.Axles.Length];
+    private readonly (float rear, float front) _frames = def.Frames;
+    private readonly float _trackLength = def.TrackLength;
+    private bool _braking;
 
     /// <summary>
-    /// The steering lock in radians, positive turning left: the angle of the steered axle farthest from the turning
-    /// center, turned into the turn (in crab steering, of every steered axle).
+    /// The steering in radians, positive turning left: the angle of the steered axle farthest from the turning center,
+    /// turned into the turn (in crab steering, of every steered axle); of an articulated machine's hinge, its front
+    /// frame turned left; skid steer turns as a steered axle a track's length ahead would.
     /// </summary>
     public float SteerAngle { get; set; }
-    /// <summary>Distance rolled, which turns the wheels.</summary>
+    /// <summary>Distance the turning center rolled, which turns the wheels.</summary>
     public float Distance { get; set; }
+    /// <summary>How far the machine has turned while rolling (radians, positive left): the wheels on the outside roll further.</summary>
+    public float Turned { get; set; }
     public SteeringMode Mode { get; set; }
+    public SteeringKind Kind { get; } = def.Kind;
 
     /// <summary>From the turning center to the farthest steered axle, going forward or backward in the current mode.</summary>
     public float WheelbaseFor(bool reverse) => Def.Wheelbase(Mode, reverse);
 
-    /// <summary>Turns the steered wheels toward <paramref name="angle"/> (radians), at their steering rate.</summary>
+    /// <summary>Distance rolled by the wheels or track <paramref name="x"/> meters left of the turning center.</summary>
+    public float SideDistance(float x) => Distance - Turned * x;
+
+    /// <summary>How far a part at <paramref name="z"/> turns with the front frame of an articulated machine (radians, positive left).</summary>
+    public float FrameAngle(float z) => Def.OnFrontFrame(z) ? SteerAngle : 0f;
+
+    /// <summary>
+    /// Where a point of the machine's space is once an articulated machine's front frame swung (itself behind the hinge),
+    /// and how far it turned.
+    /// </summary>
+    public (float x, float z, float angle) Swing(float x, float z)
+    {
+        var angle = FrameAngle(z);
+        if (angle == 0f) return (x, z, 0f);
+        var hinge = Def.Articulation!.Z;
+        var (sin, cos) = MathF.SinCos(angle);
+        var dz = z - hinge;
+        return (x * cos + dz * sin, hinge - x * sin + dz * cos, angle);
+    }
+
+    /// <summary>Turns the steering toward the driver's, with less lock the faster it goes.</summary>
+    internal void Steer(VehicleInput input, float speed, float dt)
+    {
+        _braking = input.Brake;
+        var speedFactor = MathUtil.Lerp(1f, 0.4f, MathUtil.Saturate(MathF.Abs(speed) / (40f * MathUtil.KmhToMs)));
+        SteerToward(Math.Clamp(input.Steer, -1f, 1f) * Def.MaxSteer * speedFactor, dt);
+    }
+
+    /// <summary>Turns the steering toward <paramref name="angle"/> (radians), at its steering rate.</summary>
     internal void SteerToward(float angle, float dt) =>
         SteerAngle = MathUtil.MoveToward(SteerAngle, Math.Clamp(angle, -Def.MaxSteer, Def.MaxSteer), Def.SteerRateDeg * MathUtil.Deg2Rad * dt);
+
+    /// <summary>The steering that makes the turning center drive a circle of <paramref name="curvature"/> (1/radius, positive left).</summary>
+    public float SteerFor(float curvature, bool reverse)
+    {
+        switch (Kind)
+        {
+            case SteeringKind.Articulated:
+                // sin φ = κ (rear cos φ + front): a sine and a cosine make one shifted sine.
+                var (rear, front) = _frames;
+                var amplitude = MathF.Sqrt(1f + curvature * curvature * rear * rear);
+                return MathF.Atan(curvature * rear) + MathF.Asin(Math.Clamp(curvature * front / amplitude, -1f, 1f));
+            case SteeringKind.SkidSteer:
+                return MathF.Atan(curvature * _trackLength);
+            default:
+                return MathF.Atan(curvature * WheelbaseFor(reverse));
+        }
+    }
 
     /// <summary>
     /// How the machine moves while its origin goes <paramref name="speed"/> m/s forward for <paramref name="dt"/>: how
@@ -195,12 +320,29 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     /// </summary>
     internal (float turn, float sideways) Motion(float speed, float dt)
     {
+        switch (Kind)
+        {
+            case SteeringKind.Articulated:
+            {
+                // The rear axle rolls toward the hinge while the front one, swung, rolls round it.
+                var (rear, front) = _frames;
+                return (speed * MathF.Sin(SteerAngle) / (rear * MathF.Cos(SteerAngle) + front) * dt, 0f);
+            }
+            case SteeringKind.SkidSteer:
+            {
+                var turn = speed * MathF.Tan(SteerAngle) / _trackLength * dt;
+                // Slow enough, and not braking, the tracks run against each other.
+                if (!_braking && MathF.Abs(speed) < SpinSpeed)
+                    turn += SteerAngle / Def.MaxSteer * Def.SpinRateDeg * MathUtil.Deg2Rad * (1f - MathF.Abs(speed) / SpinSpeed) * dt;
+                return (turn, 0f);
+            }
+        }
         if (Mode == SteeringMode.Crab) return (0f, speed * MathF.Tan(SteerAngle) * dt);
         var reverse = speed < 0f;
         var wheelbase = WheelbaseFor(reverse);
         if (wheelbase <= 0f) return (0f, 0f);
-        var turn = speed * MathF.Tan(SteerAngle) / wheelbase * dt;
-        return (turn, -turn * Def.Pivot(Mode, reverse));
+        var turned = speed * MathF.Tan(SteerAngle) / wheelbase * dt;
+        return (turned, -turned * Def.Pivot(Mode, reverse));
     }
 
     /// <summary>
@@ -210,6 +352,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     internal void Roll(float forward, float sideways, float turned, float dt)
     {
         Distance += forward;
+        Turned += turned;
         var rate = Def.SteerRateDeg * MathUtil.Deg2Rad * dt;
         for (var i = 0; i < Def.Axles.Length; i++)
         {
@@ -243,13 +386,14 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
 
     protected override RunningGearSave Capture(ContentDatabase content) => new()
     {
-        SteerAngle = SteerAngle, Distance = Distance, Mode = Mode == SteeringMode.Normal ? null : ModeName(Mode),
+        SteerAngle = SteerAngle, Distance = Distance, Turned = Turned, Mode = Mode == SteeringMode.Normal ? null : ModeName(Mode),
     };
 
     protected override void Restore(RunningGearSave save, SaveContext context)
     {
         SteerAngle = Math.Clamp(save.SteerAngle, -Def.MaxSteer, Def.MaxSteer);
         Distance = save.Distance;
+        Turned = save.Turned;
         Mode = Def.Modes.FirstOrDefault(m => ModeName(m) == save.Mode);
     }
 

@@ -4,13 +4,13 @@ using Godot;
 namespace Headland.Game.Vehicles.Components;
 
 /// <summary>
-/// The wheels on each side of each axle (wheel0L, wheel0R, wheel1L…): they roll with the distance driven, and steered
-/// ones turn, the inner wheel of a turn more than the outer one. Tracks (track0L…) don't turn; on a placeholder their
-/// belt runs round.
+/// The wheels on each side of each axle (wheel0L, wheel0R, wheel1L…): they roll with the distance driven, those on the
+/// outside of a turn further, and steered ones turn, the inner wheel of a turn more than the outer one. Tracks (track0L…)
+/// don't turn; on a placeholder their belt runs round. An articulated machine's front frame (frontFrame) swings.
 /// </summary>
 public partial class RunningGearView : ComponentView
 {
-    private readonly List<TrackRig> _tracks = [];
+    private readonly List<(TrackRig rig, float x)> _tracks = [];
 
     public RunningGear Gear { get; init; } = null!;
 
@@ -25,12 +25,16 @@ public partial class RunningGearView : ComponentView
             Node3D node;
             if (set.IsTracks)
             {
-                var track = new TrackRig(set, new Vector3(x, 0f, axles[i].Z), Body);
-                _tracks.Add(track);
+                var track = new TrackRig(set, Body);
+                _tracks.Add((track, x));
                 node = track.Root;
+                Rig.AddPart(node, new Vector3(x, 0f, axles[i].Z));
             }
-            else node = PlaceholderBuilder.Wheel(set, new Vector3(x, set.Radius, axles[i].Z), Mathf.Sign(x));
-            Rig.Root.AddChild(node);
+            else
+            {
+                node = PlaceholderBuilder.Wheel(set, Mathf.Sign(x));
+                Rig.AddPart(node, new Vector3(x, set.Radius, axles[i].Z));
+            }
             Rig.Add(RunningGearDef.SideRole(axles[i], i, side), node);
         }
     }
@@ -43,9 +47,10 @@ public partial class RunningGearView : ComponentView
         {
             if (axles[i].Wheels.IsTracks) continue;
             foreach (var (side, x) in Sides(axles[i]))
-                Turn(RunningGearDef.SideRole(axles[i], i, side), new Vector3(Gear.Distance / axles[i].Wheels.Radius, Gear.WheelAngle(i, x), 0f));
+                Turn(RunningGearDef.SideRole(axles[i], i, side), new Vector3(Gear.SideDistance(x) / axles[i].Wheels.Radius, Gear.WheelAngle(i, x), 0f));
         }
-        foreach (var track in _tracks) track.Roll(Gear.Distance);
+        foreach (var (track, x) in _tracks) track.Roll(Gear.SideDistance(x));
+        if (Gear.Kind == SteeringKind.Articulated) Turn("frontFrame", new Vector3(0f, Gear.SteerAngle, 0f));
     }
 
     /// <summary>An axle's two sides: role suffix and x of its (inner) wheels, +x being left.</summary>

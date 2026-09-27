@@ -8,8 +8,9 @@ using Headland.Core.World;
 namespace Headland.Core.Machines;
 
 /// <summary>
-/// Drives machines and their components: vehicle kinematics, hitching, the player's commands, and work areas. Each
-/// component then updates itself (animations, transfers).
+/// Drives machines and their components: moves vehicles and places their chains (the components work out speed and
+/// steering), hitching, the player's commands, and work areas. Each component then updates itself (animations,
+/// transfers).
 /// </summary>
 public sealed class MachineSystem
 {
@@ -70,9 +71,10 @@ public sealed class MachineSystem
         if (a.Def.Mode == "trailed")
         {
             // Keep the trailer's heading but clamp it into the allowed articulation.
+            var frame = parent.PartToWorld(joint.X, joint.Z).heading;
             var max = a.Def.MaxArticulationDeg * MathUtil.Deg2Rad;
-            var rel = Math.Clamp(MathUtil.WrapAngle(child.Heading - parent.Heading), -max, max);
-            child.Heading = parent.Heading + rel;
+            var rel = Math.Clamp(MathUtil.WrapAngle(child.Heading - frame), -max, max);
+            child.Heading = frame + rel;
         }
         UpdateChildren(parent);
         return true;
@@ -100,7 +102,7 @@ public sealed class MachineSystem
         foreach (var j in p.Def.Joints)
         {
             if (p.Attached.ContainsKey(j.Id)) continue;
-            var jw = p.LocalToWorld(j.X, j.Z);
+            var (jw, frame) = p.PartToWorld(j.X, j.Z);
             foreach (var c in All)
             {
                 if (c.Parent != null || c.Get<Attachable>() is not { } a || c.Has<Motor>() || c.Root == vehicle.Root) continue;
@@ -109,7 +111,7 @@ public sealed class MachineSystem
                 var aw = c.LocalToWorld(a.Def.X, a.Def.Z);
                 var d = Vector2.Distance(jw, aw);
                 if (d >= bestDist) continue;
-                var rel = MathF.Abs(MathUtil.WrapAngle(c.Heading - p.Heading));
+                var rel = MathF.Abs(MathUtil.WrapAngle(c.Heading - frame));
                 var limit = a.Def.Mode == "mounted" ? 45f : a.Def.MaxArticulationDeg;
                 if (rel > limit * MathUtil.Deg2Rad) continue;
                 bestDist = d;
@@ -263,92 +265,34 @@ public sealed class MachineSystem
     }
 
     /// <summary>
-    /// True if the work area does its work now: the implement unfolded and lowered (when it folds or lowers), and
-    /// turned on (a harvester: the thresher it hangs on) when it needs to be.
+    /// Moves a vehicle and its chain: the driver asks (drivable), the engine gives the speed (motor) and the running gear
+    /// the turn; the chain follows, and stops short of what it would bump into.
     /// </summary>
-    private static bool Engaged(Machine m, WorkAreas w, WorkAreaDef area)
-    {
-        if (m.Get<AnimatedParts>() is { Unfolded: false }) return false;
-        if (m.Get<Attachable>() is { Def.Lowerable: true, Lowered: false }) return false;
-        return area.Type == "harvester" ? m.Parent?.Get<Thresher>() is { On: true } : !area.RequiresOn || w.On;
-    }
-
     private void Drive(Machine v, float dt)
     {
-        var motor = v.Get<Motor>()!;
-        var mot = motor.Def;
+        var input = v.Get<Drivable>()?.Input(dt) ?? new VehicleInput { Brake = true };
+        var s = v.Get<Motor>()!.Drive(_sim, input, dt);
+        if (MathF.Abs(s) < 1e-4f) s = 0f;
         var gear = v.Get<RunningGear>()!;
-        var input = v.Get<Drivable>()?.Controller?.GetInput(v, dt) ?? new VehicleInput { Brake = true };
-        v.Status = null;
+        gear.Steer(input, s, dt);
+        // Standing, it may still turn: on the spot with skid steer.
+        var (turn, sideways) = gear.Motion(s, dt);
 
-        // Speed limits from working implements, engine power and soft ground.
-        var maxF = mot.MaxSpeedKmh * MathUtil.KmhToMs;
-        var maxR = mot.MaxReverseKmh * MathUtil.KmhToMs;
-        var demand = 0f;
-        var totalMass = 0f;
-        foreach (var m in v.Chain())
-        {
-            totalMass += m.SelfMassWithLoad(Content);
-            if (m.Get<WorkAreas>() is not { } w) continue;
-            foreach (var area in w.Def.Areas)
-            {
-                if (!Engaged(m, w, area)) continue;
-                maxF = MathF.Min(maxF, area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
-                demand += area.RequiredPowerHp;
-            }
-        }
-        motor.Load = demand / mot.PowerHp;
-        if (demand > mot.PowerHp)
-        {
-            maxF *= MathF.Max(0.3f, mot.PowerHp / demand);
-            v.Status = $"Needs {demand:N0} hp, has {mot.PowerHp:N0} hp";
-        }
-        var (cx, cz) = World.WorldToCell(v.Position);
-        if (World.InBounds(cx, cz))
-        {
-            var i = World.CellIndex(cx, cz);
-            if (World.IsWorkable((GroundType)World.Layers.Ground[i]) && World.Layers.Moisture[i] > 204)
-                maxF *= 0.75f;
-        }
-        var accel = mot.Acceleration * Math.Clamp(v.SelfMassWithLoad(Content) / MathF.Max(1f, totalMass), 0.25f, 1f);
-
-        var s = v.Speed;
-        if (input.Brake) s = MathUtil.MoveToward(s, 0f, mot.Braking * dt);
-        else if (input.Throttle > 0.01f)
-        {
-            var target = maxF * input.Throttle;
-            s = s < -0.01f ? MathUtil.MoveToward(s, 0f, mot.Braking * dt)
-                : s < target ? MathF.Min(target, s + accel * dt)
-                : MathUtil.MoveToward(s, target, 1.5f * dt);
-        }
-        else if (input.Throttle < -0.01f)
-        {
-            var target = -maxR * -input.Throttle;
-            s = s > 0.01f ? MathUtil.MoveToward(s, 0f, mot.Braking * dt)
-                : s > target ? MathF.Max(target, s - accel * dt)
-                : MathUtil.MoveToward(s, target, 1.5f * dt);
-        }
-        else s = MathUtil.MoveToward(s, 0f, 1.5f * dt);
-        if (s > maxF) s = MathUtil.MoveToward(s, maxF, mot.Braking * dt);
-
-        // Less lock the faster it goes.
-        var speedFactor = MathUtil.Lerp(1f, 0.4f, MathUtil.Saturate(MathF.Abs(s) / (40f * MathUtil.KmhToMs)));
-        gear.SteerToward(Math.Clamp(input.Steer, -1f, 1f) * gear.Def.MaxSteer * speedFactor, dt);
-
-        if (MathF.Abs(s) < 1e-4f)
+        if (s == 0f && turn == 0f)
         {
             v.Speed = 0f;
             foreach (var m in v.Chain())
                 if (m.Get<WorkAreas>() is { } w)
                     foreach (var area in w.Areas)
-                        area.HasPose &= Engaged(m, w, area.Def);
+                        area.HasPose &= w.Working(area.Def);
+            // An articulated vehicle's front frame swings standing too, with what hangs on it.
+            if (gear.Kind == SteeringKind.Articulated) UpdateChildren(v);
             return;
         }
 
         _saved.Clear();
         foreach (var m in v.Chain()) _saved.Add((m, m.Position, m.Heading));
 
-        var (turn, sideways) = gear.Motion(s, dt);
         v.Heading = MathUtil.WrapAngle(v.Heading + turn);
         v.Position += MathUtil.Forward(v.Heading) * s * dt;
         if (sideways != 0f) v.Position += MathUtil.Left(v.Heading) * sideways;
@@ -394,17 +338,20 @@ public sealed class MachineSystem
         UpdateChildren(root);
     }
 
-    /// <summary>Places attached machines: mounted ones rigidly, trailed ones following their hitch point.</summary>
+    /// <summary>
+    /// Places attached machines: mounted ones rigidly, trailed ones following their hitch point. A joint on an
+    /// articulated vehicle's front frame swings with it.
+    /// </summary>
     public void UpdateChildren(Machine parent)
     {
         foreach (var (jointId, child) in parent.Attached)
         {
             var j = parent.Joint(jointId)!;
-            var jw = parent.LocalToWorld(j.X, j.Z);
+            var (jw, frame) = parent.PartToWorld(j.X, j.Z);
             var a = child.Get<Attachable>()!.Def;
             if (a.Mode == "mounted")
             {
-                child.Heading = parent.Heading;
+                child.Heading = frame;
                 child.Position = jw - (MathUtil.Left(child.Heading) * a.X + MathUtil.Forward(child.Heading) * a.Z);
             }
             else
@@ -413,8 +360,8 @@ public sealed class MachineSystem
                 if (dir.LengthSquared() > 1e-6f)
                 {
                     var max = a.MaxArticulationDeg * MathUtil.Deg2Rad;
-                    var rel = Math.Clamp(MathUtil.WrapAngle(MathUtil.HeadingOf(dir) - parent.Heading), -max, max);
-                    child.Heading = MathUtil.WrapAngle(parent.Heading + rel);
+                    var rel = Math.Clamp(MathUtil.WrapAngle(MathUtil.HeadingOf(dir) - frame), -max, max);
+                    child.Heading = MathUtil.WrapAngle(frame + rel);
                 }
                 child.Position = jw - MathUtil.Forward(child.Heading) * a.Z - MathUtil.Left(child.Heading) * a.X;
             }
@@ -426,21 +373,29 @@ public sealed class MachineSystem
     {
         foreach (var m in root.Chain())
         {
-            var fp = m.Footprint;
-            var box = fp with { HalfExtents = fp.HalfExtents - new Vector2(0.1f, 0.1f) };
-            var c = box.Center;
-            if (c.X < 1f || c.Y < 1f || c.X > World.Size - 1f || c.Y > World.Size - 1f) return true;
-            var r = box.BoundingRadius;
-            foreach (var o in World.Obstacles)
-            {
-                if (Vector2.DistanceSquared(o.Center, c) > MathF.Pow(r + o.BoundingRadius, 2)) continue;
-                if (Geometry.Overlaps(box, o)) return true;
-            }
-            foreach (var other in All)
-            {
-                if (other.Root == root) continue;
-                if (Geometry.Overlaps(box, other.Footprint)) return true;
-            }
+            var (rear, front) = m.Boxes;
+            if (Collides(root, rear) || front is { } f && Collides(root, f)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>True if the box (a little smaller) is off the map, or bumps into an obstacle or a machine not in the chain.</summary>
+    private bool Collides(Machine root, Obb fp)
+    {
+        var box = fp with { HalfExtents = fp.HalfExtents - new Vector2(0.1f, 0.1f) };
+        var c = box.Center;
+        if (c.X < 1f || c.Y < 1f || c.X > World.Size - 1f || c.Y > World.Size - 1f) return true;
+        var r = box.BoundingRadius;
+        foreach (var o in World.Obstacles)
+        {
+            if (Vector2.DistanceSquared(o.Center, c) > MathF.Pow(r + o.BoundingRadius, 2)) continue;
+            if (Geometry.Overlaps(box, o)) return true;
+        }
+        foreach (var other in All)
+        {
+            if (other.Root == root) continue;
+            var (rear, front) = other.Boxes;
+            if (Geometry.Overlaps(box, rear) || front is { } f && Geometry.Overlaps(box, f)) return true;
         }
         return false;
     }
@@ -477,7 +432,7 @@ public sealed class MachineSystem
             foreach (var area in w.Areas)
             {
                 var wa = area.Def;
-                if (!Engaged(m, w, wa) || root.Speed < 0.05f || lowering)
+                if (!w.Working(wa) || root.Speed < 0.05f || lowering)
                 {
                     area.HasPose = false;
                     continue;

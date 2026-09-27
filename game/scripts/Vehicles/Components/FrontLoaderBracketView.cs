@@ -13,6 +13,6 @@ public partial class FrontLoaderBracketView : ComponentView
         if (!Rig.IsPlaceholder) return;
         var d = Bracket.Def;
         foreach (var side in new[] { 0.5f, -0.5f })
-            PlaceholderBuilder.Box(Rig.Root, new Vector3(0.12f, 0.6f, 0.7f), new Vector3(d.X + side * d.Width, d.Y - 0.1f, d.Z), Body * 0.7f);
+            PlaceholderBuilder.Box(Rig, new Vector3(0.12f, 0.6f, 0.7f), new Vector3(d.X + side * d.Width, d.Y - 0.1f, d.Z), Body * 0.7f);
     }
 }

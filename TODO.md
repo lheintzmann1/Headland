@@ -121,7 +121,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 - [x] Axles instead of a flat wheel list: any count, each with position, track width, steering (fixed,
       front, rear, crab, all-wheel, self-steering trailer axle) and a wheel set.
 - [x] Wheel sets: single, dual, narrow row-crop, flotation; tracks (crawlers) with their own visuals.
-- [ ] Kinematics from the running gear: multi-axle steering, articulated steering (loaders, big 4WD,
+- [x] Kinematics from the running gear: multi-axle steering, articulated steering (loaders, big 4WD,
       forwarders), skid steer for full tracks, half-tracks (steered front wheels + rear tracks).
 - [ ] Ground effects: slip on wet ground, lower ground pressure with duals or tracks, slope affects speed
       and fuel.
@@ -179,7 +179,7 @@ its docs and tests in the same change; no fallback is kept for later.
       (wheels, pipe, linkages, booms, hook, saw blade). A machine without a model shows a plain box of its
       `size`, and the content check warns about it. The farmer and POIs likewise once their models exist (POI
       `parts` stay as collision shapes).
-- [ ] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
+- [x] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
       (steering, turning from its axles) and drivable (input); the system keeps placing the chain. With
       "Kinematics from the running gear".
 - [ ] Work types as a registry instead of the `cultivator`/`seeder`/`harvester` switches in `MachineSystem`,

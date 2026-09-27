@@ -21,16 +21,16 @@ public partial class AttacherJointsView : ComponentView
             switch (j.Type)
             {
                 case "threePoint":
-                    PlaceholderBuilder.Box(Rig.Root, new Vector3(0.9f, 0.5f, 0.25f), new Vector3(j.X, j.Y + 0.2f, j.Z + inward * 0.25f), Materials.DarkSteel);
-                    var links = new Node3D { Name = "Linkage", Position = new Vector3(j.X, 0f, j.Z) };
-                    Rig.Root.AddChild(links);
+                    PlaceholderBuilder.Box(Rig, new Vector3(0.9f, 0.5f, 0.25f), new Vector3(j.X, j.Y + 0.2f, j.Z + inward * 0.25f), Materials.DarkSteel);
+                    var links = new Node3D { Name = "Linkage" };
+                    Rig.AddPart(links, new Vector3(j.X, 0f, j.Z));
                     foreach (var side in new[] { 0.38f, -0.38f })
                         PlaceholderBuilder.Box(links, new Vector3(0.07f, 0.07f, 0.45f), new Vector3(side, j.Y, inward * 0.22f), Materials.DarkSteel);
                     PlaceholderBuilder.Box(links, new Vector3(0.9f, 0.07f, 0.07f), new Vector3(0f, j.Y, 0f), Materials.Steel);
                     _linkages.Add((j, links));
                     break;
                 case "drawbar":
-                    PlaceholderBuilder.Box(Rig.Root, new Vector3(0.16f, 0.1f, 0.4f), new Vector3(j.X, j.Y, j.Z + inward * 0.18f), Materials.DarkSteel);
+                    PlaceholderBuilder.Box(Rig, new Vector3(0.16f, 0.1f, 0.4f), new Vector3(j.X, j.Y, j.Z + inward * 0.18f), Materials.DarkSteel);
                     break;
             }
         }

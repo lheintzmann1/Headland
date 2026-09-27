@@ -60,9 +60,12 @@ public sealed class PlayerCharacter(EventBus events)
         }
         foreach (var m in sim.Machines.All)
         {
-            var box = m.Footprint;
-            if (Vector2.DistanceSquared(box.Center, p) > MathF.Pow(box.BoundingRadius + Radius, 2)) continue;
-            p = PushOutOfBox(p, box);
+            var (rear, front) = m.Boxes;
+            foreach (var box in front is { } f ? [rear, f] : new[] { rear })
+            {
+                if (Vector2.DistanceSquared(box.Center, p) > MathF.Pow(box.BoundingRadius + Radius, 2)) continue;
+                p = PushOutOfBox(p, box);
+            }
         }
         return p;
     }
@@ -175,7 +178,7 @@ public sealed class PlayerCharacter(EventBus events)
                 (o.Shape == ObstacleShape.Circle || new Obb(o.Center, o.HalfExtents, o.Heading).Distance(p) < Radius))
                 return false;
         foreach (var m in sim.Machines.All)
-            if (m.Footprint.Distance(p) < Radius) return false;
+            if (m.Boxes is var (rear, front) && (rear.Distance(p) < Radius || front?.Distance(p) < Radius)) return false;
         return true;
     }
 }

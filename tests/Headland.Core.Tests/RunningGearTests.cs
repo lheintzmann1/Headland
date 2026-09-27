@@ -45,6 +45,23 @@ public class RunningGearTests
             }
           },
           {
+            "id": "test_wheel_loader", "name": "Wheel Loader", "size": { "length": 6.5, "width": 2.5, "height": 3.2, "centerZ": 1.5 },
+            "components": {
+              "runningGear": { "maxSteerDeg": 40, "articulation": { "z": 1.5 }, "axles": [ { "z": 0, "track": 1.9 }, { "z": 3, "track": 1.9 } ] },
+              "motor": { "powerHp": 180 },
+              "drivable": {},
+              "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "z": 4.2 } ] }
+            }
+          },
+          {
+            "id": "test_crawler", "name": "Crawler", "size": { "length": 5, "width": 2.8, "height": 3.2, "centerZ": 0.3 },
+            "components": {
+              "runningGear": { "maxSteerDeg": 35, "axles": [ { "z": 0, "track": 2.2, "wheels": { "type": "tracks", "radius": 0.5, "width": 0.6, "length": 2.4 } } ] },
+              "motor": { "powerHp": 300 },
+              "drivable": {}
+            }
+          },
+          {
             "id": "test_tridem", "name": "Tridem", "size": { "length": 9, "width": 2.55, "height": 3, "centerZ": 0.5 },
             "components": {
               "runningGear": { "axles": [ { "z": 0.65, "track": 2 }, { "z": -0.65, "track": 2 }, { "z": -1.95, "track": 2, "steering": "self" } ] },
@@ -93,12 +110,7 @@ public class RunningGearTests
         Assert.Equal(4f / (r + 1f), MathF.Tan(gear.WheelAngle(0, -1f)), 3);
 
         // Driving, the middle of the tandem goes round that center.
-        Drive(truck, 0.15f, 1f);
-        Run(sim, 5f);
-        r = 4f / MathF.Tan(gear.SteerAngle);
-        var center = truck.Position + MathUtil.Left(truck.Heading) * r;
-        Run(sim, 3f);
-        Assert.InRange(Vector2.Distance(truck.Position, center), r - 0.05f, r + 0.05f);
+        AssertCircles(sim, truck, () => 4f / MathF.Tan(gear.SteerAngle));
     }
 
     [Fact]
@@ -176,6 +188,106 @@ public class RunningGearTests
         Drive(tractor, -0.3f);
         Run(sim, 3f);
         Assert.Equal(0f, gear.AxleAngle(2));
+    }
+
+    /// <summary>Drives at a steady speed with full left lock, then checks the turning center goes round a circle of the radius given.</summary>
+    private static void AssertCircles(Simulation sim, Machine m, Func<float> radius)
+    {
+        Drive(m, 0.15f, 1f);
+        Run(sim, 5f);
+        var r = radius();
+        var center = m.Position + MathUtil.Left(m.Heading) * r;
+        Run(sim, 3f);
+        Assert.InRange(Vector2.Distance(m.Position, center), r - 0.05f, r + 0.05f);
+    }
+
+    [Fact]
+    public void AnArticulatedMachineSteersBySwingingItsFrontFrame()
+    {
+        var sim = OpenSim();
+        var loader = sim.Machines.Spawn("test_wheel_loader", new Vector2(256f, 200f), 0f);
+        var gear = loader.Get<RunningGear>()!;
+        Assert.Equal(SteeringKind.Articulated, gear.Kind);
+        var tool = sim.Machines.Spawn("cultivator_3", new Vector2(256f, 204.2f), 0f);
+        Assert.True(sim.Machines.Attach(loader, "front", tool));
+
+        // Standing, the front frame swings left about the hinge with what hangs on it; the rear frame stays put.
+        Drive(loader, 0f, 1f);
+        Run(sim, 1f);
+        Assert.Equal(gear.Def.MaxSteer, gear.SteerAngle, 4);
+        Assert.Equal((new Vector2(256f, 200f), 0f), (loader.Position, loader.Heading));
+        var (sin, cos) = MathF.SinCos(gear.SteerAngle);
+        var joint = new Vector2(256f + 2.7f * sin, 201.5f + 2.7f * cos);
+        Assert.True(Vector2.Distance(joint, loader.PartToWorld(0f, 4.2f).position) < 1e-3f);
+        Assert.True(Vector2.Distance(joint, tool.Position) < 1e-3f);
+        Assert.Equal(gear.SteerAngle, tool.Heading, 4);
+
+        // Driving, the rear axle goes round the circle the hinge's angle gives.
+        AssertCircles(sim, loader, () => (1.5f * MathF.Cos(gear.SteerAngle) + 1.5f) / MathF.Sin(gear.SteerAngle));
+        Assert.Equal((1.5f * MathF.Cos(gear.Def.MaxSteer) + 1.5f) / MathF.Sin(gear.Def.MaxSteer), gear.Def.TurnRadius, 4);
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [
+              { "id": "a", "components": { "runningGear": { "articulation": { "z": 1 }, "axles": [ { "z": 0 }, { "z": 2, "steering": "front" } ] } } },
+              { "id": "b", "components": { "runningGear": { "articulation": { "z": 3 }, "axles": [ { "z": 0 }, { "z": 2 } ] } } }
+            ]
+            """));
+        Assert.Contains("machine 'a' runningGear: an articulated machine steers with its hinge: its axles are fixed", bad.Message);
+        Assert.Contains("machine 'b' runningGear: the hinge needs axles on both sides of it", bad.Message);
+    }
+
+    [Fact]
+    public void FullTracksSkidSteerAndTurnOnTheSpot()
+    {
+        var sim = OpenSim();
+        var crawler = sim.Machines.Spawn("test_crawler", new Vector2(256f, 200f), 0f);
+        var gear = crawler.Get<RunningGear>()!;
+        Assert.Equal(SteeringKind.SkidSteer, gear.Kind);
+
+        // Standing, it turns on the spot, its tracks running against each other.
+        Drive(crawler, 0f, 1f);
+        Run(sim, 2f);
+        Assert.True(Vector2.Distance(crawler.Position, new Vector2(256f, 200f)) < 1e-3f);
+        Assert.InRange(crawler.Heading, 0.7f, 1.1f); // about 30°/s
+        Assert.True(gear.SideDistance(1.1f) < -0.5f && gear.SideDistance(-1.1f) > 0.5f, "the left track runs back, the right one forward");
+
+        // Braking holds it.
+        var heading = crawler.Heading;
+        crawler.Get<Drivable>()!.Controller = new ManualController { Input = new VehicleInput { Steer = 1f, Brake = true } };
+        Run(sim, 1f);
+        Assert.Equal(heading, crawler.Heading);
+
+        // Moving, it turns as a steered axle a track's length ahead would.
+        AssertCircles(sim, crawler, () => 2.4f / MathF.Tan(gear.SteerAngle));
+    }
+
+    [Fact]
+    public void AHalfTrackSteersItsWheelsAboutItsTracks()
+    {
+        var sim = OpenSim();
+        var halfTrack = sim.Machines.Spawn("test_halftrack", new Vector2(256f, 200f), 0f);
+        var gear = halfTrack.Get<RunningGear>()!;
+        Assert.Equal(SteeringKind.Axles, gear.Kind);
+        // It doesn't turn on the spot.
+        Drive(halfTrack, 0f, 1f);
+        Run(sim, 1f);
+        Assert.Equal(0f, halfTrack.Heading);
+        AssertCircles(sim, halfTrack, () => 2.9f / MathF.Tan(gear.SteerAngle));
+    }
+
+    [Theory]
+    [InlineData("test_wheel_loader")]
+    [InlineData("test_crawler")]
+    [InlineData("test_sprayer")]
+    public void TheAutopilotDrivesEveryKindOfSteering(string machine)
+    {
+        var sim = OpenSim();
+        var m = sim.Machines.Spawn(machine, new Vector2(256f, 200f), 0f);
+        var path = new WaypointController([new Vector2(256f, 215f), new Vector2(266f, 228f), new Vector2(285f, 232f), new Vector2(300f, 232f)], 8f);
+        m.Get<Drivable>()!.Controller = path;
+        for (var t = 0f; t < 60f && !path.Finished; t += Dt) sim.Tick(Dt);
+        Assert.True(path.Finished, $"{machine} stuck at {m.Position}");
+        Assert.True(MathF.Abs(m.Position.Y - 232f) < 1f, $"{machine} ended {m.Position.Y - 232f:0.00} m off the path");
     }
 
     [Fact]

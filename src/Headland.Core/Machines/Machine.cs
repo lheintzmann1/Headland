@@ -97,10 +97,37 @@ public sealed class Machine : IOwnable
     public Vector2 LocalToWorld(Vector2 local) => MathUtil.LocalToWorld(Position, Heading, local);
     public Vector2 LocalToWorld(float x, float z) => LocalToWorld(new Vector2(x, z));
 
+    /// <summary>
+    /// Where a point of the machine is, and which way the part it's on points: on an articulated machine, parts ahead
+    /// of the hinge swing with the front frame.
+    /// </summary>
+    public (Vector2 position, float heading) PartToWorld(float x, float z)
+    {
+        if (Get<RunningGear>() is not { } gear) return (LocalToWorld(x, z), Heading);
+        var (sx, sz, angle) = gear.Swing(x, z);
+        return (LocalToWorld(sx, sz), Heading + angle);
+    }
+
+    /// <summary>The box it takes up (with its front frame straight, on an articulated machine).</summary>
     public Obb Footprint => new(
         LocalToWorld(0f, Def.Size.CenterZ),
         new Vector2(Def.Size.Width * 0.5f, Def.Size.Length * 0.5f),
         Heading);
+
+    /// <summary>What it bumps into: its box, or an articulated machine's two frames, the front one swung.</summary>
+    public (Obb rear, Obb? front) Boxes
+    {
+        get
+        {
+            var s = Def.Size;
+            var (back, ahead) = (s.CenterZ - s.Length * 0.5f, s.CenterZ + s.Length * 0.5f);
+            if (Get<RunningGear>()?.Def.Articulation is not { } h || h.Z <= back || h.Z >= ahead) return (Footprint, null);
+            var half = s.Width * 0.5f;
+            var rear = new Obb(LocalToWorld(0f, (back + h.Z) * 0.5f), new Vector2(half, (h.Z - back) * 0.5f), Heading);
+            var (center, heading) = PartToWorld(0f, (h.Z + ahead) * 0.5f);
+            return (rear, new Obb(center, new Vector2(half, (ahead - h.Z) * 0.5f), heading));
+        }
+    }
 
     /// <summary>This machine and everything attached below it, depth first.</summary>
     public IEnumerable<Machine> Chain()

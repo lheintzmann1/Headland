@@ -17,6 +17,13 @@ public static class PlaceholderBuilder
     {
         var rig = new MachineRig { IsPlaceholder = true };
         var body = Conv.Hex(def.Visual.Color);
+        var hinge = def.Get<RunningGearDef>()?.Articulation;
+        if (hinge != null)
+        {
+            var frame = new Node3D { Name = "FrontFrame", Position = new Vector3(0f, 0f, hinge.Z) };
+            rig.Root.AddChild(frame);
+            rig.SetFrontFrame(frame, hinge.Z);
+        }
         switch (def.Visual.Placeholder)
         {
             case "tractor": Tractor(rig, def, body); break;
@@ -27,8 +34,10 @@ public static class PlaceholderBuilder
             case "header": Header(rig, def, body, corn: false); break;
             case "cornheader": Header(rig, def, body, corn: true); break;
             default:
-                Box(rig.Root, new Vector3(def.Size.Width, def.Size.Height, def.Size.Length),
-                    new Vector3(0, def.Size.Height * 0.5f, def.Size.CenterZ), body);
+                if (hinge != null) Articulated(rig, def, body, hinge.Z);
+                else
+                    Box(rig.Root, new Vector3(def.Size.Width, def.Size.Height, def.Size.Length),
+                        new Vector3(0, def.Size.Height * 0.5f, def.Size.CenterZ), body);
                 break;
         }
         return rig;
@@ -141,6 +150,18 @@ public static class PlaceholderBuilder
         rig.Add("load", load);
     }
 
+    /// <summary>A box split at the hinge: the rear frame full height, the front one lower, swinging.</summary>
+    private static void Articulated(MachineRig rig, MachineDef d, Color body, float hinge)
+    {
+        var s = d.Size;
+        var back = s.CenterZ - s.Length * 0.5f;
+        var front = s.CenterZ + s.Length * 0.5f;
+        var gap = 0.15f;
+        Box(rig, new Vector3(s.Width, s.Height, hinge - gap - back), new Vector3(0, s.Height * 0.5f, (back + hinge - gap) * 0.5f), body);
+        Box(rig, new Vector3(s.Width * 0.85f, s.Height * 0.45f, front - hinge - gap), new Vector3(0, s.Height * 0.3f, (hinge + gap + front) * 0.5f), body);
+        Box(rig.Root, new Vector3(0.5f, 0.6f, gap * 2f + 0.2f), new Vector3(0, 0.9f, hinge), Materials.DarkSteel);
+    }
+
     private static void Cultivator(MachineRig rig, MachineDef d, Color body)
     {
         var s = d.Size;
@@ -242,12 +263,12 @@ public static class PlaceholderBuilder
     // ------------------------------------------------------------------ Parts
 
     /// <summary>
-    /// The tires on one side of an axle, centered at <paramref name="position"/> in one node that steers (y) and rolls
-    /// (x): a dual's second tire goes on the <paramref name="outward"/> side (+1 left, -1 right).
+    /// The tires on one side of an axle, in one node at the (inner) tire's center that steers (y) and rolls (x): a dual's
+    /// second tire goes on the <paramref name="outward"/> side (+1 left, -1 right).
     /// </summary>
-    public static Node3D Wheel(WheelSetDef w, Vector3 position, float outward)
+    public static Node3D Wheel(WheelSetDef w, float outward)
     {
-        var wheel = new Node3D { Name = "Wheel", Position = position };
+        var wheel = new Node3D { Name = "Wheel" };
         // Rim size and tread bars: a flotation tire has a tall sidewall on a small rim, a row-crop one many thin bars.
         var (rim, bars) = w.Type switch
         {
@@ -294,6 +315,14 @@ public static class PlaceholderBuilder
     {
         var m = new MeshInstance3D { Mesh = new BoxMesh { Size = size }, Position = pos, MaterialOverride = Materials.Get(color, 0.75f) };
         parent.AddChild(m);
+        return m;
+    }
+
+    /// <summary>A box at <paramref name="pos"/> in machine space: on an articulated machine's front frame when ahead of the hinge.</summary>
+    public static MeshInstance3D Box(MachineRig rig, Vector3 size, Vector3 pos, Color color)
+    {
+        var m = new MeshInstance3D { Mesh = new BoxMesh { Size = size }, MaterialOverride = Materials.Get(color, 0.75f) };
+        rig.AddPart(m, pos);
         return m;
     }
 }

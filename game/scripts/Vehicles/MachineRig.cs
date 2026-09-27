@@ -13,6 +13,8 @@ public readonly record struct RigPart(Node3D Node, Vector3 Position, Vector3 Rot
 public sealed class MachineRig
 {
     private readonly Dictionary<string, RigPart> _parts = new();
+    private Node3D? _frontFrame;
+    private float _hinge;
 
     public Node3D Root { get; } = new() { Name = "Visual" };
     /// <summary>Built from placeholder parts: views add their own parts, and recolor loads by fill type.</summary>
@@ -23,6 +25,27 @@ public sealed class MachineRig
     public void Add(string role, Node3D node) => _parts[role] = new RigPart(node, node.Position, node.Rotation, node.Scale);
 
     public RigPart? Part(string role) => _parts.TryGetValue(role, out var p) ? p : null;
+
+    /// <summary>An articulated placeholder's front frame (role frontFrame), hinged at <paramref name="hinge"/>.</summary>
+    public void SetFrontFrame(Node3D frame, float hinge)
+    {
+        _frontFrame = frame;
+        _hinge = hinge;
+        Add("frontFrame", frame);
+    }
+
+    /// <summary>Adds a placeholder part at <paramref name="position"/> (machine space): on the front frame when ahead of its hinge.</summary>
+    public void AddPart(Node3D part, Vector3 position)
+    {
+        if (_frontFrame != null && position.Z > _hinge)
+        {
+            _frontFrame.AddChild(part);
+            part.Position = position - new Vector3(0f, 0f, _hinge);
+            return;
+        }
+        Root.AddChild(part);
+        part.Position = position;
+    }
 
     /// <summary>The machine's glTF model with its parts mapped by visual.nodes, or null to use the placeholder.</summary>
     public static MachineRig? Model(MachineDef def)

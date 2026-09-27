@@ -78,7 +78,7 @@ public sealed class WaypointController : IVehicleController
         var mot = v.Get<Motor>()!.Def;
         var gear = v.Get<RunningGear>()!;
         var maxSteer = gear.Def.MaxSteer;
-        var steer = Math.Clamp(MathF.Atan(curvature * gear.WheelbaseFor(reverse)) / maxSteer, -1f, 1f);
+        var steer = Math.Clamp(gear.SteerFor(curvature, reverse) / maxSteer, -1f, 1f);
         var input = new VehicleInput { Steer = steer };
         // Standing, turn the wheels first: pulling away with them far off would leave the path.
         if (MathF.Abs(v.Speed) < 0.1f && MathF.Abs(steer * maxSteer - gear.SteerAngle) > SteerTolerance)

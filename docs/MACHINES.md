@@ -14,7 +14,7 @@ the defaults listed below.
 Positions are in meters, in the machine's own space: **+z forward, +x left, +y up**, with the origin on the ground:
 
 - vehicles: where they turn about, the center of the fixed axle (the middle of them with several), so the rear axle of
-  a tractor and the front one of a combine,
+  a tractor and the front one of a combine, and the rear frame's axle of an articulated one,
 - trailed implements: likewise the middle of their fixed axles (their drawbar eye is ahead of it),
 - mounted implements and headers: the hitch point.
 
@@ -73,8 +73,10 @@ chain; the lower key lowers every lowerable `attachable`.
 | Setting | Default | |
 |---|---|---|
 | `axles` | none | Front to back or in any order, as many as it has. |
-| `maxSteerDeg` | 38 | Angle of the steered axle farthest from the turning center, at full lock. |
-| `steerRateDeg` | 90 | How fast the steered wheels turn, in degrees per second. |
+| `maxSteerDeg` | 38 | Full lock: the angle of the steered axle farthest from the turning center, or of the hinge. |
+| `steerRateDeg` | 90 | How fast the steering turns, in degrees per second. |
+| `articulation` | none | `{ "z": … }`: articulated steering about a hinge there (see below). |
+| `spinRateDeg` | 30 | Skid steer: how fast it turns on the spot at full lock, in degrees per second. |
 
 Each axle:
 
@@ -108,6 +110,15 @@ more than the outer one, and the farthest from the turning center at `maxSteerDe
 | `length` | | `tracks`: the belt on the ground, between its end wheels' centers. |
 
 Tracks go on fixed axles.
+
+How the machine steers follows from what it is built of:
+
+- **Steered axles** (above). With tracks on the fixed axle and steered wheels ahead of it, it is a half-track.
+- **Articulated** (`articulation`): a hinge between a front frame and a rear one, each with fixed axles. Steering swings
+  the front frame, with its axles, joints and lamps, up to `maxSteerDeg` either way; the machine turns about the middle
+  of its rear frame's axles, where its origin is. Loaders, big four-wheel-drive tractors, forwarders.
+- **Skid steer**: tracks and no steered axle, a crawler. One track runs faster than the other: it turns as a steered axle
+  as far ahead as its tracks are long would, and standing (unless braking) it turns on the spot at `spinRateDeg`.
 
 A machine with `allWheel` axles has three steering modes, switched with the steering key: **normal** (they roll
 straight), **all-wheel** (they steer against the front axles, turning about the middle between them: a tighter turn)

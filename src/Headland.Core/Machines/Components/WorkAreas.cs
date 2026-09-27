@@ -103,6 +103,17 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     /// <summary>The narrowest of its areas: lanes are laid out for it.</summary>
     public float MinWidth => Def.Areas.Min(a => a.Width);
 
+    /// <summary>
+    /// True if the work area does its work now: the implement unfolded and lowered (when it folds or lowers), and
+    /// turned on (a harvester: the thresher it hangs on) when it needs to be.
+    /// </summary>
+    public bool Working(WorkAreaDef area)
+    {
+        if (Machine.Get<AnimatedParts>() is { Unfolded: false }) return false;
+        if (Machine.Get<Attachable>() is { Def.Lowerable: true, Lowered: false }) return false;
+        return area.Type == "harvester" ? Machine.Parent?.Get<Thresher>() is { On: true } : !area.RequiresOn || On;
+    }
+
     internal void ForgetPoses()
     {
         foreach (var a in Areas) a.HasPose = false;

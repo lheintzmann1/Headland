@@ -5,16 +5,21 @@ using Godot;
 
 namespace Headland.Game.Vehicles.Components;
 
-/// <summary>A spot light per lamp, lit while its type is switched on; headlights also after dark. Beacons turn.</summary>
+/// <summary>
+/// A spot light per lamp, lit while its type is switched on; headlights also after dark. Beacons turn, and lamps on an
+/// articulated machine's front frame swing with it.
+/// </summary>
 public partial class LightsView : ComponentView
 {
     private readonly List<(LampDef lamp, SpotLight3D light)> _lamps = [];
+    private RunningGear? _gear;
     private float _beacon;
 
     public Lights Lights { get; init; } = null!;
 
     public override void _Ready()
     {
+        _gear = Machine.Get<RunningGear>();
         foreach (var l in Lights.Def.Lamps)
         {
             var light = new SpotLight3D
@@ -41,7 +46,11 @@ public partial class LightsView : ComponentView
         foreach (var (l, light) in _lamps)
         {
             light.Visible = Lights.IsOn(l.Type) || l.Type == "head" && dark;
-            if (l.Type == "beacon" && light.Visible) light.Rotation = light.Rotation with { Y = Mathf.Pi + Mathf.DegToRad(l.YawDeg) + _beacon };
+            if (!light.Visible) continue;
+            var (x, z, swing) = _gear?.Swing(l.X, l.Z) ?? (l.X, l.Z, 0f);
+            light.Position = new Vector3(x, l.Y, z);
+            var spin = l.Type == "beacon" ? _beacon : 0f;
+            light.Rotation = light.Rotation with { Y = Mathf.Pi + Mathf.DegToRad(l.YawDeg) + swing + spin };
         }
     }
 }

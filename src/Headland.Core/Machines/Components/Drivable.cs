@@ -19,4 +19,7 @@ public sealed class Drivable(Machine machine, DrivableDef def) : MachineComponen
 {
     /// <summary>Who drives: the farmer's controls, a helper, or nobody (it brakes).</summary>
     public IVehicleController? Controller { get; set; }
+
+    /// <summary>What the driver asks for this tick.</summary>
+    internal VehicleInput Input(float dt) => Controller?.GetInput(Machine, dt) ?? new VehicleInput { Brake = true };
 }

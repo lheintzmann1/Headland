@@ -19,10 +19,10 @@ public sealed class TrackRig
     private readonly float _hub;
     private readonly float _perimeter;
 
-    /// <param name="center">The middle of the track, on the ground.</param>
-    public TrackRig(WheelSetDef set, Vector3 center, Color body)
+    /// <summary>A track whose root goes at the middle of the track, on the ground.</summary>
+    public TrackRig(WheelSetDef set, Color body)
     {
-        Root = new Node3D { Name = "Track", Position = center };
+        Root = new Node3D { Name = "Track" };
         var t = WheelSetDef.TrackThickness;
         _length = set.Length;
         _hub = set.Radius + t;
