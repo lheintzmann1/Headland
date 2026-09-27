@@ -14,11 +14,12 @@ Rules for every item:
 1. **Quick wins**: numbered fields, switch-vehicle key.
 2. **Foundations**: save/load, ownership and farmland, event bus, UI framework. Most later items need these.
 3. **Economy**: POIs, finances and loans, vehicle shop, wear/fuel/maintenance, contracts.
-4. **Vehicles**: component-based machines, running gear, configurations, lights, tools.
-5. **World**: authored elevation, water, spline roads, towns and buildings, AI traffic.
-6. **Modding**: mod loader, Lua, map SDK (after the formats from 3–5 settle).
-7. **Audio**: any time after the settings menu; engine sounds after the vehicle refactor.
-8. **Art**: Blockbench models replace placeholders as they're made.
+4. **Controls**: input layer with contexts and modifiers, the in-game menu. The tools in 5 need it.
+5. **Vehicles**: component-based machines, running gear, configurations, lights, tools.
+6. **World**: authored elevation, water, spline roads, towns and buildings, AI traffic.
+7. **Modding**: mod loader, Lua, map SDK (after the formats from 3–6 settle).
+8. **Audio**: any time after the settings menu; engine sounds after the vehicle refactor.
+9. **Art**: Blockbench models replace placeholders as they're made.
 
 ## Quick wins
 
@@ -136,7 +137,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 ### Tools and special machines
 
 - [ ] Lights: headlights, front/rear work lights, beacons, lightbar, turn signals, hazards; player
-      toggles instead of the automatic headlights in `MachineView`.
+      toggles instead of the automatic headlights in `LightsView`.
 - [ ] Front loader and tools (bucket, bale fork, pallet fork); the bucket needs bulk heaps.
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).
@@ -167,6 +168,51 @@ FS19 reference values; tune in data.
 - [ ] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,
       reconfigure.
 
+## Controls
+
+FS-style controls: a few keys do what the selected tool needs, modifiers and the mouse do the fine work, and
+one menu holds every screen. Today each action has its own key, the tool components (lights, folding parts,
+crane arms, winches, saws, front loaders) have none, and each screen has its own key.
+
+### Input
+
+- [ ] Input layer over Godot's `InputMap`: actions on keys with Ctrl/Shift/Alt, mouse buttons and axes, and
+      gamepad; press, hold and double-tap; physical keys as today. Bindings saved in `settings.cfg`, rebinding
+      with conflict checks per context (the settings screen in UI).
+- [ ] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;
+      the HUD's key hints and the F1 help list the current context's actions, built from what the vehicle's
+      components offer.
+- [ ] Selected implement (FS): a key cycles through the vehicle's chain; lower, turn on, fold and tool keys
+      act on the selection, or on the whole chain with the vehicle itself selected (as now). The HUD marks the
+      selection.
+- [ ] Mouse control (FS): hold the right button to move the selected tool's joints with the mouse (crane slew
+      and boom, loader lift and tilt), with Ctrl or Shift choosing which pair of joints the axes move; left
+      click for its action (grab, release, cut). The camera stops following the mouse meanwhile.
+
+### Wiring the components
+
+Commands in Core (`MachineSystem`, tested), bound through the input layer.
+
+- [ ] Lights: cycle the lamp groups (off, head, head and work lights), beacons, turn signals, hazards; see
+      Lights under Vehicles.
+- [ ] Folding: a fold key (`MachineSystem.ToggleFold` exists); lowering a folded implement then stops
+      unfolding it by itself. Parts that don't fold (covers, markers, support legs) move for the selected
+      implement.
+- [ ] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
+      lift and tilt the same way.
+- [ ] Winch: reel in and out, hook and unhook.
+- [ ] Saw: on and off with the turn-on key (done); cutting once trees are entities.
+- [ ] Front loader: hitch the arm to the bracket (and park it on its stands), tools on the arm.
+- [ ] Pipe, tipping and seed selection (U and X today) as actions of the selected implement.
+
+### In-game menu
+
+- [ ] Esc opens a menu with tabs, switched with Q/E or the mouse, instead of a key per screen: map, prices,
+      contracts, finances and loans, farmland, vehicles (garage), statistics, helpers, controls help,
+      settings, save/load/quit. The existing screens become its pages; F2, L and C go. Esc still closes the
+      top screen first.
+- [ ] Remember the last tab; a few direct shortcuts (M for the map) open the menu on their tab.
+
 ## Map and terrain
 
 - [ ] **Terrain3D** (MIT) replaces `TerrainRenderer`: clipmap LOD for large maps, and editor sculpting
@@ -192,17 +238,18 @@ FS19 reference values; tune in data.
 
 ## UI
 
-Feature screens (shop, garage, contracts, finances) are listed with their feature.
+Feature screens (shop, garage, contracts, finances) are listed with their feature; in game, they are tabs of the
+in-game menu (see Controls).
 
 - [ ] Main menu: new game (map, difficulty), continue, load, settings, mods, credits, quit.
-- [ ] Pause menu on Esc: resume, save, load, settings, quit to menu.
+- [ ] Pause: resume, save, load, settings, quit to menu, in the in-game menu.
 - [ ] Settings: graphics (resolution, window mode, vsync, render scale, shadows, view distance), audio
       volumes, controls (rebinding on physical keys, saved), gameplay (units, autosave), language.
-- [ ] Map screen (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
+- [ ] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
       layers for crop, growth stage, soil, moisture; click to set a waypoint.
 - [ ] Minimap in the HUD with POIs and vehicles.
 - [ ] HUD redesign on the theme: vehicle panel with speed, fuel, condition and fill levels.
-- [ ] Prices screen (where each crop sells best), field and farm statistics, helper list.
+- [ ] Prices tab (where each crop sells best), field and farm statistics, helper list.
 - [ ] Translatable strings (Godot `tr()`), English and French.
 
 ## Audio
