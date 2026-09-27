@@ -17,8 +17,7 @@
       "attacherJoints": {
         "joints": [
           { "id": "rear",    "type": "threePoint", "x": 0, "z": -1.2, "y": 0.55 },
-          { "id": "drawbar", "type": "drawbar",    "x": 0, "z": -1.45, "y": 0.45 },
-          { "id": "front",   "type": "threePoint", "x": 0, "z": 3.75, "y": 0.55 }
+          { "id": "drawbar", "type": "drawbar",    "x": 0, "z": -1.45, "y": 0.45 }
         ]
       },
       "fillUnits": { "units": [ { "id": "fuel", "capacity": 250, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 250 } ] },
@@ -30,7 +29,61 @@
       }
     },
     "visual": { "placeholder": "tractor", "color": "#7b2f25" },
-    "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer."
+    "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer.",
+    "configurations": [
+      { "id": "wheels", "name": "Wheels", "options": [
+        { "id": "single", "name": "Single" },
+        { "id": "dual", "name": "Dual", "price": 5800, "mass": 620,
+          "changes": { "size": { "width": 3.6 },
+            "components": { "runningGear": { "axles": [ { "wheels": { "type": "dual" } }, { "wheels": { "type": "dual" } } ] } } } },
+        { "id": "tracks", "name": "Rear tracks", "price": 38000, "mass": 1900,
+          "changes": { "components": { "runningGear": { "axles": [
+            { "wheels": { "type": "tracks", "radius": 0.6, "width": 0.6, "length": 1.4 } } ] } } } }
+      ] },
+      { "id": "frontLoader", "name": "Front loader", "options": [
+        { "id": "none", "name": "Without" },
+        { "id": "bracket", "name": "Loader consoles", "price": 4200, "mass": 310,
+          "changes": { "components": { "frontLoaderBracket": { "z": 1.5, "y": 1.2, "width": 1.15 } } } }
+      ] },
+      { "id": "frontHitch", "name": "Front hitch", "options": [
+        { "id": "threePoint", "name": "Front linkage",
+          "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "x": 0, "z": 3.75, "y": 0.55 } ] } } } },
+        { "id": "weight", "name": "Front weight", "price": -1800, "mass": 650 },
+        { "id": "none", "name": "None", "price": -3400, "mass": -220 }
+      ] },
+      { "id": "beacons", "name": "Beacons", "options": [
+        { "id": "none", "name": "None" },
+        { "id": "left", "name": "Left", "price": 380, "mass": 4,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconL", "type": "beacon", "x": 0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+        { "id": "right", "name": "Right", "price": 380, "mass": 4,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconR", "type": "beacon", "x": -0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+        { "id": "both", "name": "Both sides", "price": 720, "mass": 8,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconL", "type": "beacon", "x": 0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" },
+            { "id": "beaconR", "type": "beacon", "x": -0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+        { "id": "lightbar", "name": "Light bar", "price": 1250, "mass": 14,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "bar1", "type": "beacon", "x": 0.45,  "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+            { "id": "bar2", "type": "beacon", "x": 0.15,  "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+            { "id": "bar3", "type": "beacon", "x": -0.15, "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+            { "id": "bar4", "type": "beacon", "x": -0.45, "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" } ] } } } }
+      ] },
+      { "id": "engine", "name": "Engine", "options": [
+        { "id": "110", "name": "110 hp", "price": -7000, "mass": -60,
+          "changes": { "components": { "motor": { "powerHp": 110 } } } },
+        { "id": "125", "name": "125 hp", "default": true },
+        { "id": "145", "name": "145 hp", "price": 12500, "mass": 90,
+          "changes": { "components": { "motor": { "powerHp": 145, "acceleration": 2.4 } } } }
+      ] },
+      { "id": "color", "name": "Color", "options": [
+        { "id": "red", "name": "Fieldmaster red" },
+        { "id": "green", "name": "Moss green", "changes": { "visual": { "color": "#4d5c38" } } },
+        { "id": "blue", "name": "Slate blue", "changes": { "visual": { "color": "#3a4d5e" } } },
+        { "id": "graphite", "name": "Graphite", "changes": { "visual": { "color": "#48494a" } } }
+      ] }
+    ]
   },
   {
     "id": "tractor_95", "name": "Fieldmaster 95", "category": "tractor", "brand": "Fieldmaster",
@@ -61,6 +114,52 @@
       }
     },
     "visual": { "placeholder": "tractor", "color": "#4d5c38" },
-    "description": "Compact all-rounder, ideal for trailer duty and light tillage."
+    "description": "Compact all-rounder, ideal for trailer duty and light tillage.",
+    "configurations": [
+      { "id": "wheels", "name": "Wheels", "options": [
+        { "id": "single", "name": "Single" },
+        { "id": "rowCrop", "name": "Row-crop", "price": 1600,
+          "changes": { "components": { "runningGear": { "axles": [
+            { "wheels": { "type": "rowCrop", "radius": 0.76, "width": 0.3 } },
+            { "wheels": { "type": "rowCrop", "radius": 0.52, "width": 0.25 } } ] } } } },
+        { "id": "dual", "name": "Dual", "price": 4600, "mass": 480,
+          "changes": { "size": { "width": 3.25 },
+            "components": { "runningGear": { "axles": [ { "wheels": { "type": "dual" } }, { "wheels": { "type": "dual" } } ] } } } }
+      ] },
+      { "id": "frontLoader", "name": "Front loader", "options": [
+        { "id": "none", "name": "Without" },
+        { "id": "bracket", "name": "Loader consoles", "price": 3600, "mass": 260,
+          "changes": { "components": { "frontLoaderBracket": { "z": 1.35, "y": 1.1, "width": 1.05 } } } }
+      ] },
+      { "id": "frontHitch", "name": "Front hitch", "options": [
+        { "id": "none", "name": "None" },
+        { "id": "threePoint", "name": "Front linkage", "price": 3400, "mass": 220,
+          "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "x": 0, "z": 3.45, "y": 0.5 } ] } } } },
+        { "id": "weight", "name": "Front weight", "price": 1100, "mass": 600 }
+      ] },
+      { "id": "beacons", "name": "Beacons", "options": [
+        { "id": "none", "name": "None" },
+        { "id": "left", "name": "Left", "price": 380, "mass": 4,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconL", "type": "beacon", "x": 0.62, "y": 2.88, "z": 0.65, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+        { "id": "right", "name": "Right", "price": 380, "mass": 4,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconR", "type": "beacon", "x": -0.62, "y": 2.88, "z": 0.65, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+        { "id": "both", "name": "Both sides", "price": 720, "mass": 8,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconL", "type": "beacon", "x": 0.62, "y": 2.88, "z": 0.65, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" },
+            { "id": "beaconR", "type": "beacon", "x": -0.62, "y": 2.88, "z": 0.65, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } }
+      ] },
+      { "id": "engine", "name": "Engine", "options": [
+        { "id": "95", "name": "95 hp" },
+        { "id": "105", "name": "105 hp", "price": 6500, "mass": 40,
+          "changes": { "components": { "motor": { "powerHp": 105 } } } }
+      ] },
+      { "id": "color", "name": "Color", "options": [
+        { "id": "green", "name": "Moss green" },
+        { "id": "red", "name": "Fieldmaster red", "changes": { "visual": { "color": "#7b2f25" } } },
+        { "id": "blue", "name": "Slate blue", "changes": { "visual": { "color": "#3a4d5e" } } }
+      ] }
+    ]
   }
 ]

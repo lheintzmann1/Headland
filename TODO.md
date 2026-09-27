@@ -129,7 +129,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 ### Configurations (FS-like options)
 
-- [ ] `configurations` per machine; each option changes price, mass and components: wheels
+- [x] `configurations` per machine; each option changes price, mass and components: wheels
       (single/dual/tracks), front loader (with/without), front hitch (3-point/weight/none), beacons
       (none/left/right/both/lightbar), engine power, color, fill capacity, work width.
 - [ ] Model node visibility per option so one `.glb` holds every variant; document in `docs/MODELING.md`.

@@ -10,7 +10,14 @@
       }
     },
     "visual": { "placeholder": "cultivator", "color": "#3e5263" },
-    "description": "Stubble cultivator. Turns stubble, grass or failed crops into a seedbed."
+    "description": "Stubble cultivator. Turns stubble, grass or failed crops into a seedbed.",
+    "configurations": [
+      { "id": "width", "name": "Working width", "options": [
+        { "id": "3", "name": "3 m" },
+        { "id": "4", "name": "4 m", "price": 4800, "mass": 390,
+          "changes": { "size": { "width": 4.0 }, "components": { "workAreas": { "areas": [ { "width": 4.0, "requiredPowerHp": 120 } ] } } } }
+      ] }
+    ]
   },
   {
     "id": "seeder_3", "name": "Drill 300", "category": "seeder", "price": 26000, "mass": 2400,
@@ -26,7 +33,21 @@
       }
     },
     "visual": { "placeholder": "seeder", "color": "#2f4f63" },
-    "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil."
+    "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil.",
+    "configurations": [
+      { "id": "width", "name": "Working width", "options": [
+        { "id": "3", "name": "3 m" },
+        { "id": "4", "name": "4 m", "price": 8200, "mass": 650,
+          "changes": { "size": { "width": 4.0 }, "components": {
+            "runningGear": { "axles": [ { "track": 3.4 } ] },
+            "workAreas": { "areas": [ { "width": 4.0, "requiredPowerHp": 105 } ] } } } }
+      ] },
+      { "id": "hopper", "name": "Seed hopper", "options": [
+        { "id": "1600", "name": "1,600 kg" },
+        { "id": "2400", "name": "2,400 kg", "price": 2600, "mass": 140,
+          "changes": { "components": { "fillUnits": { "units": [ { "id": "seed", "capacity": 2400 } ] } } } }
+      ] }
+    ]
   },
   {
     "id": "trailer_16", "name": "Tipper 16", "category": "trailer", "price": 21000, "mass": 4600,
@@ -43,6 +64,25 @@
       "tipper": { "fillUnit": "main", "ratePerSecond": 450 }
     },
     "visual": { "placeholder": "trailer", "color": "#5b6770" },
-    "description": "Tandem-axle grain tipper. Park it under the combine pipe, then tip it into an unloading area (U)."
+    "description": "Tandem-axle grain tipper. Park it under the combine pipe, then tip it into an unloading area (U).",
+    "configurations": [
+      { "id": "capacity", "name": "Capacity", "options": [
+        { "id": "16000", "name": "16,000 L" },
+        { "id": "20000", "name": "20,000 L, extension boards", "price": 2100, "mass": 340,
+          "changes": { "size": { "height": 3.15 }, "components": { "fillUnits": { "units": [ { "id": "main", "capacity": 20000 } ] } } } }
+      ] },
+      { "id": "tires", "name": "Tires", "options": [
+        { "id": "standard", "name": "Standard" },
+        { "id": "flotation", "name": "Flotation", "price": 3600, "mass": 260,
+          "changes": { "size": { "width": 2.65 }, "components": { "runningGear": { "axles": [
+            { "wheels": { "type": "flotation", "radius": 0.6, "width": 0.6 } },
+            { "wheels": { "type": "flotation", "radius": 0.6, "width": 0.6 } } ] } } } }
+      ] },
+      { "id": "color", "name": "Color", "options": [
+        { "id": "grey", "name": "Grey" },
+        { "id": "red", "name": "Red", "changes": { "visual": { "color": "#7b2f25" } } },
+        { "id": "green", "name": "Green", "changes": { "visual": { "color": "#4d5c38" } } }
+      ] }
+    ]
   }
 ]

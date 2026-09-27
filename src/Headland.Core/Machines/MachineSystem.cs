@@ -31,9 +31,12 @@ public sealed class MachineSystem
     private ContentDatabase Content => _sim.Content;
     private EventBus Events => _sim.Events;
 
-    public Machine Spawn(string defId, Vector2 position, float heading, int farmId = Farm.PlayerId)
+    /// <summary>A new machine of type <paramref name="defId"/>, with the options <paramref name="configuration"/> picks (the defaults for the rest).</summary>
+    public Machine Spawn(string defId, Vector2 position, float heading, int farmId = Farm.PlayerId,
+        IReadOnlyDictionary<string, string>? configuration = null)
     {
         var def = Content.Machines[defId];
+        if (configuration != null) def = def.Configure(configuration);
         var m = new Machine(_nextId++, def, position, heading, farmId);
         if (m.Get<WorkAreas>() is { Sows: true } seeder) seeder.Crop = DefaultSeedCrop();
         All.Add(m);

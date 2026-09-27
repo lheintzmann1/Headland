@@ -51,14 +51,15 @@ public static class PlaceholderBuilder
         var front = s.CenterZ + s.Length * 0.5f;
         var back = s.CenterZ - s.Length * 0.5f;
         var r = rig.Root;
+        var w = BodyWidth(d);
         var rearR = (d.Get<RunningGearDef>()?.Axles ?? []).Where(a => a.Steering == "fixed").Select(a => a.Wheels.Radius).DefaultIfEmpty(0.75f).Max();
         // Chassis and engine hood.
         Box(r, new Vector3(0.8f, 0.45f, front - back - 0.3f), new Vector3(0, 0.75f, (front + back) * 0.5f + 0.1f), Materials.DarkSteel);
-        Box(r, new Vector3(s.Width * 0.4f, 0.95f, front - 0.75f), new Vector3(0, 1.35f, (front + 0.75f) * 0.5f), body);
-        Box(r, new Vector3(s.Width * 0.38f, 0.5f, 0.1f), new Vector3(0, 1.3f, front - 0.02f), Materials.DarkSteel);
+        Box(r, new Vector3(w * 0.4f, 0.95f, front - 0.75f), new Vector3(0, 1.35f, (front + 0.75f) * 0.5f), body);
+        Box(r, new Vector3(w * 0.38f, 0.5f, 0.1f), new Vector3(0, 1.3f, front - 0.02f), Materials.DarkSteel);
         // Cab: posts, glass, roof.
         var cabH = s.Height - 1.35f;
-        var cab = new Vector3(s.Width * 0.62f, cabH, 1.7f);
+        var cab = new Vector3(w * 0.62f, cabH, 1.7f);
         var cabCenter = new Vector3(0, 1.35f + cabH * 0.5f, -0.1f);
         var glass = new MeshInstance3D { Mesh = new BoxMesh { Size = cab - new Vector3(0.06f, 0.1f, 0.06f) }, Position = cabCenter, MaterialOverride = Materials.Glass };
         r.AddChild(glass);
@@ -68,12 +69,12 @@ public static class PlaceholderBuilder
         Box(r, new Vector3(cab.X - 0.1f, 0.55f, 1.3f), new Vector3(0, 1.1f, -0.1f), body * 0.85f); // cab base / seat box
         // Rear fenders over the big wheels.
         foreach (var side in new[] { 1f, -1f })
-            Box(r, new Vector3(0.6f, 0.08f, rearR * 1.6f), new Vector3(side * (s.Width * 0.5f - 0.3f), rearR * 2f + 0.05f, 0), body);
+            Box(r, new Vector3(0.6f, 0.08f, rearR * 1.6f), new Vector3(side * (w * 0.5f - 0.3f), rearR * 2f + 0.05f, 0), body);
         // Exhaust.
         r.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = 0.06f, BottomRadius = 0.06f, Height = 1.1f, RadialSegments = 8 },
-            Position = new Vector3(-s.Width * 0.18f, s.Height - 0.35f, 0.95f),
+            Position = new Vector3(-w * 0.18f, s.Height - 0.35f, 0.95f),
             MaterialOverride = Materials.Get(Materials.DarkSteel, 0.5f, 0.6f),
         });
     }
@@ -84,13 +85,14 @@ public static class PlaceholderBuilder
         var front = s.CenterZ + s.Length * 0.5f;
         var back = s.CenterZ - s.Length * 0.5f;
         var r = rig.Root;
+        var w = BodyWidth(d);
         var len = front - back;
-        Box(r, new Vector3(s.Width * 0.72f, 2.4f, len - 1.0f), new Vector3(0, 2.05f, back + (len - 1.0f) * 0.5f), body);
-        Box(r, new Vector3(s.Width * 0.7f, 0.25f, len - 1.3f), new Vector3(0, 0.85f, back + (len - 1.3f) * 0.5f + 0.1f), Materials.DarkSteel);
+        Box(r, new Vector3(w * 0.72f, 2.4f, len - 1.0f), new Vector3(0, 2.05f, back + (len - 1.0f) * 0.5f), body);
+        Box(r, new Vector3(w * 0.7f, 0.25f, len - 1.3f), new Vector3(0, 0.85f, back + (len - 1.3f) * 0.5f + 0.1f), Materials.DarkSteel);
         // Grain tank with an opening on top.
         var tankZ = back + len * 0.55f;
-        Box(r, new Vector3(s.Width * 0.78f, 0.9f, 2.8f), new Vector3(0, 3.7f, tankZ), body.Lightened(0.08f));
-        Box(r, new Vector3(s.Width * 0.62f, 0.05f, 2.4f), new Vector3(0, 4.16f, tankZ), new Color(0.12f, 0.1f, 0.08f));
+        Box(r, new Vector3(w * 0.78f, 0.9f, 2.8f), new Vector3(0, 3.7f, tankZ), body.Lightened(0.08f));
+        Box(r, new Vector3(w * 0.62f, 0.05f, 2.4f), new Vector3(0, 4.16f, tankZ), new Color(0.12f, 0.1f, 0.08f));
         // Cab over the feeder.
         var cabZ = front - 1.4f;
         var glass = new MeshInstance3D
@@ -105,7 +107,7 @@ public static class PlaceholderBuilder
         var feeder = Box(r, new Vector3(1.3f, 0.75f, 1.8f), new Vector3(0, 1.3f, front - 0.3f), body * 0.9f);
         feeder.RotationDegrees = new Vector3(12f, 0, 0);
         // Straw chopper and engine grille.
-        Box(r, new Vector3(s.Width * 0.6f, 0.6f, 0.4f), new Vector3(0, 1.1f, back + 0.1f), Materials.DarkSteel);
+        Box(r, new Vector3(w * 0.6f, 0.6f, 0.4f), new Vector3(0, 1.1f, back + 0.1f), Materials.DarkSteel);
         Box(r, new Vector3(1.2f, 0.9f, 0.05f), new Vector3(0, 2.8f, back - 0.02f), Materials.DarkSteel);
     }
 
@@ -260,6 +262,13 @@ public static class PlaceholderBuilder
         });
         rig.Add("reel", reel);
     }
+
+    /// <summary>
+    /// How wide a body is drawn: its fixed axle's track and a tire, so that duals, flotation tires or tracks widening the
+    /// machine (its size) don't widen the body.
+    /// </summary>
+    private static float BodyWidth(MachineDef d) =>
+        (d.Get<RunningGearDef>()?.Axles ?? []).Where(a => a.Steering == "fixed").Select(a => a.Track + 0.6f).DefaultIfEmpty(d.Size.Width).Max();
 
     // ------------------------------------------------------------------ Parts
 

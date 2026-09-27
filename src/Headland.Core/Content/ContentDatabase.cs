@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Content;
@@ -85,7 +86,7 @@ public sealed class ContentDatabase
         foreach (var n in ReadMany<NpcDef>(src, "npcs.json")) db.AddUnique(db.Npcs, n.Id, n, "npc");
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
-        foreach (var m in ReadMany<MachineDef>(src, file))
+        foreach (var m in ReadMachines(src, file))
             db.AddUnique(db.Machines, m.Id, m, "machine");
         foreach (var file in src.ListJson("pois"))
         foreach (var p in ReadMany<PoiDef>(src, file))
@@ -136,6 +137,30 @@ public sealed class ContentDatabase
         catch (JsonException e)
         {
             throw new ContentException($"{path}: {e.Message}");
+        }
+    }
+
+    /// <summary>Machines are kept as JSON too: their configuration options change it.</summary>
+    private static List<MachineDef> ReadMachines(IContentSource src, string path)
+    {
+        var id = "";
+        try
+        {
+            var root = JsonNode.Parse(src.ReadText(path), new JsonNodeOptions { PropertyNameCaseInsensitive = true },
+                new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            var machines = new List<MachineDef>();
+            IEnumerable<JsonNode?> nodes = root is JsonArray list ? list : [root];
+            foreach (var node in nodes)
+            {
+                if (node is not JsonObject json) throw new JsonException("a machine must be an object");
+                id = json["id"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : "";
+                machines.Add(MachineDef.Read(json));
+            }
+            return machines;
+        }
+        catch (JsonException e)
+        {
+            throw new ContentException($"{path}: {(id != "" ? $"machine '{id}': " : "")}{e.Message}");
         }
     }
 
@@ -212,16 +237,24 @@ public sealed class ContentDatabase
 
         foreach (var m in Machines.Values)
         {
-            foreach (var kind in m.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
-                e.Add($"machine '{m.Id}': more than one {kind.First().Kind}");
-            foreach (var c in m.Components)
-            foreach (var error in c.Errors(m, this))
-                e.Add($"machine '{m.Id}' {c.Kind}: {error}");
-            foreach (var id in m.Joints.GroupBy(j => j.Id).Where(g => g.Count() > 1).Select(g => g.Key))
-                e.Add($"machine '{m.Id}': joint '{id}' is defined more than once");
-            var roles = m.Roles.ToHashSet();
-            foreach (var role in (m.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
-                e.Add($"machine '{m.Id}': visual.nodes role '{role}' is not one of its components' ({string.Join(", ", roles)})");
+            foreach (var error in ConfigurationErrors(m)) e.Add($"machine '{m.Id}' {error}");
+            // As it comes, then with each option in turn, naming only what that option gets wrong.
+            var own = MachineErrors(m).ToList();
+            e.AddRange(own.Select(error => $"machine '{m.Id}'{error}"));
+            foreach (var c in m.Configurations)
+            foreach (var option in c.Options.Where(o => o != c.Default && o.Id != ""))
+            {
+                var with = $"machine '{m.Id}' ({c.Id}: {option.Id})";
+                try
+                {
+                    var variant = m.Configure(new Dictionary<string, string> { [c.Id] = option.Id });
+                    e.AddRange(MachineErrors(variant).Except(own).Select(error => with + error));
+                }
+                catch (JsonException x)
+                {
+                    e.Add($"{with}: {x.Message}");
+                }
+            }
         }
 
         foreach (var p in Pois.Values)
@@ -387,6 +420,46 @@ public sealed class ContentDatabase
         }
 
         return e;
+    }
+
+    /// <summary>What's wrong with a machine (with its options), each starting as it follows the machine's name: " motor: …", ": …".</summary>
+    private IEnumerable<string> MachineErrors(MachineDef m)
+    {
+        if (m.Price < 0f || m.Mass <= 0f) yield return ": price must be >= 0 and mass > 0";
+        foreach (var kind in m.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
+            yield return $": more than one {kind.First().Kind}";
+        foreach (var c in m.Components)
+        foreach (var error in c.Errors(m, this))
+            yield return $" {c.Kind}: {error}";
+        foreach (var id in m.Joints.GroupBy(j => j.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+            yield return $": joint '{id}' is defined more than once";
+        var roles = m.Roles.ToHashSet();
+        foreach (var role in (m.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
+            yield return $": visual.nodes role '{role}' is not one of its components' ({string.Join(", ", roles)})";
+    }
+
+    /// <summary>What's wrong with a machine's configurations, each starting as it follows the machine's name.</summary>
+    private static IEnumerable<string> ConfigurationErrors(MachineDef m)
+    {
+        // What identifies the machine, and what options add to rather than set.
+        string[] fixedMembers = ["id", "configurations", "price", "mass"];
+        foreach (var id in m.Configurations.GroupBy(c => c.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+            yield return $"configuration '{id}' is defined more than once";
+        foreach (var c in m.Configurations)
+        {
+            var what = $"configuration '{c.Id}'";
+            if (string.IsNullOrWhiteSpace(c.Id) || string.IsNullOrWhiteSpace(c.Name)) yield return $"{what}: needs an id and a name";
+            if (c.Options.Length == 0) yield return $"{what}: needs options";
+            if (c.Options.Count(o => o.Default) > 1) yield return $"{what}: only one option can be the default";
+            foreach (var id in c.Options.GroupBy(o => o.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                yield return $"{what}: option '{id}' is defined more than once";
+            foreach (var o in c.Options)
+            {
+                if (string.IsNullOrWhiteSpace(o.Id) || string.IsNullOrWhiteSpace(o.Name)) yield return $"{what}: options need an id and a name";
+                if (o.Changes?.Select(kv => kv.Key).FirstOrDefault(k => fixedMembers.Contains(k, StringComparer.OrdinalIgnoreCase)) is { } key)
+                    yield return $"{what} option '{o.Id}': changes can't set '{key}' (an option's price and mass add to the machine's)";
+            }
+        }
     }
 
     private const string FarmRule = "farm must be 0 (an NPC's) or 1 (the player's farm)";

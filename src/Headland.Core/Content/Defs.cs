@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Headland.Core.Machines.Components;
 
@@ -207,17 +209,21 @@ public sealed class VisualDef : ModelDef
 }
 
 /// <summary>
-/// A machine type: what it is, its size and looks, and the components it's built from. Unknown properties are refused,
-/// so a machine written in the format from before components (motorized, wheels, workArea… at the top) doesn't load
-/// as an empty shell.
+/// A machine type: what it is, its size and looks, the components it's built from, and the options it can have. Each
+/// set of options makes a def of its own (<see cref="Configure"/>); the content lists each machine with its default
+/// options. Unknown properties are refused, so a machine written in the format from before components (motorized,
+/// wheels, workArea… at the top) doesn't load as an empty shell.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class MachineDef
 {
+    private Variants? _variants;
+
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string Category { get; set; } = "";
     public string Brand { get; set; } = "";
+    /// <summary>With the chosen options' prices and masses added.</summary>
     public float Price { get; set; }
     public float Mass { get; set; } = 3000f;
     public SizeDef Size { get; set; } = new();
@@ -226,6 +232,77 @@ public sealed class MachineDef
     public List<ComponentDef> Components { get; set; } = [];
     public VisualDef Visual { get; set; } = new();
     public string Description { get; set; } = "";
+    /// <summary>What it can be had with (FS configurations): wheels, engine, color… one option of each.</summary>
+    public List<ConfigurationDef> Configurations { get; set; } = [];
+
+    /// <summary>The option chosen in each of its configurations, by configuration id.</summary>
+    [JsonIgnore]
+    public IReadOnlyDictionary<string, string> Choices { get; private set; } = new Dictionary<string, string>();
+
+    /// <summary>The option chosen in <paramref name="configuration"/>.</summary>
+    public ConfigurationOptionDef? Chosen(ConfigurationDef configuration) => configuration.Option(Choices.GetValueOrDefault(configuration.Id));
+
+    /// <summary>
+    /// The same machine with other options: <paramref name="choices"/> (configuration id → option id) over the ones this
+    /// def has; configurations it doesn't have are left out, and an option it doesn't have gives the default. Each set of
+    /// options is built once.
+    /// </summary>
+    public MachineDef Configure(IReadOnlyDictionary<string, string> choices)
+    {
+        if (_variants == null || choices.Count == 0) return this;
+        var all = new Dictionary<string, string>(Choices);
+        foreach (var (configuration, option) in choices) all[configuration] = option;
+        return _variants.Get(all);
+    }
+
+    /// <summary>A machine type from its JSON, with its default options.</summary>
+    internal static MachineDef Read(JsonObject json)
+    {
+        var source = (JsonObject)json.DeepClone();
+        var configurations = source.Remove("configurations", out var node) && node != null
+            ? node.Deserialize<List<ConfigurationDef>>(ContentDatabase.JsonOptions) ?? []
+            : [];
+        return new Variants(source, configurations).Get(new Dictionary<string, string>());
+    }
+
+    /// <summary>A machine type's JSON, and the defs built from it for each set of options chosen so far.</summary>
+    private sealed class Variants(JsonObject json, List<ConfigurationDef> configurations)
+    {
+        private readonly Dictionary<string, MachineDef> _built = new();
+
+        /// <summary>The def with each configuration's chosen option, or its default.</summary>
+        public MachineDef Get(IReadOnlyDictionary<string, string> choices)
+        {
+            var options = configurations
+                .Select(c => (configuration: c, option: c.Option(choices.GetValueOrDefault(c.Id)) ?? c.Default))
+                .Where(x => x.option != null)
+                .Select(x => (x.configuration, option: x.option!))
+                .ToList();
+            var key = string.Join('\n', options.Select(x => $"{x.configuration.Id}={x.option.Id}"));
+            lock (_built)
+            {
+                if (!_built.TryGetValue(key, out var def)) _built[key] = def = Build(options);
+                return def;
+            }
+        }
+
+        private MachineDef Build(List<(ConfigurationDef configuration, ConfigurationOptionDef option)> options)
+        {
+            var merged = (JsonObject)json.DeepClone();
+            foreach (var (_, option) in options)
+                if (option.Changes != null)
+                    JsonMerge.Into(merged, option.Changes);
+            var def = merged.Deserialize<MachineDef>(ContentDatabase.JsonOptions) ?? throw new JsonException("a machine is empty");
+            // An option changing the id is refused by validation; until then the machine keeps its own.
+            if (json["id"] is JsonValue id && id.TryGetValue<string>(out var own)) def.Id = own;
+            def.Configurations = configurations;
+            def.Choices = options.ToDictionary(x => x.configuration.Id, x => x.option.Id);
+            def.Price += options.Sum(x => x.option.Price);
+            def.Mass += options.Sum(x => x.option.Mass);
+            def._variants = this;
+            return def;
+        }
+    }
 
     /// <summary>Its component def of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
     public T? Get<T>() where T : class => Components.OfType<T>().FirstOrDefault();
@@ -235,6 +312,39 @@ public sealed class MachineDef
 
     /// <summary>Model node roles its components move.</summary>
     public IEnumerable<string> Roles => Components.SelectMany(c => c.Roles);
+}
+
+/// <summary>A choice a machine is had with (FS: configurations), such as its wheels, engine or color: one of its options.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class ConfigurationDef
+{
+    /// <summary>Unique on the machine; saves refer to it.</summary>
+    public string Id { get; set; } = "";
+    /// <summary>What it's called: "Wheels", "Front hitch".</summary>
+    public string Name { get; set; } = "";
+    public ConfigurationOptionDef[] Options { get; set; } = [];
+
+    /// <summary>The option the machine comes with: the one marked default, else the first.</summary>
+    [JsonIgnore]
+    public ConfigurationOptionDef? Default => Options.FirstOrDefault(o => o.Default) ?? Options.FirstOrDefault();
+
+    public ConfigurationOptionDef? Option(string? id) => Options.FirstOrDefault(o => o.Id == id);
+}
+
+/// <summary>One option of a configuration: what it costs and weighs, and what it changes in the machine.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class ConfigurationOptionDef
+{
+    /// <summary>Unique in its configuration; saves refer to it.</summary>
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>The machine comes with it (without one marked, the first option).</summary>
+    public bool Default { get; set; }
+    /// <summary>What it adds to the machine's price and mass (less when negative).</summary>
+    public float Price { get; set; }
+    public float Mass { get; set; }
+    /// <summary>What it changes in the machine's JSON (its size, components, looks), merged in by <see cref="JsonMerge"/>.</summary>
+    public JsonObject? Changes { get; set; }
 }
 
 // ---- Contracts (contracts.json)

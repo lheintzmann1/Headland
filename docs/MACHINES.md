@@ -249,7 +249,8 @@ A harvester needs an `attachable`: it works while the vehicle it hangs on thresh
 
 `lamps`: each has a `type` (`head`, `workFront`, `workRear` or `beacon`), a position `x`, `y` (1.5), `z`, where it
 points (`pitchDeg` -18, down when negative; `yawDeg` 0, left when positive, 180 backward), and its beam: `range`
-(30 m), `angleDeg` (32), `energy` (4) and `color` (`#fff0d1`). Headlights come on by themselves after dark.
+(30 m), `angleDeg` (32), `energy` (4) and `color` (`#fff0d1`). An optional `id`, unique on the machine, lets a
+configuration option add the lamp or change it (see below). Headlights come on by themselves after dark.
 
 ### craneArm
 
@@ -281,6 +282,50 @@ points (`pitchDeg` -18, down when negative; `yawDeg` 0, left when positive, 180 
 | `offset` | [0, 0.5, 0] | The blade's center, in that joint's space. |
 | `diameter` | 0.75 | |
 | `maxCut` | 0.6 | The thickest trunk it cuts. |
+
+## Configurations
+
+A machine can come with options, as in the shop of *Farming Simulator*: wheels, a front hitch, the engine, the color,
+the capacity, the working width. `configurations` lists the choices, each with its options; a machine has one option of
+each.
+
+```jsonc
+"configurations": [
+  { "id": "wheels", "name": "Wheels", "options": [
+    { "id": "single", "name": "Single" },
+    { "id": "dual", "name": "Dual", "price": 5800, "mass": 620,
+      "changes": { "size": { "width": 3.6 },
+        "components": { "runningGear": { "axles": [ { "wheels": { "type": "dual" } }, { "wheels": { "type": "dual" } } ] } } } }
+  ] },
+  { "id": "frontHitch", "name": "Front hitch", "options": [
+    { "id": "threePoint", "name": "Front linkage",
+      "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "z": 3.75, "y": 0.55 } ] } } } },
+    { "id": "none", "name": "None", "price": -3400, "mass": -220 }
+  ] }
+]
+```
+
+| Setting | Default | |
+|---|---|---|
+| `id`, `name` | | The choice: ids are unique on the machine, and saves refer to them. |
+| `options` | | Each with an `id` (unique in its choice) and a `name`. |
+| `default` | false | On an option: the machine comes with it. Without one marked, the first option. |
+| `price`, `mass` | 0 | What the option adds to the machine's price and mass, or takes off when negative. |
+| `changes` | none | What the option changes in the machine's JSON. |
+
+`changes` is merged into the machine's JSON, any of it but its `id`, `price`, `mass` and `configurations`:
+
+- Objects merge setting by setting: `{ "size": { "width": 3.6 } }` changes the width and keeps the rest. A setting set
+  to `null` is removed: back to its default, or, for a component, gone.
+- Lists of objects merge item by item. An item with an `id` (joints, fill units, lamps, animated parts) changes the item
+  with that id, or is added when there is none. An item without one changes the item at the same place (`{}` leaves one
+  as it is: `"axles": [ {}, { "track": 2 } ]` changes the second axle), or is added past the end.
+- Anything else replaces what was there: a number, a text, a list of texts.
+
+So a component the machine has with some options only (a front loader bracket, a front joint, beacons) goes in the
+options that have it, not in the machine. The machine as it comes and each option in turn are checked when the game
+starts, and errors name the option (`machine 'tractor_125' (wheels: tracks) runningGear: …`); options of different
+choices are best kept to different settings, so that any combination holds.
 
 ## Saves
 

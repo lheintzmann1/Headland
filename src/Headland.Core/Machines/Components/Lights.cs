@@ -7,6 +7,8 @@ public sealed class LampDef
     /// <summary>Lamp types, each switched as a group.</summary>
     public static readonly string[] Types = ["head", "workFront", "workRear", "beacon"];
 
+    /// <summary>Optional, unique on the machine: names the lamp so that a configuration option can add or change it.</summary>
+    public string? Id { get; set; }
     /// <summary>One of <see cref="Types"/>.</summary>
     public string Type { get; set; } = "head";
     public float X { get; set; }
@@ -31,6 +33,8 @@ public sealed class LightsDef : ComponentDef
     {
         foreach (var l in Lamps.Where(l => !LampDef.Types.Contains(l.Type))) yield return $"unknown lamp type '{l.Type}' ({string.Join(", ", LampDef.Types)})";
         if (Lamps.Any(l => l.Range <= 0f || l.AngleDeg is <= 0f or >= 90f || l.Energy < 0f)) yield return "lamps need range > 0, angleDeg in (0, 90) and energy >= 0";
+        foreach (var id in Lamps.Where(l => l.Id != null).GroupBy(l => l.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+            yield return $"lamp '{id}' is defined more than once";
     }
 
     internal override MachineComponent Create(Machine machine) => new Lights(machine, this);

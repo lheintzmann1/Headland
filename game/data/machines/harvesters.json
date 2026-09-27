@@ -31,7 +31,35 @@
       }
     },
     "visual": { "placeholder": "combine", "color": "#56703f" },
-    "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer."
+    "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer.",
+    "configurations": [
+      { "id": "wheels", "name": "Front wheels", "options": [
+        { "id": "single", "name": "Standard" },
+        { "id": "flotation", "name": "Flotation", "price": 8400, "mass": 420,
+          "changes": { "size": { "width": 3.55 },
+            "components": { "runningGear": { "axles": [ { "wheels": { "type": "flotation", "radius": 0.85, "width": 0.9 } } ] } } } },
+        { "id": "tracks", "name": "Tracks", "price": 64000, "mass": 3400,
+          "changes": { "size": { "width": 3.45 },
+            "components": { "runningGear": { "axles": [ { "wheels": { "type": "tracks", "radius": 0.5, "width": 0.76, "length": 1.8 } } ] } } } }
+      ] },
+      { "id": "engine", "name": "Engine", "options": [
+        { "id": "360", "name": "360 hp" },
+        { "id": "420", "name": "420 hp", "price": 26000, "mass": 180,
+          "changes": { "components": { "motor": { "powerHp": 420 } } } }
+      ] },
+      { "id": "tank", "name": "Grain tank", "options": [
+        { "id": "9000", "name": "9,000 L" },
+        { "id": "11000", "name": "11,000 L", "price": 9500, "mass": 300,
+          "changes": { "components": { "fillUnits": { "units": [ { "id": "tank", "capacity": 11000 } ] } } } }
+      ] },
+      { "id": "beacons", "name": "Beacons", "options": [
+        { "id": "none", "name": "None" },
+        { "id": "both", "name": "Both sides", "price": 720, "mass": 8,
+          "changes": { "components": { "lights": { "lamps": [
+            { "id": "beaconL", "type": "beacon", "x": 0.85, "y": 4.42, "z": 0.9, "pitchDeg": -8, "range": 16, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" },
+            { "id": "beaconR", "type": "beacon", "x": -0.85, "y": 4.42, "z": 0.9, "pitchDeg": -8, "range": 16, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } }
+      ] }
+    ]
   },
   {
     "id": "header_grain_6", "name": "Grain Header 6 m", "category": "header", "price": 32000, "mass": 1900,
