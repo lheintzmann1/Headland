@@ -67,11 +67,15 @@ units are written once, and new kinds of things come from data (and later mods) 
       trigger), `buyingStation` (buy and refuel at a fill trigger), `silo` (storage with its unloading pit and
       loading spout), `productionPoint` (process), `workshop` (repair, configure), `washingStation` (wash), and
       the delivery spot for new and leased machines.
-- [ ] The rest on the same model as it comes: the farmer and NPCs, pallets and bales, animals, trees (what saws
+- [ ] The rest on the same model as it comes: the farmer and NPCs (with hand tools, and on-foot states as FS's
+      `PlayerOnFootStateMachine`: walking, crouching, swimming), pallets and bales, animals, trees (what saws
       cut), props; new POI kinds with their features (`husbandry`, `bunkerSilo`, `manureHeap`, `objectStorage`,
       `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
       placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
 - [x] The JSON reference of every kind in one place: `docs/COMPONENTS.md`.
+- [ ] Configurations on any entity, not only machines (FS's `ConfigurationManager` registers configuration types
+      for vehicles and placeables alike): a silo's size, a shed's color. Each configuration type says how the
+      shop shows it (a list of options, a color picker).
 
 ## Points of interest (POIs)
 
@@ -101,6 +105,11 @@ conditions. Money is just another input or output:
 - [x] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;
       labels in `PropsRenderer` come from the POI def.
 - [ ] Later: buy and place POIs/buildings on your own farmland (FS construction mode).
+- [ ] Fill type categories (FS `fillTypeCategories`): `filltypes.json` groups fill types (grain, fertilizer…),
+      and stations take categories as well as fill types, so a mod's new grain sells at the elevator by itself.
+- [ ] More FS station settings (placeable XML): silo storage costs per unit and day, loading that starts by
+      itself when a trailer parks under the spout (`autoStart`), silo extensions adding room to a silo nearby
+      (with construction mode), pallet-only selling stations (with pallets).
 
 ## Economy
 
@@ -194,6 +203,12 @@ FS19 reference values; tune in data.
 - [ ] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,
       reconfigure.
 
+### Helpers
+
+- [ ] Helper jobs as chains of tasks (FS `AITask`: drive to the field, work it, unload at a station) with typed
+      parameters (vehicle, field, station) checked before hiring, instead of one `FieldWorkController`; Lua adds
+      task types.
+
 ### Removing the old machine code
 
 What the component refactor left in place goes as its replacement lands. Each step deletes the old code with
@@ -232,6 +247,10 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 - [ ] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;
       the HUD's key hints and the F1 help list the current context's actions, built from what the vehicle's
       components offer.
+- [ ] Activatables (FS `Activatable`): a component whose trigger the farmer or their vehicle is in offers the use
+      key an action, with its label, who may use it (farm, opening hours) and what it does. The HUD lists them
+      and the use key runs the nearest, instead of `PoiSystem.Use` knowing each case; components register their
+      actions only while they apply (FS `InputBinding.registerActionEvent`), and Lua components add their own.
 - [ ] Selected implement (FS): a key cycles through the vehicle's chain; lower, turn on, fold and tool keys
       act on the selection, or on the whole chain with the vehicle itself selected (as now). The HUD marks the
       selection.
@@ -379,3 +398,12 @@ A mod is an add-on the game loads, never a fork.
 - FS25 scripting, `TreeSaw`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?category=78&class=815&version=script>
 - FS19 scripting, `AIVehicleUtil`: <https://gdn.giants-software.com/documentation_scripting_fs19.php?version=script&category=41&class=441>
 - FS19 maintenance: <https://farmingsimulator.wiki.gg/wiki/Maintenance/Farming_Simulator_19>
+- FS25 scripting, areas the TODO borrows from:
+  - `VehicleBuyingStationActivatable` (activatables): <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=2&class=145>
+  - `ConfigurationManager`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=15&class=171>
+  - `FillTypeDesc`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=36&class=408>
+  - `InputBinding`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=51&class=533>
+  - `PlayerOnFootStateMachine`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=80&class=835>
+  - `AITask`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=81&class=843>
+  - `AnimalLoadingTrigger` (triggers): <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=88&class=850>
+- FS22 door triggers, reacting to the player or vehicles by collision mask: <https://gdn.giants-software.com/thread.php?categoryId=23&threadId=10260>
