@@ -62,7 +62,7 @@ public partial class PropsRenderer : Node3D
 
     // ------------------------------------------------------------------ POIs
 
-    /// <summary>A POI in its local space (+Z its front), from its placeholder parts or its model.</summary>
+    /// <summary>A POI in its local space (+Z its front), from its placeholder parts or its model (nothing if that doesn't load).</summary>
     private Node3D BuildPoi(Poi poi)
     {
         var root = new Node3D
@@ -74,10 +74,14 @@ public partial class PropsRenderer : Node3D
         var parts = new Node3D { Name = "Parts" };
         root.AddChild(parts);
         foreach (var part in poi.Def.Parts) parts.AddChild(BuildPart(poi, part));
-        if (LoadModel(poi) is { } model)
+        if (poi.Def.Visual is { } visual && !string.IsNullOrEmpty(visual.Model))
         {
-            root.AddChild(model);
             parts.Visible = false;
+            if (Models.Load(visual, poi.Def.Id) is { } model)
+            {
+                model.Position += new Vector3(0f, LowestGround(poi.Footprint), 0f);
+                root.AddChild(model);
+            }
         }
         return root;
     }
@@ -90,27 +94,6 @@ public partial class PropsRenderer : Node3D
         var y = float.MaxValue;
         foreach (var c in corners) y = Mathf.Min(y, Sim.World.HeightAt(c));
         return y;
-    }
-
-    private Node3D? LoadModel(Poi poi)
-    {
-        var v = poi.Def.Visual;
-        if (string.IsNullOrEmpty(v?.Model)) return null;
-        if (!ResourceLoader.Exists(v.Model))
-        {
-            GD.PushWarning($"{poi.Def.Id}: model '{v.Model}' not found (was it imported?); using the placeholder");
-            return null;
-        }
-        var offset = v.Offset.Length == 3 ? new Vector3(v.Offset[0], v.Offset[1], v.Offset[2]) : Vector3.Zero;
-        var holder = new Node3D
-        {
-            Name = "Model",
-            Position = offset + new Vector3(0f, LowestGround(poi.Footprint), 0f),
-            Rotation = new Vector3(0f, Mathf.DegToRad(v.YawDeg), 0f),
-            Scale = Vector3.One * v.Scale,
-        };
-        holder.AddChild(GD.Load<PackedScene>(v.Model).Instantiate());
-        return holder;
     }
 
     private Node3D BuildPart(Poi poi, PoiPartDef b)

@@ -22,14 +22,18 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    example `0.0625` or `16`).
 2. **Orientation:** Y is up and the front of the machine faces **+Z** (South in Blockbench). If yours faces the other
    way, set `"yawDeg": 180` in the machine's JSON instead of rebuilding it.
-3. **Origin:** put the model's origin on the ground at the machine's reference point, which is the same one its JSON
-   uses:
+3. **Root:** put the whole machine under one node named `root` (a group in Blockbench, an empty in Blender). The game
+   shows only what `root` holds, so the file can keep reference objects, cameras or lights beside it. A model without
+   `root` doesn't load (see [Exporting and hooking it up](#exporting-and-hooking-it-up)).
+4. **Origin:** put `root`'s origin (its pivot in Blockbench) on the ground at the machine's reference point, which is
+   the same one its JSON uses. The game puts `root` there, whatever its position in the file, and keeps its rotation
+   and scale. The reference point is:
    - tractors, trailers and trailed implements: the center of the rear (fixed) axle, or the middle of the fixed axles,
    - combines: the center of the front axle,
    - mounted implements and headers: the hitch point.
 
    If that is inconvenient, use `"offset": [x, y, z]` (meters; +Z forward, +X left).
-4. **Moving parts:** make each one a separate node (a group in Blockbench, an object in Blender) with its pivot where
+5. **Moving parts:** make each one a separate node (a group in Blockbench, an object in Blender) with its pivot where
    it rotates. The machine's components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
 
    | Role | Component | Pivot | Modeled as |
@@ -102,16 +106,21 @@ placeholder can draw such pieces as blocks: `visual.parts` lists them with an `i
    `tractor_125: model res://…/fieldmaster_125.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R)`, and warns about any
    node name it could not find.
 
+A machine whose model doesn't load (the file is missing or wasn't imported, or it has no `root` node), as it comes or
+with any of its options, is left out of the game: the console says why, and what went with it (its places on the map,
+the contract lease sets it's in). Nothing stands in for it.
+
 The machine's size, wheel positions, hitch points and crane joints still come from its JSON, so check that they
 match the model.
 
 ## Buildings and other POIs
 
-Buildings and sites (points of interest, `game/data/pois/*.json`) follow the same scale and orientation: the front
-faces **+Z** and the origin sits on the ground at the center of the POI's footprint (`w` × `d` in its JSON). Export to
-`game/assets/models/buildings/` and set `"visual": { "model": "res://assets/models/buildings/<name>.glb" }` on the POI
-(with `scale`, `yawDeg` and `offset` as for machines). The model replaces the placeholder `parts`, which still decide
-what machines and the farmer bump into, so keep them roughly matching the walls.
+Buildings and sites (points of interest, `game/data/pois/*.json`) follow the same scale, orientation and `root` node:
+the front faces **+Z** and `root`'s origin sits on the ground at the center of the POI's footprint (`w` × `d` in its
+JSON). Export to `game/assets/models/buildings/` and set
+`"visual": { "model": "res://assets/models/buildings/<name>.glb" }` on the POI (with `scale`, `yawDeg` and `offset` as
+for machines). The model replaces the placeholder `parts`, which still decide what machines and the farmer bump into,
+so keep them roughly matching the walls. A POI whose model doesn't load still works, but nothing is drawn for it.
 
 ## License and credit
 

@@ -1,4 +1,5 @@
 using Headland.Core.Content;
+using Headland.Core.Saves;
 using Headland.Core.Time;
 using Headland.Core.Weather;
 using Headland.Core.World;
@@ -37,6 +38,37 @@ public class ContentTests
             Fields = [new FieldDef { Id = 3, W = 10, H = 10 }, new FieldDef { Id = 3, X = 20, W = 10, H = 10 }],
         };
         Assert.Contains(db.Validate(), e => e.Contains("field 3 is defined more than once"));
+    }
+
+    [Fact]
+    public void AMachineLeftOutGoesWithItsPlacesAndLeaseSets()
+    {
+        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        Assert.Equal(
+            [
+                "removed from map 'default' (1 place)",
+                "the cultivator_3 hitched to it on map 'default' stands unhitched",
+                "removed from the lease sets of 'cultivate' contracts",
+                "removed from the lease sets of 'sow' contracts",
+            ],
+            db.RemoveMachine("tractor_125"));
+        Assert.Empty(db.RemoveMachine("tractor_125"));
+        Assert.DoesNotContain("tractor_125", db.Machines.Keys);
+        Assert.Empty(db.Validate());
+
+        // The cultivator stands where the tractor stood, and the other hitches follow their machines' new places.
+        var placed = db.Maps["default"].Machines;
+        Assert.Equal(("cultivator_3", 152f, 206f, 90f), (placed[0].Def, placed[0].X, placed[0].Z, placed[0].HeadingDeg));
+        Assert.Equal(new int?[] { null, null, 1, null, 3, null, null }, placed.Select(p => p.AttachToIndex));
+        var sim = Simulation.Create(db);
+        Assert.DoesNotContain(sim.Machines.All, m => m.Def.Id == "tractor_125");
+        Assert.Null(sim.Machines.All.Single(m => m.Def.Id == "cultivator_3").Parent);
+        Assert.Equal("combine_7", sim.Machines.All.Single(m => m.Def.Id == "header_grain_6").Parent?.Def.Id);
+
+        // A game saved with it loads without it.
+        var loaded = SaveGame.Load(db, SaveGame.Capture(TestContent.NewSim(), "test"));
+        Assert.Contains("Machine 'tractor_125' no longer exists: it was removed", loaded.Warnings);
+        Assert.Contains("Tiller 300 could not be re-attached", loaded.Warnings);
     }
 
     [Fact]

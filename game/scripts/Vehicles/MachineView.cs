@@ -18,7 +18,7 @@ public partial class MachineView : Node3D
     public override void _Ready()
     {
         Name = $"{Machine.Def.Id}_{Machine.Id}";
-        var rig = MachineRig.Model(Machine.Def) ?? PlaceholderBuilder.Build(Machine.Def);
+        var rig = string.IsNullOrEmpty(Machine.Def.Visual.Model) ? PlaceholderBuilder.Build(Machine.Def) : MachineRig.Model(Machine.Def);
         AddChild(rig.Root);
         foreach (var c in Machine.Components)
             if (ComponentView.For(c, Sim, rig) is { } view)

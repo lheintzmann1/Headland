@@ -1,3 +1,4 @@
+using Headland.Game.Common;
 using Headland.Core.Content;
 using Godot;
 
@@ -48,38 +49,25 @@ public sealed class MachineRig
     }
 
     /// <summary>
-    /// The machine's glTF model with its parts mapped by visual.nodes, and the nodes of options it doesn't have hidden;
-    /// or null to use the placeholder.
+    /// The machine's glTF model (what its root node holds) with its parts mapped by visual.nodes, and the nodes of
+    /// options it doesn't have hidden. Empty if the model doesn't load: such machines are left out when the game starts.
     /// </summary>
-    public static MachineRig? Model(MachineDef def)
+    public static MachineRig Model(MachineDef def)
     {
         var v = def.Visual;
-        if (string.IsNullOrEmpty(v.Model)) return null;
-        if (!ResourceLoader.Exists(v.Model))
-        {
-            GD.PushWarning($"{def.Id}: model '{v.Model}' not found (was it imported?); using the placeholder");
-            return null;
-        }
         var rig = new MachineRig { Scale = v.Scale };
-        var holder = new Node3D
-        {
-            Name = "Model",
-            Position = v.Offset.Length == 3 ? new Vector3(v.Offset[0], v.Offset[1], v.Offset[2]) : Vector3.Zero,
-            Rotation = new Vector3(0f, Mathf.DegToRad(v.YawDeg), 0f),
-            Scale = Vector3.One * v.Scale,
-        };
+        if (Models.Load(v, def.Id) is not { } holder) return rig;
         rig.Root.AddChild(holder);
-        var instance = GD.Load<PackedScene>(v.Model).Instantiate();
-        holder.AddChild(instance);
+        var root = holder.GetChild(0);
 
         foreach (var (role, nodeName) in v.Nodes ?? new Dictionary<string, string>())
         {
-            if (instance.FindChild(nodeName, recursive: true, owned: false) is Node3D node) rig.Add(role, node);
+            if (root.FindChild(nodeName, recursive: true, owned: false) is Node3D node) rig.Add(role, node);
             else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' for '{role}'");
         }
         foreach (var nodeName in def.OptionNodes)
         {
-            if (instance.FindChild(nodeName, recursive: true, owned: false) is Node3D node) node.Visible = !def.HiddenNodes.Contains(nodeName);
+            if (root.FindChild(nodeName, recursive: true, owned: false) is Node3D node) node.Visible = !def.HiddenNodes.Contains(nodeName);
             else GD.PushWarning($"{def.Id}: model has no node '{nodeName}' that its options show");
         }
         GD.Print($"{def.Id}: model {v.Model} (parts: {(rig._parts.Count > 0 ? string.Join(", ", rig._parts.Keys) : "none")})");

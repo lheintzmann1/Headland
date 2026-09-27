@@ -105,6 +105,53 @@ public sealed class ContentDatabase
         return db;
     }
 
+    /// <summary>
+    /// Leaves a machine out of the game (the game couldn't load its model): its def, its places on the maps and the
+    /// lease sets it's in. What hung on it stays unhitched, where the map puts it or, placed only by its hitch, where
+    /// the machine stood. Says what changed.
+    /// </summary>
+    public List<string> RemoveMachine(string id)
+    {
+        var gone = new List<string>();
+        if (!Machines.Remove(id)) return gone;
+        foreach (var map in Maps.Values)
+        {
+            // Old index → new one, for the machines that stay.
+            var kept = new List<MachineSpawnDef>();
+            var index = new Dictionary<int, int>();
+            for (var i = 0; i < map.Machines.Length; i++)
+            {
+                if (map.Machines[i].Def == id) continue;
+                index[i] = kept.Count;
+                kept.Add(map.Machines[i]);
+            }
+            if (kept.Count == map.Machines.Length) continue;
+            var placed = map.Machines.Length - kept.Count;
+            gone.Add($"removed from map '{map.Id}' ({placed} {(placed == 1 ? "place" : "places")})");
+            foreach (var sp in kept)
+            {
+                if (sp.AttachToIndex is not { } from) continue;
+                if (index.TryGetValue(from, out var to))
+                {
+                    sp.AttachToIndex = to;
+                    continue;
+                }
+                var puller = map.Machines[from];
+                if (sp is { X: 0f, Z: 0f }) (sp.X, sp.Z, sp.HeadingDeg) = (puller.X, puller.Z, puller.HeadingDeg);
+                sp.AttachToIndex = null;
+                sp.Joint = null;
+                gone.Add($"the {sp.Def} hitched to it on map '{map.Id}' stands unhitched");
+            }
+            map.Machines = kept.ToArray();
+        }
+        foreach (var t in ContractTypes.Values.Where(t => t.Leases.Any(l => l.Machines.Contains(id))))
+        {
+            t.Leases = t.Leases.Where(l => !l.Machines.Contains(id)).ToArray();
+            gone.Add($"removed from the lease sets of '{t.Id}' contracts");
+        }
+        return gone;
+    }
+
     private void AddUnique<T>(Dictionary<string, T> dict, string id, T value, string kind)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ContentException($"A {kind} has an empty id.");

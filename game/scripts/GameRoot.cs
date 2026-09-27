@@ -92,6 +92,7 @@ public partial class GameRoot : Node3D
     {
         if (SaveManager.TakePending() is var (pending, pendingSlot)) return (pending.Sim, pendingSlot, pending.Warnings);
         var content = ContentDatabase.Load(new GodotContentSource("res://data"));
+        Models.LeaveOutBroken(content);
         if (loadSlot != null)
         {
             try
