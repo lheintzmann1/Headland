@@ -4,8 +4,8 @@ A top-down farming simulation: the machines and field work of *Farming Simulator
 *Dwarf Fortress* and *Cataclysm: DDA* (soils, weather, crop agronomy), seen through an isometric camera.
 Built with **Godot 4.7** and **C#**.
 
-> **Status:** early prototype. The core farming loop is playable; machines are simple generated models, and
-> buildings and the farmer procedural placeholders, for now.
+> **Status:** early prototype. The core farming loop is playable; machines, buildings and the farmer are simple
+> generated models for now.
 
 ![Harvesting wheat](docs/screenshots/harvest.jpg)
 

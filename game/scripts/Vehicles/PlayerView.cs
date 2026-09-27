@@ -4,12 +4,15 @@ using Godot;
 
 namespace Headland.Game.Vehicles;
 
-/// <summary>Placeholder farmer: body, head, cap, swinging legs; plus a ground ring so it reads when zoomed out.</summary>
+/// <summary>
+/// The farmer, drawn by the player model of game.json (docs/MODELING.md): turned the way they walk, legs (legL, legR)
+/// swinging with their pace; plus a ground ring so they read when zoomed out.
+/// </summary>
 public partial class PlayerView : Node3D
 {
     private readonly Node3D _body = new() { Name = "Body" };
-    private readonly Node3D _legL = new();
-    private readonly Node3D _legR = new();
+    private RigPart? _legL;
+    private RigPart? _legR;
     private MeshInstance3D _ring = null!;
     private float _phase;
 
@@ -18,37 +21,11 @@ public partial class PlayerView : Node3D
     public override void _Ready()
     {
         AddChild(_body);
-        var jacket = new Color(0.33f, 0.36f, 0.3f);
-        var jeans = new Color(0.22f, 0.26f, 0.33f);
-        var skin = new Color(0.8f, 0.65f, 0.52f);
-        _body.AddChild(new MeshInstance3D
+        if (Models.Load(Sim.Content.Game.Player, "player") is { } model)
         {
-            Mesh = new CapsuleMesh { Radius = 0.22f, Height = 0.8f },
-            Position = new Vector3(0, 1.22f, 0),
-            MaterialOverride = Materials.Get(jacket),
-        });
-        _body.AddChild(new MeshInstance3D
-        {
-            Mesh = new SphereMesh { Radius = 0.12f, Height = 0.26f },
-            Position = new Vector3(0, 1.73f, 0),
-            MaterialOverride = Materials.Get(skin),
-        });
-        _body.AddChild(new MeshInstance3D
-        {
-            Mesh = new CylinderMesh { TopRadius = 0.12f, BottomRadius = 0.13f, Height = 0.08f },
-            Position = new Vector3(0, 1.84f, 0.02f),
-            MaterialOverride = Materials.Get(new Color(0.55f, 0.2f, 0.15f)),
-        });
-        foreach (var (leg, x) in new[] { (_legL, 0.1f), (_legR, -0.1f) })
-        {
-            leg.Position = new Vector3(x, 0.85f, 0);
-            leg.AddChild(new MeshInstance3D
-            {
-                Mesh = new CapsuleMesh { Radius = 0.08f, Height = 0.85f },
-                Position = new Vector3(0, -0.42f, 0),
-                MaterialOverride = Materials.Get(jeans),
-            });
-            _body.AddChild(leg);
+            _body.AddChild(model);
+            _legL = Leg(model, "legL");
+            _legR = Leg(model, "legR");
         }
         _ring = new MeshInstance3D
         {
@@ -79,7 +56,11 @@ public partial class PlayerView : Node3D
         var speed = p.Velocity.Length();
         _phase += (float)delta * speed * 3.2f;
         var swing = Mathf.Sin(_phase) * Mathf.Clamp(speed / 3f, 0f, 0.7f);
-        _legL.Rotation = new Vector3(swing, 0, 0);
-        _legR.Rotation = new Vector3(-swing, 0, 0);
+        if (_legL is { } l) l.Node.Rotation = l.Rotation + new Vector3(swing, 0f, 0f);
+        if (_legR is { } r) r.Node.Rotation = r.Rotation + new Vector3(-swing, 0f, 0f);
     }
+
+    /// <summary>A leg of the model, hinged at the hip, with its rest pose.</summary>
+    private static RigPart? Leg(Node model, string name) =>
+        model.FindChild(name, recursive: true, owned: false) is Node3D n ? new RigPart(n, n.Position, n.Rotation, n.Scale) : null;
 }

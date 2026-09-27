@@ -19,9 +19,9 @@
   // priceFactor); the rest ("store") wait for the owner's trailers at a load trigger. A sale of a fill type the
   // POI stores goes into its storage, so the mill below mills what farmers sell it and stops buying when full.
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
-    "parts": [
-      { "shape": "store",   "x": -3, "z": -9,  "w": 8, "d": 6, "h": 4,   "color": "#8b6f55" },
-      { "shape": "pallets", "x": -4, "z": 0.5, "w": 4, "d": 3, "h": 1.2, "color": "#b89a6a", "solid": false }
+    "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
+    "colliders": [
+      { "x": -3, "z": -9, "w": 8, "d": 6 }
     ],
     "triggers": [
       { "id": "yard", "type": "fill", "z": 3.5, "w": 18, "d": 17 }
@@ -30,10 +30,11 @@
       { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"], "openHours": [7, 19] }
     ] },
   { "id": "grain_elevator", "name": "Grain Elevator", "icon": "sell", "w": 58, "d": 40,
-    "parts": [
-      { "shape": "elevator", "x": 15,    "z": -10,   "w": 12, "d": 12, "h": 24, "color": "#9a9d9e" },
-      { "shape": "silo",     "x": -0.5,  "z": -12.5, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" },
-      { "shape": "silo",     "x": -12.5, "z": -12.5, "w": 9,  "d": 9,  "h": 16, "color": "#a3a7a8" }
+    "visual": { "model": "res://assets/models/buildings/grain_elevator.glb" },
+    "colliders": [
+      { "x": 15, "z": -10, "w": 12, "d": 12 },
+      { "x": -0.5, "z": -12.5, "w": 9, "d": 9, "round": true },
+      { "x": -12.5, "z": -12.5, "w": 9, "d": 9, "round": true }
     ],
     "triggers": [
       { "id": "pit", "type": "unload", "x": -7, "z": 10, "w": 28, "d": 20 }
@@ -42,10 +43,11 @@
       { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 }
     ] },
   { "id": "flour_mill", "name": "Flour Mill", "icon": "factory", "w": 36, "d": 40,
-    "parts": [
-      { "shape": "shed", "z": -10, "w": 18, "d": 12, "h": 12, "color": "#b8ad9a" },
-      { "shape": "silo", "x": -12, "z": -4, "w": 7, "d": 7, "h": 16, "color": "#a3a7a8" },
-      { "shape": "silo", "x": 12,  "z": -4, "w": 7, "d": 7, "h": 16, "color": "#a3a7a8" }
+    "visual": { "model": "res://assets/models/buildings/flour_mill.glb" },
+    "colliders": [
+      { "z": -10, "w": 18, "d": 12 },
+      { "x": -12, "z": -4, "w": 7, "d": 7, "round": true },
+      { "x": 12, "z": -4, "w": 7, "d": 7, "round": true }
     ],
     "triggers": [
       { "id": "pit", "type": "unload", "z": 10, "w": 24, "d": 14 }
@@ -59,9 +61,10 @@
     ] },
   // Leases machines for contracts, delivered on its lot. Its front, the lot, faces the road.
   { "id": "machinery_dealer", "name": "Machinery Dealer", "icon": "agriculture", "w": 38, "d": 76,
-    "parts": [
-      { "shape": "store", "x": 9,  "z": -30, "w": 16, "d": 10, "h": 5, "color": "#9a8f80" },
-      { "shape": "shed",  "x": -8, "z": -29, "w": 18, "d": 14, "h": 8, "color": "#7a7f84" }
+    "visual": { "model": "res://assets/models/buildings/machinery_dealer.glb" },
+    "colliders": [
+      { "x": 9, "z": -30, "w": 16, "d": 10 },
+      { "x": -8, "z": -29, "w": 18, "d": 14 }
     ],
     "triggers": [
       { "id": "lot", "type": "delivery", "z": 8, "w": 34, "d": 44 }

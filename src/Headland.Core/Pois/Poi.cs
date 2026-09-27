@@ -56,9 +56,9 @@ public sealed class Poi : IOwnable
 
     public Vector2 LocalToWorld(float x, float z) => MathUtil.LocalToWorld(Position, Heading, new Vector2(x, z));
 
-    /// <summary>The ground a part covers (round parts: the box around them).</summary>
-    public Obb PartBox(PoiPartDef part) =>
-        new(LocalToWorld(part.X, part.Z), new Vector2(part.W * 0.5f, part.D * 0.5f), Heading + part.RotDeg * MathUtil.Deg2Rad);
+    /// <summary>The ground a collider covers (a round one: the box around it).</summary>
+    public Obb ColliderBox(PoiColliderDef collider) =>
+        new(LocalToWorld(collider.X, collider.Z), new Vector2(collider.W * 0.5f, collider.D * 0.5f), Heading + collider.RotDeg * MathUtil.Deg2Rad);
 
     public override string ToString() => $"{Name} ({Id})";
 }

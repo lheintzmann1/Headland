@@ -44,7 +44,11 @@ public static class Models
     /// </summary>
     public static Node3D? Load(ModelDef def, string owner)
     {
-        if (string.IsNullOrEmpty(def.Model)) return null;
+        if (string.IsNullOrEmpty(def.Model))
+        {
+            GD.PushError($"{owner}: has no model");
+            return null;
+        }
         var scene = Instantiate(def.Model);
         if (scene == null || FindRoot(scene) is not { } root)
         {

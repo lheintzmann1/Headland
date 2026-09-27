@@ -20,7 +20,7 @@ Rules for every item:
 6. **World**: authored elevation, water, spline roads, towns and buildings, AI traffic.
 7. **Modding**: mod loader, Lua, map SDK (after the formats from 3–6 settle).
 8. **Audio**: any time after the settings menu; engine sounds after the vehicle refactor.
-9. **Art**: Blockbench models replace the generated machine models and the placeholders as they're made.
+9. **Art**: Blockbench models replace the generated base models as they're made.
 
 ## Quick wins
 
@@ -52,7 +52,7 @@ Rules for every item:
 ## Points of interest (POIs)
 
 One generic POI replaces `SellPointDef`, `ShopDef` and the visual-only `BuildingDef`. A POI has a
-footprint, a model or placeholder, a map icon, triggers, storage and **actions**: inputs → outputs, with
+footprint, a model, a map icon, triggers, storage and **actions**: inputs → outputs, with
 conditions. Money is just another input or output:
 
 | POI            | Action                                |
@@ -175,10 +175,9 @@ FS19 reference values; tune in data.
 What the component refactor left in place goes as its replacement lands. Each step deletes the old code with
 its docs and tests in the same change; no fallback is kept for later.
 
-- [x] Machine placeholders: exported as models (`game/assets/models`, a `.bbmodel` beside each), and the placeholder
-      code removed (`PlaceholderBuilder`, `visual.placeholder`, `visual.parts`, the parts the component views built).
-      A machine without a model that loads is left out of the game.
-- [ ] The farmer's and the POIs' placeholders, once their models exist (POI `parts` stay as collision shapes).
+- [x] Procedural looks: machines, POIs and the farmer are `.glb` models (`game/assets/models`, a `.bbmodel` beside
+      each), exported from the shapes the game used to draw, and that code is gone. A machine without a model that
+      loads is left out of the game; a POI keeps what machines bump into as `colliders`.
 - [x] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
       (steering, turning from its axles) and drivable (input); the system keeps placing the chain. With
       "Kinematics from the running gear".
@@ -305,6 +304,10 @@ A mod is an add-on the game loads, never a fork.
 - [ ] Runtime asset loading outside `res://`: `.glb` via `GLTFDocument`, textures, sounds.
 - [ ] Check models with the content: read each `.glb`'s node names (its JSON chunk) in Core, so a missing `root`,
       moving parts and option pieces (`docs/MODELING.md`) are reported at startup and in CI, naming the mod.
+- [ ] Collisions from the models: meshes under a `collisions` group (hidden in the game), each blocking its footprint
+      on the ground (the outline of its vertices, so a cylinder gives a circle), read by Core from the `.glb`. POI
+      `colliders` leave the JSON, and a machine's could replace its `size` box. Needs polygon obstacles in Core, and
+      the raw `.glb` files shipped in exports (Godot ships only its imported copy).
 - [ ] Mods screen (enable, order, errors); saves record the mods they used.
 - [ ] Example mods (vehicle, crop, POI) and a modding guide in `docs/`.
 
@@ -335,9 +338,8 @@ A mod is an add-on the game loads, never a fork.
 ## Art
 
 - [ ] Blockbench models for `tractor_125`, `tractor_95`, `combine_7`, `header_grain_6`, `header_corn_6`,
-      `cultivator_3`, `seeder_3`, `trailer_16`, replacing the bases generated from the old placeholders (start from
-      their `.bbmodel`).
-- [ ] Buildings and POIs, traffic cars, player character, trees and props.
+      `cultivator_3`, `seeder_3`, `trailer_16`, replacing the generated bases (start from their `.bbmodel`).
+- [ ] Models for the POIs and the farmer, replacing the generated bases; traffic cars, trees and props.
 - [ ] Lamps as model nodes (the JSON places them today), in `docs/MODELING.md`.
 
 ## Links

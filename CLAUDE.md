@@ -58,9 +58,9 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   `game/scripts/Vehicles/Components`. Systems and UI query them (`machine.Get<Pipe>()`); the JSON reference is
   `docs/MACHINES.md`.
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
-  Machines are `.glb` models set in their `visual.model` (for now simple bases generated from the former procedural
-  placeholders, a `.bbmodel` beside each); buildings and the farmer are still procedural placeholders. Conventions
-  and part roles are in `docs/MODELING.md`.
+  Machines, POIs and the farmer are `.glb` models (`visual.model` on machines and POIs, `player.model` in
+  `game.json`), for now simple bases generated from the shapes the game used to draw, a `.bbmodel` beside each.
+  Conventions and part roles are in `docs/MODELING.md`.
 - Versioning: `config/version` in `game/project.godot` is the game version (semver). **Every release bumps it** in the
   commit that gets tagged `v<version>` (e.g. `0.2.0` → `v0.2.0`); `build.yml` fails a tag that doesn't match it.
 - Licenses: code GPL-3.0-or-later (`LICENSE`), original art CC BY-SA 4.0 (`LICENSE-ASSETS.md`).

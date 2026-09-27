@@ -11,5 +11,7 @@
   "farmName": "Brookfield Farm",
   "map": "default",
   "climate": "temperate",
-  "weatherSeed": 20260925
+  "weatherSeed": 20260925,
+  // The farmer's glTF model (docs/MODELING.md).
+  "player": { "model": "res://assets/models/characters/farmer.glb" }
 }

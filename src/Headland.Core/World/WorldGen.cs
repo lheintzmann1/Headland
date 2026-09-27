@@ -342,15 +342,15 @@ public static class WorldGen
         {
             var poi = new Poi(p.Id, content.Pois[p.Type], new Vector2(p.X, p.Z), p.HeadingDeg * MathUtil.Deg2Rad, p.Farm, p.Name);
             world.Pois.Add(poi);
-            foreach (var part in poi.Def.Parts.Where(q => q.Solid))
+            foreach (var collider in poi.Def.Colliders)
             {
-                var box = poi.PartBox(part);
-                world.Obstacles.Add(part.Round
-                    ? new Obstacle { Shape = ObstacleShape.Circle, Center = box.Center, Radius = part.W * 0.5f, Kind = part.Shape }
+                var box = poi.ColliderBox(collider);
+                world.Obstacles.Add(collider.Round
+                    ? new Obstacle { Shape = ObstacleShape.Circle, Center = box.Center, Radius = collider.W * 0.5f, Kind = poi.Def.Id }
                     : new Obstacle
                     {
                         Shape = ObstacleShape.Box, Center = box.Center, HalfExtents = box.HalfExtents, Heading = box.Heading,
-                        Kind = part.Shape,
+                        Kind = poi.Def.Id,
                     });
             }
         }

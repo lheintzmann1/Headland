@@ -21,6 +21,8 @@ public sealed class GameConfig
     public string Map { get; set; } = "default";
     public string Climate { get; set; } = "temperate";
     public ulong WeatherSeed { get; set; } = 42;
+    /// <summary>The farmer's model (see docs/MODELING.md).</summary>
+    public ModelDef Player { get; set; } = new();
 }
 
 /// <summary>A difficulty preset (difficulties.json), picked when a game starts.</summary>
@@ -183,10 +185,10 @@ public sealed class SizeDef
     public float CenterZ { get; set; }
 }
 
-/// <summary>A glTF model: how a machine looks, or a POI instead of its placeholder parts.</summary>
+/// <summary>A glTF model: how a machine, a POI or the farmer looks.</summary>
 public class ModelDef
 {
-    /// <summary>The glTF model (res:// path, e.g. a Blockbench .glb export): a machine needs one, a POI may have one.</summary>
+    /// <summary>The glTF model (res:// path, e.g. a Blockbench .glb export).</summary>
     public string? Model { get; set; }
     /// <summary>Uniform scale applied to the model (1 = model units are meters).</summary>
     public float Scale { get; set; } = 1f;
@@ -570,8 +572,8 @@ public sealed class FieldDef : ShapeDef
 // ---- Points of interest (pois/*.json), placed by maps
 
 /// <summary>
-/// A point of interest: a building or site maps place, from a farmhouse to a grain elevator. Drawn from placeholder
-/// parts or a model. Local space as for machines: +Z forward (the front), +X left, origin at the footprint's center.
+/// A point of interest: a building or site maps place, from a farmhouse to a grain elevator, drawn by its model. Local
+/// space as for machines: +Z forward (the front), +X left, origin at the footprint's center.
 /// </summary>
 public sealed class PoiDef
 {
@@ -583,9 +585,10 @@ public sealed class PoiDef
     /// <summary>Ground the POI covers, centered on its origin: width along x, depth along z (meters).</summary>
     public float W { get; set; } = 10f;
     public float D { get; set; } = 10f;
-    public PoiPartDef[] Parts { get; set; } = [];
-    /// <summary>Optional model drawn instead of the parts (which still collide).</summary>
-    public ModelDef? Visual { get; set; }
+    /// <summary>What machines and the farmer bump into.</summary>
+    public PoiColliderDef[] Colliders { get; set; } = [];
+    /// <summary>Its model (see docs/MODELING.md).</summary>
+    public ModelDef Visual { get; set; } = new();
     /// <summary>Areas where machines use the POI.</summary>
     public PoiTriggerDef[] Triggers { get; set; } = [];
     /// <summary>Goods the POI keeps, which store and process actions use. Owned by the POI's farm.</summary>
@@ -698,24 +701,17 @@ public sealed class PoiActionDef
     public float RunningCost { get; set; }
 }
 
-/// <summary>One placeholder block of a POI: a building, a silo, a stack of pallets.</summary>
-public sealed class PoiPartDef
+/// <summary>What machines and the farmer bump into at a POI: a box, or a circle (a silo, a tank).</summary>
+public sealed class PoiColliderDef
 {
-    /// <summary>Placeholder shape: house, shed, silo, tank, elevator, store, pallets, canopy, pump or box. Silos and tanks are round.</summary>
-    public string Shape { get; set; } = "box";
     /// <summary>Center in the POI's local space.</summary>
     public float X { get; set; }
     public float Z { get; set; }
-    /// <summary>Width along local x (the diameter of round shapes), depth along z, height.</summary>
+    /// <summary>Width along local x (the diameter of a round one) and depth along z.</summary>
     public float W { get; set; } = 4f;
     public float D { get; set; } = 4f;
-    public float H { get; set; } = 3f;
     public float RotDeg { get; set; }
-    public string Color { get; set; } = "#8c8378";
-    /// <summary>Blocks machines and the farmer (false for low props they can drive over).</summary>
-    public bool Solid { get; set; } = true;
-
-    public bool Round => Shape is "silo" or "tank";
+    public bool Round { get; set; }
 }
 
 /// <summary>A POI placed on a map.</summary>

@@ -5,12 +5,12 @@
   // price for each 100% of wear. "configure", at a repair trigger, changes the options of the machines parked there:
   // each option fitted costs what it costs more than the one it replaces (times "priceFactor"), and "price" for the work.
   { "id": "gas_station", "name": "Gas Station", "icon": "local_gas_station", "w": 34, "d": 30,
-    "parts": [
-      { "shape": "store",  "x": 11,   "z": -9, "w": 9,   "d": 7,   "h": 3.5, "color": "#a89a86" },
-      { "shape": "canopy", "x": -3,   "z": -2, "w": 18,  "d": 12,  "h": 5,   "color": "#c9c3b5", "solid": false },
-      { "shape": "pump",   "x": -8,   "z": -2, "w": 1.2, "d": 0.8, "h": 1.8, "color": "#8a3b2e" },
-      { "shape": "pump",   "x": 2,    "z": -2, "w": 1.2, "d": 0.8, "h": 1.8, "color": "#8a3b2e" },
-      { "shape": "box",    "x": 13.8, "z": 8,  "w": 1,   "d": 2,   "h": 1.6, "color": "#3d6a8a" }
+    "visual": { "model": "res://assets/models/buildings/gas_station.glb" },
+    "colliders": [
+      { "x": 11, "z": -9, "w": 9, "d": 7 },
+      { "x": -8, "z": -2, "w": 1.2, "d": 0.8 },
+      { "x": 2, "z": -2, "w": 1.2, "d": 0.8 },
+      { "x": 13.8, "z": 8, "w": 1, "d": 2 }
     ],
     "triggers": [
       { "id": "pumps", "type": "fill", "x": -3, "z": -2, "w": 20, "d": 13 },
@@ -21,8 +21,9 @@
       { "type": "wash", "trigger": "wash", "price": 40 }
     ] },
   { "id": "workshop", "name": "Workshop", "icon": "build", "w": 24, "d": 32,
-    "parts": [
-      { "shape": "shed", "z": -9, "w": 18, "d": 12, "h": 7, "color": "#7d7468" }
+    "visual": { "model": "res://assets/models/buildings/workshop.glb" },
+    "colliders": [
+      { "z": -9, "w": 18, "d": 12 }
     ],
     "triggers": [
       { "id": "bay", "type": "repair", "z": 7, "w": 18, "d": 16 }

@@ -1,13 +1,12 @@
 # Making models for Headland
 
 The game loads models as **glTF binary (`.glb`)**: glTF keeps named parts with their pivots, so wheels can turn and
-pipes can swing, and it embeds the textures. Machines are models; buildings and the farmer are still procedural
-placeholders until models replace them.
+pipes can swing, and it embeds the textures. Machines, buildings and the farmer are all models.
 
-Each machine's model is, for now, a simple base generated from the procedural placeholder it had before, with every
-option in it, laid out and named as this guide says: `game/assets/models/<category>/<machine id>.glb`, with a
-Blockbench project (`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of
-its parts.
+The models in the game today are simple bases, generated from the shapes the game used to draw procedurally, laid out
+and named as this guide says: machines in `game/assets/models/<category>/<machine id>.glb` (with every option in
+them), buildings in `buildings/<poi id>.glb`, the farmer in `characters/farmer.glb`. Each has a Blockbench project
+(`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of its parts.
 
 Headland's own models are made in [Blockbench](https://www.blockbench.net) (free, and easy to pick up). Mods (modding
 support is planned) can use any tool that exports glTF, such as Blender or 3ds Max, at any level of detail. The
@@ -204,9 +203,17 @@ match the model.
 Buildings and sites (points of interest, `game/data/pois/*.json`) follow the same scale, orientation and `root` node:
 the front faces **+Z** and `root`'s origin sits on the ground at the center of the POI's footprint (`w` × `d` in its
 JSON). Export to `game/assets/models/buildings/` and set
-`"visual": { "model": "res://assets/models/buildings/<name>.glb" }` on the POI (with `scale`, `yawDeg` and `offset` as
-for machines). The model replaces the placeholder `parts`, which still decide what machines and the farmer bump into,
-so keep them roughly matching the walls. A POI whose model doesn't load still works, but nothing is drawn for it.
+`"visual": { "model": "res://assets/models/buildings/<poi id>.glb" }` on the POI (with `scale`, `yawDeg` and `offset`
+as for machines). What machines and the farmer bump into is not the model but the POI's `colliders` (boxes, or circles
+for round buildings such as silos), so keep them matching the walls. A POI whose model doesn't load still works, but
+nothing is drawn for it.
+
+## The farmer
+
+The farmer follows the same scale, orientation and `root` node: `root`'s origin on the ground between the feet, the
+front facing **+Z**, about 1.9 m tall. The legs are `legL` and `legR`, each with its pivot at the hip: they swing
+forward and back (about X) as the farmer walks, and the rest of the model turns the way the farmer goes. The model is
+`player.model` in `game/data/game.json`.
 
 ## License and credit
 

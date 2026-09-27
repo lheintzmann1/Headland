@@ -21,20 +21,19 @@ public class PoiTests
         Assert.Equal(("grain_elevator", "Grain Elevator", Farm.None), (elevator.Def.Id, elevator.Name, elevator.FarmId));
         Assert.Equal(Farm.PlayerId, sim.World.PoiById("silo")!.FarmId);
 
-        // Solid parts block the way: the farm silo's two bins are round, the shop's pallets can be driven over.
-        var bins = sim.World.Obstacles.Where(o => o.Kind == "silo" && Vector2.Distance(o.Center, new Vector2(180f, 185f)) < 6f);
+        // Colliders block the way: the farm silo's two bins are round.
+        var bins = sim.World.Obstacles.Where(o => o.Kind == "farm_silo");
         Assert.Equal([new Vector2(175f, 185f), new Vector2(185f, 185f)], bins.Select(o => o.Center).Order(new ByX()));
         Assert.All(bins, o => Assert.Equal((ObstacleShape.Circle, 4f), (o.Shape, o.Radius)));
-        Assert.DoesNotContain(sim.World.Obstacles, o => o.Kind == "pallets");
     }
 
     [Fact]
-    public void PartsTurnWithThePoi()
+    public void CollidersTurnWithThePoi()
     {
         var sim = SimWith(new PoiPlacementDef { Id = "silo", Type = "farm_silo", X = 30, Z = 30, HeadingDeg = 90 });
         // Facing east, the POI's left (+x) is north and its back (-z) west.
         var poi = sim.World.PoiById("silo")!;
-        var centers = poi.Def.Parts.Select(p => poi.PartBox(p).Center).ToList();
+        var centers = poi.Def.Colliders.Select(c => poi.ColliderBox(c).Center).ToList();
         Assert.Equal(new Vector2(24f, 35f), centers[0], new Near());
         Assert.Equal(new Vector2(24f, 25f), centers[1], new Near());
         Assert.True(poi.Trigger("pit")!.Contains(new Vector2(34f, 35f)));

@@ -307,7 +307,7 @@ public sealed class ContentDatabase
         foreach (var p in Pois.Values)
         {
             if (p.W <= 0 || p.D <= 0) e.Add($"poi '{p.Id}': w and d must be > 0");
-            if (p.Parts.Any(q => q.W <= 0 || q.D <= 0 || q.H <= 0)) e.Add($"poi '{p.Id}': parts need w, d and h > 0");
+            if (p.Colliders.Any(q => q.W <= 0 || q.D <= 0)) e.Add($"poi '{p.Id}': colliders need w and d > 0");
             var triggers = new Dictionary<string, PoiTriggerDef>();
             foreach (var t in p.Triggers)
             {
