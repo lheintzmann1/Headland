@@ -2,6 +2,7 @@ using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
 using Headland.Core.World;
@@ -144,7 +145,8 @@ public class PoiTests
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
         var sold = Record<FillSold>(loaded);
         var tipper = loaded.Machines.ById(trailer.Id)!;
-        for (var s = 0f; s < 60f && (tipper.Tipping || tipper.TipAnim > 0f); s += Dt) loaded.Tick(Dt);
+        var bed = tipper.Get<Tipper>()!;
+        for (var s = 0f; s < 60f && (bed.Tipping || bed.Anim > 0f); s += Dt) loaded.Tick(Dt);
 
         var sale = Assert.Single(sold);
         Assert.Equal(("elevator", 8000f), (sale.Poi.Id, MathF.Round(sale.Amount)));
@@ -159,7 +161,7 @@ public class PoiTests
         trailer.Unit("main")!.FillType = "seeds";
         sim.Player.Enter(t);
         sim.CommandUnload();
-        Assert.False(trailer.Tipping);
+        Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator does not buy Seeds");
     }
 

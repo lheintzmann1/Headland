@@ -1,0 +1,323 @@
+[
+ {
+  "id": 1,
+  "def": "tractor_125",
+  "farm": 1,
+  "x": 152,
+  "z": 206,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [
+   {
+    "id": "fuel",
+    "fillType": "diesel",
+    "level": 250
+   }
+  ]
+ },
+ {
+  "id": 2,
+  "def": "cultivator_3",
+  "farm": 1,
+  "x": 150.8,
+  "z": 206,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "parent": 1,
+  "joint": "rear",
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": []
+ },
+ {
+  "id": 3,
+  "def": "combine_7",
+  "farm": 1,
+  "x": 216.91028,
+  "z": 142.4856,
+  "heading": -9.6467695e-05,
+  "speed": 2.2782319,
+  "steerAngle": -3.6985546e-07,
+  "distance": 54.486378,
+  "lowered": false,
+  "turnedOn": true,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [
+   {
+    "id": "tank",
+    "fillType": "wheat",
+    "level": 242.77448
+   },
+   {
+    "id": "fuel",
+    "fillType": "diesel",
+    "level": 600
+   }
+  ],
+  "helper": {
+   "field": 2,
+   "shape": [
+    [
+     214,
+     96
+    ],
+    [
+     232,
+     96
+    ],
+    [
+     232,
+     216
+    ],
+    [
+     214,
+     216
+    ]
+   ],
+   "speedKmh": 0,
+   "maxLanes": 2,
+   "margin": 6,
+   "route": [
+    [
+     216.91,
+     90
+    ],
+    [
+     216.91,
+     222
+    ],
+    [
+     217.13576,
+     223.71477
+    ],
+    [
+     217.79764,
+     225.3127
+    ],
+    [
+     218.85052,
+     226.68486
+    ],
+    [
+     220.22269,
+     227.73775
+    ],
+    [
+     221.8206,
+     228.39963
+    ],
+    [
+     223.53539,
+     228.62538
+    ],
+    [
+     214.34462,
+     228.62538
+    ],
+    [
+     216.0594,
+     228.39963
+    ],
+    [
+     217.65732,
+     227.73775
+    ],
+    [
+     219.02948,
+     226.68486
+    ],
+    [
+     220.08237,
+     225.3127
+    ],
+    [
+     220.74425,
+     223.71478
+    ],
+    [
+     220.97,
+     222
+    ],
+    [
+     220.97,
+     90
+    ]
+   ],
+   "segments": "dwddddddrddddddw",
+   "waypoint": 1,
+   "driveStart": [
+    217,
+    88
+   ],
+   "wagePerHour": 150,
+   "workedSeconds": 25.016667971387506,
+   "wagesPaid": 1
+  }
+ },
+ {
+  "id": 4,
+  "def": "header_grain_6",
+  "farm": 1,
+  "x": 216.91013,
+  "z": 144.0856,
+  "heading": -9.6467695e-05,
+  "speed": 2.277832,
+  "steerAngle": 0,
+  "distance": 54.486397,
+  "parent": 3,
+  "joint": "header",
+  "lowered": true,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 1,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0.029999984,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [],
+  "workPose": [
+   216.91,
+   145.3856,
+   -9.6467695e-05
+  ]
+ },
+ {
+  "id": 5,
+  "def": "tractor_95",
+  "farm": 1,
+  "x": 153,
+  "z": 233,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [
+   {
+    "id": "fuel",
+    "fillType": "diesel",
+    "level": 180
+   }
+  ]
+ },
+ {
+  "id": 6,
+  "def": "trailer_16",
+  "farm": 1,
+  "x": 147.25,
+  "z": 233,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "parent": 5,
+  "joint": "drawbar",
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [
+   {
+    "id": "main",
+    "level": 0
+   }
+  ]
+ },
+ {
+  "id": 7,
+  "def": "seeder_3",
+  "farm": 1,
+  "x": 132,
+  "z": 203,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "seedCrop": "canola",
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": [
+   {
+    "id": "seed",
+    "fillType": "seeds",
+    "level": 900
+   }
+  ]
+ },
+ {
+  "id": 8,
+  "def": "header_corn_6",
+  "farm": 1,
+  "x": 181,
+  "z": 234,
+  "heading": 1.5707964,
+  "speed": 0,
+  "steerAngle": 0,
+  "distance": 0,
+  "lowered": false,
+  "turnedOn": false,
+  "pipeOut": false,
+  "tipping": false,
+  "lowerAnim": 0,
+  "pipeAnim": 0,
+  "tipAnim": 0,
+  "workedHa": 0,
+  "condition": 1,
+  "dirt": 0,
+  "fillUnits": []
+ }
+]

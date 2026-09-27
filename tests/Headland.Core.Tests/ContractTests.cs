@@ -4,6 +4,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
 using Headland.Core.World;
@@ -303,8 +304,8 @@ public class ContractTests
         // Field 4 is Tom Aldridge's: no helper, and a lowered cultivator leaves it as it is.
         sim.CommandHelper();
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Field 4 belongs to Tom Aldridge: take a contract on it first");
-        Assert.Null(t.Controller as FieldWorkController);
-        c.Lowered = true;
+        Assert.Null(t.Get<Drivable>()!.Controller as FieldWorkController);
+        c.Get<Attachable>()!.Lowered = true;
         sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
         for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
         Assert.Equal(0, Cultivated(sim, 4));
@@ -491,7 +492,7 @@ public class ContractTests
         var dismissed = Record<HelperDismissed>(sim);
         var job = sim.Contracts.On(sim.World.FieldById(6)!)!;
         Assert.True(sim.Contracts.Accept(job, lease: true));
-        var tractor = sim.Machines.All.Single(m => m.LeaseContract == job.Id && m.IsMotorized);
+        var tractor = sim.Machines.All.Single(m => m.LeaseContract == job.Id && m.Has<Motor>());
         // The farm's own trailer on the leased tractor, and a helper driving it.
         var trailer = sim.Machines.Spawn("trailer_16", tractor.Position, tractor.Heading);
         Assert.True(sim.Machines.Attach(tractor, "drawbar", trailer));

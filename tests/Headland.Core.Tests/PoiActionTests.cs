@@ -2,6 +2,7 @@ using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
 using static Headland.Core.Tests.PoiTests;
@@ -59,7 +60,7 @@ public class PoiActionTests
         var bin = sim.World.PoiById("ours")!;
         Assert.Equal(10_000f, bin.Storage!.Level("wheat"), 1);
         Assert.Equal(2_000f, trailer.Unit("main")!.Level, 1);
-        Assert.False(trailer.Tipping);
+        Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Equal(money, sim.Economy.Money);
         Assert.Equal(("ours", 10_000f), (Assert.Single(stored).Poi.Id, MathF.Round(stored[0].Amount)));
 
@@ -240,11 +241,11 @@ public class PoiActionTests
         var sim = TestContent.NewSim();
         var sold = Record<FillSold>(sim);
         var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
-        var pipe = sim.Content.Machines["combine_7"].Pipe!;
+        var pipe = sim.Content.Machines["combine_7"].Get<PipeDef>()!;
         var combine = sim.Machines.Spawn("combine_7", pit.Area.Center - new Vector2(pipe.X, pipe.Z), 0f);
         combine.Unit("tank")!.Add("wheat", 3000f);
         var money = sim.Economy.Money;
-        combine.PipeOut = true;
+        combine.Get<Pipe>()!.Out = true;
         Run(sim, 40f);
 
         Assert.True(combine.Unit("tank")!.IsEmpty);
@@ -370,7 +371,7 @@ public class PoiActionTests
         var (t, trailer) = TrailerAt(sim, new Vector2(441f, 230f), "wheat", 400f);
         sim.Player.Enter(t);
         sim.CommandUnload();
-        Assert.False(trailer.Tipping);
+        Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator takes loads of 500 L or more");
 
         trailer.Unit("main")!.Add("wheat", 600f);

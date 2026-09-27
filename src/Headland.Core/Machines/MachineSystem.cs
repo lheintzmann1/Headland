@@ -1,13 +1,16 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
-using Headland.Core.Pois;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
 
-/// <summary>Vehicle kinematics, hitching, work areas and fill transfers (between machines, and into POIs).</summary>
+/// <summary>
+/// Drives machines and their components: vehicle kinematics, hitching, the player's commands, and work areas. Each
+/// component then updates itself (animations, transfers).
+/// </summary>
 public sealed class MachineSystem
 {
     private const float AttachDistance = 1.6f;
@@ -26,13 +29,12 @@ public sealed class MachineSystem
     private WorldMap World => _sim.World;
     private ContentDatabase Content => _sim.Content;
     private EventBus Events => _sim.Events;
-    private PoiSystem Pois => _sim.Pois;
 
     public Machine Spawn(string defId, Vector2 position, float heading, int farmId = Farm.PlayerId)
     {
         var def = Content.Machines[defId];
         var m = new Machine(_nextId++, def, position, heading, farmId);
-        if (def.SeedTank != null) m.SelectedCrop = DefaultSeedCrop();
+        if (m.Get<WorkAreas>() is { Sows: true } seeder) seeder.Crop = DefaultSeedCrop();
         All.Add(m);
         return m;
     }
@@ -59,18 +61,16 @@ public sealed class MachineSystem
     internal bool Hitch(Machine parent, string jointId, Machine child)
     {
         var joint = parent.Joint(jointId);
-        if (joint == null || child.Def.Attacher == null || child.Def.Attacher.Type != joint.Type) return false;
+        if (joint == null || child.Get<Attachable>() is not { } a || a.Def.Type != joint.Type) return false;
         if (parent.Attached.ContainsKey(jointId) || child.Parent != null) return false;
         parent.Attached[jointId] = child;
         child.Parent = parent;
         child.ParentJoint = jointId;
-        child.Lowered = false;
-        child.LowerAnim = 0f;
-        child.HasWorkPose = false;
-        if (child.Def.Attacher.Mode == "trailed")
+        foreach (var c in child.Components) c.OnHitched();
+        if (a.Def.Mode == "trailed")
         {
             // Keep the trailer's heading but clamp it into the allowed articulation.
-            var max = child.Def.Attacher.MaxArticulationDeg * MathUtil.Deg2Rad;
+            var max = a.Def.MaxArticulationDeg * MathUtil.Deg2Rad;
             var rel = Math.Clamp(MathUtil.WrapAngle(child.Heading - parent.Heading), -max, max);
             child.Heading = parent.Heading + rel;
         }
@@ -87,10 +87,7 @@ public sealed class MachineSystem
         child.Parent = null;
         child.ParentJoint = null;
         child.Speed = 0f;
-        child.TurnedOn = false;
-        child.Tipping = false;
-        child.Lowered = false;
-        child.HasWorkPose = false;
+        foreach (var c in child.Components) c.OnDetached();
         Events.Publish(new ImplementDetached(parent, jointId, child));
     }
 
@@ -100,20 +97,20 @@ public sealed class MachineSystem
         (Machine, AttacherJointDef, Machine)? best = null;
         var bestDist = AttachDistance;
         foreach (var p in vehicle.Chain())
-        foreach (var j in p.Def.AttacherJoints)
+        foreach (var j in p.Def.Joints)
         {
             if (p.Attached.ContainsKey(j.Id)) continue;
             var jw = p.LocalToWorld(j.X, j.Z);
             foreach (var c in All)
             {
-                if (c.Parent != null || c.Def.Attacher == null || c.IsMotorized || c.Root == vehicle.Root) continue;
+                if (c.Parent != null || c.Get<Attachable>() is not { } a || c.Has<Motor>() || c.Root == vehicle.Root) continue;
                 if (c.FarmId != vehicle.FarmId) continue;
-                if (c.Def.Attacher.Type != j.Type) continue;
-                var aw = c.LocalToWorld(c.Def.Attacher.X, c.Def.Attacher.Z);
+                if (a.Def.Type != j.Type) continue;
+                var aw = c.LocalToWorld(a.Def.X, a.Def.Z);
                 var d = Vector2.Distance(jw, aw);
                 if (d >= bestDist) continue;
                 var rel = MathF.Abs(MathUtil.WrapAngle(c.Heading - p.Heading));
-                var limit = c.Def.Attacher.Mode == "mounted" ? 45f : c.Def.Attacher.MaxArticulationDeg;
+                var limit = a.Def.Mode == "mounted" ? 45f : a.Def.MaxArticulationDeg;
                 if (rel > limit * MathUtil.Deg2Rad) continue;
                 bestDist = d;
                 best = (p, j, c);
@@ -137,39 +134,65 @@ public sealed class MachineSystem
 
     // ------------------------------------------------------------------ Commands
 
+    /// <summary>Implements of the vehicle's chain that are lowered and raised (the vehicle's own attachable excluded).</summary>
+    public static List<Attachable> Lowerable(Machine vehicle) =>
+        vehicle.Chain().Where(m => m != vehicle).Select(m => m.Get<Attachable>()).OfType<Attachable>().Where(a => a.Def.Lowerable).ToList();
+
+    /// <summary>What the turn-on key switches in the vehicle's chain.</summary>
+    public static List<ISwitchable> Switchable(Machine vehicle) =>
+        vehicle.Chain().SelectMany(m => m.Components.OfType<ISwitchable>()).Where(s => s.CanTurnOn).ToList();
+
     public void ToggleLower(Machine vehicle)
     {
-        var tools = vehicle.Chain().Where(m => m != vehicle && m.Def.WorkArea is { RequiresLowered: true }).ToList();
+        var tools = Lowerable(vehicle);
         if (tools.Count == 0)
         {
             _sim.Notifications.Post("No implement to lower");
             return;
         }
         var lower = !tools.Any(t => t.Lowered);
-        foreach (var t in tools) t.Lowered = lower;
+        foreach (var t in tools)
+        {
+            t.Lowered = lower;
+            // Lowering a folded implement unfolds it first.
+            if (lower && t.Machine.Get<AnimatedParts>() is { Folded: true } parts) parts.Folded = false;
+        }
     }
 
     public void ToggleOn(Machine vehicle)
     {
-        var parts = vehicle.Chain().Where(m => m.Def.HarvestTank != null || m.Def.WorkArea is { RequiresOn: true }).ToList();
+        var parts = Switchable(vehicle);
         if (parts.Count == 0)
         {
             _sim.Notifications.Post("Nothing to turn on");
             return;
         }
-        var on = !parts.Any(p => p.TurnedOn);
-        foreach (var p in parts) p.TurnedOn = on;
+        var on = !parts.Any(p => p.On);
+        foreach (var p in parts) p.On = on;
+    }
+
+    /// <summary>Folds the vehicle's chain for transport (raising it), or unfolds it.</summary>
+    public void ToggleFold(Machine vehicle)
+    {
+        var parts = vehicle.Chain().Select(m => m.Get<AnimatedParts>()).OfType<AnimatedParts>().Where(p => p.CanFold).ToList();
+        if (parts.Count == 0)
+        {
+            _sim.Notifications.Post("Nothing to fold");
+            return;
+        }
+        var fold = !parts.Any(p => p.Folded);
+        foreach (var p in parts) p.Folded = fold;
     }
 
     /// <summary>Combine: fold/unfold the pipe. Trailer: start/stop tipping.</summary>
     public void ToggleUnload(Machine vehicle)
     {
-        if (vehicle.Def.Pipe != null)
+        if (vehicle.Get<Pipe>() is { } pipe)
         {
-            vehicle.PipeOut = !vehicle.PipeOut;
+            pipe.Out = !pipe.Out;
             return;
         }
-        var tippers = vehicle.Chain().Where(m => m.Def.Tipper != null).ToList();
+        var tippers = vehicle.Chain().Select(m => m.Get<Tipper>()).OfType<Tipper>().ToList();
         if (tippers.Count == 0)
         {
             _sim.Notifications.Post("Nothing to unload");
@@ -177,23 +200,14 @@ public sealed class MachineSystem
         }
         foreach (var t in tippers)
         {
-            if (t.Tipping)
-            {
-                t.Tipping = false;
-                continue;
-            }
-            var unit = t.Unit(t.Def.Tipper!.FillUnit)!;
-            var pit = Pois.TriggerAt(t.Footprint.Center, "unload");
-            if (unit.IsEmpty) _sim.Notifications.Post($"{t.Def.Name} is empty");
-            else if (pit == null) _sim.Notifications.Post("Drive the trailer into an unloading area to tip", Severity.Warning);
-            else if (Pois.UnloadBlocker(t, pit, unit.FillType!, unit.Level) is { } why) _sim.Notifications.Post(why, Severity.Warning);
-            else t.Tipping = true;
+            if (t.Tipping) t.Tipping = false;
+            else if (t.Start(_sim) is { } why) _sim.Notifications.Post(why, t.Load.IsEmpty ? Severity.Info : Severity.Warning);
         }
     }
 
     public void CycleSeed(Machine vehicle)
     {
-        var seeders = vehicle.Chain().Where(m => m.Def.SeedTank != null).ToList();
+        var seeders = vehicle.Chain().Select(m => m.Get<WorkAreas>()).OfType<WorkAreas>().Where(w => w.Sows).ToList();
         if (seeders.Count == 0)
         {
             _sim.Notifications.Post("No seeder attached");
@@ -201,8 +215,8 @@ public sealed class MachineSystem
         }
         foreach (var s in seeders)
         {
-            s.SelectedCrop = (s.SelectedCrop + 1) % Content.Crops.Count;
-            var crop = Content.Crops[s.SelectedCrop];
+            s.Crop = (s.Crop + 1) % Content.Crops.Count;
+            var crop = Content.Crops[s.Crop];
             _sim.Notifications.Post($"Seeder: {crop.Name} (sow {Months(crop.SowingMonths)})");
         }
     }
@@ -215,27 +229,31 @@ public sealed class MachineSystem
     public void Update(float dt)
     {
         foreach (var m in All)
-            if (m.Parent == null && m.IsMotorized)
+            if (m.Parent == null && m.Has<Motor>())
                 Drive(m, dt);
 
         foreach (var m in All)
-        {
-            m.LowerAnim = MathUtil.MoveToward(m.LowerAnim, m.Lowered ? 1f : 0f, dt * 1.5f);
-            m.PipeAnim = MathUtil.MoveToward(m.PipeAnim, m.PipeOut ? 1f : 0f, dt * 0.4f);
-            m.TipAnim = MathUtil.MoveToward(m.TipAnim, m.Tipping ? 1f : 0f, dt * 0.35f);
-            if (m.Def.Pipe != null) UpdatePipe(m, dt);
-            if (m.Def.Tipper != null) UpdateTipper(m, dt);
-        }
+        foreach (var c in m.Components)
+            c.Update(_sim, dt);
     }
 
-    private bool WorkEngaged(Machine m) => m.Def.WorkArea is { } wa &&
-                                           (!wa.RequiresLowered || m.Lowered) &&
-                                           (wa.Type == "harvester" ? m.Parent is { TurnedOn: true } : !wa.RequiresOn || m.TurnedOn);
+    /// <summary>
+    /// True if the work area does its work now: the implement unfolded and lowered (when it folds or lowers), and
+    /// turned on (a harvester: the thresher it hangs on) when it needs to be.
+    /// </summary>
+    private static bool Engaged(Machine m, WorkAreas w, WorkAreaDef area)
+    {
+        if (m.Get<AnimatedParts>() is { Unfolded: false }) return false;
+        if (m.Get<Attachable>() is { Def.Lowerable: true, Lowered: false }) return false;
+        return area.Type == "harvester" ? m.Parent?.Get<Thresher>() is { On: true } : !area.RequiresOn || w.On;
+    }
 
     private void Drive(Machine v, float dt)
     {
-        var mot = v.Def.Motorized!;
-        var input = v.Controller?.GetInput(v, dt) ?? new VehicleInput { Brake = true };
+        var motor = v.Get<Motor>()!;
+        var mot = motor.Def;
+        var gear = v.Get<RunningGear>()!;
+        var input = v.Get<Drivable>()?.Controller?.GetInput(v, dt) ?? new VehicleInput { Brake = true };
         v.Status = null;
 
         // Speed limits from working implements, engine power and soft ground.
@@ -246,11 +264,15 @@ public sealed class MachineSystem
         foreach (var m in v.Chain())
         {
             totalMass += m.SelfMassWithLoad(Content);
-            if (!WorkEngaged(m)) continue;
-            var wa = m.Def.WorkArea!;
-            maxF = MathF.Min(maxF, wa.MaxWorkSpeedKmh * MathUtil.KmhToMs);
-            demand += wa.RequiredPowerHp;
+            if (m.Get<WorkAreas>() is not { } w) continue;
+            foreach (var area in w.Def.Areas)
+            {
+                if (!Engaged(m, w, area)) continue;
+                maxF = MathF.Min(maxF, area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
+                demand += area.RequiredPowerHp;
+            }
         }
+        motor.Load = demand / mot.PowerHp;
         if (demand > mot.PowerHp)
         {
             maxF *= MathF.Max(0.3f, mot.PowerHp / demand);
@@ -284,21 +306,24 @@ public sealed class MachineSystem
         else s = MathUtil.MoveToward(s, 0f, 1.5f * dt);
         if (s > maxF) s = MathUtil.MoveToward(s, maxF, mot.Braking * dt);
 
+        // Less lock the faster it goes.
         var speedFactor = MathUtil.Lerp(1f, 0.4f, MathUtil.Saturate(MathF.Abs(s) / (40f * MathUtil.KmhToMs)));
-        var steerTarget = Math.Clamp(input.Steer, -1f, 1f) * mot.MaxSteerDeg * MathUtil.Deg2Rad * speedFactor;
-        v.SteerAngle = MathUtil.MoveToward(v.SteerAngle, steerTarget, mot.SteerRateDeg * MathUtil.Deg2Rad * dt);
+        gear.SteerToward(Math.Clamp(input.Steer, -1f, 1f) * gear.Def.MaxSteerDeg * MathUtil.Deg2Rad * speedFactor, dt);
 
         if (MathF.Abs(s) < 1e-4f)
         {
             v.Speed = 0f;
-            foreach (var m in v.Chain()) m.HasWorkPose &= WorkEngaged(m);
+            foreach (var m in v.Chain())
+                if (m.Get<WorkAreas>() is { } w)
+                    foreach (var area in w.Areas)
+                        area.HasPose &= Engaged(m, w, area.Def);
             return;
         }
 
         _saved.Clear();
         foreach (var m in v.Chain()) _saved.Add((m, m.Position, m.Heading));
 
-        v.Heading = MathUtil.WrapAngle(v.Heading + s * MathF.Tan(v.SteerAngle) / mot.Wheelbase * dt);
+        v.Heading = MathUtil.WrapAngle(v.Heading + gear.Turn(s, dt));
         v.Position += MathUtil.Forward(v.Heading) * s * dt;
         UpdateChildren(v);
 
@@ -317,7 +342,7 @@ public sealed class MachineSystem
         foreach (var (m, pos, _) in _saved)
         {
             var moved = Vector2.Dot(m.Position - pos, m.Forward);
-            m.Distance += moved;
+            if (m.Get<RunningGear>() is { } wheels) wheels.Distance += moved;
             if (m != v) m.Speed = moved / dt;
         }
         ProcessWorkAreas(v);
@@ -329,7 +354,7 @@ public sealed class MachineSystem
         root.Position = position;
         root.Heading = heading;
         root.Speed = 0f;
-        root.HasWorkPose = false;
+        root.Get<WorkAreas>()?.ForgetPoses();
         var depth = 1;
         foreach (var m in root.Chain().Skip(1))
         {
@@ -337,7 +362,7 @@ public sealed class MachineSystem
             m.Heading = heading;
             m.Position = position - MathUtil.Forward(heading) * (20f * depth++);
             m.Speed = 0f;
-            m.HasWorkPose = false;
+            m.Get<WorkAreas>()?.ForgetPoses();
         }
         UpdateChildren(root);
     }
@@ -349,7 +374,7 @@ public sealed class MachineSystem
         {
             var j = parent.Joint(jointId)!;
             var jw = parent.LocalToWorld(j.X, j.Z);
-            var a = child.Def.Attacher!;
+            var a = child.Get<Attachable>()!.Def;
             if (a.Mode == "mounted")
             {
                 child.Heading = parent.Heading;
@@ -416,49 +441,54 @@ public sealed class MachineSystem
     private void ProcessWorkAreas(Machine root)
     {
         // A helper only works the field it was hired for.
-        var limit = (root.Controller as FieldWorkController)?.Field.Shape;
+        var limit = (root.Get<Drivable>()?.Controller as FieldWorkController)?.Field.Shape;
         Span<Vector2> pts = stackalloc Vector2[8];
         foreach (var m in root.Chain())
         {
-            if (m.Def.WorkArea is not { } wa) continue;
-            if (!WorkEngaged(m) || root.Speed < 0.05f || (wa.RequiresLowered && m.LowerAnim < 0.9f))
+            if (m.Get<WorkAreas>() is not { } w) continue;
+            var lowering = m.Get<Attachable>() is { Def.Lowerable: true, LowerAnim: < 0.9f };
+            foreach (var area in w.Areas)
             {
-                m.HasWorkPose = false;
-                continue;
-            }
+                var wa = area.Def;
+                if (!Engaged(m, w, wa) || root.Speed < 0.05f || lowering)
+                {
+                    area.HasPose = false;
+                    continue;
+                }
 
-            var center = m.LocalToWorld(wa.X, wa.Z);
-            MathUtil.RectCorners(center, m.Heading, wa.Width * 0.5f, wa.Length * 0.5f, pts[..4]);
-            var count = 4;
-            if (m.HasWorkPose && Vector2.Distance(m.PrevWorkCenter, center) < 5f)
-            {
-                MathUtil.RectCorners(m.PrevWorkCenter, m.PrevWorkHeading, wa.Width * 0.5f, wa.Length * 0.5f, pts[4..]);
-                count = 8;
-            }
-            m.HasWorkPose = true;
-            m.PrevWorkCenter = center;
-            m.PrevWorkHeading = m.Heading;
+                var center = m.LocalToWorld(wa.X, wa.Z);
+                MathUtil.RectCorners(center, m.Heading, wa.Width * 0.5f, wa.Length * 0.5f, pts[..4]);
+                var count = 4;
+                if (area.HasPose && Vector2.Distance(area.PrevCenter, center) < 5f)
+                {
+                    MathUtil.RectCorners(area.PrevCenter, area.PrevHeading, wa.Width * 0.5f, wa.Length * 0.5f, pts[4..]);
+                    count = 8;
+                }
+                area.HasPose = true;
+                area.PrevCenter = center;
+                area.PrevHeading = m.Heading;
 
-            _cells.Clear();
-            Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
-            if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
-            var refused = KeepAllowed(root.FarmId, m, wa);
-            var fieldId = WorkedFieldId(center);
-            var changed = wa.Type switch
-            {
-                "cultivator" => Cultivate(m),
-                "seeder" => Sow(m),
-                "harvester" => Harvest(m, wa, fieldId),
-                _ => 0,
-            };
-            if (changed == 0)
-            {
-                if (refused != null) m.Status = refused;
-                continue;
+                _cells.Clear();
+                Geometry.RasterizeConvex(pts[..count], WorldMap.CellSize, World.CellsX, World.CellsZ, _cells);
+                if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
+                var refused = KeepAllowed(root.FarmId, w, wa);
+                var fieldId = WorkedFieldId(center);
+                var changed = wa.Type switch
+                {
+                    "cultivator" => Cultivate(m),
+                    "seeder" => Sow(m, w, wa),
+                    "harvester" => Harvest(m, wa, fieldId),
+                    _ => 0,
+                };
+                if (changed == 0)
+                {
+                    if (refused != null) m.Status = refused;
+                    continue;
+                }
+                var ha = changed * WorldMap.CellArea / 10000f;
+                m.WorkedHa += ha;
+                Events.Publish(new FieldWorked(m, wa.Type, fieldId, ha));
             }
-            var ha = changed * WorldMap.CellArea / 10000f;
-            m.WorkedHa += ha;
-            Events.Publish(new FieldWorked(m, wa.Type, fieldId, ha));
         }
     }
 
@@ -466,9 +496,9 @@ public sealed class MachineSystem
     /// Drops the cells the farm may not work (<see cref="Farms.MayWork"/>): other farms' land, and fields it has no
     /// contract for. Returns why when that left field ground unworked.
     /// </summary>
-    private string? KeepAllowed(int farmId, Machine m, WorkAreaDef wa)
+    private string? KeepAllowed(int farmId, WorkAreas w, WorkAreaDef wa)
     {
-        var crop = wa.Type == "seeder" ? Content.Crops[m.SelectedCrop] : null;
+        var crop = wa.Type == "seeder" ? Content.Crops[w.Crop] : null;
         var refused = -1;
         _cells.RemoveAll(i =>
         {
@@ -502,10 +532,10 @@ public sealed class MachineSystem
         return n;
     }
 
-    private int Sow(Machine m)
+    private int Sow(Machine m, WorkAreas w, WorkAreaDef wa)
     {
-        var crop = Content.Crops[m.SelectedCrop];
-        var unit = m.Unit(m.Def.SeedTank)!;
+        var crop = Content.Crops[w.Crop];
+        var unit = m.Unit(wa.FillUnit)!;
         var kgPerCell = crop.SeedKgPerHa * WorldMap.CellArea / 10000f;
         var inWindow = _sim.Crops.InSowingWindow(crop, _sim.Clock.Month);
         var health = inWindow ? (byte)255 : (byte)150;
@@ -522,7 +552,7 @@ public sealed class MachineSystem
                 break;
             }
             unit.Remove(kgPerCell);
-            WorkOps.Sow(World, i, m.SelectedCrop, health, angle);
+            WorkOps.Sow(World, i, w.Crop, health, angle);
             n++;
         }
         return n;
@@ -531,7 +561,7 @@ public sealed class MachineSystem
     private int Harvest(Machine header, WorkAreaDef wa, int fieldId)
     {
         var combine = header.Parent!;
-        var tank = combine.Unit(combine.Def.HarvestTank)!;
+        var tank = combine.Get<Thresher>()!.Tank;
         var L = World.Layers;
         var n = 0;
         CropDef? threshed = null;
@@ -577,6 +607,7 @@ public sealed class MachineSystem
 
     // ------------------------------------------------------------------ Transfers
 
+    /// <summary>A fill unit of a machine (other than <paramref name="exclude"/>) at <paramref name="point"/> that takes the fill type.</summary>
     public FillUnit? FindReceiver(Vector2 point, string fillType, Machine exclude)
     {
         foreach (var m in All)
@@ -586,32 +617,5 @@ public sealed class MachineSystem
                 if (u.CanAccept(fillType)) return u;
         }
         return null;
-    }
-
-    private void UpdatePipe(Machine m, float dt)
-    {
-        var pipe = m.Def.Pipe!;
-        var tank = m.Unit(pipe.FillUnit)!;
-        if (!m.PipeOut || m.PipeAnim < 0.95f || tank.IsEmpty) return;
-        var outlet = m.LocalToWorld(pipe.X, pipe.Z);
-        var ft = tank.FillType!;
-        var amount = MathF.Min(pipe.RatePerSecond * dt, tank.Level);
-        // A machine under the pipe first, else a POI's unloading area.
-        if (FindReceiver(outlet, ft, m) is { } target) tank.Remove(target.Add(ft, amount));
-        else if (Pois.TriggerAt(outlet, "unload") is { } pit && Pois.UnloadBlocker(m, pit, ft, tank.Level) == null) tank.Remove(Pois.Unload(m, pit, ft, amount));
-    }
-
-    private void UpdateTipper(Machine m, float dt)
-    {
-        if (!m.Tipping) return;
-        var unit = m.Unit(m.Def.Tipper!.FillUnit)!;
-        var pit = Pois.TriggerAt(m.Footprint.Center, "unload");
-        if (unit.IsEmpty || pit == null || Pois.UnloadBlocker(m, pit, unit.FillType!, unit.Level) != null)
-        {
-            m.Tipping = false;
-            return;
-        }
-        if (m.TipAnim < 0.6f) return;
-        unit.Remove(Pois.Unload(m, pit, unit.FillType!, MathF.Min(m.Def.Tipper.RatePerSecond * dt, unit.Level)));
     }
 }

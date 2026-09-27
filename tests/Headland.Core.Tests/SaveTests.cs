@@ -1,7 +1,10 @@
 using System.Numerics;
+using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Headland.Core.Content;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Saves;
 using Headland.Core.World;
@@ -51,8 +54,8 @@ public class SaveTests
         Assert.Equal(la.Health, lb.Health);
         Assert.Equal(la.WorkAngle, lb.WorkAngle);
         Assert.Equal(la.Chill, lb.Chill);
-        Assert.Equal(a.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Lowered)),
-            b.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Lowered)));
+        Assert.Equal(a.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Get<Attachable>()?.Lowered)),
+            b.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Get<Attachable>()?.Lowered)));
         Assert.Equal(a.Machines.All.SelectMany(m => m.FillUnits.Select(u => (u.FillType, u.Level))),
             b.Machines.All.SelectMany(m => m.FillUnits.Select(u => (u.FillType, u.Level))));
     }
@@ -75,7 +78,7 @@ public class SaveTests
         var combine = loaded.Machines.All.First(m => m.Def.Id == "combine_7");
         Assert.Same(combine, loaded.Player.Vehicle);
         Assert.True(combine.Unit("tank")!.Level > 100f);
-        var (h1, h2) = ((FieldWorkController)sim.Player.Vehicle!.Controller!, Assert.IsType<FieldWorkController>(combine.Controller));
+        var (h1, h2) = ((FieldWorkController)sim.Player.Vehicle!.Get<Drivable>()!.Controller!, Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller));
         // The route itself is kept: planned again, it would start from where the combine is now.
         Assert.Equal(h1.Path.Points, h2.Path.Points);
         Assert.Equal(h1.Path.Segments, h2.Path.Segments);
@@ -112,12 +115,40 @@ public class SaveTests
         var loaded = SaveGame.Load(sim.Content, file with { State = JsonSerializer.SerializeToUtf8Bytes(state, SaveGame.Json) }).Sim;
 
         var combine = loaded.Machines.All.First(m => m.Def.Id == "combine_7");
-        var helper = Assert.IsType<FieldWorkController>(combine.Controller);
+        var helper = Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);
         // Planned again from where the combine is: on along the lane it was harvesting.
         Assert.Equal(0, helper.Driver.Index);
         Assert.Equal(PathSegment.Work, helper.Path.Segments[0]);
         Assert.InRange(helper.Path.Points[0].X, combine.Position.X - 0.2f, combine.Position.X + 0.2f);
     }
+
+    [Fact]
+    public void AFormat1SaveHandsItsMachineStateToTheirComponents()
+    {
+        // The machines of BusyGame() as version 0.7.0 saved them, before components.
+        var sim = BusyGame();
+        var file = SaveGame.Capture(sim, "test");
+        var state = JsonNode.Parse(file.State)!.AsObject();
+        state["machines"] = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "machines-format1.json")));
+        file.Meta.Format = 1;
+        var loaded = SaveGame.Load(sim.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) });
+        Assert.Empty(loaded.Warnings);
+
+        AssertSameWorld(sim, loaded.Sim);
+        var (combine, header, seeder) = (Find(loaded.Sim, "combine_7"), Find(loaded.Sim, "header_grain_6"), Find(loaded.Sim, "seeder_3"));
+        Assert.True(combine.Get<Thresher>()!.On);
+        Assert.Equal(242.77448f, combine.Unit("tank")!.Level, 3);
+        Assert.Equal(54.486378f, combine.Get<RunningGear>()!.Distance, 3);
+        Assert.Equal((true, 1f), (header.Get<Attachable>()!.Lowered, header.Get<Attachable>()!.LowerAnim));
+        Assert.Equal(sim.Content.CropIndex("canola"), seeder.Get<WorkAreas>()!.Crop);
+        Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);
+
+        // It goes on as the game it was saved from.
+        foreach (var s in new[] { sim, loaded.Sim }) Run(s, 10f);
+        AssertSameWorld(sim, loaded.Sim);
+    }
+
+    private static Machine Find(Simulation sim, string def) => sim.Machines.All.First(m => m.Def.Id == def);
 
     [Fact]
     public void SavesSurviveContentChanges()

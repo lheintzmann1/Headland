@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Events;
+using Headland.Core.Machines.Components;
 using Headland.Core.Time;
 
 namespace Headland.Core.Tests;
@@ -91,8 +92,8 @@ public class GameEventTests
         Assert.True(sim.Machines.Attach(t, "rear", c));
         Assert.Equal([new ImplementAttached(t, "rear", c)], attached);
 
-        c.Lowered = true;
-        t.Controller = new Machines.ManualController { Input = new Machines.VehicleInput { Throttle = 1f } };
+        c.Get<Attachable>()!.Lowered = true;
+        t.Get<Drivable>()!.Controller = new Machines.ManualController { Input = new Machines.VehicleInput { Throttle = 1f } };
         for (var s = 0f; s < 8f; s += Dt) sim.Tick(Dt);
         Assert.NotEmpty(worked);
         Assert.All(worked, e => Assert.Equal(("cultivator", 4), (e.Work, e.FieldId)));
@@ -111,7 +112,7 @@ public class GameEventTests
         trailer.Unit("main")!.Add("wheat", 8000f);
         sim.Player.Enter(t);
         sim.CommandUnload();
-        for (var s = 0f; s < 60f && (trailer.Tipping || trailer.TipAnim > 0f); s += Dt) sim.Tick(Dt);
+        for (var s = 0f; s < 60f && (trailer.Get<Tipper>()!.Tipping || trailer.Get<Tipper>()!.Anim > 0f); s += Dt) sim.Tick(Dt);
 
         var sale = Assert.Single(sold);
         Assert.Equal(("elevator", "wheat", trailer), (sale.Poi.Id, sale.FillType, sale.Machine));
@@ -138,7 +139,7 @@ public class GameEventTests
         sim.CommandHelper();
         var end = Assert.Single(dismissed);
         Assert.Equal((t, HelperEnd.Dismissed), (end.Vehicle, end.End));
-        Assert.Same(sim.Player.Controls, t.Controller);
+        Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper dismissed");
     }
 }

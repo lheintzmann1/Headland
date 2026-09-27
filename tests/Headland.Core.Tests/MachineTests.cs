@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.World;
 
 namespace Headland.Core.Tests;
@@ -81,7 +82,7 @@ public class MachineTests
     private static ManualController Drive(Machine m, float throttle, float steer = 0f)
     {
         var c = new ManualController { Input = new VehicleInput { Throttle = throttle, Steer = steer } };
-        m.Controller = c;
+        m.Get<Drivable>()!.Controller = c;
         return c;
     }
 
@@ -127,7 +128,7 @@ public class MachineTests
 
         // The trailer's drawbar eye stays on the tractor's hitch.
         var hitch = t.LocalToWorld(0f, t.Joint("drawbar")!.Z);
-        var eye = trailer.LocalToWorld(0f, trailer.Def.Attacher!.Z);
+        var eye = trailer.LocalToWorld(0f, trailer.Get<Attachable>()!.Def.Z);
         Assert.True(Vector2.Distance(hitch, eye) < 0.01f);
     }
 
@@ -168,7 +169,7 @@ public class MachineTests
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
         sim.Machines.Attach(t, "rear", c);
-        c.Lowered = true;
+        c.Get<Attachable>()!.Lowered = true;
         Drive(t, 1f);
         Run(sim, 12f);
         var cultivated = CountCells(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated && sim.World.Layers.FieldId[i] == 4);
@@ -185,9 +186,9 @@ public class MachineTests
         var t = sim.Machines.Spawn("tractor_125", new Vector2(90f, 262f), 0f);
         var s = sim.Machines.Spawn("seeder_3", new Vector2(90f, 257f), 0f);
         Assert.True(sim.Machines.Attach(t, "drawbar", s));
-        s.SelectedCrop = sim.Content.CropIndex("canola");
-        s.Lowered = true;
-        s.TurnedOn = true;
+        s.Get<WorkAreas>()!.Crop = sim.Content.CropIndex("canola");
+        s.Get<Attachable>()!.Lowered = true;
+        s.Get<WorkAreas>()!.On = true;
         var seedBefore = s.Unit("seed")!.Level;
         Drive(t, 1f);
         Run(sim, 12f);
@@ -205,8 +206,8 @@ public class MachineTests
         var combine = sim.Machines.Spawn("combine_7", new Vector2(260f, 88f), 0f);
         var header = sim.Machines.Spawn("header_grain_6", new Vector2(260f, 90f), 0f);
         Assert.True(sim.Machines.Attach(combine, "header", header));
-        combine.TurnedOn = true;
-        header.Lowered = true;
+        combine.Get<Thresher>()!.On = true;
+        header.Get<Attachable>()!.Lowered = true;
         Drive(combine, 1f);
         Run(sim, 20f);
         var tank = combine.Unit("tank")!;
@@ -223,8 +224,8 @@ public class MachineTests
         var combine = sim.Machines.Spawn("combine_7", new Vector2(260f, 88f), 0f);
         var header = sim.Machines.Spawn("header_corn_6", new Vector2(260f, 90f), 0f);
         sim.Machines.Attach(combine, "header", header);
-        combine.TurnedOn = true;
-        header.Lowered = true;
+        combine.Get<Thresher>()!.On = true;
+        header.Get<Attachable>()!.Lowered = true;
         Drive(combine, 1f);
         Run(sim, 10f);
         Assert.True(combine.Unit("tank")!.IsEmpty);
@@ -237,11 +238,10 @@ public class MachineTests
         var sim = TestContent.NewSim();
         var combine = sim.Machines.Spawn("combine_7", new Vector2(269f, 300f), 0f);
         combine.Unit("tank")!.Add("wheat", 5000f);
-        var pipe = combine.Def.Pipe!;
-        var outlet = combine.LocalToWorld(pipe.X, pipe.Z);
+        var outlet = combine.Get<Pipe>()!.Outlet;
         var trailerDef = sim.Content.Machines["trailer_16"];
         var trailer = sim.Machines.Spawn("trailer_16", outlet - MathUtil.Forward(0f) * trailerDef.Size.CenterZ, 0f);
-        combine.PipeOut = true;
+        combine.Get<Pipe>()!.Out = true;
         Run(sim, 50f);
         Assert.True(combine.Unit("tank")!.IsEmpty);
         Assert.Equal(5000f, trailer.Unit("main")!.Level, 1);
@@ -260,8 +260,9 @@ public class MachineTests
 
         sim.Player.Enter(t);
         sim.CommandUnload();
-        Assert.True(trailer.Tipping);
-        for (var s = 0f; s < 60f && (trailer.Tipping || trailer.TipAnim > 0f); s += Dt) sim.Tick(Dt);
+        var tipper = trailer.Get<Tipper>()!;
+        Assert.True(tipper.Tipping);
+        for (var s = 0f; s < 60f && (tipper.Tipping || tipper.Anim > 0f); s += Dt) sim.Tick(Dt);
         Assert.True(trailer.Unit("main")!.IsEmpty);
         Assert.Equal(money + expected, sim.Economy.Money, 0);
         Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Sold 10,000 L Wheat"));
@@ -275,10 +276,10 @@ public class MachineTests
         sim.Player.Position = t.LocalToWorld(2.2f, 1f);
         sim.ToggleEnterExit();
         Assert.Same(t, sim.Player.Vehicle);
-        Assert.Same(sim.Player.Controls, t.Controller);
+        Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
         sim.ToggleEnterExit();
         Assert.Null(sim.Player.Vehicle);
-        Assert.Null(t.Controller);
+        Assert.Null(t.Get<Drivable>()!.Controller);
         Assert.True(t.Footprint.Distance(sim.Player.Position) > PlayerCharacter.Radius);
     }
 
@@ -293,7 +294,7 @@ public class MachineTests
         var c = sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f);
         sim.Machines.Attach(t, "rear", c);
         var helper = new FieldWorkController(sim, t, Plot);
-        t.Controller = helper;
+        t.Get<Drivable>()!.Controller = helper;
         return (sim, t, helper);
     }
 
@@ -301,21 +302,21 @@ public class MachineTests
     public void SwitchVehicleCyclesAndLeavesHelpersWorking()
     {
         var (sim, t, helper) = HireCultivatorHelper();
-        var first = sim.Machines.All.First(m => m.IsMotorized);
-        Assert.Same(t, sim.Machines.All.Last(m => m.IsMotorized));
+        var first = sim.Machines.All.First(m => m.Has<Drivable>());
+        Assert.Same(t, sim.Machines.All.Last(m => m.Has<Drivable>()));
 
         sim.SwitchVehicle(1);
         Assert.Same(first, sim.Player.Vehicle);
-        Assert.Same(sim.Player.Controls, first.Controller);
+        Assert.Same(sim.Player.Controls, first.Get<Drivable>()!.Controller);
 
         sim.SwitchVehicle(-1);
         Assert.Same(t, sim.Player.Vehicle);
-        Assert.Same(helper, t.Controller);
-        Assert.Null(first.Controller);
+        Assert.Same(helper, t.Get<Drivable>()!.Controller);
+        Assert.Null(first.Get<Drivable>()!.Controller);
 
         sim.SwitchVehicle(1);
         Assert.Same(first, sim.Player.Vehicle);
-        Assert.Same(helper, t.Controller);
+        Assert.Same(helper, t.Get<Drivable>()!.Controller);
         var start = t.Position;
         Run(sim, 5f);
         Assert.True(Vector2.Distance(start, t.Position) > 5f, "the helper stopped driving");
@@ -376,8 +377,7 @@ public class MachineTests
     public void HelperTurnsStayInATightHeadland()
     {
         var (_, t, helper) = HireCultivatorHelper();
-        var mot = t.Def.Motorized!;
-        var turnRadius = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
+        var turnRadius = t.Get<RunningGear>()!.Def.TurnRadius * 1.15f;
         var worst = helper.Path.Points.Max(Plot.Shape.Distance);
         // Past the edge by the implement's offset, plus a turning radius: a mounted implement backs up in its turns.
         Assert.Contains(PathSegment.Reverse, helper.Path.Segments);
@@ -511,7 +511,7 @@ public class MachineTests
         sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", field.Center - new Vector2(0f, 2f), 0f));
         sim.Player.Enter(t);
         sim.CommandHelper();
-        Assert.Same(sim.Player.Controls, t.Controller);
+        Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Nothing left for the Tiller 300 to do on Field 4");
     }
 }

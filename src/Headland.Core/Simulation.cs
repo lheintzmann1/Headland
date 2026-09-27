@@ -6,6 +6,7 @@ using Headland.Core.Crops;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
 using Headland.Core.Time;
@@ -98,8 +99,8 @@ public sealed class Simulation
             spawned.Add(m);
             if (sp.AttachToIndex is not { } idx) continue;
             var parent = spawned[idx];
-            var jointId = sp.Joint ?? parent.Def.AttacherJoints
-                .FirstOrDefault(j => j.Type == m.Def.Attacher?.Type && !parent.Attached.ContainsKey(j.Id))?.Id;
+            var jointId = sp.Joint ?? parent.Def.Joints
+                .FirstOrDefault(j => j.Type == m.Get<Attachable>()?.Def.Type && !parent.Attached.ContainsKey(j.Id))?.Id;
             if (jointId == null || !Machines.Hitch(parent, jointId, m))
                 throw new ContentException($"Map machine '{sp.Def}' cannot attach to '{parent.Def.Id}'");
         }
@@ -121,7 +122,7 @@ public sealed class Simulation
         Pois.Update(dt);
         foreach (var m in Machines.All)
         {
-            if (m.Controller is not FieldWorkController w) continue;
+            if (m.Get<Drivable>()?.Controller is not FieldWorkController w) continue;
             PayHelper(w, dt);
             if (w.Finished) DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
         }
@@ -240,7 +241,7 @@ public sealed class Simulation
     /// <summary>H: hire a helper to work the field the vehicle is in (or the nearest one), or dismiss it.</summary>
     public void CommandHelper() => WithVehicle(v =>
     {
-        if (v.Controller is FieldWorkController)
+        if (v.Get<Drivable>()?.Controller is FieldWorkController)
         {
             DismissHelper(v, HelperEnd.Dismissed);
             return;
@@ -251,13 +252,14 @@ public sealed class Simulation
             Notifications.Post("Drive to a field first: helpers work the field you are in or next to", Severity.Warning);
             return;
         }
-        if (v.Chain().FirstOrDefault(m => m.Def.WorkArea != null) is not { } tool)
+        if (v.Chain().FirstOrDefault(m => m.Has<WorkAreas>()) is not { } tool)
         {
             Notifications.Post("Attach an implement first", Severity.Warning);
             return;
         }
-        var seed = tool.Def.SeedTank != null ? Content.Crops[tool.SelectedCrop] : null;
-        if (Farms.FieldBlocker(v.FarmId, field, tool.Def.WorkArea!.Type, seed) is { } why)
+        var areas = tool.Get<WorkAreas>()!;
+        var seed = areas.Sows ? Content.Crops[areas.Crop] : null;
+        if (Farms.FieldBlocker(v.FarmId, field, areas.Def.Areas[0].Type, seed) is { } why)
         {
             Notifications.Post(why, Severity.Warning);
             return;
@@ -290,7 +292,7 @@ public sealed class Simulation
     {
         helper.WagePerHour = HelperWage;
         helper.TakeOver();
-        v.Controller = helper;
+        v.Get<Drivable>()!.Controller = helper;
         Events.Publish(new HelperHired(v, helper.Field));
         return helper;
     }
@@ -310,11 +312,12 @@ public sealed class Simulation
 
     private void DismissHelper(Machine v, HelperEnd end)
     {
-        var helper = (FieldWorkController)v.Controller!;
+        var drivable = v.Get<Drivable>()!;
+        var helper = (FieldWorkController)drivable.Controller!;
         if (helper.Wages - helper.WagesPaid is var rest and > 0f) PayWages(helper, rest);
         foreach (var m in v.Chain())
-            if (m.Def.WorkArea != null) m.Lowered = false;
-        v.Controller = Player.Vehicle == v ? Player.Controls : null;
+            if (m.Has<WorkAreas>() && m.Get<Attachable>() is { } a) a.Lowered = false;
+        drivable.Controller = Player.Vehicle == v ? Player.Controls : null;
         Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason, helper.Wages));
     }
 
@@ -325,7 +328,7 @@ public sealed class Simulation
     internal void RemoveMachines(IReadOnlyCollection<Machine> gone)
     {
         foreach (var root in gone.Select(m => m.Root).Distinct().ToList())
-            if (root.Controller is FieldWorkController) DismissHelper(root, HelperEnd.Dismissed);
+            if (root.Get<Drivable>()?.Controller is FieldWorkController) DismissHelper(root, HelperEnd.Dismissed);
         if (Player.Vehicle is { } v && gone.Contains(v)) Player.Exit(this);
         foreach (var m in gone)
         {

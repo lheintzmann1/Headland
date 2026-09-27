@@ -2,6 +2,7 @@ using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
 using Headland.Core.Time;
@@ -305,8 +306,8 @@ public sealed class ContractSystem
 
     /// <summary>The first of the job's lease sets that can do it: a work area of its work (a header that cuts its crop).</summary>
     private ContractLeaseDef? LeaseFor(ContractTypeDef type, CropDef? crop) => type.Leases.FirstOrDefault(l => l.Machines.Any(id =>
-        _sim.Content.Machines[id].WorkArea is { } wa && wa.Type == type.Work
-        && (wa.Type != "harvester" || crop == null || wa.HarvestGroups.Contains(crop.HarvestGroup))));
+        _sim.Content.Machines[id].Get<WorkAreasDef>()?.Areas.Any(wa => wa.Type == type.Work
+            && (wa.Type != "harvester" || crop == null || wa.HarvestGroups.Contains(crop.HarvestGroup))) == true));
 
     private Contract Delivery(ContractTypeDef type, int day, int month)
     {

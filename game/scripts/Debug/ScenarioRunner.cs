@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Headland.Core;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Time;
 using Headland.Core.World;
 using Godot;
@@ -62,7 +63,7 @@ public partial class ScenarioRunner : Node
 
         var combine = Find("combine_7");
         var header = combine.Attached.Values.First();
-        var tank = combine.Unit(combine.Def.HarvestTank)!;
+        var tank = combine.Get<Thresher>()!.Tank;
         var f2 = Sim.World.FieldById(2)!.Shape;
 
         // --- Harvest three lanes of ripe wheat.
@@ -72,30 +73,30 @@ public partial class ScenarioRunner : Node
         Game.FocusOverride = () => combine.Footprint.Center;
         Game.Camera.Zoom = 34f;
         Game.SimSubsteps = 4;
-        await Until(() => helper.Finished || helper.LanesDone >= 2 && combine.Speed > 2f && header.Lowered, 150f);
+        await Until(() => helper.Finished || helper.LanesDone >= 2 && combine.Speed > 2f && header.Get<Attachable>()!.Lowered, 150f);
         Log($"harvested {tank.Level:N0} L wheat ({header.WorkedHa:0.00} ha), fps {Engine.GetFramesPerSecond():0}");
         await Shot("harvest");
         await Until(() => helper.Finished, 120f);
         Game.SimSubsteps = 1;
-        combine.Controller = null;
+        combine.Get<Drivable>()!.Controller = null;
         await Until(() => combine.Speed == 0f, 5f);
 
         // --- Unload into the trailer, parked under the pipe.
         var t95 = Find("tractor_95");
         var trailer = t95.Attached.Values.First();
-        var pipe = combine.Def.Pipe!;
-        var outlet = combine.LocalToWorld(pipe.X, pipe.Z);
+        var pipe = combine.Get<Pipe>()!;
+        var outlet = pipe.Outlet;
         var h = combine.Heading;
         var trailerPos = outlet - MathUtil.Forward(h) * trailer.Def.Size.CenterZ;
-        var eye = trailerPos + MathUtil.Forward(h) * trailer.Def.Attacher!.Z;
+        var eye = trailerPos + MathUtil.Forward(h) * trailer.Get<Attachable>()!.Def.Z;
         Ms.Teleport(t95, eye - MathUtil.Forward(h) * t95.Joint("drawbar")!.Z, h);
-        combine.PipeOut = true;
+        pipe.Out = true;
         Game.Camera.Zoom = 26f;
         var start = tank.Level;
         await Until(() => tank.Level < start * 0.55f, 60f);
         await Shot("unload");
         await Until(() => tank.IsEmpty, 60f);
-        combine.PipeOut = false;
+        pipe.Out = false;
         Log($"trailer holds {trailer.FillUnits[0].Level:N0} L");
 
         // --- Drive (teleport) the trailer to the elevator and tip it.
@@ -107,9 +108,10 @@ public partial class ScenarioRunner : Node
         Game.FocusOverride = null;
         var money = Sim.Economy.Money;
         Sim.CommandUnload();
-        await Until(() => trailer.TipAnim > 0.9f && trailer.FillUnits[0].Fraction < 0.6f, 60f);
+        var tipper = trailer.Get<Tipper>()!;
+        await Until(() => tipper.Anim > 0.9f && tipper.Load.Fraction < 0.6f, 60f);
         await Shot("sell");
-        await Until(() => !trailer.Tipping, 60f);
+        await Until(() => !tipper.Tipping, 60f);
         Log($"sold for ${Sim.Economy.Money - money:N0}; money ${Sim.Economy.Money:N0}");
 
         // --- Cultivate stubble on field 1.
@@ -139,9 +141,9 @@ public partial class ScenarioRunner : Node
         Ms.Teleport(cultivator, f1.Min + new NVec2(-10f, -12f), 0f);
         var seeder = Find("seeder_3");
         Ms.Teleport(t125, f1.Min + new NVec2(1.5f, -16f), 0f);
-        Ms.Teleport(seeder, t125.LocalToWorld(0f, t125.Joint("drawbar")!.Z) - MathUtil.Forward(0f) * seeder.Def.Attacher!.Z, 0f);
+        Ms.Teleport(seeder, t125.LocalToWorld(0f, t125.Joint("drawbar")!.Z) - MathUtil.Forward(0f) * seeder.Get<Attachable>()!.Def.Z, 0f);
         if (!Ms.Attach(t125, "drawbar", seeder)) throw new InvalidOperationException("could not attach the seeder");
-        seeder.SelectedCrop = Sim.Content.CropIndex("canola");
+        seeder.Get<WorkAreas>()!.Crop = Sim.Content.CropIndex("canola");
         var seed = seeder.Unit("seed")!.Level;
         helper = Sim.HireHelper(t125, strip, maxLanes: 5);
         Game.FocusOverride = () => t125.Footprint.Center;

@@ -1,32 +1,21 @@
 using Headland.Game.Common;
 using Headland.Core.Content;
+using Headland.Core.Machines.Components;
 using Godot;
 
 namespace Headland.Game.Vehicles;
 
-/// <summary>Moving parts of a machine visual, animated by <see cref="MachineView"/>.</summary>
-public sealed class MachineRig
-{
-    public Node3D Root { get; } = new() { Name = "Visual" };
-    public List<(Node3D steer, Node3D spin, WheelDef def)> Wheels { get; } = [];
-    public Node3D? PipePivot { get; set; }
-    public Node3D? Stream { get; set; }
-    public Node3D? TipPivot { get; set; }
-    public MeshInstance3D? Content { get; set; }
-    public float ContentFloor { get; set; }
-    public float ContentHeight { get; set; }
-    public Node3D? Reel { get; set; }
-}
-
 /// <summary>
-/// Procedural stand-ins with realistic proportions, built from the machine definition's size and wheels.
-/// Local space: +Z forward, +X left, origin at the definition's origin (reference axle or attacher), y = 0 on the ground.
+/// Procedural stand-ins with realistic proportions: the body of the machine's placeholder archetype, built from its
+/// size (and its parts that move, as roles: tipper, load, reel). Component views add their own parts: wheels, pipe,
+/// linkages. Local space: +Z forward, +X left, origin at the definition's origin (reference axle or attacher), y = 0 on
+/// the ground.
 /// </summary>
 public static class PlaceholderBuilder
 {
     public static MachineRig Build(MachineDef def)
     {
-        var rig = new MachineRig();
+        var rig = new MachineRig { IsPlaceholder = true };
         var body = Conv.Hex(def.Visual.Color);
         switch (def.Visual.Placeholder)
         {
@@ -42,7 +31,6 @@ public static class PlaceholderBuilder
                     new Vector3(0, def.Size.Height * 0.5f, def.Size.CenterZ), body);
                 break;
         }
-        foreach (var w in def.Wheels) AddWheel(rig, w);
         return rig;
     }
 
@@ -54,7 +42,7 @@ public static class PlaceholderBuilder
         var front = s.CenterZ + s.Length * 0.5f;
         var back = s.CenterZ - s.Length * 0.5f;
         var r = rig.Root;
-        var rearR = d.Wheels.Where(w => !w.Steer).Select(w => w.Radius).DefaultIfEmpty(0.75f).Max();
+        var rearR = (d.Get<RunningGearDef>()?.Wheels ?? []).Where(w => !w.Steer).Select(w => w.Radius).DefaultIfEmpty(0.75f).Max();
         // Chassis and engine hood.
         Box(r, new Vector3(0.8f, 0.45f, front - back - 0.3f), new Vector3(0, 0.75f, (front + back) * 0.5f + 0.1f), Materials.DarkSteel);
         Box(r, new Vector3(s.Width * 0.4f, 0.95f, front - 0.75f), new Vector3(0, 1.35f, (front + 0.75f) * 0.5f), body);
@@ -72,8 +60,7 @@ public static class PlaceholderBuilder
         // Rear fenders over the big wheels.
         foreach (var side in new[] { 1f, -1f })
             Box(r, new Vector3(0.6f, 0.08f, rearR * 1.6f), new Vector3(side * (s.Width * 0.5f - 0.3f), rearR * 2f + 0.05f, 0), body);
-        // Three-point linkage and exhaust.
-        Box(r, new Vector3(0.9f, 0.5f, 0.25f), new Vector3(0, 0.75f, back + 0.15f), Materials.DarkSteel);
+        // Exhaust.
         r.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = 0.06f, BottomRadius = 0.06f, Height = 1.1f, RadialSegments = 8 },
@@ -111,29 +98,6 @@ public static class PlaceholderBuilder
         // Straw chopper and engine grille.
         Box(r, new Vector3(s.Width * 0.6f, 0.6f, 0.4f), new Vector3(0, 1.1f, back + 0.1f), Materials.DarkSteel);
         Box(r, new Vector3(1.2f, 0.9f, 0.05f), new Vector3(0, 2.8f, back - 0.02f), Materials.DarkSteel);
-
-        // Unloading pipe (folded backward, swings out to the left).
-        if (d.Pipe is { } pipe)
-        {
-            var pivotX = s.Width * 0.36f;
-            var pivot = new Node3D { Name = "PipePivot", Position = new Vector3(pivotX, 3.9f, pipe.Z) };
-            r.AddChild(pivot);
-            var reach = pipe.X - pivotX;
-            var tube = new MeshInstance3D
-            {
-                Mesh = new CylinderMesh { TopRadius = 0.17f, BottomRadius = 0.17f, Height = reach, RadialSegments = 10 },
-                Position = new Vector3(0, 0.25f, reach * 0.5f),
-                Rotation = new Vector3(Mathf.Pi / 2f, 0, 0),
-                MaterialOverride = Materials.Get(body, 0.6f, 0.2f),
-            };
-            pivot.AddChild(tube);
-            Box(pivot, new Vector3(0.35f, 0.55f, 0.35f), new Vector3(0, 0.05f, reach), body * 0.8f);
-            var stream = new Node3D { Name = "Stream", Position = new Vector3(0, -1.8f, reach), Visible = false };
-            Box(stream, new Vector3(0.22f, 3.3f, 0.22f), Vector3.Zero, new Color(0.8f, 0.68f, 0.4f));
-            pivot.AddChild(stream);
-            rig.PipePivot = pivot;
-            rig.Stream = stream;
-        }
     }
 
     private static void Trailer(MachineRig rig, MachineDef d, Color body)
@@ -146,7 +110,7 @@ public static class PlaceholderBuilder
         var wallH = s.Height - bedY;
         // Chassis and drawbar.
         Box(r, new Vector3(1.0f, 0.3f, s.Length - 0.4f), new Vector3(0, 0.95f, s.CenterZ), Materials.DarkSteel);
-        if (d.Attacher is { } a)
+        if (d.Get<AttachableDef>() is { } a)
         {
             var bar = Box(r, new Vector3(0.18f, 0.18f, a.Z - front + 0.3f), new Vector3(0, 0.65f, (a.Z + front) * 0.5f), Materials.DarkSteel);
             bar.RotationDegrees = new Vector3(-5f, 0, 0);
@@ -168,12 +132,13 @@ public static class PlaceholderBuilder
             foreach (var side in new[] { 1f, -1f })
                 Box(bed, new Vector3(0.05f, wallH, 0.08f), new Vector3(side * (s.Width * 0.5f + 0.04f), wallH * 0.5f, z), body * 0.85f);
         }
-        var content = Box(bed, new Vector3(s.Width - 0.2f, 1f, s.Length - 0.2f), new Vector3(0, 0.12f, s.CenterZ), new Color(0.78f, 0.64f, 0.38f));
-        content.Visible = false;
-        rig.TipPivot = pivot;
-        rig.Content = content;
-        rig.ContentFloor = 0.12f;
-        rig.ContentHeight = wallH - 0.1f;
+        // The load: modeled full, pivoting at the floor, scaled with the fill level.
+        var load = new Node3D { Name = "Load", Position = new Vector3(0, 0.12f, 0), Visible = false };
+        bed.AddChild(load);
+        var full = wallH - 0.1f;
+        Box(load, new Vector3(s.Width - 0.2f, full, s.Length - 0.2f), new Vector3(0, full * 0.5f, s.CenterZ), new Color(0.78f, 0.64f, 0.38f));
+        rig.Add("tipper", pivot);
+        rig.Add("load", load);
     }
 
     private static void Cultivator(MachineRig rig, MachineDef d, Color body)
@@ -222,7 +187,7 @@ public static class PlaceholderBuilder
             var x = -s.Width * 0.5f + (k + 0.5f) * s.Width / n;
             Box(r, new Vector3(0.03f, 0.45f, 0.35f), new Vector3(x, 0.3f, -0.9f), Materials.DarkSteel);
         }
-        if (d.Attacher is { } a)
+        if (d.Get<AttachableDef>() is { } a)
             Box(r, new Vector3(0.16f, 0.16f, a.Z - 1.0f), new Vector3(0, 0.6f, (a.Z + 1.0f) * 0.5f), Materials.DarkSteel);
     }
 
@@ -271,23 +236,22 @@ public static class PlaceholderBuilder
             Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             MaterialOverride = Materials.Get(Materials.DarkSteel, 0.6f),
         });
-        rig.Reel = reel;
+        rig.Add("reel", reel);
     }
 
     // ------------------------------------------------------------------ Parts
 
-    private static void AddWheel(MachineRig rig, WheelDef w)
+    /// <summary>A wheel at its position, in one node that steers (y) and rolls (x).</summary>
+    public static Node3D Wheel(WheelDef w)
     {
-        var steer = new Node3D { Name = "Wheel", Position = new Vector3(w.X, w.Radius, w.Z) };
-        var spin = new Node3D();
-        steer.AddChild(spin);
-        spin.AddChild(new MeshInstance3D
+        var wheel = new Node3D { Name = "Wheel", Position = new Vector3(w.X, w.Radius, w.Z) };
+        wheel.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = w.Radius, BottomRadius = w.Radius, Height = w.Width, RadialSegments = 18 },
             Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             MaterialOverride = Materials.Get(Materials.Tire, 0.95f),
         });
-        spin.AddChild(new MeshInstance3D
+        wheel.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = w.Radius * 0.6f, BottomRadius = w.Radius * 0.6f, Height = w.Width + 0.03f, RadialSegments = 12 },
             Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
@@ -297,7 +261,7 @@ public static class PlaceholderBuilder
         for (var k = 0; k < 8; k++)
         {
             var a = k * Mathf.Tau / 8f;
-            spin.AddChild(new MeshInstance3D
+            wheel.AddChild(new MeshInstance3D
             {
                 Mesh = new BoxMesh { Size = new Vector3(w.Width * 1.02f, 0.06f, w.Radius * 0.35f) },
                 Position = new Vector3(0, Mathf.Sin(a) * (w.Radius - 0.01f), Mathf.Cos(a) * (w.Radius - 0.01f)),
@@ -305,8 +269,7 @@ public static class PlaceholderBuilder
                 MaterialOverride = Materials.Get(Materials.Tire * 1.3f, 0.95f),
             });
         }
-        rig.Root.AddChild(steer);
-        rig.Wheels.Add((steer, spin, w));
+        return wheel;
     }
 
     public static MeshInstance3D Box(Node3D parent, Vector3 size, Vector3 pos, Color color)

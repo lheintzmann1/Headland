@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Machines.Components;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines;
@@ -74,12 +75,13 @@ public sealed class WaypointController : IVehicleController
         var d2 = MathF.Max(local.LengthSquared(), 0.01f);
         // The same law steers backward: the non-steered axle then leads, and steering left swings it left.
         var curvature = 2f * local.X / d2;
-        var mot = v.Def.Motorized!;
-        var maxSteer = mot.MaxSteerDeg * MathUtil.Deg2Rad;
-        var steer = Math.Clamp(MathF.Atan(curvature * mot.Wheelbase) / maxSteer, -1f, 1f);
+        var mot = v.Get<Motor>()!.Def;
+        var gear = v.Get<RunningGear>()!;
+        var maxSteer = gear.Def.MaxSteerDeg * MathUtil.Deg2Rad;
+        var steer = Math.Clamp(MathF.Atan(curvature * gear.Wheelbase) / maxSteer, -1f, 1f);
         var input = new VehicleInput { Steer = steer };
         // Standing, turn the wheels first: pulling away with them far off would leave the path.
-        if (MathF.Abs(v.Speed) < 0.1f && MathF.Abs(steer * maxSteer - v.SteerAngle) > SteerTolerance)
+        if (MathF.Abs(v.Speed) < 0.1f && MathF.Abs(steer * maxSteer - gear.SteerAngle) > SteerTolerance)
         {
             input.Brake = true;
             return input;
@@ -420,7 +422,7 @@ public sealed class FieldWorkController : IVehicleController
     private const float ReverseSpeedKmh = 5f;
     /// <summary>A lane is left out when less than this share of the field under it is left to do.</summary>
     private const float MinShareLeft = 0.03f;
-    private readonly List<Machine> _tools;
+    private readonly List<(Machine machine, WorkAreas areas)> _tools;
     private readonly float _workSpeedKmh;
 
     /// <summary>
@@ -444,21 +446,21 @@ public sealed class FieldWorkController : IVehicleController
         Field = field;
         SpeedKmh = speedKmh;
         MaxLanes = maxLanes;
-        _tools = vehicle.Chain().Where(m => m.Def.WorkArea != null).ToList();
+        _tools = vehicle.Chain().Where(m => m.Has<WorkAreas>()).Select(m => (m, m.Get<WorkAreas>()!)).ToList();
         if (_tools.Count == 0) throw new InvalidOperationException($"{vehicle.Def.Name} has no implement to work with");
 
-        var width = _tools.Min(t => t.Def.WorkArea!.Width) * 0.97f; // slight overlap, no stripes
+        var width = _tools.Min(t => t.areas.MinWidth) * 0.97f; // slight overlap, no stripes
         // How far the rearmost work area trails behind the vehicle's reference point, and the frontmost reaches ahead.
         var reach = _tools.Max(t => -Along(vehicle, t, -0.5f));
         var ahead = _tools.Max(t => Along(vehicle, t, 0.5f));
-        var mot = vehicle.Def.Motorized ?? throw new InvalidOperationException("Helpers drive motorized vehicles");
-        var minR = mot.Wheelbase / MathF.Tan(mot.MaxSteerDeg * MathUtil.Deg2Rad) * 1.15f;
+        if (!vehicle.Has<Motor>() || !vehicle.Has<Drivable>()) throw new InvalidOperationException("Helpers drive vehicles with a motor and a seat");
+        var minR = vehicle.Get<RunningGear>()!.Def.TurnRadius * 1.15f;
         // Past the field edge the rearmost work area clears the field before the turn, and after it the vehicle is
         // lined up in time to lower a front one (a combine's header) before it reaches the field.
         Margin = margin ?? MathF.Max(MathF.Max(0f, reach) + 0.8f, ahead + RunIn);
-        _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.Def.WorkArea!.MaxWorkSpeedKmh) * 0.9f;
+        _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.areas.Def.Areas.Min(a => a.MaxWorkSpeedKmh)) * 0.9f;
         // Backing up with a trailed implement would jackknife it.
-        var canReverse = vehicle.Chain().All(m => m == vehicle || m.Def.Attacher?.Mode == "mounted");
+        var canReverse = vehicle.Chain().All(m => m == vehicle || m.Get<Attachable>()?.Def.Mode == "mounted");
         Path = path ?? FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin)
         {
             From = vehicle.Position, Heading = vehicle.Heading, Trail = reach, MaxLanes = maxLanes, Reverse = canReverse,
@@ -467,11 +469,11 @@ public sealed class FieldWorkController : IVehicleController
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Segments);
     }
 
-    /// <summary>How far ahead of the vehicle's reference point the front (0.5) or rear (-0.5) edge of a tool's work area is.</summary>
-    private static float Along(Machine vehicle, Machine tool, float edge)
+    /// <summary>How far ahead of the vehicle's reference point the front (0.5) or rear (-0.5) edge of a tool's work areas is.</summary>
+    private static float Along(Machine vehicle, (Machine machine, WorkAreas areas) tool, float edge)
     {
-        var wa = tool.Def.WorkArea!;
-        return MathUtil.WorldToLocal(vehicle.Position, vehicle.Heading, tool.LocalToWorld(wa.X, wa.Z + wa.Length * edge)).Y;
+        var (center, _, length) = tool.areas.Bounds;
+        return MathUtil.WorldToLocal(vehicle.Position, vehicle.Heading, tool.machine.LocalToWorld(center.X, center.Y + length * edge)).Y;
     }
 
     public Machine Vehicle { get; }
@@ -498,17 +500,23 @@ public sealed class FieldWorkController : IVehicleController
 
     public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
 
-    /// <summary>Takes over the implements: seeders and threshers on. Each is lowered as it reaches the field.</summary>
+    /// <summary>
+    /// Takes over the implements: unfolded, seeders and the thresher a header hangs on turned on. Each is lowered as it
+    /// reaches the field.
+    /// </summary>
     internal void TakeOver()
     {
-        foreach (var t in _tools)
-            if (t.Def.WorkArea!.RequiresOn) t.TurnedOn = true;
-        if (Vehicle.Def.HarvestTank != null) Vehicle.TurnedOn = true;
+        foreach (var (m, areas) in _tools)
+        {
+            if (m.Get<AnimatedParts>() is { } parts) parts.Folded = false;
+            if (areas.CanTurnOn) areas.On = true;
+            if (areas.Def.Areas.Any(a => a.Type == "harvester") && m.Parent?.Get<Thresher>() is { } thresher) thresher.On = true;
+        }
     }
 
     public VehicleInput GetInput(Machine v, float dt)
     {
-        foreach (var t in _tools)
+        foreach (var (t, _) in _tools)
         {
             if (t.Status is not { } s || !(s.StartsWith("Out of seed") || s.StartsWith("Grain tank full") || s.StartsWith("Tank holds")))
                 continue;
@@ -517,7 +525,8 @@ public sealed class FieldWorkController : IVehicleController
         }
         if (Finished)
         {
-            foreach (var t in _tools) t.Lowered = false;
+            foreach (var (t, _) in _tools)
+                if (t.Get<Attachable>() is { } a) a.Lowered = false;
             return new VehicleInput { Brake = true };
         }
 
@@ -532,21 +541,22 @@ public sealed class FieldWorkController : IVehicleController
         var input = Driver.GetInput(v, dt);
         var laneDir = onLane ? Driver.SegmentDirection : Vector2.Zero;
 
-        foreach (var t in _tools)
+        foreach (var (t, areas) in _tools)
         {
-            var wa = t.Def.WorkArea!;
+            if (t.Get<Attachable>() is not { Def.Lowerable: true } a) continue;
+            var (local, width, length) = areas.Bounds;
             var fwd = t.Forward;
             var aligned = onLane && Vector2.Dot(fwd, laneDir) > 0.94f;
-            var center = t.LocalToWorld(wa.X, wa.Z);
-            var side = MathUtil.Left(t.Heading) * (wa.Width * 0.45f);
+            var center = t.LocalToWorld(local);
+            var side = MathUtil.Left(t.Heading) * (width * 0.45f);
             // Lowered just before the work area's leading edge reaches the field, lifted as soon as the work area
             // leaves it (or the implement swings off the lane).
-            var ahead = center + fwd * (wa.Length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds);
-            if (t.Lowered)
+            var ahead = center + fwd * (length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds);
+            if (a.Lowered)
             {
-                if (!aligned || !Touches(center, side) && !Touches(ahead, side)) t.Lowered = false;
+                if (!aligned || !Touches(center, side) && !Touches(ahead, side)) a.Lowered = false;
             }
-            else if (aligned && Touches(ahead, side)) t.Lowered = true;
+            else if (aligned && Touches(ahead, side)) a.Lowered = true;
         }
         return input;
     }
@@ -572,7 +582,7 @@ public sealed class FieldWorkController : IVehicleController
         {
             if (!Field.Contains(world.CellCenter(i % world.CellsX, i / world.CellsX))) continue;
             inside++;
-            if (_tools.Any(t => WorkOps.WouldChange(world, crops, t.Def.WorkArea!.Type, i))) left++;
+            if (_tools.Any(t => t.areas.Def.Areas.Any(a => WorkOps.WouldChange(world, crops, a.Type, i)))) left++;
         }
         return inside > 0 ? (float)left / inside : 0f;
     }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Content;
 
@@ -85,7 +86,10 @@ public sealed class ContentDatabase
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
         foreach (var m in ReadMany<MachineDef>(src, file))
+        {
+            LegacyMachines.Upgrade(m);
             db.AddUnique(db.Machines, m.Id, m, "machine");
+        }
         foreach (var file in src.ListJson("pois"))
         foreach (var p in ReadMany<PoiDef>(src, file))
             db.AddUnique(db.Pois, p.Id, p, "poi");
@@ -141,8 +145,7 @@ public sealed class ContentDatabase
     public List<string> Validate()
     {
         var e = new List<string>();
-        string[] jointTypes = ["threePoint", "drawbar", "header"];
-        string[] workTypes = ["cultivator", "seeder", "harvester"];
+        var workTypes = WorkAreaDef.Types;
         string[] fieldGrounds = ["grass", "cultivated", "seeded", "stubble", "plowed"];
         string[] triggerTypes = ["unload", "load", "fill", "wash", "repair", "delivery"];
         // The trigger types each POI action works through (process works on its own).
@@ -212,27 +215,16 @@ public sealed class ContentDatabase
 
         foreach (var m in Machines.Values)
         {
-            var units = m.FillUnits.Select(u => u.Id).ToHashSet();
-            foreach (var u in m.FillUnits)
-            foreach (var ft in u.FillTypes)
-                if (!FillTypes.ContainsKey(ft)) e.Add($"machine '{m.Id}': fill unit '{u.Id}' accepts unknown fill type '{ft}'");
-            foreach (var j in m.AttacherJoints)
-                if (!jointTypes.Contains(j.Type)) e.Add($"machine '{m.Id}': joint '{j.Id}' has unknown type '{j.Type}'");
-            if (m.Attacher != null)
-            {
-                if (!jointTypes.Contains(m.Attacher.Type)) e.Add($"machine '{m.Id}': attacher has unknown type '{m.Attacher.Type}'");
-                if (m.Attacher.Mode is not ("mounted" or "trailed")) e.Add($"machine '{m.Id}': attacher mode must be mounted or trailed");
-                if (m.Attacher.Mode == "trailed" && m.Attacher.Z <= 0.1f) e.Add($"machine '{m.Id}': trailed attacher needs z > 0 (drawbar length)");
-            }
-            if (m.WorkArea != null && !workTypes.Contains(m.WorkArea.Type))
-                e.Add($"machine '{m.Id}': unknown work area type '{m.WorkArea.Type}'");
-            if (m.Pipe != null && !units.Contains(m.Pipe.FillUnit)) e.Add($"machine '{m.Id}': pipe fill unit '{m.Pipe.FillUnit}' missing");
-            if (m.Tipper != null && !units.Contains(m.Tipper.FillUnit)) e.Add($"machine '{m.Id}': tipper fill unit '{m.Tipper.FillUnit}' missing");
-            if (m.HarvestTank != null && !units.Contains(m.HarvestTank)) e.Add($"machine '{m.Id}': harvest tank '{m.HarvestTank}' missing");
-            if (m.SeedTank != null && !units.Contains(m.SeedTank)) e.Add($"machine '{m.Id}': seed tank '{m.SeedTank}' missing");
-            if (m.WorkArea?.Type == "seeder" && m.SeedTank == null) e.Add($"machine '{m.Id}': seeder needs seedTank");
-            if (m.Motorized is { Wheelbase: <= 0 }) e.Add($"machine '{m.Id}': wheelbase must be > 0");
-            if (m.Motorized?.FuelTank is { } fuel && !units.Contains(fuel)) e.Add($"machine '{m.Id}': fuel tank '{fuel}' missing");
+            foreach (var kind in m.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
+                e.Add($"machine '{m.Id}': more than one {kind.First().Kind}");
+            foreach (var c in m.Components)
+            foreach (var error in c.Errors(m, this))
+                e.Add($"machine '{m.Id}' {c.Kind}: {error}");
+            foreach (var id in m.Joints.GroupBy(j => j.Id).Where(g => g.Count() > 1).Select(g => g.Key))
+                e.Add($"machine '{m.Id}': joint '{id}' is defined more than once");
+            var roles = m.Roles.ToHashSet();
+            foreach (var role in (m.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))
+                e.Add($"machine '{m.Id}': visual.nodes role '{role}' is not one of its components' ({string.Join(", ", roles)})");
         }
 
         foreach (var p in Pois.Values)
@@ -321,8 +313,8 @@ public sealed class ContentDatabase
                 if (lease.FeePerHa < 0) e.Add($"{set}: feePerHa must be >= 0");
                 foreach (var id in lease.Machines.Where(id => !Machines.ContainsKey(id))) e.Add($"{set}: unknown machine '{id}'");
                 var machines = lease.Machines.Where(Machines.ContainsKey).Select(id => Machines[id]).ToList();
-                if (!machines.Any(m => m.WorkArea?.Type == t.Work)) e.Add($"{set}: no machine does the job's work ({t.Work})");
-                if (!machines.Any(m => m.Motorized != null)) e.Add($"{set}: needs a vehicle");
+                if (!machines.Any(m => m.Get<WorkAreasDef>()?.Areas.Any(a => a.Type == t.Work) == true)) e.Add($"{set}: no machine does the job's work ({t.Work})");
+                if (!machines.Any(m => m.Get<DrivableDef>() != null)) e.Add($"{set}: needs a vehicle");
             }
             var d = t.Deliver;
             if (t.Work == "")

@@ -1,46 +1,9 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 
 namespace Headland.Core.Machines;
-
-public sealed class FillUnit(FillUnitDef def)
-{
-    public FillUnitDef Def { get; } = def;
-    public string? FillType { get; set; } = def.StartLevel > 0 ? def.StartFillType : null;
-    public float Level { get; set; } = def.StartLevel;
-    public float Capacity => Def.Capacity;
-    public float Free => Capacity - Level;
-    public bool IsEmpty => Level <= 0.001f;
-    public float Fraction => Capacity > 0 ? Level / Capacity : 0f;
-
-    /// <summary>True if this unit can take the fill type right now (accepted, and not mixed with another type).</summary>
-    public bool CanAccept(string fillType) =>
-        Def.FillTypes.Contains(fillType) && (IsEmpty || FillType == fillType) && Free > 0.001f;
-
-    public bool Accepts(string fillType) => Def.FillTypes.Contains(fillType);
-
-    public float Add(string fillType, float amount)
-    {
-        if (!CanAccept(fillType)) return 0f;
-        var added = MathF.Min(amount, Free);
-        Level += added;
-        FillType = fillType;
-        return added;
-    }
-
-    public float Remove(float amount)
-    {
-        var removed = MathF.Min(amount, Level);
-        Level -= removed;
-        if (IsEmpty)
-        {
-            Level = 0f;
-            FillType = null;
-        }
-        return removed;
-    }
-}
 
 public struct VehicleInput
 {
@@ -64,6 +27,10 @@ public sealed class ManualController : IVehicleController
     public VehicleInput GetInput(Machine vehicle, float dt) => Input;
 }
 
+/// <summary>
+/// A machine on the map: where it is, what it's hitched to, and the components its type is built from, which keep
+/// the rest of its state (<see cref="Get{T}"/>).
+/// </summary>
 public sealed class Machine : IOwnable
 {
     public Machine(int id, MachineDef def, Vector2 position, float heading, int farmId = Farm.PlayerId)
@@ -73,7 +40,7 @@ public sealed class Machine : IOwnable
         Position = position;
         Heading = heading;
         FarmId = farmId;
-        FillUnits = def.FillUnits.Select(u => new FillUnit(u)).ToArray();
+        Components = def.Components.Select(c => c.Create(this)).ToArray();
     }
 
     public int Id { get; }
@@ -83,45 +50,31 @@ public sealed class Machine : IOwnable
     /// <summary>The contract the machine is leased for (0: the farm's own); it goes back when the contract ends.</summary>
     public int LeaseContract { get; set; }
 
+    public IReadOnlyList<MachineComponent> Components { get; }
+
+    /// <summary>Its component of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
+    public T? Get<T>() where T : class
+    {
+        foreach (var c in Components)
+            if (c is T t) return t;
+        return null;
+    }
+
+    public bool Has<T>() where T : class => Get<T>() != null;
+
     /// <summary>Center of the non-steered axle (the kinematic reference point).</summary>
     public Vector2 Position { get; set; }
     public float Heading { get; set; }
 
     /// <summary>Signed speed in m/s along the heading (root machines drive; children copy the root's speed).</summary>
     public float Speed { get; set; }
-    /// <summary>Current steering angle in radians, positive = left turn.</summary>
-    public float SteerAngle { get; set; }
-    /// <summary>Distance rolled, for wheel rotation visuals.</summary>
-    public float Distance { get; set; }
 
     public Machine? Parent { get; set; }
     public string? ParentJoint { get; set; }
     public Dictionary<string, Machine> Attached { get; } = new();
 
-    public bool Lowered { get; set; }
-    public bool TurnedOn { get; set; }
-    public bool PipeOut { get; set; }
-    public bool Tipping { get; set; }
-
-    /// <summary>Smoothed 0..1 animation states for visuals (lift, pipe, tipper).</summary>
-    public float LowerAnim { get; set; }
-    public float PipeAnim { get; set; }
-    public float TipAnim { get; set; }
-
-    public FillUnit[] FillUnits { get; }
-
-    /// <summary>Seeder: index into ContentDatabase.Crops.</summary>
-    public int SelectedCrop { get; set; }
-
-    public IVehicleController? Controller { get; set; }
-
     /// <summary>Latest warning for the HUD ("Out of seed", "Wrong header", ...), cleared each tick when fine.</summary>
     public string? Status { get; set; }
-
-    // Previous work-area pose, so the swept region between ticks has no gaps.
-    internal bool HasWorkPose;
-    internal Vector2 PrevWorkCenter;
-    internal float PrevWorkHeading;
 
     /// <summary>Hectares worked by this machine (statistics).</summary>
     public float WorkedHa { get; set; }
@@ -131,12 +84,15 @@ public sealed class Machine : IOwnable
     /// <summary>Dirt on the machine, 0 = clean, 1 = caked. Washed off at a wash POI.</summary>
     public float Dirt { get; set; }
 
-    public bool IsMotorized => Def.Motorized != null;
-    public bool IsAttachable => Def.Attacher != null;
     public Machine Root => Parent?.Root ?? this;
     public Vector2 Forward => MathUtil.Forward(Heading);
 
-    public FillUnit? Unit(string? id) => id == null ? null : Array.Find(FillUnits, u => u.Def.Id == id);
+    /// <summary>Its fill units (none without a fillUnits component).</summary>
+    public IReadOnlyList<FillUnit> FillUnits => Get<FillUnits>()?.Units ?? [];
+
+    public FillUnit? Unit(string? id) => Get<FillUnits>()?.Unit(id);
+
+    public AttacherJointDef? Joint(string id) => Def.Joints.FirstOrDefault(j => j.Id == id);
 
     public Vector2 LocalToWorld(Vector2 local) => MathUtil.LocalToWorld(Position, Heading, local);
     public Vector2 LocalToWorld(float x, float z) => LocalToWorld(new Vector2(x, z));
@@ -145,8 +101,6 @@ public sealed class Machine : IOwnable
         LocalToWorld(0f, Def.Size.CenterZ),
         new Vector2(Def.Size.Width * 0.5f, Def.Size.Length * 0.5f),
         Heading);
-
-    public AttacherJointDef? Joint(string id) => Array.Find(Def.AttacherJoints, j => j.Id == id);
 
     /// <summary>This machine and everything attached below it, depth first.</summary>
     public IEnumerable<Machine> Chain()

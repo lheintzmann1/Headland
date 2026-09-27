@@ -30,15 +30,23 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
 
    If that is inconvenient, use `"offset": [x, y, z]` (meters; +Z forward, +X left).
 4. **Moving parts:** make each one a separate node (a group in Blockbench, an object in Blender) with its pivot where
-   it rotates:
+   it rotates. The machine's components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
 
-   | Role | Pivot | Modeled as |
-   |---|---|---|
-   | `wheel0`, `wheel1`, … | wheel center | one node per wheel, in the same order as `wheels` in the JSON |
-   | `pipe` | base hinge of the combine's unloading pipe | folded backward; it swings 90° out to the left |
-   | `tipper` | rear hinge of a trailer's bed | the bed; it tilts its front up by 42° |
-   | `reel` | reel axle of a header | spins while the combine is threshing |
-   | `load` | bottom of the load | the grain heap at full height; it is scaled with the fill level |
+   | Role | Component | Pivot | Modeled as |
+   |---|---|---|---|
+   | `wheel0`, `wheel1`, … | `runningGear` | wheel center | one node per wheel, in the same order as its `wheels` |
+   | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
+   | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
+   | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
+   | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
+   | `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
+   | a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold) |
+   | a joint's `id` | `craneArm` | the joint's pivot | at the joint's value 0; `extend` joints slide along their own Z |
+   | `hook` | `winch` | the hook's eye | anywhere: it is moved to the end of the rope |
+   | `saw` | `saw` | the blade's center | spins about its own Y axis while turned on |
+
+   A crane's joints are nested: each joint's node is a child of the previous one's, placed as the `offset`s in the
+   JSON say, so that tools and ropes hang where the game expects them.
 
 ## Exporting and hooking it up
 
@@ -62,7 +70,8 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    `tractor_125: model res://…/fieldmaster_125.glb (parts: wheel0, wheel1, wheel2, wheel3)`, and warns about any
    node name it could not find.
 
-The machine's size, wheel positions and hitch points still come from its JSON, so check that they match the model.
+The machine's size, wheel positions, hitch points and crane joints still come from its JSON, so check that they
+match the model.
 
 ## Buildings and other POIs
 

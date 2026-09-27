@@ -1,10 +1,12 @@
 using System.Numerics;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Pois;
 using Headland.Core.World;
 
@@ -23,7 +25,8 @@ public sealed record LoadedGame(Simulation Sim, IReadOnlyList<string> Warnings);
 public static class SaveGame
 {
     /// <summary>Save format version. Bump it (and migrate older saves in <see cref="Load"/>) on breaking changes.</summary>
-    public const int Format = 1;
+    /// <remarks>2: machines keep their state per component.</remarks>
+    public const int Format = 2;
 
     /// <summary>A helper's route segments as saved, one letter per <see cref="PathSegment"/> value.</summary>
     private const string SegmentLetters = "dwr";
@@ -60,12 +63,14 @@ public static class SaveGame
         if (file.Meta.Format < 1) throw new SaveException("This is not a Headland save");
         if (file.Meta.Format > Format)
             throw new SaveException($"This save comes from a newer version of Headland ({file.Meta.GameVersion})");
-        // Format 1 is the first: older formats would be migrated here.
 
         SaveState state;
         try
         {
-            state = JsonSerializer.Deserialize<SaveState>(file.State, Json) ?? throw new SaveException("state.json is empty");
+            var node = JsonNode.Parse(file.State, new JsonNodeOptions { PropertyNameCaseInsensitive = true }) as JsonObject
+                       ?? throw new SaveException("state.json is empty");
+            if (file.Meta.Format < 2) MachinesToComponents(node);
+            state = node.Deserialize<SaveState>(Json) ?? throw new SaveException("state.json is empty");
         }
         catch (JsonException e)
         {
@@ -173,18 +178,15 @@ public static class SaveGame
         var save = new MachineSave
         {
             Id = m.Id, Def = m.Def.Id, Farm = m.FarmId, Lease = m.LeaseContract != 0 ? m.LeaseContract : null,
-            X = m.Position.X, Z = m.Position.Y, Heading = m.Heading,
-            Speed = m.Speed, SteerAngle = m.SteerAngle, Distance = m.Distance,
+            X = m.Position.X, Z = m.Position.Y, Heading = m.Heading, Speed = m.Speed,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
-            Lowered = m.Lowered, TurnedOn = m.TurnedOn, PipeOut = m.PipeOut, Tipping = m.Tipping,
-            LowerAnim = m.LowerAnim, PipeAnim = m.PipeAnim, TipAnim = m.TipAnim,
-            SeedCrop = m.Def.SeedTank != null ? sim.Content.Crops[m.SelectedCrop].Id : null,
             WorkedHa = m.WorkedHa,
             Condition = m.Condition,
             Dirt = m.Dirt,
-            FillUnits = m.FillUnits.Select(u => new FillUnitSave { Id = u.Def.Id, FillType = u.FillType, Level = u.Level }).ToList(),
-            WorkPose = m.HasWorkPose ? [m.PrevWorkCenter.X, m.PrevWorkCenter.Y, m.PrevWorkHeading] : null,
         };
+        foreach (var c in m.Components)
+            if (c.SaveState(sim.Content) is { } state)
+                save.Components[c.Definition.Kind] = state;
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
             save.Delivery = new DeliverySave
             {
@@ -192,7 +194,7 @@ public static class SaveGame
             };
         if (sim.Pois.Loadings.TryGetValue(m, out var l))
             save.Loading = new LoadingSave { Poi = l.Trigger.Poi.Id, Trigger = l.Trigger.Id, FillType = l.FillType, Amount = l.Amount };
-        if (m.Controller is FieldWorkController h)
+        if (m.Get<Drivable>()?.Controller is FieldWorkController h)
             save.Helper = new HelperSave
             {
                 Field = h.Field.Id,
@@ -377,41 +379,28 @@ public static class SaveGame
                 warnings.Add($"{child.Def.Name} could not be re-attached");
         }
 
+        var context = new SaveContext(content, warnings);
         foreach (var m in s.Machines)
         {
             if (!byId.TryGetValue(m.Id, out var machine)) continue;
             machine.Position = new Vector2(m.X, m.Z);
             machine.Heading = m.Heading;
             machine.Speed = m.Speed;
-            machine.SteerAngle = m.SteerAngle;
-            machine.Distance = m.Distance;
-            machine.Lowered = m.Lowered;
-            machine.TurnedOn = m.TurnedOn;
-            machine.PipeOut = m.PipeOut;
-            machine.Tipping = m.Tipping;
-            machine.LowerAnim = m.LowerAnim;
-            machine.PipeAnim = m.PipeAnim;
-            machine.TipAnim = m.TipAnim;
             machine.WorkedHa = m.WorkedHa;
             machine.Condition = Math.Clamp(m.Condition, 0f, 1f);
             machine.Dirt = Math.Clamp(m.Dirt, 0f, 1f);
-            if (m.SeedCrop != null && content.CropIndex(m.SeedCrop) is var crop and >= 0) machine.SelectedCrop = crop;
-            foreach (var u in m.FillUnits)
+            // A component the machine no longer has loses its state; one it didn't have starts afresh.
+            foreach (var c in machine.Components)
             {
-                if (machine.Unit(u.Id) is not { } unit) continue;
-                if (u.FillType != null && !content.FillTypes.ContainsKey(u.FillType))
+                if (!m.Components.TryGetValue(c.Definition.Kind, out var state)) continue;
+                try
                 {
-                    warnings.Add($"Fill type '{u.FillType}' no longer exists: {machine.Def.Name} was emptied");
-                    continue;
+                    c.LoadState(state, context);
                 }
-                unit.Level = Math.Clamp(u.Level, 0f, unit.Capacity);
-                unit.FillType = unit.Level > 0f ? u.FillType : null;
-            }
-            if (m.WorkPose is [var x, var z, var heading])
-            {
-                machine.HasWorkPose = true;
-                machine.PrevWorkCenter = new Vector2(x, z);
-                machine.PrevWorkHeading = heading;
+                catch (JsonException)
+                {
+                    warnings.Add($"The {c.Definition.Kind} of {machine.Def.Name} could not be read: it starts afresh");
+                }
             }
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
                 sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored, d.Contract is { } id ? sim.Contracts.ById(id) : null);
@@ -423,7 +412,7 @@ public static class SaveGame
         foreach (var m in s.Machines)
         {
             if (m.Helper is not { } h || !byId.TryGetValue(m.Id, out var vehicle)) continue;
-            if (!vehicle.IsMotorized || h.Shape.Length < 3 || !vehicle.Chain().Any(c => c.Def.WorkArea != null))
+            if (vehicle.Get<Drivable>() is not { } seat || !vehicle.Has<Motor>() || h.Shape.Length < 3 || !vehicle.Chain().Any(c => c.Has<WorkAreas>()))
             {
                 warnings.Add($"The helper on {vehicle.Def.Name} could not resume");
                 continue;
@@ -444,9 +433,43 @@ public static class SaveGame
             helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
             helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
             helper.WagesPaid = Math.Max(0f, h.WagesPaid);
-            vehicle.Controller = helper;
+            seat.Controller = helper;
         }
         return byId;
+    }
+
+    // ------------------------------------------------------------------ Migrations
+
+    /// <summary>
+    /// Format 1 kept a machine's state in flat fields (lowered, pipeOut, fillUnits…); format 2 keeps it per component.
+    /// Each component takes its part, whatever the machine is: those it doesn't have are ignored on load.
+    /// </summary>
+    private static void MachinesToComponents(JsonObject state)
+    {
+        foreach (var node in state["machines"] as JsonArray ?? [])
+        {
+            if (node is not JsonObject m) continue;
+            JsonNode? Take(string key) => m.Remove(key, out var value) ? value : null;
+            JsonObject Part(params (string key, JsonNode? value)[] fields)
+            {
+                var part = new JsonObject();
+                foreach (var (key, value) in fields)
+                    if (value != null) part[key] = value;
+                return part;
+            }
+            var on = Take("turnedOn");
+            var pose = Take("workPose");
+            m["components"] = new JsonObject
+            {
+                ["runningGear"] = Part(("steerAngle", Take("steerAngle")), ("distance", Take("distance"))),
+                ["attachable"] = Part(("lowered", Take("lowered")), ("lowerAnim", Take("lowerAnim"))),
+                ["fillUnits"] = Part(("units", Take("fillUnits"))),
+                ["workAreas"] = Part(("on", on?.DeepClone()), ("crop", Take("seedCrop")), ("poses", pose != null ? new JsonArray(pose) : null)),
+                ["thresher"] = Part(("on", on)),
+                ["pipe"] = Part(("out", Take("pipeOut")), ("anim", Take("pipeAnim"))),
+                ["tipper"] = Part(("tipping", Take("tipping")), ("anim", Take("tipAnim"))),
+            };
+        }
     }
 
     /// <summary>A helper's saved route, or null when there is none (an older save) or it doesn't read.</summary>

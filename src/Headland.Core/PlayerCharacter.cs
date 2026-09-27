@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.World;
 
@@ -97,7 +98,7 @@ public sealed class PlayerCharacter(EventBus events)
         var bestD = EnterDistance;
         foreach (var m in sim.Machines.All)
         {
-            if (!m.IsMotorized || !CanEnter(m)) continue;
+            if (!CanEnter(m)) continue;
             var d = m.Footprint.Distance(Position);
             if (d < bestD)
             {
@@ -114,7 +115,7 @@ public sealed class PlayerCharacter(EventBus events)
     /// </summary>
     public Machine? NextVehicle(Simulation sim, int step)
     {
-        var vehicles = sim.Machines.All.Where(m => m.IsMotorized && (m == Vehicle || CanEnter(m))).ToList();
+        var vehicles = sim.Machines.All.Where(m => m == Vehicle || CanEnter(m)).ToList();
         if (vehicles.Count == 0) return null;
         var i = Vehicle != null ? vehicles.IndexOf(Vehicle) : step > 0 ? -1 : vehicles.Count;
         var next = vehicles[((i + step) % vehicles.Count + vehicles.Count) % vehicles.Count];
@@ -124,21 +125,23 @@ public sealed class PlayerCharacter(EventBus events)
     /// <summary>
     /// The farm's vehicles that are free or driven by a helper (the helper keeps control until dismissed).
     /// </summary>
-    private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Controller is null or FieldWorkController;
+    private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Get<Drivable>() is { Controller: null or FieldWorkController };
 
     /// <summary>Puts the player back in a vehicle (or on foot) as a save had them, without an event.</summary>
     internal void Restore(Machine? vehicle)
     {
-        Vehicle = vehicle;
+        var seat = vehicle?.Get<Drivable>();
+        Vehicle = seat != null ? vehicle : null;
         Controls.Input = default;
-        if (vehicle != null) vehicle.Controller ??= Controls;
+        if (seat != null) seat.Controller ??= Controls;
     }
 
     public bool Enter(Machine m)
     {
-        if (!m.IsMotorized || !CanEnter(m)) return false;
+        if (!CanEnter(m)) return false;
         Controls.Input = default;
-        m.Controller ??= Controls;
+        var seat = m.Get<Drivable>()!;
+        seat.Controller ??= Controls;
         Vehicle = m;
         events.Publish(new VehicleEntered(m));
         return true;
@@ -157,7 +160,7 @@ public sealed class PlayerCharacter(EventBus events)
             m.LocalToWorld(0f, z - m.Def.Size.Length * 0.5f - 0.8f), m.LocalToWorld(0f, z + m.Def.Size.Length * 0.5f + 0.8f),
         ];
         var spot = spots.FirstOrDefault(s => IsFree(sim, s), spots[0]);
-        if (m.Controller == Controls) m.Controller = null;
+        if (m.Get<Drivable>() is { } seat && seat.Controller == Controls) seat.Controller = null;
         Controls.Input = default;
         Vehicle = null;
         Position = spot;

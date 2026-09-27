@@ -3,6 +3,7 @@ using Headland.Game.Common;
 using Headland.Core;
 using Headland.Core.Contracts;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Time;
 using Headland.Core.Weather;
@@ -164,17 +165,19 @@ public partial class Hud : CanvasLayer
         var sb = new StringBuilder();
         var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract) : "";
         sb.Append($"[b]{v.Def.Name}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
-        if (v.Def.HarvestTank != null) sb.Append("   " + (v.TurnedOn ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
+        if (v.Get<Thresher>() is { } thresher) sb.Append("   " + (thresher.On ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
         sb.Append('\n');
-        if (v.Controller is FieldWorkController w)
+        if (v.Get<Drivable>()?.Controller is FieldWorkController w)
             sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
         foreach (var m in v.Chain())
         {
             if (m != v) sb.Append($"  {m.Def.Name}");
             var bits = new List<string>();
-            if (m != v && m.Def.WorkArea is { RequiresLowered: true }) bits.Add(m.Lowered ? Widgets.Colored("lowered", Palette.Good) : "raised");
-            if (m.Def.WorkArea is { RequiresOn: true }) bits.Add(m.TurnedOn ? Widgets.Colored("on", Palette.Good) : "off");
-            if (m.Def.SeedTank != null) bits.Add(Sim.Content.Crops[m.SelectedCrop].Name);
+            if (m.Get<AnimatedParts>() is { CanFold: true } parts && !parts.Unfolded) bits.Add(parts.Folded ? "folded" : "unfolding");
+            if (m != v && m.Get<Attachable>() is { Def.Lowerable: true } hitch) bits.Add(hitch.Lowered ? Widgets.Colored("lowered", Palette.Good) : "raised");
+            foreach (var s in m.Components.OfType<ISwitchable>().Where(s => s.CanTurnOn && s is not Thresher))
+                bits.Add(s.On ? Widgets.Colored("on", Palette.Good) : "off");
+            if (m.Get<WorkAreas>() is { Sows: true } seeder) bits.Add(Sim.Content.Crops[seeder.Crop].Name);
             foreach (var u in m.FillUnits)
             {
                 var ft = u.FillType != null ? Sim.Content.FillTypes[u.FillType] : null;
@@ -182,9 +185,9 @@ public partial class Hud : CanvasLayer
                 bits.Add($"{ft?.Name ?? "empty"} {u.Level:N0}/{u.Capacity:N0} {unit}");
             }
             if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
-            if (m.Tipping) bits.Add(Widgets.Colored("tipping", Palette.Busy));
+            if (m.Get<Tipper>() is { Tipping: true }) bits.Add(Widgets.Colored("tipping", Palette.Busy));
             if (Sim.Pois.LoadingFillType(m) is { } loading) bits.Add(Widgets.Colored($"loading {Sim.Content.FillTypes[loading].Name.ToLowerInvariant()}", Palette.Busy));
-            if (m.PipeOut) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
+            if (m.Get<Pipe>() is { Out: true }) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
             if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
             if (m != v || bits.Count > 0) sb.Append('\n');
             if (m.Status != null) sb.Append($"  {Warning(m.Status)}\n");
@@ -206,26 +209,27 @@ public partial class Hud : CanvasLayer
         {
             if (Sim.Machines.FindAttachable(v) is var (_, _, child)) lines.Add($"{K("attach")} Attach {child.Def.Name}");
             else if (v.Chain().Skip(1).LastOrDefault() is { } leaf) lines.Add($"{K("attach")} Detach {leaf.Def.Name}");
-            var tools = v.Chain().Where(m => m != v && m.Def.WorkArea is { RequiresLowered: true }).ToList();
+            var tools = MachineSystem.Lowerable(v);
             if (tools.Count > 0) lines.Add($"{K("lower")} {(tools.Any(t => t.Lowered) ? "Raise" : "Lower")}");
-            if (v.Chain().Any(m => m.Def.HarvestTank != null || m.Def.WorkArea is { RequiresOn: true }))
-                lines.Add($"{K("turn_on")} Turn {(v.Chain().Any(m => m.TurnedOn) ? "off" : "on")}");
-            if (v.Def.Pipe != null) lines.Add($"{K("unload")} {(v.PipeOut ? "Fold" : "Unfold")} pipe");
-            foreach (var t in v.Chain().Where(m => m.Def.Tipper != null))
+            var switches = MachineSystem.Switchable(v);
+            if (switches.Count > 0) lines.Add($"{K("turn_on")} Turn {(switches.Any(s => s.On) ? "off" : "on")}");
+            if (v.Get<Pipe>() is { } pipe) lines.Add($"{K("unload")} {(pipe.Out ? "Fold" : "Unfold")} pipe");
+            foreach (var t in v.Chain().Where(m => m.Has<Tipper>()))
             {
                 var pit = Sim.Pois.TriggerAt(t.Footprint.Center, "unload");
                 if (pit == null) continue;
-                var load = t.Unit(t.Def.Tipper!.FillUnit)!;
+                var tipper = t.Get<Tipper>()!;
+                var load = tipper.Load;
                 var price = load.FillType != null ? Sim.Pois.SalePrice(t, pit, load.FillType) : null;
                 var at = price is { } p ? $" at ${p:0.00}/{Sim.Content.FillTypes[load.FillType!].Unit}" : "";
                 if (load.FillType != null && Sim.Contracts.Taking(t.FarmId, pit.Poi, load.FillType) is { } job)
                     at = $" for the contract ({job.Owed:N0} {job.Goods!.Unit} to go)";
-                lines.Add($"{K("unload")} {(t.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
+                lines.Add($"{K("unload")} {(tipper.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
             }
-            if (v.Chain().Any(m => m.Def.SeedTank != null)) lines.Add($"{K("cycle_seed")} Change seed");
+            if (v.Chain().Any(m => m.Get<WorkAreas>() is { Sows: true })) lines.Add($"{K("cycle_seed")} Change seed");
             if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");
-            if (v.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
-            else if (v.Chain().Any(m => m.Def.WorkArea != null) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label} (${Sim.HelperWage:N0}/h)");
+            if (v.Get<Drivable>()?.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
+            else if (v.Chain().Any(m => m.Has<WorkAreas>()) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label} (${Sim.HelperWage:N0}/h)");
             lines.Add($"{K("enter")} Exit");
         }
         _prompt.Text = string.Join("    ", lines);

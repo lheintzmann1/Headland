@@ -4,6 +4,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Headland.Core.World;
 
 namespace Headland.Core.Pois;
@@ -277,7 +278,7 @@ public sealed class PoiSystem
     }
 
     /// <summary>Fill units that take loads (not fuel tanks).</summary>
-    private static IEnumerable<FillUnit> Cargo(Machine m) => m.FillUnits.Where(u => u.Def.Id != m.Def.Motorized?.FuelTank);
+    private static IEnumerable<FillUnit> Cargo(Machine m) => m.FillUnits.Where(u => u != m.Get<Motor>()?.FuelTank);
 
     /// <summary>What the vehicle's chain can load where it stands: what it already carries first, then by stock.</summary>
     public IReadOnlyList<string> LoadChoices(Machine vehicle)
@@ -377,11 +378,11 @@ public sealed class PoiSystem
         var area = spot.Area;
         var others = _sim.Machines.All.ToList();
         var set = machineDefIds.Select(id => _sim.Machines.Spawn(id, area.Center, area.Heading, farmId)).ToList();
-        foreach (var implement in set.Where(m => m.Def.Attacher != null))
+        foreach (var implement in set.Where(m => m.Has<Attachable>()))
         {
-            var (vehicle, joint) = set.Where(v => v.IsMotorized)
-                .SelectMany(v => v.Def.AttacherJoints.Select(j => (v, j)))
-                .FirstOrDefault(x => x.j.Type == implement.Def.Attacher!.Type && !x.v.Attached.ContainsKey(x.j.Id));
+            var (vehicle, joint) = set.Where(v => v.Has<Motor>())
+                .SelectMany(v => v.Def.Joints.Select(j => (v, j)))
+                .FirstOrDefault(x => x.j.Type == implement.Get<Attachable>()!.Def.Type && !x.v.Attached.ContainsKey(x.j.Id));
             if (vehicle != null) _sim.Machines.Hitch(vehicle, joint.Id, implement);
         }
         var obstacles = _sim.World.Obstacles.Where(o => Vector2.Distance(o.Center, area.Center) < area.BoundingRadius + o.BoundingRadius).ToList();
@@ -492,7 +493,7 @@ public sealed class PoiSystem
             foreach (var a in fill.Actions.Where(a => Closed(fill.Poi, a) == null))
             {
                 if (a.Type == "buy" && m.FillUnits.Any(u => a.FillTypes.Any(u.Accepts))) options.Add($"Buy {Names(a.FillTypes)}");
-                if (a.Type == "refuel" && m.Unit(m.Def.Motorized?.FuelTank) is { } tank && a.FillTypes.Any(tank.Accepts)) options.Add("Refuel");
+                if (a.Type == "refuel" && m.Get<Motor>()?.FuelTank is { } tank && a.FillTypes.Any(tank.Accepts)) options.Add("Refuel");
             }
         }
         if (Bay(chain, "repair") is { } workshop && workshop.Actions.FirstOrDefault(a => a.Type == "repair" && Closed(workshop.Poi, a) == null) is { } fix
@@ -517,10 +518,10 @@ public sealed class PoiSystem
                 why.Add(closed);
                 continue;
             }
-            FillUnit[] units = action.Type switch
+            IReadOnlyList<FillUnit> units = action.Type switch
             {
                 "buy" => m.FillUnits,
-                "refuel" => m.Unit(m.Def.Motorized?.FuelTank) is { } tank ? [tank] : [],
+                "refuel" => m.Get<Motor>()?.FuelTank is { } tank ? [tank] : [],
                 _ => [],
             };
             foreach (var unit in units)

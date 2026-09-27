@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Headland.Core.Machines.Components;
+
 namespace Headland.Core.Content;
 
 // Content definitions ("raws"), deserialized from game/data/**/*.json (camelCase, comments allowed).
@@ -178,90 +181,6 @@ public sealed class SizeDef
     public float CenterZ { get; set; }
 }
 
-public sealed class MotorizedDef
-{
-    public float PowerHp { get; set; } = 100f;
-    public float MaxSpeedKmh { get; set; } = 40f;
-    public float MaxReverseKmh { get; set; } = 15f;
-    public float Acceleration { get; set; } = 2.5f;
-    public float Braking { get; set; } = 6f;
-    public float Wheelbase { get; set; } = 2.6f;
-    public float MaxSteerDeg { get; set; } = 38f;
-    public float SteerRateDeg { get; set; } = 90f;
-    /// <summary>"front" (tractor) or "rear" (combine).</summary>
-    public string SteerAxle { get; set; } = "front";
-    /// <summary>Fill unit holding the fuel, filled up at refuel POIs.</summary>
-    public string? FuelTank { get; set; }
-}
-
-public sealed class WheelDef
-{
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float Radius { get; set; } = 0.5f;
-    public float Width { get; set; } = 0.4f;
-    public bool Steer { get; set; }
-}
-
-public sealed class AttacherJointDef
-{
-    public string Id { get; set; } = "";
-    /// <summary>"threePoint", "drawbar" or "header".</summary>
-    public string Type { get; set; } = "threePoint";
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float Y { get; set; } = 0.6f;
-}
-
-public sealed class AttacherDef
-{
-    public string Type { get; set; } = "threePoint";
-    /// <summary>"mounted" (rigid, liftable) or "trailed" (follows the hitch point).</summary>
-    public string Mode { get; set; } = "mounted";
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float MaxArticulationDeg { get; set; } = 80f;
-}
-
-public sealed class WorkAreaDef
-{
-    /// <summary>"cultivator", "seeder" or "harvester".</summary>
-    public string Type { get; set; } = "cultivator";
-    public float Width { get; set; } = 3f;
-    public float Length { get; set; } = 1f;
-    public float X { get; set; }
-    public float Z { get; set; }
-    public bool RequiresLowered { get; set; } = true;
-    public bool RequiresOn { get; set; }
-    public float MaxWorkSpeedKmh { get; set; } = 12f;
-    public float RequiredPowerHp { get; set; } = 60f;
-    /// <summary>Header only: crop harvest groups this header can cut.</summary>
-    public string[] HarvestGroups { get; set; } = [];
-}
-
-public sealed class FillUnitDef
-{
-    public string Id { get; set; } = "main";
-    public float Capacity { get; set; } = 1000f;
-    public string[] FillTypes { get; set; } = [];
-    public string? StartFillType { get; set; }
-    public float StartLevel { get; set; }
-}
-
-public sealed class PipeDef
-{
-    public string FillUnit { get; set; } = "tank";
-    public float X { get; set; } = 4f;
-    public float Z { get; set; } = 1f;
-    public float RatePerSecond { get; set; } = 150f;
-}
-
-public sealed class TipperDef
-{
-    public string FillUnit { get; set; } = "main";
-    public float RatePerSecond { get; set; } = 400f;
-}
-
 /// <summary>A glTF model shown instead of a procedural placeholder (machines, POIs).</summary>
 public class ModelDef
 {
@@ -281,12 +200,13 @@ public sealed class VisualDef : ModelDef
     public string Placeholder { get; set; } = "tractor";
     public string Color { get; set; } = "#7a3326";
     /// <summary>
-    /// Moving parts: role → node name in the model. Roles: wheel0..wheelN (same order as "wheels"),
-    /// pipe, tipper, reel, load. See docs/MODELING.md.
+    /// Moving parts: role → node name in the model. The machine's components give the roles (wheel0..wheelN in the
+    /// order of the running gear's wheels, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
 }
 
+/// <summary>A machine type: what it is, its size and looks, and the components it's built from.</summary>
 public sealed class MachineDef
 {
     public string Id { get; set; } = "";
@@ -296,20 +216,33 @@ public sealed class MachineDef
     public float Price { get; set; }
     public float Mass { get; set; } = 3000f;
     public SizeDef Size { get; set; } = new();
-    public MotorizedDef? Motorized { get; set; }
-    public WheelDef[] Wheels { get; set; } = [];
-    public AttacherJointDef[] AttacherJoints { get; set; } = [];
-    public AttacherDef? Attacher { get; set; }
-    public WorkAreaDef? WorkArea { get; set; }
-    public FillUnitDef[] FillUnits { get; set; } = [];
-    public PipeDef? Pipe { get; set; }
-    public TipperDef? Tipper { get; set; }
-    /// <summary>Combine: fill unit receiving harvested crop from an attached header.</summary>
-    public string? HarvestTank { get; set; }
-    /// <summary>Seeder: fill unit holding seed.</summary>
-    public string? SeedTank { get; set; }
+    /// <summary>Its components, by kind (see <see cref="ComponentKinds"/>), in the order they run.</summary>
+    [JsonConverter(typeof(ComponentDefsConverter))]
+    public List<ComponentDef> Components { get; set; } = [];
     public VisualDef Visual { get; set; } = new();
     public string Description { get; set; } = "";
+
+    /// <summary>Its component def of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
+    public T? Get<T>() where T : class => Components.OfType<T>().FirstOrDefault();
+
+    /// <summary>Every joint implements hitch to.</summary>
+    public IEnumerable<AttacherJointDef> Joints => Components.OfType<IJointSource>().SelectMany(s => s.Joints);
+
+    /// <summary>Model node roles its components move.</summary>
+    public IEnumerable<string> Roles => Components.SelectMany(c => c.Roles);
+
+    // ---- The format before components, read and then turned into components (LegacyMachines).
+
+    public LegacyMotorizedDef? Motorized { get; set; }
+    public WheelDef[]? Wheels { get; set; }
+    public AttacherJointDef[]? AttacherJoints { get; set; }
+    public LegacyAttacherDef? Attacher { get; set; }
+    public WorkAreaDef? WorkArea { get; set; }
+    public FillUnitDef[]? FillUnits { get; set; }
+    public PipeDef? Pipe { get; set; }
+    public TipperDef? Tipper { get; set; }
+    public string? HarvestTank { get; set; }
+    public string? SeedTank { get; set; }
 }
 
 // ---- Contracts (contracts.json)

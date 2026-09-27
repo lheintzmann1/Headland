@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Headland.Core.Content;
 using Headland.Core.Weather;
 
@@ -179,37 +180,18 @@ public sealed class MachineSave
     public float Z { get; set; }
     public float Heading { get; set; }
     public float Speed { get; set; }
-    public float SteerAngle { get; set; }
-    public float Distance { get; set; }
     public int? Parent { get; set; }
     public string? Joint { get; set; }
-    public bool Lowered { get; set; }
-    public bool TurnedOn { get; set; }
-    public bool PipeOut { get; set; }
-    public bool Tipping { get; set; }
-    public float LowerAnim { get; set; }
-    public float PipeAnim { get; set; }
-    public float TipAnim { get; set; }
-    /// <summary>Seeder: the selected crop id.</summary>
-    public string? SeedCrop { get; set; }
     public float WorkedHa { get; set; }
     public float Condition { get; set; } = 1f;
     public float Dirt { get; set; }
-    public List<FillUnitSave> FillUnits { get; set; } = [];
-    /// <summary>Work area pose of the last tick [x, z, heading], so the next tick sweeps without a gap.</summary>
-    public float[]? WorkPose { get; set; }
+    /// <summary>What each of its components keeps, by component kind (runningGear, fillUnits, pipe…).</summary>
+    public Dictionary<string, JsonElement> Components { get; set; } = new();
     /// <summary>A load being unloaded at a POI, totalled so far.</summary>
     public DeliverySave? Delivery { get; set; }
     /// <summary>A load being taken from a POI's storage, totalled so far.</summary>
     public LoadingSave? Loading { get; set; }
     public HelperSave? Helper { get; set; }
-}
-
-public sealed class FillUnitSave
-{
-    public string Id { get; set; } = "";
-    public string? FillType { get; set; }
-    public float Level { get; set; }
 }
 
 public sealed class DeliverySave
