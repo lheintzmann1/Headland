@@ -1,8 +1,13 @@
 # Making models for Headland
 
-Machines, buildings and the farmer are procedural placeholders until real models replace them. The game loads models
-as **glTF binary (`.glb`)**: glTF keeps named parts with their pivots, so wheels can turn and pipes can swing, and it
-embeds the textures.
+The game loads models as **glTF binary (`.glb`)**: glTF keeps named parts with their pivots, so wheels can turn and
+pipes can swing, and it embeds the textures. Machines are models; buildings and the farmer are still procedural
+placeholders until models replace them.
+
+Each machine's model is, for now, a simple base generated from the procedural placeholder it had before, with every
+option in it, laid out and named as this guide says: `game/assets/models/<category>/<machine id>.glb`, with a
+Blockbench project (`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of
+its parts.
 
 Headland's own models are made in [Blockbench](https://www.blockbench.net) (free, and easy to pick up). Mods (modding
 support is planned) can use any tool that exports glTF, such as Blender or 3ds Max, at any level of detail. The
@@ -158,41 +163,37 @@ Materials keep their colors and textures, except two kinds the game colors, matc
 - **`fill`** (and `fill_…`), on the load, takes the color of what the machine holds (wheat, canola…), multiplied the
   same way.
 
-An ending after a `.` counts too (`paint.png`, Blender's `paint.001`).
-
-Until a machine has a model, its placeholder can draw option pieces as blocks: `visual.parts` lists them with an `id`
-(the node name, such as `frontHitch_weight`), a center `x`, `y`, `z`, a size `w`, `h`, `d` and a `color` (the
-machine's when missing).
+An ending after a `.` counts too (`paint.png`, Blender's `paint.001`). Don't give a node the name of a material: Godot
+then renames the material when it imports the model (`reel2`).
 
 ## Exporting and hooking it up
 
 1. Export the model as `.glb` into `game/assets/models/<category>/`, for example
-   `game/assets/models/tractors/fieldmaster_125.glb`. In Blockbench, use **File → Export → Export glTF Model** and save
+   `game/assets/models/tractors/tractor_125.glb`. In Blockbench, use **File → Export → Export glTF Model** and save
    the `.bbmodel` beside the export as the editable source. If the exporter offers to turn groups into an armature or
    bones, leave that off: the game looks for nodes.
 2. In the machine's JSON (`game/data/machines/*.json`), point `visual` at it:
 
    ```json
    "visual": {
-     "placeholder": "tractor",
      "color": "#7b2f25",
-     "model": "res://assets/models/tractors/fieldmaster_125.glb"
+     "model": "res://assets/models/tractors/tractor_125.glb"
    }
    ```
 
-   Optional: `"scale"` (default 1), `"yawDeg"` (default 0), `"offset"` (default `[0, 0, 0]`), and `"nodes"` for a model
+   `color` is the paint (see [Materials](#materials)). Optional: `"scale"` (default 1), `"yawDeg"` (default 0), `"offset"` (default `[0, 0, 0]`), and `"nodes"` for a model
    whose moving parts aren't named after their roles, such as one made for something else:
    `"nodes": { "wheel0L": "wheel_rl", "wheel0R": "wheel_rr" }` (role → node name; an option can change them in its
    `changes`).
 3. Import it: open the project in the Godot editor once, or run `godot --headless --path game --import`.
 4. Run the game. The console lists the parts it found and the roles it found no node for, for example for a trailer
    whose load isn't modeled yet:
-   `trailer_16: model res://…/tipper_16.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R, tipper; not in the model: load)`.
+   `trailer_16: model res://…/trailer_16.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R, tipper; not in the model: load)`.
    It warns about the names in `nodes` and `show` it could not find, and about names that look like an option's but
    match none.
 
-A machine whose model doesn't load (the file is missing or wasn't imported, or it has no `root` node), as it comes or
-with any of its options, is left out of the game: the console says why, and what went with it (its places on the map,
+A machine without a model that loads (it has none, the file is missing or wasn't imported, or it has no `root`
+node), as it comes or with any of its options, is left out of the game: the console says why, and what went with it (its places on the map,
 the contract lease sets it's in). Nothing stands in for it.
 
 The machine's size, wheel positions, hitch points and crane joints still come from its JSON, so check that they

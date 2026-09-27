@@ -36,15 +36,13 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
     "fillUnits": { "units": [ { "id": "fuel", "capacity": 250, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 250 } ] },
     "lights": { "lamps": [ { "type": "head", "x": 0.735, "y": 2.2, "z": 3.6 }, { "type": "head", "x": -0.735, "y": 2.2, "z": 3.6 } ] }
   },
-  "visual": { "placeholder": "tractor", "color": "#7b2f25" },
+  "visual": { "color": "#7b2f25", "model": "res://assets/models/tractors/tractor_125.glb" },
   "description": "Mid-size utility tractor."
 }
 ```
 
-`visual` picks the procedural placeholder (`tractor`, `combine`, `trailer`, `cultivator`, `seeder`, `header`,
-`cornheader`, anything else is a box) or a glTF model, whose parts the game finds by their names: see
-[`MODELING.md`](MODELING.md). A machine whose model doesn't load is left out of the game. Its `parts` add blocks to
-the placeholder for what some options have, such as a front weight (`frontHitch_weight`).
+`visual` names the machine's glTF `model`, whose parts the game finds by their names, and its paint `color`: see
+[`MODELING.md`](MODELING.md). A machine without a model that loads is left out of the game.
 
 ## Components
 
@@ -265,7 +263,6 @@ configuration option add the lamp or change it (see below). Headlights come on b
 | `offset` | [0, 0, 0] | Its pivot: in the machine's space for the first joint, else in the previous joint's. |
 | `min`, `max`, `rest` | -45, 45, 0 | Its travel, and where it starts: degrees, or meters for `extend`. |
 | `speed` | 30 | Per second. |
-| `length` | 0 | Placeholder only: the boom drawn from its pivot along z. |
 
 ### winch
 

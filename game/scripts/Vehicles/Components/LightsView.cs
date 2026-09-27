@@ -7,7 +7,7 @@ namespace Headland.Game.Vehicles.Components;
 
 /// <summary>
 /// A spot light per lamp, lit while its type is switched on; headlights also after dark. Beacons turn, and lamps on an
-/// articulated machine's front frame swing with it. A placeholder gets a housing for each beacon.
+/// articulated machine's front frame swing with it.
 /// </summary>
 public partial class LightsView : ComponentView
 {
@@ -36,12 +36,6 @@ public partial class LightsView : ComponentView
             };
             AddChild(light);
             _lamps.Add((l, light));
-            if (Rig.IsPlaceholder && l.Type == "beacon")
-                Rig.AddPart(new MeshInstance3D
-                {
-                    Mesh = new CylinderMesh { TopRadius = 0.07f, BottomRadius = 0.09f, Height = 0.16f, RadialSegments = 10 },
-                    MaterialOverride = Materials.Get(Conv.Hex(l.Color), 0.4f),
-                }, new Vector3(l.X, l.Y, l.Z));
         }
     }
 

@@ -7,8 +7,8 @@ using Godot;
 namespace Headland.Game.Vehicles;
 
 /// <summary>
-/// Follows a Core machine on the terrain (with pitch and roll) and draws it: the procedural placeholder, or a glTF
-/// model (e.g. from Blockbench). A view per component moves its parts: wheels, pipe, tipper, lights…
+/// Follows a Core machine on the terrain (with pitch and roll) and draws its glTF model (e.g. from Blockbench). A view
+/// per component moves its parts: wheels, pipe, tipper, lights…
 /// </summary>
 public partial class MachineView : Node3D
 {
@@ -18,7 +18,7 @@ public partial class MachineView : Node3D
     public override void _Ready()
     {
         Name = $"{Machine.Def.Id}_{Machine.Id}";
-        var rig = string.IsNullOrEmpty(Machine.Def.Visual.Model) ? PlaceholderBuilder.Build(Machine.Def) : MachineRig.Model(Machine.Def);
+        var rig = MachineRig.Model(Machine.Def);
         AddChild(rig.Root);
         foreach (var c in Machine.Components)
             if (ComponentView.For(c, Sim, rig) is { } view)

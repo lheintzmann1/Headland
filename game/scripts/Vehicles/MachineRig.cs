@@ -4,24 +4,20 @@ using Godot;
 
 namespace Headland.Game.Vehicles;
 
-/// <summary>A node a component view moves, with its rest pose (as modeled or built).</summary>
+/// <summary>A node a component view moves, with its rest pose (as modeled).</summary>
 public readonly record struct RigPart(Node3D Node, Vector3 Position, Vector3 Rotation, Vector3 Scale);
 
 /// <summary>
-/// How a machine is drawn: procedural placeholder parts or a glTF model, and the nodes its component views move, by
-/// role (wheel0L, pipe, tipper…). Views animate a part from its rest pose, so placeholders and models move alike.
+/// How a machine is drawn: its glTF model, and the nodes its component views move, by role (wheel0L, pipe, tipper…).
+/// Views animate a part from its rest pose.
 /// </summary>
 public sealed class MachineRig
 {
     private static readonly Dictionary<(BaseMaterial3D, Color), BaseMaterial3D> Tints = new();
     private readonly Dictionary<string, RigPart> _parts = new();
     private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _fill = [];
-    private Node3D? _frontFrame;
-    private float _hinge;
 
     public Node3D Root { get; } = new() { Name = "Visual" };
-    /// <summary>Built from placeholder parts: views add their own parts, and recolor loads by fill type.</summary>
-    public bool IsPlaceholder { get; init; }
     /// <summary>Meters per unit of the parts' space (a model's scale), for moves given in meters.</summary>
     public float Scale { get; init; } = 1f;
 
@@ -44,31 +40,13 @@ public sealed class MachineRig
         return Tints[(material, color)] = tinted;
     }
 
-    /// <summary>Whether a material is <paramref name="kind"/> (paint, fill) or a shade of it (paint_dark, paint.001): see docs/MODELING.md.</summary>
+    /// <summary>
+    /// Whether a material is <paramref name="kind"/> (paint, fill) or a shade of it (paint_dark, paint.001, or paint2 as
+    /// Godot renames a material named like a node): see docs/MODELING.md.
+    /// </summary>
     private static bool IsKind(Material? material, string kind) =>
         material is BaseMaterial3D { ResourceName: var name } && name.StartsWith(kind, StringComparison.Ordinal)
-                                                              && (name.Length == kind.Length || name[kind.Length] is '_' or '.');
-
-    /// <summary>An articulated placeholder's front frame (role frontFrame), hinged at <paramref name="hinge"/>.</summary>
-    public void SetFrontFrame(Node3D frame, float hinge)
-    {
-        _frontFrame = frame;
-        _hinge = hinge;
-        Add("frontFrame", frame);
-    }
-
-    /// <summary>Adds a placeholder part at <paramref name="position"/> (machine space): on the front frame when ahead of its hinge.</summary>
-    public void AddPart(Node3D part, Vector3 position)
-    {
-        if (_frontFrame != null && position.Z > _hinge)
-        {
-            _frontFrame.AddChild(part);
-            part.Position = position - new Vector3(0f, 0f, _hinge);
-            return;
-        }
-        Root.AddChild(part);
-        part.Position = position;
-    }
+                                                              && (name.Length == kind.Length || name[kind.Length] is '_' or '.' or (>= '0' and <= '9'));
 
     /// <summary>
     /// The machine's glTF model (what its root node holds) with its moving parts found by name, the nodes it doesn't

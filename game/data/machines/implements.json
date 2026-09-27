@@ -9,7 +9,7 @@
         "areas": [ { "type": "cultivator", "width": 3.0, "length": 1.0, "z": -1.05, "maxWorkSpeedKmh": 14, "requiredPowerHp": 90 } ]
       }
     },
-    "visual": { "placeholder": "cultivator", "color": "#3e5263" },
+    "visual": { "color": "#3e5263", "model": "res://assets/models/cultivators/cultivator_3.glb" },
     "description": "Stubble cultivator. Turns stubble, grass or failed crops into a seedbed.",
     "configurations": [
       { "id": "width", "name": "Working width", "options": [
@@ -32,7 +32,7 @@
         ]
       }
     },
-    "visual": { "placeholder": "seeder", "color": "#2f4f63" },
+    "visual": { "color": "#2f4f63", "model": "res://assets/models/seeders/seeder_3.glb" },
     "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil.",
     "configurations": [
       { "id": "width", "name": "Working width", "options": [
@@ -63,7 +63,7 @@
       "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypes": ["wheat", "barley", "canola", "corn"] } ] },
       "tipper": { "fillUnit": "main", "ratePerSecond": 450 }
     },
-    "visual": { "placeholder": "trailer", "color": "#5b6770" },
+    "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },
     "description": "Tandem-axle grain tipper. Park it under the combine pipe, then tip it into an unloading area (U).",
     "configurations": [
       { "id": "capacity", "name": "Capacity", "options": [

@@ -13,13 +13,16 @@ public static class Models
     public const string RootName = "root";
 
     /// <summary>
-    /// Leaves out of the game each machine whose model, as it comes or with one of its options, doesn't load: an error
+    /// Leaves out of the game each machine without a model that loads, as it comes or with one of its options: an error
     /// says so, and what went with it (its places on the maps, its lease sets). There is no stand-in.
     /// </summary>
     public static void LeaveOutBroken(ContentDatabase content)
     {
         var problems = new Dictionary<string, string?>();
-        string? ProblemOf(string model) => problems.TryGetValue(model, out var p) ? p : problems[model] = Problem(model);
+        string? ProblemOf(string? model) =>
+            string.IsNullOrEmpty(model) ? "has no model (visual.model)"
+            : problems.TryGetValue(model, out var p) ? p
+            : problems[model] = Problem(model) is { } problem ? $"model '{model}' {problem}" : null;
 
         foreach (var def in content.Machines.Values.ToList())
         {
@@ -27,13 +30,10 @@ public static class Models
                 .SelectMany(c => c.Options.Select(o => def.Configure(new Dictionary<string, string> { [c.Id] = o.Id })))
                 .Prepend(def)
                 .Select(d => d.Visual.Model)
-                .OfType<string>()
-                .Where(m => m != "")
                 .Distinct();
-            if (models.Select(m => (model: m, problem: ProblemOf(m))).FirstOrDefault(x => x.problem != null) is not (var model, { } problem))
-                continue;
+            if (models.Select(ProblemOf).FirstOrDefault(p => p != null) is not { } problem) continue;
             var changes = content.RemoveMachine(def.Id);
-            GD.PushError($"{def.Id}: model '{model}' {problem}, so the machine is left out of the game" +
+            GD.PushError($"{def.Id}: {problem}, so the machine is left out of the game" +
                          (changes.Count > 0 ? $": {string.Join("; ", changes)}" : ""));
         }
     }

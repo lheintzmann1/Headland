@@ -11,7 +11,6 @@ namespace Headland.Game.Vehicles.Components;
 /// </summary>
 public partial class RunningGearView : ComponentView
 {
-    private readonly List<(TrackRig rig, float x)> _placeholderTracks = [];
     private readonly List<(TrackBelt belt, List<Node3D> links, float x)> _belts = [];
 
     public RunningGear Gear { get; init; } = null!;
@@ -23,25 +22,7 @@ public partial class RunningGearView : ComponentView
         foreach (var (side, x) in Sides(axles[i]))
         {
             var set = axles[i].Wheels;
-            var role = RunningGearDef.SideRole(axles[i], i, side);
-            if (Rig.IsPlaceholder)
-            {
-                Node3D node;
-                if (set.IsTracks)
-                {
-                    var track = new TrackRig(set, Body, role);
-                    _placeholderTracks.Add((track, x));
-                    node = track.Root;
-                    Rig.AddPart(node, new Vector3(x, 0f, axles[i].Z));
-                }
-                else
-                {
-                    node = PlaceholderBuilder.Wheel(set, Mathf.Sign(x));
-                    Rig.AddPart(node, new Vector3(x, set.Radius, axles[i].Z));
-                }
-                Rig.Add(role, node);
-            }
-            if (set.IsTracks && Rig.Part(role)?.Node is { } t && t.GetNodeOrNull<Node3D>($"{t.Name}_belt") is { } belt)
+            if (set.IsTracks && Rig.Part(RunningGearDef.SideRole(axles[i], i, side))?.Node is { } t && t.GetNodeOrNull<Node3D>($"{t.Name}_belt") is { } belt)
                 _belts.Add((new TrackBelt(set), belt.GetChildren().OfType<Node3D>().ToList(), x));
         }
     }
@@ -57,7 +38,6 @@ public partial class RunningGearView : ComponentView
                 Turn(RunningGearDef.SideRole(axles[i], i, side), new Vector3(Gear.SideDistance(x) / axles[i].Wheels.Radius, Gear.WheelAngle(i, x), 0f));
         }
         foreach (var (belt, links, x) in _belts) belt.Place(links, Gear.SideDistance(x));
-        foreach (var (track, x) in _placeholderTracks) track.Roll(Gear.SideDistance(x));
         if (Gear.SteeringKind == SteeringKind.Articulated) Turn("frontFrame", new Vector3(0f, Gear.SteerAngle, 0f));
     }
 

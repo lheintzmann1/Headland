@@ -26,8 +26,8 @@ public class ComponentTests
             "drivable": {},
             "craneArm": { "joints": [
               { "id": "slew", "axis": "yaw", "offset": [0, 2, 1], "min": -120, "max": 120, "speed": 30 },
-              { "id": "boom", "axis": "pitch", "offset": [0, 0.5, 0], "min": -20, "max": 60, "speed": 20, "length": 4 },
-              { "id": "stick", "axis": "extend", "offset": [0, 0, 4], "min": 0, "max": 2, "speed": 0.5, "length": 3 } ] },
+              { "id": "boom", "axis": "pitch", "offset": [0, 0.5, 0], "min": -20, "max": 60, "speed": 20 },
+              { "id": "stick", "axis": "extend", "offset": [0, 0, 4], "min": 0, "max": 2, "speed": 0.5 } ] },
             "winch": { "joint": "stick", "offset": [0, 0, 3], "maxLength": 6, "speed": 2 },
             "saw": { "joint": "stick", "offset": [0, -0.5, 3] },
             "lights": { "lamps": [ { "type": "head", "x": 0.8, "z": 4.9 }, { "type": "workRear", "z": -2, "yawDeg": 180 } ] }

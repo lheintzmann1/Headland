@@ -28,10 +28,7 @@
         ]
       }
     },
-    "visual": {
-      "placeholder": "tractor", "color": "#7b2f25",
-      "parts": [ { "id": "frontHitch_weight", "x": 0, "y": 0.75, "z": 3.85, "w": 0.95, "h": 0.65, "d": 0.45, "color": "#2e3030" } ]
-    },
+    "visual": { "color": "#7b2f25", "model": "res://assets/models/tractors/tractor_125.glb" },
     "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer.",
     "configurations": [
       { "id": "wheels", "name": "Wheels", "options": [
@@ -116,10 +113,7 @@
         ]
       }
     },
-    "visual": {
-      "placeholder": "tractor", "color": "#4d5c38",
-      "parts": [ { "id": "frontHitch_weight", "x": 0, "y": 0.7, "z": 3.5, "w": 0.85, "h": 0.6, "d": 0.4, "color": "#2e3030" } ]
-    },
+    "visual": { "color": "#4d5c38", "model": "res://assets/models/tractors/tractor_95.glb" },
     "description": "Compact all-rounder, ideal for trailer duty and light tillage.",
     "configurations": [
       { "id": "wheels", "name": "Wheels", "options": [

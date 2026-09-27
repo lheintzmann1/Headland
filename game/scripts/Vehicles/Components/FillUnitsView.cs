@@ -30,9 +30,6 @@ public partial class FillUnitsView : ComponentView
         load.Node.Scale = load.Scale with { Y = load.Scale.Y * Mathf.Max(0.02f, _unit.Fraction) };
         if (_unit.FillType == _color || !Sim.Content.FillTypes.TryGetValue(_unit.FillType!, out var ft)) return;
         _color = _unit.FillType;
-        if (!Rig.IsPlaceholder) Rig.SetFillColor(Conv.Hex(ft.Color));
-        else
-            foreach (var mesh in load.Node.GetChildren().OfType<MeshInstance3D>())
-                mesh.MaterialOverride = Materials.Get(Conv.Hex(ft.Color), 0.95f);
+        Rig.SetFillColor(Conv.Hex(ft.Color));
     }
 }

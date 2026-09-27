@@ -183,10 +183,10 @@ public sealed class SizeDef
     public float CenterZ { get; set; }
 }
 
-/// <summary>A glTF model shown instead of a procedural placeholder (machines, POIs).</summary>
+/// <summary>A glTF model: how a machine looks, or a POI instead of its placeholder parts.</summary>
 public class ModelDef
 {
-    /// <summary>Optional glTF model (res:// path, e.g. a Blockbench .glb export). Replaces the placeholder.</summary>
+    /// <summary>The glTF model (res:// path, e.g. a Blockbench .glb export): a machine needs one, a POI may have one.</summary>
     public string? Model { get; set; }
     /// <summary>Uniform scale applied to the model (1 = model units are meters).</summary>
     public float Scale { get; set; } = 1f;
@@ -198,34 +198,13 @@ public class ModelDef
 
 public sealed class VisualDef : ModelDef
 {
-    /// <summary>Procedural placeholder archetype: tractor, combine, trailer, cultivator, seeder, header.</summary>
-    public string Placeholder { get; set; } = "tractor";
+    /// <summary>The paint: the color of its model's paint materials (see docs/MODELING.md).</summary>
     public string Color { get; set; } = "#7a3326";
     /// <summary>
     /// Moving parts not named after their role in the model: role → node name. The machine's components give the roles
     /// (wheel0L, wheel0R… for each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
-    /// <summary>
-    /// Placeholder blocks the archetype doesn't draw, such as a front weight: named like model nodes, so that options
-    /// show and hide them as they do a model's (<see cref="ConfigurationOptionDef.Show"/>).
-    /// </summary>
-    public PlaceholderPartDef[] Parts { get; set; } = [];
-}
-
-/// <summary>A block of a machine's placeholder, centered on x, y, z (machine space): w along x, h up, d along z.</summary>
-public sealed class PlaceholderPartDef
-{
-    /// <summary>Its node name, unique on the machine.</summary>
-    public string Id { get; set; } = "";
-    public float X { get; set; }
-    public float Y { get; set; }
-    public float Z { get; set; }
-    public float W { get; set; } = 0.5f;
-    public float H { get; set; } = 0.5f;
-    public float D { get; set; } = 0.5f;
-    /// <summary>Its paint; the machine's color when missing.</summary>
-    public string? Color { get; set; }
 }
 
 /// <summary>
@@ -259,11 +238,11 @@ public sealed class MachineDef
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> Choices { get; private set; } = new Dictionary<string, string>();
 
-    /// <summary>Model nodes (and placeholder parts) its options are made of: each is visible with the options it's in.</summary>
+    /// <summary>Model nodes its options are made of: each is visible with the options it's in.</summary>
     [JsonIgnore]
     public IEnumerable<string> OptionNodes => Configurations.SelectMany(c => c.Options.SelectMany(o => o.Nodes(c))).Distinct();
 
-    /// <summary>Model nodes (and placeholder parts) the chosen options are made of.</summary>
+    /// <summary>Model nodes the chosen options are made of.</summary>
     private IReadOnlySet<string> _shownNodes = new HashSet<string>();
 
     /// <summary>The model node that moves as <paramref name="role"/>: the one visual.nodes names, else the one named after the role.</summary>
@@ -277,7 +256,7 @@ public sealed class MachineDef
     public IEnumerable<string> NodesOf(string role) => Choices.Select(c => $"{c.Key}_{c.Value}_{role}").Append(NodeOf(role));
 
     /// <summary>
-    /// Whether the model node (or placeholder part) <paramref name="node"/> is hidden on this machine (see
+    /// Whether the model node <paramref name="node"/> is hidden on this machine (see
     /// docs/MODELING.md): it's part of options it doesn't have and of none it has, or a moving part only other options
     /// have (the rear wheels of a machine with rear tracks).
     /// </summary>
@@ -415,13 +394,13 @@ public sealed class ConfigurationOptionDef
     /// <summary>What it changes in the machine's JSON (its size, components, looks), merged in by <see cref="JsonMerge"/>.</summary>
     public JsonObject? Changes { get; set; }
     /// <summary>
-    /// Model nodes (or placeholder parts) it shares with other options, such as the two beacons "both" shows, besides
+    /// Model nodes it shares with other options, such as the two beacons "both" shows, besides
     /// its own (<see cref="Nodes"/>).
     /// </summary>
     public string[] Show { get; set; } = [];
 
     /// <summary>
-    /// The model nodes (or placeholder parts) that make it up, hidden unless it's chosen so that one model holds every
+    /// The model nodes that make it up, hidden unless it's chosen so that one model holds every
     /// configuration: the one named after it, configuration_option (frontHitch_weight), and those it shows.
     /// </summary>
     public IEnumerable<string> Nodes(ConfigurationDef configuration) => Show.Prepend($"{configuration.Id}_{Id}");

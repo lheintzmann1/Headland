@@ -21,8 +21,6 @@ public sealed class CraneJointDef
     public float Max { get; set; } = 45f;
     public float Rest { get; set; }
     public float Speed { get; set; } = 30f;
-    /// <summary>Placeholder only: length of the boom drawn out from the pivot along +z.</summary>
-    public float Length { get; set; }
 }
 
 /// <summary>
@@ -44,7 +42,7 @@ public sealed class CraneArmDef : ComponentDef
             if (string.IsNullOrWhiteSpace(j.Id)) yield return "a joint has no id";
             if (!CraneJointDef.Axes.Contains(j.Axis)) yield return $"joint '{j.Id}': axis must be yaw, pitch or extend";
             if (j.Min > j.Rest || j.Rest > j.Max) yield return $"joint '{j.Id}': needs min <= rest <= max";
-            if (j.Speed <= 0f || j.Length < 0f) yield return $"joint '{j.Id}': speed must be > 0 and length >= 0";
+            if (j.Speed <= 0f) yield return $"joint '{j.Id}': speed must be > 0";
             if (j.Offset.Length != 3) yield return $"joint '{j.Id}': offset is [x, y, z]";
         }
     }

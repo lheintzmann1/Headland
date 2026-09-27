@@ -24,20 +24,6 @@ public partial class PipeView : ComponentView
             Visible = false,
         };
         AddChild(_stream);
-        if (!Rig.IsPlaceholder) return;
-        var pivotX = s.Width * 0.36f;
-        var pivot = new Node3D { Name = "Pipe", Position = new Vector3(pivotX, s.Height, Pipe.Def.Z), Rotation = new Vector3(0f, Mathf.Pi, 0f) };
-        Rig.Root.AddChild(pivot);
-        var reach = Pipe.Def.X - pivotX;
-        pivot.AddChild(new MeshInstance3D
-        {
-            Mesh = new CylinderMesh { TopRadius = 0.17f, BottomRadius = 0.17f, Height = reach, RadialSegments = 10 },
-            Position = new Vector3(0, 0.25f, reach * 0.5f),
-            Rotation = new Vector3(Mathf.Pi / 2f, 0, 0),
-            MaterialOverride = Materials.Get(Body, 0.6f, 0.2f),
-        });
-        PlaceholderBuilder.Box(pivot, new Vector3(0.35f, 0.55f, 0.35f), new Vector3(0, 0.05f, reach), Body * 0.8f);
-        Rig.Add("pipe", pivot);
     }
 
     public override void _Process(double delta)

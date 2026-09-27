@@ -30,7 +30,7 @@
         ]
       }
     },
-    "visual": { "placeholder": "combine", "color": "#56703f" },
+    "visual": { "color": "#56703f", "model": "res://assets/models/combines/combine_7.glb" },
     "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer.",
     "configurations": [
       { "id": "wheels", "name": "Front wheels", "options": [
@@ -72,7 +72,7 @@
         ]
       }
     },
-    "visual": { "placeholder": "header", "color": "#56703f" },
+    "visual": { "color": "#56703f", "model": "res://assets/models/headers/header_grain_6.glb" },
     "description": "Cuts wheat, barley and canola."
   },
   {
@@ -86,7 +86,7 @@
         ]
       }
     },
-    "visual": { "placeholder": "cornheader", "color": "#b58a2e" },
+    "visual": { "color": "#b58a2e", "model": "res://assets/models/headers/header_corn_6.glb" },
     "description": "Snapping rolls for grain corn. Six rows at 75 cm."
   }
 ]

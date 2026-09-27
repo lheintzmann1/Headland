@@ -156,11 +156,9 @@ public class ConfigurationTests
         Assert.Equal((false, false), (both.Hides("beacons_left"), both.Hides("beacons_right")));
 
         var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
-            [{ "id": "y", "name": "Y", "components": {}, "visual": { "parts": [ { "id": "a", "w": 0 }, { "id": "b" }, { "id": "b" } ] },
+            [{ "id": "y", "name": "Y", "components": {},
                "configurations": [ { "id": "c", "name": "C", "options": [ { "id": "o", "name": "O", "show": [""] } ] } ] }]
             """));
-        Assert.Contains("machine 'y': visual.parts need an id, and w, h and d > 0", bad.Message);
-        Assert.Contains("machine 'y': visual part 'b' is defined more than once", bad.Message);
         Assert.Contains("machine 'y' configuration 'c' option 'o': show needs node names", bad.Message);
     }
 

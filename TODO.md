@@ -20,7 +20,7 @@ Rules for every item:
 6. **World**: authored elevation, water, spline roads, towns and buildings, AI traffic.
 7. **Modding**: mod loader, Lua, map SDK (after the formats from 3–6 settle).
 8. **Audio**: any time after the settings menu; engine sounds after the vehicle refactor.
-9. **Art**: Blockbench models replace placeholders as they're made.
+9. **Art**: Blockbench models replace the generated machine models and the placeholders as they're made.
 
 ## Quick wins
 
@@ -175,11 +175,10 @@ FS19 reference values; tune in data.
 What the component refactor left in place goes as its replacement lands. Each step deletes the old code with
 its docs and tests in the same change; no fallback is kept for later.
 
-- [ ] Placeholders: once the 8 machines have their Blockbench models (Art), delete the placeholder archetypes
-      (`PlaceholderBuilder`, `visual.placeholder`, `visual.parts`) and the placeholder parts the component views build
-      (wheels, pipe, linkages, booms, hook, saw blade). A machine without a model shows a plain box of its
-      `size`, and the content check warns about it. The farmer and POIs likewise once their models exist (POI
-      `parts` stay as collision shapes).
+- [x] Machine placeholders: exported as models (`game/assets/models`, a `.bbmodel` beside each), and the placeholder
+      code removed (`PlaceholderBuilder`, `visual.placeholder`, `visual.parts`, the parts the component views built).
+      A machine without a model that loads is left out of the game.
+- [ ] The farmer's and the POIs' placeholders, once their models exist (POI `parts` stay as collision shapes).
 - [x] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
       (steering, turning from its axles) and drivable (input); the system keeps placing the chain. With
       "Kinematics from the running gear".
@@ -336,10 +335,10 @@ A mod is an add-on the game loads, never a fork.
 ## Art
 
 - [ ] Blockbench models for `tractor_125`, `tractor_95`, `combine_7`, `header_grain_6`, `header_corn_6`,
-      `cultivator_3`, `seeder_3`, `trailer_16`, with configuration parts as separate nodes (dual wheels,
-      tracks, front loader, beacons, lightbar, front hitch).
+      `cultivator_3`, `seeder_3`, `trailer_16`, replacing the bases generated from the old placeholders (start from
+      their `.bbmodel`).
 - [ ] Buildings and POIs, traffic cars, player character, trees and props.
-- [ ] `docs/MODELING.md`: roles for configurations, lights, tracks, crane joints; building models.
+- [ ] Lamps as model nodes (the JSON places them today), in `docs/MODELING.md`.
 
 ## Links
 

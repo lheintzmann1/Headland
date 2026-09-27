@@ -23,12 +23,6 @@ public partial class WinchView : ComponentView
         };
         AddChild(_rope);
         if (Rig.Part("hook") is { } part) _hook = part.Node;
-        else if (Rig.IsPlaceholder)
-        {
-            _hook = new Node3D { Name = "Hook", TopLevel = true };
-            PlaceholderBuilder.Box(_hook, new Vector3(0.12f, 0.2f, 0.06f), new Vector3(0f, -0.1f, 0f), Materials.Steel);
-            AddChild(_hook);
-        }
     }
 
     public override void _Process(double delta)
