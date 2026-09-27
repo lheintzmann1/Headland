@@ -8,7 +8,7 @@ public readonly record struct RigPart(Node3D Node, Vector3 Position, Vector3 Rot
 
 /// <summary>
 /// How a machine is drawn: procedural placeholder parts or a glTF model, and the nodes its component views move, by
-/// role (wheel0, pipe, tipper…). Views animate a part from its rest pose, so placeholders and models move alike.
+/// role (wheel0L, pipe, tipper…). Views animate a part from its rest pose, so placeholders and models move alike.
 /// </summary>
 public sealed class MachineRig
 {

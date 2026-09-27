@@ -73,12 +73,12 @@ public sealed class WaypointController : IVehicleController
         var target = LookaheadPoint(v.Position, lookahead);
         var local = MathUtil.WorldToLocal(v.Position, v.Heading, target);
         var d2 = MathF.Max(local.LengthSquared(), 0.01f);
-        // The same law steers backward: the non-steered axle then leads, and steering left swings it left.
+        // The same law steers backward: the fixed axle then leads, and steering left swings it left.
         var curvature = 2f * local.X / d2;
         var mot = v.Get<Motor>()!.Def;
         var gear = v.Get<RunningGear>()!;
-        var maxSteer = gear.Def.MaxSteerDeg * MathUtil.Deg2Rad;
-        var steer = Math.Clamp(MathF.Atan(curvature * gear.Wheelbase) / maxSteer, -1f, 1f);
+        var maxSteer = gear.Def.MaxSteer;
+        var steer = Math.Clamp(MathF.Atan(curvature * gear.WheelbaseFor(reverse)) / maxSteer, -1f, 1f);
         var input = new VehicleInput { Steer = steer };
         // Standing, turn the wheels first: pulling away with them far off would leave the path.
         if (MathF.Abs(v.Speed) < 0.1f && MathF.Abs(steer * maxSteer - gear.SteerAngle) > SteerTolerance)
@@ -501,11 +501,12 @@ public sealed class FieldWorkController : IVehicleController
     public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
 
     /// <summary>
-    /// Takes over the implements: unfolded, seeders and the thresher a header hangs on turned on. Each is lowered as it
-    /// reaches the field.
+    /// Takes over the vehicle, steering it normally, and its implements: unfolded, seeders and the thresher a header
+    /// hangs on turned on. Each is lowered as it reaches the field.
     /// </summary>
     internal void TakeOver()
     {
+        Vehicle.Get<RunningGear>()!.Mode = SteeringMode.Normal;
         foreach (var (m, areas) in _tools)
         {
             if (m.Get<AnimatedParts>() is { } parts) parts.Folded = false;

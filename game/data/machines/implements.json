@@ -16,12 +16,7 @@
     "id": "seeder_3", "name": "Drill 300", "category": "seeder", "price": 26000, "mass": 2400,
     "size": { "length": 3.3, "width": 3.0, "height": 1.9, "centerZ": 0.35 },
     "components": {
-      "runningGear": {
-        "wheels": [
-          { "x":  1.3, "z": 0, "radius": 0.45, "width": 0.3 },
-          { "x": -1.3, "z": 0, "radius": 0.45, "width": 0.3 }
-        ]
-      },
+      "runningGear": { "axles": [ { "z": 0, "track": 2.6, "wheels": { "radius": 0.45, "width": 0.3 } } ] },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 3.1, "maxArticulationDeg": 75, "lowerable": true },
       "fillUnits": { "units": [ { "id": "seed", "capacity": 1600, "fillTypes": ["seeds"], "startFillType": "seeds", "startLevel": 900 } ] },
       "workAreas": {
@@ -38,11 +33,9 @@
     "size": { "length": 6.2, "width": 2.55, "height": 2.7, "centerZ": 0.6 },
     "components": {
       "runningGear": {
-        "wheels": [
-          { "x":  1.02, "z":  0.65, "radius": 0.52, "width": 0.4 },
-          { "x": -1.02, "z":  0.65, "radius": 0.52, "width": 0.4 },
-          { "x":  1.02, "z": -0.65, "radius": 0.52, "width": 0.4 },
-          { "x": -1.02, "z": -0.65, "radius": 0.52, "width": 0.4 }
+        "axles": [
+          { "z":  0.65, "track": 2.04, "wheels": { "radius": 0.52, "width": 0.4 } },
+          { "z": -0.65, "track": 2.04, "wheels": { "radius": 0.52, "width": 0.4 } }
         ]
       },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.4, "maxArticulationDeg": 80 },

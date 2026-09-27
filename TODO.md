@@ -118,7 +118,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 ### Running gear
 
-- [ ] Axles instead of a flat wheel list: any count, each with position, track width, steering (fixed,
+- [x] Axles instead of a flat wheel list: any count, each with position, track width, steering (fixed,
       front, rear, crab, all-wheel, self-steering trailer axle) and a wheel set.
 - [ ] Wheel sets: single, dual, narrow row-crop, flotation; tracks (crawlers) with their own visuals.
 - [ ] Kinematics from the running gear: multi-axle steering, articulated steering (loaders, big 4WD,

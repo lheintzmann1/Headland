@@ -13,8 +13,9 @@ the defaults listed below.
 
 Positions are in meters, in the machine's own space: **+z forward, +x left, +y up**, with the origin on the ground:
 
-- vehicles: the center of the fixed (non-steered) axle, so the rear axle of a tractor and the front one of a combine,
-- trailed implements: the center of their axle (their drawbar eye is ahead of it),
+- vehicles: where they turn about, the center of the fixed axle (the middle of them with several), so the rear axle of
+  a tractor and the front one of a combine,
+- trailed implements: likewise the middle of their fixed axles (their drawbar eye is ahead of it),
 - mounted implements and headers: the hitch point.
 
 ## The machine
@@ -26,11 +27,9 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
   // The box it takes up: what it bumps into, and where it can be driven through.
   "size": { "length": 4.7, "width": 2.45, "height": 3.0, "centerZ": 1.25 },
   "components": {
-    "runningGear": { "maxSteerDeg": 40, "steerRateDeg": 80, "wheels": [
-      { "x":  0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
-      { "x": -0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
-      { "x":  0.88, "z": 2.65, "radius": 0.55, "width": 0.42, "steer": true },
-      { "x": -0.88, "z": 2.65, "radius": 0.55, "width": 0.42, "steer": true } ] },
+    "runningGear": { "maxSteerDeg": 40, "steerRateDeg": 80, "axles": [
+      { "z": 0,    "track": 1.84, "wheels": { "radius": 0.8,  "width": 0.55 } },
+      { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } } ] },
     "motor": { "powerHp": 125, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.2, "braking": 6, "fuelUnit": "fuel" },
     "drivable": {},
     "attacherJoints": { "joints": [ { "id": "rear", "type": "threePoint", "x": 0, "z": -1.2, "y": 0.55 } ] },
@@ -49,7 +48,7 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
 
 | Kind | What it is |
 |---|---|
-| `runningGear` | Wheels, and how the steered ones turn. |
+| `runningGear` | Axles and their wheels, and how they steer. |
 | `motor` | An engine: the machine drives itself. |
 | `drivable` | A seat: the farmer or a helper drives it. |
 | `attacherJoints` | Where implements hitch: three-point linkages, drawbars, a feeder house. |
@@ -73,16 +72,39 @@ chain; the lower key lowers every lowerable `attachable`.
 
 | Setting | Default | |
 |---|---|---|
-| `wheels` | none | Each `x`, `z`, `radius` (0.5), `width` (0.4), and `steer` (false). |
-| `maxSteerDeg` | 38 | Angle of the steered wheels at full lock. |
-| `steerRateDeg` | 90 | How fast they turn, in degrees per second. |
+| `axles` | none | Front to back or in any order, as many as it has. |
+| `maxSteerDeg` | 38 | Angle of the steered axle farthest from the turning center, at full lock. |
+| `steerRateDeg` | 90 | How fast the steered wheels turn, in degrees per second. |
 
-When some wheels steer, the fixed ones sit on the origin's axle (z = 0) and the steered ones all on one side of it:
-their distance from it is the wheelbase. Steered wheels behind the fixed ones steer like a combine's.
+Each axle:
+
+| Setting | Default | |
+|---|---|---|
+| `z` | 0 | Where it is along the machine. |
+| `track` | 1.8 | From the middle of the left wheels to the middle of the right ones. |
+| `steering` | `fixed` | See below. |
+| `wheels` | | The wheels on each side: `radius` (0.5) and `width` (0.4). |
+
+The machine turns about a point on its length, the **turning center**: the middle of its fixed axles. Its origin must
+be there (z = 0). Every steered axle turns so that its wheels roll around the same point, the inner wheel of a turn
+more than the outer one, and the farthest from the turning center at `maxSteerDeg` at full lock:
+
+| `steering` | |
+|---|---|
+| `fixed` | Rolls straight. |
+| `front` | Steers into the turn, ahead of the turning center: a tractor's front axle. |
+| `rear` | Steers the other way, behind it: a combine's rear axle. Front and rear axles without a fixed one steer all four wheels, turning about the middle between them. |
+| `allWheel` | Steers only in the all-wheel and crab steering modes, and rolls straight in normal steering. |
+| `self` | Self-steering: turns freely to follow the path (a trailer's rear axle, a truck's tag axle), and locks straight when reversing, so that it then holds the machine like a fixed one. |
+
+A machine with `allWheel` axles has three steering modes, switched with the steering key: **normal** (they roll
+straight), **all-wheel** (they steer against the front axles, turning about the middle between them: a tighter turn)
+and **crab** (every steered axle turns the same way, so the machine moves sideways without turning). It can't have
+fixed axles, which crab steering would drag sideways. Helpers always steer normally.
 
 ### motor
 
-Needs a `runningGear` with steered wheels.
+Needs a `runningGear` that steers.
 
 | Setting | Default | |
 |---|---|---|
@@ -211,6 +233,6 @@ points (`pitchDeg` -18, down when negative; `yawDeg` 0, left when positive, 180 
 
 ## Saves
 
-A save keeps each machine's state under its components' kinds (the pipe unfolded, the level of each fill unit, the
-crane's joints…). A machine whose definition gains a component gets it fresh; one that loses a component loses its
+A save keeps each machine's state under its components' kinds (the steering mode, the pipe unfolded, the level of
+each fill unit, the crane's joints…). A machine whose definition gains a component gets it fresh; one that loses a component loses its
 state.

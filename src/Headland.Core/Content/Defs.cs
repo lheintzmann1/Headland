@@ -4,7 +4,7 @@ using Headland.Core.Machines.Components;
 namespace Headland.Core.Content;
 
 // Content definitions ("raws"), deserialized from game/data/**/*.json (camelCase, comments allowed).
-// Local machine coordinates use model space: +z forward, +x left, origin at the non-steered axle.
+// Local machine coordinates use model space: +z forward, +x left, origin at the fixed axle.
 
 public sealed class GameConfig
 {
@@ -200,8 +200,8 @@ public sealed class VisualDef : ModelDef
     public string Placeholder { get; set; } = "tractor";
     public string Color { get; set; } = "#7a3326";
     /// <summary>
-    /// Moving parts: role → node name in the model. The machine's components give the roles (wheel0..wheelN in the
-    /// order of the running gear's wheels, pipe, tipper, reel, load…). See docs/MODELING.md.
+    /// Moving parts: role → node name in the model. The machine's components give the roles (wheel0L, wheel0R… for
+    /// each side of the running gear's axles, pipe, tipper, reel, load…). See docs/MODELING.md.
     /// </summary>
     public Dictionary<string, string>? Nodes { get; set; }
 }

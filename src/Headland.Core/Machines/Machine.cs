@@ -62,7 +62,7 @@ public sealed class Machine : IOwnable
 
     public bool Has<T>() where T : class => Get<T>() != null;
 
-    /// <summary>Center of the non-steered axle (the kinematic reference point).</summary>
+    /// <summary>Where it turns about: the middle of its fixed axles (the kinematic reference point).</summary>
     public Vector2 Position { get; set; }
     public float Heading { get; set; }
 

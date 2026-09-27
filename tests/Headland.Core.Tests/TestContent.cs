@@ -25,6 +25,18 @@ internal static class TestContent
 
     public static Simulation NewSim() => Simulation.Create(Content);
 
+    /// <summary>The game's content with extra machines (a JSON array), written as a mod would.</summary>
+    public static ContentDatabase WithMachines(string json) => ContentDatabase.Load(new ExtraMachines(json));
+
+    private sealed class ExtraMachines(string json) : IContentSource
+    {
+        private readonly FileSystemContentSource _game = new(DataDir);
+
+        public IReadOnlyList<string> ListJson(string dir) => dir == "machines" ? [.. _game.ListJson(dir), "machines/test.json"] : _game.ListJson(dir);
+        public string ReadText(string path) => path == "machines/test.json" ? json : _game.ReadText(path);
+        public bool Exists(string path) => path == "machines/test.json" || _game.Exists(path);
+    }
+
     /// <summary>
     /// A fresh 64 m world with one 48 x 48 m loam field (cultivated), for fast multi-year runs.
     /// Uses its own content instance so tests can run in parallel.

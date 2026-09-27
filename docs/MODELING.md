@@ -24,7 +24,7 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
    way, set `"yawDeg": 180` in the machine's JSON instead of rebuilding it.
 3. **Origin:** put the model's origin on the ground at the machine's reference point, which is the same one its JSON
    uses:
-   - tractors, trailers and trailed implements: the center of the rear (non-steered) axle,
+   - tractors, trailers and trailed implements: the center of the rear (fixed) axle, or the middle of the fixed axles,
    - combines: the center of the front axle,
    - mounted implements and headers: the hitch point.
 
@@ -34,7 +34,7 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
 
    | Role | Component | Pivot | Modeled as |
    |---|---|---|---|
-   | `wheel0`, `wheel1`, … | `runningGear` | wheel center | one node per wheel, in the same order as its `wheels` |
+   | `wheel0L`, `wheel0R`, `wheel1L`, … | `runningGear` | wheel center | one node per side of each axle (`L` left, `R` right), axles numbered as in its `axles`; it rolls, and steers when the axle does |
    | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
    | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left |
    | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
@@ -60,14 +60,14 @@ In Blockbench, start a **Generic Model** project: it allows free rotations and h
      "placeholder": "tractor",
      "color": "#7b2f25",
      "model": "res://assets/models/tractors/fieldmaster_125.glb",
-     "nodes": { "wheel0": "wheel_rl", "wheel1": "wheel_rr", "wheel2": "wheel_fl", "wheel3": "wheel_fr" }
+     "nodes": { "wheel0L": "wheel_rl", "wheel0R": "wheel_rr", "wheel1L": "wheel_fl", "wheel1R": "wheel_fr" }
    }
    ```
 
    Optional: `"scale"` (default 1), `"yawDeg"` (default 0), `"offset"` (default `[0, 0, 0]`).
 3. Import it: open the project in the Godot editor once, or run `godot --headless --path game --import`.
 4. Run the game. The console lists the parts it found, for example
-   `tractor_125: model res://…/fieldmaster_125.glb (parts: wheel0, wheel1, wheel2, wheel3)`, and warns about any
+   `tractor_125: model res://…/fieldmaster_125.glb (parts: wheel0L, wheel0R, wheel1L, wheel1R)`, and warns about any
    node name it could not find.
 
 The machine's size, wheel positions, hitch points and crane joints still come from its JSON, so check that they

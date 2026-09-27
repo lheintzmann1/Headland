@@ -205,6 +205,31 @@ public sealed class MachineSystem
         }
     }
 
+    /// <summary>Switches the vehicle to its next steering mode (normal, all-wheel, crab).</summary>
+    public void CycleSteering(Machine vehicle)
+    {
+        if (vehicle.Get<RunningGear>() is not { Def.Modes.Length: > 1 } gear)
+        {
+            _sim.Notifications.Post("It has only one way to steer");
+            return;
+        }
+        if (vehicle.Get<Drivable>()?.Controller is FieldWorkController)
+        {
+            _sim.Notifications.Post("The helper steers: dismiss them first");
+            return;
+        }
+        var modes = gear.Def.Modes;
+        gear.Mode = modes[(Array.IndexOf(modes, gear.Mode) + 1) % modes.Length];
+        _sim.Notifications.Post($"Steering: {SteeringName(gear.Mode)}");
+    }
+
+    public static string SteeringName(SteeringMode mode) => mode switch
+    {
+        SteeringMode.AllWheel => "all-wheel",
+        SteeringMode.Crab => "crab",
+        _ => "normal",
+    };
+
     public void CycleSeed(Machine vehicle)
     {
         var seeders = vehicle.Chain().Select(m => m.Get<WorkAreas>()).OfType<WorkAreas>().Where(w => w.Sows).ToList();
@@ -308,7 +333,7 @@ public sealed class MachineSystem
 
         // Less lock the faster it goes.
         var speedFactor = MathUtil.Lerp(1f, 0.4f, MathUtil.Saturate(MathF.Abs(s) / (40f * MathUtil.KmhToMs)));
-        gear.SteerToward(Math.Clamp(input.Steer, -1f, 1f) * gear.Def.MaxSteerDeg * MathUtil.Deg2Rad * speedFactor, dt);
+        gear.SteerToward(Math.Clamp(input.Steer, -1f, 1f) * gear.Def.MaxSteer * speedFactor, dt);
 
         if (MathF.Abs(s) < 1e-4f)
         {
@@ -323,8 +348,10 @@ public sealed class MachineSystem
         _saved.Clear();
         foreach (var m in v.Chain()) _saved.Add((m, m.Position, m.Heading));
 
-        v.Heading = MathUtil.WrapAngle(v.Heading + gear.Turn(s, dt));
+        var (turn, sideways) = gear.Motion(s, dt);
+        v.Heading = MathUtil.WrapAngle(v.Heading + turn);
         v.Position += MathUtil.Forward(v.Heading) * s * dt;
+        if (sideways != 0f) v.Position += MathUtil.Left(v.Heading) * sideways;
         UpdateChildren(v);
 
         if (ChainCollides(v) && !SavedPoseCollides(v))
@@ -339,10 +366,10 @@ public sealed class MachineSystem
         }
 
         v.Speed = s;
-        foreach (var (m, pos, _) in _saved)
+        foreach (var (m, pos, heading) in _saved)
         {
             var moved = Vector2.Dot(m.Position - pos, m.Forward);
-            if (m.Get<RunningGear>() is { } wheels) wheels.Distance += moved;
+            m.Get<RunningGear>()?.Roll(moved, Vector2.Dot(m.Position - pos, MathUtil.Left(m.Heading)), MathUtil.WrapAngle(m.Heading - heading), dt);
             if (m != v) m.Speed = moved / dt;
         }
         ProcessWorkAreas(v);

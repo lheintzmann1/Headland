@@ -42,7 +42,7 @@ public static class PlaceholderBuilder
         var front = s.CenterZ + s.Length * 0.5f;
         var back = s.CenterZ - s.Length * 0.5f;
         var r = rig.Root;
-        var rearR = (d.Get<RunningGearDef>()?.Wheels ?? []).Where(w => !w.Steer).Select(w => w.Radius).DefaultIfEmpty(0.75f).Max();
+        var rearR = (d.Get<RunningGearDef>()?.Axles ?? []).Where(a => a.Steering == "fixed").Select(a => a.Wheels.Radius).DefaultIfEmpty(0.75f).Max();
         // Chassis and engine hood.
         Box(r, new Vector3(0.8f, 0.45f, front - back - 0.3f), new Vector3(0, 0.75f, (front + back) * 0.5f + 0.1f), Materials.DarkSteel);
         Box(r, new Vector3(s.Width * 0.4f, 0.95f, front - 0.75f), new Vector3(0, 1.35f, (front + 0.75f) * 0.5f), body);
@@ -241,10 +241,10 @@ public static class PlaceholderBuilder
 
     // ------------------------------------------------------------------ Parts
 
-    /// <summary>A wheel at its position, in one node that steers (y) and rolls (x).</summary>
-    public static Node3D Wheel(WheelDef w)
+    /// <summary>A wheel centered at <paramref name="position"/>, in one node that steers (y) and rolls (x).</summary>
+    public static Node3D Wheel(WheelSetDef w, Vector3 position)
     {
-        var wheel = new Node3D { Name = "Wheel", Position = new Vector3(w.X, w.Radius, w.Z) };
+        var wheel = new Node3D { Name = "Wheel", Position = position };
         wheel.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = w.Radius, BottomRadius = w.Radius, Height = w.Width, RadialSegments = 18 },

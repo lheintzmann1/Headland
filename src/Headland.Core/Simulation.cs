@@ -236,6 +236,7 @@ public sealed class Simulation
     public void CommandTurnOn() => WithVehicle(Machines.ToggleOn);
     public void CommandUnload() => WithVehicle(Machines.ToggleUnload);
     public void CommandCycleSeed() => WithVehicle(Machines.CycleSeed);
+    public void CommandSteering() => WithVehicle(Machines.CycleSteering);
     public void CommandUse() => WithVehicle(Pois.Use);
 
     /// <summary>H: hire a helper to work the field the vehicle is in (or the nearest one), or dismiss it.</summary>

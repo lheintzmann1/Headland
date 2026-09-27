@@ -227,6 +227,7 @@ public partial class Hud : CanvasLayer
                 lines.Add($"{K("unload")} {(tipper.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
             }
             if (v.Chain().Any(m => m.Get<WorkAreas>() is { Sows: true })) lines.Add($"{K("cycle_seed")} Change seed");
+            if (v.Get<RunningGear>() is { Def.Modes.Length: > 1 } gear) lines.Add($"{K("steering")} Steering: {MachineSystem.SteeringName(gear.Mode)}");
             if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");
             if (v.Get<Drivable>()?.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
             else if (v.Chain().Any(m => m.Has<WorkAreas>()) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label} (${Sim.HelperWage:N0}/h)");

@@ -17,21 +17,11 @@ public class ComponentTests
         for (var t = 0f; t < seconds; t += Dt) sim.Tick(Dt);
     }
 
-    /// <summary>The game's content with extra machines, written as a mod would.</summary>
-    private sealed class WithMachines(string json) : IContentSource
-    {
-        private readonly FileSystemContentSource _game = new(TestContent.DataDir);
-
-        public IReadOnlyList<string> ListJson(string dir) => dir == "machines" ? [.. _game.ListJson(dir), "machines/test.json"] : _game.ListJson(dir);
-        public string ReadText(string path) => path == "machines/test.json" ? json : _game.ReadText(path);
-        public bool Exists(string path) => path == "machines/test.json" || _game.Exists(path);
-    }
-
     private const string Forwarder = """
         {
           "id": "test_forwarder", "name": "Forwarder", "size": { "length": 7, "width": 2.6, "height": 3.2, "centerZ": 1.5 },
           "components": {
-            "runningGear": { "wheels": [ { "x": 1.1, "z": 0 }, { "x": -1.1, "z": 0 }, { "x": 1.1, "z": 3, "steer": true }, { "x": -1.1, "z": 3, "steer": true } ] },
+            "runningGear": { "axles": [ { "z": 0, "track": 2.2 }, { "z": 3, "track": 2.2, "steering": "front" } ] },
             "motor": { "powerHp": 170 },
             "drivable": {},
             "craneArm": { "joints": [
@@ -69,7 +59,7 @@ public class ComponentTests
         {
           "id": "test_bracket_tractor", "name": "Bracket Tractor", "size": { "length": 4.5, "width": 2.4, "height": 3, "centerZ": 1.2 },
           "components": {
-            "runningGear": { "wheels": [ { "x": 0.9, "z": 0 }, { "x": -0.9, "z": 0 }, { "x": 0.9, "z": 2.6, "steer": true }, { "x": -0.9, "z": 2.6, "steer": true } ] },
+            "runningGear": { "axles": [ { "z": 0, "track": 1.8 }, { "z": 2.6, "track": 1.8, "steering": "front" } ] },
             "motor": { "powerHp": 120 },
             "drivable": {},
             "frontLoaderBracket": { "z": 1.9 }
@@ -78,7 +68,7 @@ public class ComponentTests
         ]
         """;
 
-    private static ContentDatabase Content(string json = Machines) => ContentDatabase.Load(new WithMachines(json));
+    private static ContentDatabase Content(string json = Machines) => TestContent.WithMachines(json);
 
     private static Simulation Sim(ContentDatabase content)
     {
@@ -92,7 +82,7 @@ public class ComponentTests
     {
         var def = Content().Machines["test_forwarder"];
         Assert.Equal(["runningGear", "motor", "drivable", "lights", "craneArm", "winch", "saw"], def.Components.Select(c => c.Kind));
-        Assert.Equal(3f, def.Get<RunningGearDef>()!.Wheelbase);
+        Assert.Equal(3f, def.Get<RunningGearDef>()!.Wheelbase());
 
         var tractor = TestContent.Content.Machines["tractor_125"];
         Assert.NotNull(tractor.Get<MotorDef>());
@@ -113,12 +103,12 @@ public class ComponentTests
                  "motor": {}, "drivable": {},
                  "winch": { "joint": "boom" },
                  "workAreas": { "areas": [ { "type": "seeder" } ] } },
-               "visual": { "nodes": { "wheel0": "Wheel" } } }]
+               "visual": { "nodes": { "wheel0L": "Wheel" } } }]
             """));
-        Assert.Contains("machine 'x' motor: needs a runningGear with steered wheels", bad.Message);
+        Assert.Contains("machine 'x' motor: needs a runningGear that steers", bad.Message);
         Assert.Contains("machine 'x' winch: crane joint 'boom' missing", bad.Message);
         Assert.Contains("machine 'x' workAreas: a seeder needs the fillUnit its seed comes from", bad.Message);
-        Assert.Contains("machine 'x': visual.nodes role 'wheel0' is not one of its components'", bad.Message);
+        Assert.Contains("machine 'x': visual.nodes role 'wheel0L' is not one of its components'", bad.Message);
     }
 
     [Fact]

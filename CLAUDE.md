@@ -41,7 +41,7 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Systems announce what happens as typed records on `Simulation.Events` (`Events/GameEvents.cs`); notifications and
   `Statistics` subscribe there rather than being called from the systems.
 - Coordinates: Core uses `System.Numerics.Vector2` on the ground plane (X = east, Y = Godot Z = south).
-  Machine local space = glTF model space: **+Z forward, +X left**, origin at the non-steered axle.
+  Machine local space = glTF model space: **+Z forward, +X left**, origin at the fixed axle (where it turns about).
   Heading θ ⇒ forward (sin θ, cos θ) = Godot `rotation.y`.
 - Field cells are 0.5 m, chunks 32 m; roads/tracks/paths/streams share a **16 m tile grid** (`MapDef.TileSize`).
 - Calendar is compressed (3 days/month); agronomy scales by real days per game day so crops keep real months.

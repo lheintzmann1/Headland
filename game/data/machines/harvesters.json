@@ -1,5 +1,5 @@
 [
-  // Combines steer with the rear axle; origin is the front (driven) axle. Headers: origin at the hitch point.
+  // Combines steer with the rear axle; origin is the front (fixed) axle. Headers: origin at the hitch point.
   {
     "id": "combine_7", "name": "Harvestor 7", "category": "combine", "brand": "Harvestor",
     "price": 285000, "mass": 15500,
@@ -7,11 +7,9 @@
     "components": {
       "runningGear": {
         "maxSteerDeg": 32, "steerRateDeg": 50,
-        "wheels": [
-          { "x":  1.32, "z": 0,    "radius": 0.85, "width": 0.7 },
-          { "x": -1.32, "z": 0,    "radius": 0.85, "width": 0.7 },
-          { "x":  1.18, "z": -3.6, "radius": 0.55, "width": 0.45, "steer": true },
-          { "x": -1.18, "z": -3.6, "radius": 0.55, "width": 0.45, "steer": true }
+        "axles": [
+          { "z": 0,    "track": 2.64, "wheels": { "radius": 0.85, "width": 0.7 } },
+          { "z": -3.6, "track": 2.36, "steering": "rear", "wheels": { "radius": 0.55, "width": 0.45 } }
         ]
       },
       "motor": { "powerHp": 360, "maxSpeedKmh": 25, "maxReverseKmh": 10, "acceleration": 1.3, "braking": 4, "fuelUnit": "fuel" },

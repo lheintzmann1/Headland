@@ -1,5 +1,5 @@
 [
-  // Local space: +z forward, +x LEFT, origin at the rear (non-steered) axle. See docs/MACHINES.md.
+  // Local space: +z forward, +x LEFT, origin at the rear (fixed) axle. See docs/MACHINES.md.
   {
     "id": "tractor_125", "name": "Fieldmaster 125", "category": "tractor", "brand": "Fieldmaster",
     "price": 98000, "mass": 5600,
@@ -7,11 +7,9 @@
     "components": {
       "runningGear": {
         "maxSteerDeg": 40, "steerRateDeg": 80,
-        "wheels": [
-          { "x":  0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
-          { "x": -0.92, "z": 0,    "radius": 0.8,  "width": 0.55 },
-          { "x":  0.88, "z": 2.65, "radius": 0.55, "width": 0.42, "steer": true },
-          { "x": -0.88, "z": 2.65, "radius": 0.55, "width": 0.42, "steer": true }
+        "axles": [
+          { "z": 0,    "track": 1.84, "wheels": { "radius": 0.8,  "width": 0.55 } },
+          { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } }
         ]
       },
       "motor": { "powerHp": 125, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.2, "braking": 6, "fuelUnit": "fuel" },
@@ -41,11 +39,9 @@
     "components": {
       "runningGear": {
         "maxSteerDeg": 42, "steerRateDeg": 85,
-        "wheels": [
-          { "x":  0.84, "z": 0,   "radius": 0.72, "width": 0.48 },
-          { "x": -0.84, "z": 0,   "radius": 0.72, "width": 0.48 },
-          { "x":  0.8,  "z": 2.4, "radius": 0.5,  "width": 0.38, "steer": true },
-          { "x": -0.8,  "z": 2.4, "radius": 0.5,  "width": 0.38, "steer": true }
+        "axles": [
+          { "z": 0,   "track": 1.68, "wheels": { "radius": 0.72, "width": 0.48 } },
+          { "z": 2.4, "track": 1.6,  "steering": "front", "wheels": { "radius": 0.5, "width": 0.38 } }
         ]
       },
       "motor": { "powerHp": 95, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.4, "braking": 6, "fuelUnit": "fuel" },
