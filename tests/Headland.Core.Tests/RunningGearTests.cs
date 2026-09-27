@@ -35,6 +35,16 @@ public class RunningGearTests
             }
           },
           {
+            "id": "test_halftrack", "name": "Half-track", "size": { "length": 5.5, "width": 2.4, "height": 2.8, "centerZ": 1.2 },
+            "components": {
+              "runningGear": { "axles": [
+                { "z": 0, "track": 1.9, "wheels": { "type": "tracks", "radius": 0.4, "width": 0.45, "length": 1.8 } },
+                { "z": 2.9, "track": 1.8, "steering": "front", "wheels": { "type": "rowCrop", "radius": 0.5, "width": 0.3 } } ] },
+              "motor": { "powerHp": 150 },
+              "drivable": {}
+            }
+          },
+          {
             "id": "test_tridem", "name": "Tridem", "size": { "length": 9, "width": 2.55, "height": 3, "centerZ": 0.5 },
             "components": {
               "runningGear": { "axles": [ { "z": 0.65, "track": 2 }, { "z": -0.65, "track": 2 }, { "z": -1.95, "track": 2, "steering": "self" } ] },
@@ -166,6 +176,23 @@ public class RunningGearTests
         Drive(tractor, -0.3f);
         Run(sim, 3f);
         Assert.Equal(0f, gear.AxleAngle(2));
+    }
+
+    [Fact]
+    public void WheelSetsGiveTheirRolesAndTracksDontSteer()
+    {
+        Assert.Equal(["track0L", "track0R", "wheel1L", "wheel1R"], Content.Value.Machines["test_halftrack"].Get<RunningGearDef>()!.Roles);
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [
+              { "id": "a", "components": { "runningGear": { "axles": [ { "z": 0 }, { "z": 2, "steering": "front", "wheels": { "type": "tracks", "length": 1 } } ] } } },
+              { "id": "b", "components": { "runningGear": { "axles": [ { "z": 0, "wheels": { "type": "tracks" } } ] } } },
+              { "id": "c", "components": { "runningGear": { "axles": [ { "z": 0, "wheels": { "type": "triple" } } ] } } }
+            ]
+            """));
+        Assert.Contains("machine 'a' runningGear: tracks don't steer: they go on fixed axles", bad.Message);
+        Assert.Contains("machine 'b' runningGear: tracks need a length > 0", bad.Message);
+        Assert.Contains("machine 'c' runningGear: unknown wheels type 'triple'", bad.Message);
     }
 
     [Fact]

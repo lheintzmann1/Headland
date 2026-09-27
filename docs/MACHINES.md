@@ -83,7 +83,7 @@ Each axle:
 | `z` | 0 | Where it is along the machine. |
 | `track` | 1.8 | From the middle of the left wheels to the middle of the right ones. |
 | `steering` | `fixed` | See below. |
-| `wheels` | | The wheels on each side: `radius` (0.5) and `width` (0.4). |
+| `wheels` | single | What runs on each side: see below. |
 
 The machine turns about a point on its length, the **turning center**: the middle of its fixed axles. Its origin must
 be there (z = 0). Every steered axle turns so that its wheels roll around the same point, the inner wheel of a turn
@@ -96,6 +96,18 @@ more than the outer one, and the farthest from the turning center at `maxSteerDe
 | `rear` | Steers the other way, behind it: a combine's rear axle. Front and rear axles without a fixed one steer all four wheels, turning about the middle between them. |
 | `allWheel` | Steers only in the all-wheel and crab steering modes, and rolls straight in normal steering. |
 | `self` | Self-steering: turns freely to follow the path (a trailer's rear axle, a truck's tag axle), and locks straight when reversing, so that it then holds the machine like a fixed one. |
+
+`wheels`:
+
+| Setting | Default | |
+|---|---|---|
+| `type` | `single` | `single`: one tire. `dual`: a second tire outside the first. `rowCrop`: a narrow tire at high pressure, to run between rows. `flotation`: a wide tire at low pressure. `tracks`: a rubber track. |
+| `radius` | 0.5 | The tire's radius, or the radius of the track's wheel at each end. |
+| `width` | 0.4 | Each tire's width, or the track's. |
+| `gap` | 0.05 | `dual`: between the inner and the outer tire. The axle's `track` is measured between the inner tires. |
+| `length` | | `tracks`: the belt on the ground, between its end wheels' centers. |
+
+Tracks go on fixed axles.
 
 A machine with `allWheel` axles has three steering modes, switched with the steering key: **normal** (they roll
 straight), **all-wheel** (they steer against the front axles, turning about the middle between them: a tighter turn)

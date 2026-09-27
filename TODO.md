@@ -120,7 +120,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 - [x] Axles instead of a flat wheel list: any count, each with position, track width, steering (fixed,
       front, rear, crab, all-wheel, self-steering trailer axle) and a wheel set.
-- [ ] Wheel sets: single, dual, narrow row-crop, flotation; tracks (crawlers) with their own visuals.
+- [x] Wheel sets: single, dual, narrow row-crop, flotation; tracks (crawlers) with their own visuals.
 - [ ] Kinematics from the running gear: multi-axle steering, articulated steering (loaders, big 4WD,
       forwarders), skid steer for full tracks, half-tracks (steered front wheels + rear tracks).
 - [ ] Ground effects: slip on wet ground, lower ground pressure with duals or tracks, slope affects speed

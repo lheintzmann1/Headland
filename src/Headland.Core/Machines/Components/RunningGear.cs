@@ -3,12 +3,34 @@ using Headland.Core.Content;
 
 namespace Headland.Core.Machines.Components;
 
-/// <summary>The tires on each side of an axle.</summary>
+/// <summary>
+/// What runs on each side of an axle: a tire (single, row-crop, flotation), two side by side (dual), or a track.
+/// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class WheelSetDef
 {
+    /// <summary>Kinds of wheel sets; see <see cref="Type"/>.</summary>
+    public static readonly string[] Types = ["single", "dual", "rowCrop", "flotation", "tracks"];
+
+    /// <summary>
+    /// single: one tire. dual: a second tire outside the first. rowCrop: a narrow tire at high pressure, to run between
+    /// rows. flotation: a wide tire at low pressure. tracks: a rubber track around a wheel at each end.
+    /// </summary>
+    public string Type { get; set; } = "single";
+    /// <summary>A tire's radius; a track's end wheels' radius.</summary>
     public float Radius { get; set; } = 0.5f;
+    /// <summary>A tire's width (each of a dual's); a track's belt width.</summary>
     public float Width { get; set; } = 0.4f;
+    /// <summary>Dual: between the inner and the outer tire.</summary>
+    public float Gap { get; set; } = 0.05f;
+    /// <summary>Tracks: the belt on the ground, between its end wheels' centers.</summary>
+    public float Length { get; set; }
+
+    [JsonIgnore]
+    public bool IsTracks => Type == "tracks";
+
+    /// <summary>A track's belt thickness: its end wheels' centers are this much higher than their radius.</summary>
+    public const float TrackThickness = 0.06f;
 }
 
 /// <summary>An axle: where it is, how far apart its wheels are, how they steer, and the wheels on each side.</summary>
@@ -101,7 +123,10 @@ public sealed class RunningGearDef : ComponentDef
     /// <summary>Radius of the tightest circle the turning center drives in normal steering.</summary>
     public float TurnRadius => Wheelbase() / MathF.Tan(MaxSteer);
 
-    public override IEnumerable<string> Roles => Axles.SelectMany((_, i) => new[] { $"wheel{i}L", $"wheel{i}R" });
+    public override IEnumerable<string> Roles => Axles.SelectMany((a, i) => new[] { SideRole(a, i, "L"), SideRole(a, i, "R") });
+
+    /// <summary>The model node role of one side of an axle: wheel0L (the tires) or track0L.</summary>
+    public static string SideRole(AxleDef axle, int index, string side) => $"{(axle.Wheels.IsTracks ? "track" : "wheel")}{index}{side}";
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
@@ -109,6 +134,11 @@ public sealed class RunningGearDef : ComponentDef
         foreach (var a in Axles.Where(a => !AxleDef.SteeringTypes.Contains(a.Steering)))
             yield return $"unknown steering '{a.Steering}' (known: {string.Join(", ", AxleDef.SteeringTypes)})";
         if (Axles.Any(a => a.Track <= 0f || a.Wheels.Radius <= 0f || a.Wheels.Width <= 0f)) yield return "axles need a track, and wheels a radius and width > 0";
+        foreach (var w in Axles.Select(a => a.Wheels).Where(w => !WheelSetDef.Types.Contains(w.Type)))
+            yield return $"unknown wheels type '{w.Type}' (known: {string.Join(", ", WheelSetDef.Types)})";
+        if (Axles.Any(a => a.Wheels.Gap < 0f)) yield return "a dual's gap must be >= 0";
+        if (Axles.Any(a => a.Wheels.IsTracks && a.Wheels.Length <= 0f)) yield return "tracks need a length > 0";
+        if (Axles.Any(a => a.Wheels.IsTracks && a.Steering != "fixed")) yield return "tracks don't steer: they go on fixed axles";
         if (MaxSteerDeg is <= 0f or >= 80f || SteerRateDeg <= 0f) yield return "maxSteerDeg must be in (0, 80) and steerRateDeg > 0";
         if (Axles.Length == 0 || Axles.Any(a => !AxleDef.SteeringTypes.Contains(a.Steering))) yield break;
 

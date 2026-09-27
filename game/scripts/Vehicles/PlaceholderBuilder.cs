@@ -241,35 +241,53 @@ public static class PlaceholderBuilder
 
     // ------------------------------------------------------------------ Parts
 
-    /// <summary>A wheel centered at <paramref name="position"/>, in one node that steers (y) and rolls (x).</summary>
-    public static Node3D Wheel(WheelSetDef w, Vector3 position)
+    /// <summary>
+    /// The tires on one side of an axle, centered at <paramref name="position"/> in one node that steers (y) and rolls
+    /// (x): a dual's second tire goes on the <paramref name="outward"/> side (+1 left, -1 right).
+    /// </summary>
+    public static Node3D Wheel(WheelSetDef w, Vector3 position, float outward)
     {
         var wheel = new Node3D { Name = "Wheel", Position = position };
+        // Rim size and tread bars: a flotation tire has a tall sidewall on a small rim, a row-crop one many thin bars.
+        var (rim, bars) = w.Type switch
+        {
+            "flotation" => (0.45f, 10),
+            "rowCrop" => (0.62f, 12),
+            _ => (0.6f, 8),
+        };
+        Tire(wheel, w, 0f, rim, bars);
+        if (w.Type == "dual") Tire(wheel, w, outward * (w.Width + w.Gap), rim, bars);
+        return wheel;
+    }
+
+    private static void Tire(Node3D wheel, WheelSetDef w, float x, float rim, int bars)
+    {
         wheel.AddChild(new MeshInstance3D
         {
             Mesh = new CylinderMesh { TopRadius = w.Radius, BottomRadius = w.Radius, Height = w.Width, RadialSegments = 18 },
+            Position = new Vector3(x, 0f, 0f),
             Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             MaterialOverride = Materials.Get(Materials.Tire, 0.95f),
         });
         wheel.AddChild(new MeshInstance3D
         {
-            Mesh = new CylinderMesh { TopRadius = w.Radius * 0.6f, BottomRadius = w.Radius * 0.6f, Height = w.Width + 0.03f, RadialSegments = 12 },
+            Mesh = new CylinderMesh { TopRadius = w.Radius * rim, BottomRadius = w.Radius * rim, Height = w.Width + 0.03f, RadialSegments = 12 },
+            Position = new Vector3(x, 0f, 0f),
             Rotation = new Vector3(0, 0, Mathf.Pi / 2f),
             MaterialOverride = Materials.Get(Materials.Rim, 0.5f, 0.3f),
         });
-        // Tread blocks make the rotation visible.
-        for (var k = 0; k < 8; k++)
+        // Tread bars make the rotation visible.
+        for (var k = 0; k < bars; k++)
         {
-            var a = k * Mathf.Tau / 8f;
+            var a = k * Mathf.Tau / bars;
             wheel.AddChild(new MeshInstance3D
             {
-                Mesh = new BoxMesh { Size = new Vector3(w.Width * 1.02f, 0.06f, w.Radius * 0.35f) },
-                Position = new Vector3(0, Mathf.Sin(a) * (w.Radius - 0.01f), Mathf.Cos(a) * (w.Radius - 0.01f)),
+                Mesh = new BoxMesh { Size = new Vector3(w.Width * 1.02f, 0.06f, w.Radius * 2.8f / bars) },
+                Position = new Vector3(x, Mathf.Sin(a) * (w.Radius - 0.01f), Mathf.Cos(a) * (w.Radius - 0.01f)),
                 Rotation = new Vector3(-a, 0, 0),
                 MaterialOverride = Materials.Get(Materials.Tire * 1.3f, 0.95f),
             });
         }
-        return wheel;
     }
 
     public static MeshInstance3D Box(Node3D parent, Vector3 size, Vector3 pos, Color color)
