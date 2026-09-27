@@ -14,18 +14,18 @@ public partial class LoadScreen : Screen
     protected override void Build()
     {
         var list = new VBoxContainer();
-        var storage = Vehicle.Chain().Select(m => Sim.Pois.TriggerAt(m.Footprint.Center, "load")).FirstOrDefault(t => t != null)?.Poi;
+        var silo = Sim.Pois.LoadingSilo(Vehicle);
         foreach (var ft in Choices)
         {
             var def = Sim.Content.FillTypes[ft];
-            var stock = storage?.Storage?.Level(ft) ?? 0f;
+            var stock = silo?.Storage.Level(ft) ?? 0f;
             list.AddChild(Widgets.Button($"{def.Name}   {stock:N0} {def.Unit}", () =>
             {
                 Sim.Pois.StartLoading(Vehicle, ft);
                 Close();
             }));
         }
-        AddChild(Widgets.Dialog($"Load from {storage?.Name}", list, "Esc cancels."));
+        AddChild(Widgets.Dialog($"Load from {silo?.Poi.Name}", list, "Esc cancels."));
         if (list.GetChildCount() > 0) list.GetChild<Button>(0).CallDeferred(Control.MethodName.GrabFocus);
     }
 }

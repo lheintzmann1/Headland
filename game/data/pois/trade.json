@@ -2,60 +2,52 @@
   // Places that buy from and sell to farmers. What each setting means: docs/COMPONENTS.md (POIs).
   { "id": "farm_shop", "name": "Farm Supplies", "w": 20, "d": 26,
     "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
-    "components": { "hotspots": { "spots": [ { "icon": "storefront" } ] } },
     "colliders": [
       { "x": -3, "z": -9, "w": 8, "d": 6 }
     ],
-    "triggers": [
-      { "id": "yard", "type": "fill", "z": 3.5, "w": 18, "d": 17 }
-    ],
-    "actions": [
-      { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"], "openHours": [7, 19] }
-    ] },
+    "components": {
+      "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypes": ["seeds"], "openHours": [7, 19] },
+      "hotspots": { "spots": [ { "icon": "storefront" } ] }
+    } },
   { "id": "grain_elevator", "name": "Grain Elevator", "w": 58, "d": 40,
     "visual": { "model": "res://assets/models/buildings/grain_elevator.glb" },
-    "components": { "hotspots": { "spots": [ { "icon": "sell" } ] } },
     "colliders": [
       { "x": 15, "z": -10, "w": 12, "d": 12 },
       { "x": -0.5, "z": -12.5, "w": 9, "d": 9, "round": true },
       { "x": -12.5, "z": -12.5, "w": 9, "d": 9, "round": true }
     ],
-    "triggers": [
-      { "id": "pit", "type": "unload", "x": -7, "z": 10, "w": 28, "d": 20 }
-    ],
-    "actions": [
-      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 }
-    ] },
+    "components": {
+      "sellingStation": { "trigger": { "x": -7, "z": 10, "w": 28, "d": 20 }, "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 },
+      "hotspots": { "spots": [ { "icon": "sell" } ] }
+    } },
+  // Mills the wheat farmers sell it into flour, sold every hour; it stops buying when its wheat bin is full.
   { "id": "flour_mill", "name": "Flour Mill", "w": 36, "d": 40,
     "visual": { "model": "res://assets/models/buildings/flour_mill.glb" },
-    "components": { "hotspots": { "spots": [ { "icon": "factory" } ] } },
     "colliders": [
       { "z": -10, "w": 18, "d": 12 },
       { "x": -12, "z": -4, "w": 7, "d": 7, "round": true },
       { "x": 12, "z": -4, "w": 7, "d": 7, "round": true }
     ],
-    "triggers": [
-      { "id": "pit", "type": "unload", "z": 10, "w": 24, "d": 14 }
-    ],
-    "storage": { "fillTypes": ["wheat", "flour"], "capacities": { "wheat": 60000, "flour": 20000 } },
-    "actions": [
-      { "type": "sell", "trigger": "pit", "fillTypes": ["wheat"], "priceFactor": 1.1, "minAmount": 1000, "openHours": [6, 20] },
-      { "type": "process", "cycleHours": 1,
-        "inputs": [ { "fillType": "wheat", "amount": 1000 } ],
-        "outputs": [ { "fillType": "flour", "amount": 580, "mode": "sell" } ] }
-    ] },
+    "components": {
+      "fillUnits": { "units": [
+        { "id": "wheat", "capacity": 60000, "fillTypes": ["wheat"] },
+        { "id": "flour", "capacity": 20000, "fillTypes": ["flour"] } ] },
+      "sellingStation": { "trigger": { "z": 10, "w": 24, "d": 14 }, "fillTypes": ["wheat"], "priceFactor": 1.1, "minAmount": 1000, "openHours": [6, 20] },
+      "productionPoint": { "productions": [
+        { "id": "flour", "cycleHours": 1,
+          "inputs": [ { "fillType": "wheat", "amount": 1000 } ],
+          "outputs": [ { "fillType": "flour", "amount": 580, "mode": "sell" } ] } ] },
+      "hotspots": { "spots": [ { "icon": "factory" } ] }
+    } },
   // Leases machines for contracts, delivered on its lot. Its front, the lot, faces the road.
   { "id": "machinery_dealer", "name": "Machinery Dealer", "w": 38, "d": 76,
     "visual": { "model": "res://assets/models/buildings/machinery_dealer.glb" },
-    "components": { "hotspots": { "spots": [ { "icon": "agriculture" } ] } },
     "colliders": [
       { "x": 9, "z": -30, "w": 16, "d": 10 },
       { "x": -8, "z": -29, "w": 18, "d": 14 }
     ],
-    "triggers": [
-      { "id": "lot", "type": "delivery", "z": 8, "w": 34, "d": 44 }
-    ],
-    "actions": [
-      { "type": "lease", "trigger": "lot" }
-    ] }
+    "components": {
+      "deliverySpot": { "trigger": { "z": 8, "w": 34, "d": 44 }, "leases": true },
+      "hotspots": { "spots": [ { "icon": "agriculture" } ] }
+    } }
 ]

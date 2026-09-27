@@ -118,29 +118,14 @@ public sealed class FarmlandSave
     public int Farm { get; set; }
 }
 
-/// <summary>A POI's owner, storage and processing progress.</summary>
+/// <summary>A POI's owner, and what its components keep: stored goods, production under way, demand.</summary>
 public sealed class PoiSave
 {
     /// <summary>Placement id on the map.</summary>
     public string Id { get; set; } = "";
     public int Farm { get; set; }
-    /// <summary>What each of its components keeps, by component kind.</summary>
+    /// <summary>What each of its components keeps, by component kind (fillUnits, sellingStation…).</summary>
     public Dictionary<string, JsonElement> Components { get; set; } = new();
-    /// <summary>Stored goods by fill type.</summary>
-    public Dictionary<string, float> Storage { get; set; } = new();
-    /// <summary>Part of a cycle done, by action index (process actions).</summary>
-    public float[]? Progress { get; set; }
-    /// <summary>Demand factors below 1, by fill type.</summary>
-    public Dictionary<string, float> Demand { get; set; } = new();
-    public HighDemandSave? HighDemand { get; set; }
-}
-
-public sealed class HighDemandSave
-{
-    public string FillType { get; set; } = "";
-    public float Factor { get; set; }
-    /// <summary>Day index it ends on, at midnight.</summary>
-    public int EndDay { get; set; }
 }
 
 /// <summary>A contract, with its parts by id: the job (contracts.json), field, crop, buyer and goods.</summary>
@@ -193,7 +178,7 @@ public sealed class MachineSave
     public Dictionary<string, JsonElement> Components { get; set; } = new();
     /// <summary>A load being unloaded at a POI, totalled so far.</summary>
     public DeliverySave? Delivery { get; set; }
-    /// <summary>A load being taken from a POI's storage, totalled so far.</summary>
+    /// <summary>A load being taken from a silo, totalled so far.</summary>
     public LoadingSave? Loading { get; set; }
     public HelperSave? Helper { get; set; }
 }
@@ -213,9 +198,8 @@ public sealed class DeliverySave
 
 public sealed class LoadingSave
 {
-    /// <summary>Placement id of the POI, and its load trigger.</summary>
+    /// <summary>Placement id of the POI whose silo loads it.</summary>
     public string Poi { get; set; } = "";
-    public string Trigger { get; set; } = "";
     public string FillType { get; set; } = "";
     public float Amount { get; set; }
 }

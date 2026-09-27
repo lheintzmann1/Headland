@@ -103,7 +103,7 @@ public partial class ScenarioRunner : Node
         // --- Drive (teleport) the trailer to the elevator and tip it.
         Sim.Player.Exit(Sim);
         // Along the pit's x axis, with the trailer inside it.
-        var pit = Sim.World.PoiById("elevator")!.Trigger("pit")!.Area;
+        var pit = Sim.World.PoiById("elevator")!.Trigger("unload")!.Area;
         Ms.Teleport(t95, pit.Center + pit.AxisX * (pit.HalfExtents.X - 2.5f), MathUtil.HeadingOf(pit.AxisX));
         Sim.Player.Enter(t95);
         Game.FocusOverride = null;

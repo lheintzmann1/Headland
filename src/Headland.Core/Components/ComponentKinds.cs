@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Headland.Core.Machines.Components;
+using Headland.Core.Pois.Components;
 
 namespace Headland.Core.Components;
 
@@ -29,6 +30,13 @@ public static class ComponentKinds
         ("winch", typeof(WinchDef)),
         ("saw", typeof(SawDef)),
         ("hotspots", typeof(HotspotsDef)),
+        ("sellingStation", typeof(SellingStationDef)),
+        ("buyingStation", typeof(BuyingStationDef)),
+        ("silo", typeof(SiloDef)),
+        ("productionPoint", typeof(ProductionPointDef)),
+        ("workshop", typeof(WorkshopDef)),
+        ("washingStation", typeof(WashingStationDef)),
+        ("deliverySpot", typeof(DeliverySpotDef)),
     ];
 
     public static IEnumerable<string> Names => Kinds.Select(k => k.name);

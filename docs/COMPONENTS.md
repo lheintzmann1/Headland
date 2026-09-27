@@ -52,25 +52,27 @@ Positions are in meters, in the entity's own space: **+z forward, +x left, +y up
 ## POIs
 
 A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps place them (see
-[Placing POIs](#placing-pois)); a POI belongs to the farm the map gives it, or to an NPC.
+[Placing POIs](#placing-pois)); a POI belongs to the farm the map gives it, or to an NPC. What it does comes from its
+components, as FS builds placeables from specializations: a `sellingStation` buys loads, a `silo` stores them, a
+`workshop` repairs machines (see [POI components](#poi-components)).
 
 ```jsonc
 {
   "id": "farm_silo", "name": "Farm silo", "w": 22, "d": 20,
   "visual": { "model": "res://assets/models/buildings/farm_silo.glb" },
-  "components": { "hotspots": { "spots": [ { "icon": "warehouse" } ] } },
   "colliders": [
     { "x": -5, "z": -6, "w": 8, "d": 8, "round": true },
     { "x": 5, "z": -6, "w": 8, "d": 8, "round": true }
   ],
-  "triggers": [
-    { "id": "pit",   "type": "unload", "x": -5, "z": 4, "w": 10, "d": 9 },
-    { "id": "spout", "type": "load",   "x": 6,  "z": 4, "w": 9,  "d": 9 }
-  ],
-  "storage": { "fillTypes": ["wheat", "barley", "canola", "corn"], "capacity": 100000 },
-  "actions": [
-    { "type": "store", "trigger": "pit" }
-  ]
+  "components": {
+    "fillUnits": { "units": [
+      { "id": "wheat", "capacity": 100000, "fillTypes": ["wheat"] },
+      { "id": "barley", "capacity": 100000, "fillTypes": ["barley"] } ] },
+    "silo": {
+      "unloadTrigger": { "x": -5, "z": 4, "w": 10, "d": 9 },
+      "loadTrigger": { "x": 6, "z": 4, "w": 9, "d": 9 } },
+    "hotspots": { "spots": [ { "icon": "warehouse" } ] }
+  }
 }
 ```
 
@@ -80,59 +82,10 @@ A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps
 | `w`, `d` | 10, 10 | The ground it covers, centered on its origin: `w` along x, `d` along z. |
 | `colliders` | none | What machines and the farmer bump into: boxes centered on `x`, `z`, `w` along x and `d` along z (4 × 4), turned by `rotDeg`; or circles `w` across with `round: true` (silos, tanks). |
 | `visual` | | Its glTF `model`, as for machines (see [`MODELING.md`](MODELING.md#buildings-and-other-pois)). A POI whose model doesn't load still works, but nothing is drawn for it. |
-| `triggers` | none | Areas where machines use it: see below. |
-| `storage` | none | Goods it keeps: see below. |
-| `actions` | none | What it does: see below. |
-| `components` | none | As for machines: those that go on POIs, such as `hotspots` (its map icon), `lights` and `animatedParts`. |
+| `components` | none | What it does and has: the [POI components](#poi-components), and those that go on anything, such as `fillUnits` (its storage), `hotspots` (its map icon), `lights` and `animatedParts`. |
 
-### Triggers
-
-A trigger is an area where machines use the POI: centered on `x`, `z`, `w` along x and `d` along z (10 × 10), with a
-unique `id` that actions refer to, and a `type`:
-
-| `type` | |
-|---|---|
-| `unload` | A trailer tips into it, a combine's pipe pours over it. |
-| `load` | The owner's trailers parked inside fill up from the POI's storage, `rate` units a second (400). |
-| `fill` | Machines parked inside buy supplies or fuel with the use key. |
-| `wash`, `repair` | The machine chain parked inside is washed, or repaired and refitted, with the use key. |
-| `delivery` | Where new machines appear. |
-
-### Storage
-
-`storage` keeps its `fillTypes`, each up to `capacity` units (100,000), or what `capacities` gives for it
-(`"capacities": { "wheat": 50000 }`). It belongs to the POI's owner. Storage that is full takes nothing more.
-
-### Actions
-
-Actions say what happens, from the farmer's side, each at a trigger of its type:
-
-| `type` | Trigger | |
-|---|---|---|
-| `sell` | `unload` | The POI buys loads of its `fillTypes`. A sale of a fill type the POI stores goes into its storage, so a mill mills what farmers sell it and stops buying when full. |
-| `store` | `unload` | Its owner's loads go into its storage (all it keeps without `fillTypes`). |
-| `buy` | `fill` | It sells its `fillTypes`, into any fill unit that takes them. |
-| `refuel` | `fill` | It fills fuel tanks with its `fillTypes`. |
-| `repair` | `repair` | A repair costs 1% of the machine's price for each 100% of wear. |
-| `configure` | `repair` | Changes the options of the machines parked there: each option fitted costs what it costs more than the one it replaces (times `priceFactor`), and `price` for the work. |
-| `wash` | `wash` | Costs `price` for a fully dirty machine. |
-| `lease` | `delivery` | Machines leased for contracts ([`contracts.json`](../game/data/contracts.json)) are delivered there. |
-| `process` | none | Takes its `inputs` from storage every `cycleHours` (1) and puts its `outputs` there, costing its owner `runningCost` an hour. Outputs with `"mode": "sell"` are sold every hour at the market price (times `priceFactor`); the rest (`"store"`) wait for the owner's trailers at a load trigger. |
-
-Conditions, on any action: `openHours: [from, to]` (game hours; past midnight when from > to), `months` (1..12) and
-`minAmount` (the smallest load taken, or amount sold).
-
-Prices: `priceFactor` (and `"priceFactors": { "wheat": 1.1 }`) multiply the market price (`filltypes.json`). A sell
-action's `demand` lowers its price as loads come in and brings it back day by day, and sometimes puts a fill type in
-high demand:
-
-| `demand` | Default | |
-|---|---|---|
-| `drop` | 0.04 | Price drop for each 100,000 units sold. |
-| `floor` | 0.7 | The lowest the demand factor goes. |
-| `recovery` | 0.02 | Demand factor regained per game day. |
-| `highChance` | 0.03 | Chance per game day that one of its fill types goes in high demand. |
-| `highFactor`, `highDays` | [1.2, 1.5], [1, 3] | High demand: [min, max] price factor, and game days it lasts. |
+Other settings are refused, so a POI written in the format from before components (with `triggers`, `storage` and
+`actions`) is reported rather than loaded empty.
 
 ### Placing POIs
 
@@ -161,6 +114,13 @@ optionally a `name` in place of the type's.
 | `winch` | machines | A rope with a hook. |
 | `saw` | machines | A saw blade. |
 | `hotspots` | anything | Icons on the map. |
+| `sellingStation` | POIs | Buys the loads tipped or piped into its trigger. |
+| `buyingStation` | POIs | Sells supplies and fuel to the machines parked in its trigger. |
+| `silo` | POIs | Stores its owner's loads in the POI's fill units, and loads them back into trailers. |
+| `productionPoint` | POIs | Turns goods into others every hour. |
+| `workshop` | POIs | Repairs machines, and changes their options. |
+| `washingStation` | POIs | Washes machines. |
+| `deliverySpot` | POIs | Where new or leased machines appear. |
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
 chain; the lower key lowers every lowerable `attachable`.
@@ -393,6 +353,87 @@ lets a configuration option add the lamp or change it (see below). Its `switch` 
 | `diameter` | 0.75 | |
 | `maxCut` | 0.6 | The thickest trunk it cuts. |
 
+### hotspots
+
+`spots`: icons on the map (FS: hotspots), each with an `icon` (a Material Symbols icon in `game/assets/icons`, by file
+name, such as `storefront`), where it is on the entity (`x`, `z`) and optionally a `name` (the entity's by default). A
+POI's first icon also stands over its trigger areas.
+
+## POI components
+
+Machines use most of them at a **trigger**: an area in the POI's space, centered on `x`, `z` (0, 0), `w` along x and
+`d` along z (10 × 10), drawn on the ground with what can be done there. They are open at some times only when they
+have `openHours: [from, to]` (game hours; past midnight when from > to) and `months` (1..12); none: always.
+
+Prices: `priceFactor` (1) and `"priceFactors": { "wheat": 1.1 }` for the fill types whose factor differs multiply
+the market price (`filltypes.json`). What the farm pays is also multiplied by the difficulty's price level; what it's
+paid is not.
+
+### sellingStation
+
+Buys loads tipped or piped into its `trigger`: its `fillTypes` (FS: selling station), at the market price times its
+factors, less as its demand drops, more in high demand. `minAmount` (0) is the smallest load it takes; a load under
+way may finish below it. A sale of a fill type the POI's `fillUnits` keep goes into them, so a mill takes only what it
+has room to mill, and stops buying when full.
+
+`demand` lowers the price of a fill type as loads of it come in and brings it back day by day, and sometimes puts one
+of its fill types in high demand:
+
+| `demand` | Default | |
+|---|---|---|
+| `drop` | 0.04 | Price drop for each 100,000 units sold. |
+| `floor` | 0.7 | The lowest the demand factor goes. |
+| `recovery` | 0.02 | Demand factor regained per game day. |
+| `highChance` | 0.03 | Chance per game day that one of its fill types goes in high demand. |
+| `highFactor`, `highDays` | [1.2, 1.5], [1, 3] | High demand: [min, max] price factor, and game days it lasts. |
+
+Goods a contract asks for at this POI go to the contract instead, unpaid (the contract pays).
+
+### buyingStation
+
+Sells its `fillTypes` to the machines parked in its `trigger`, with the use key: into any fill unit that takes them
+(seed into a drill), and into a motor's fuel tank, which is refueling (booked as fuel). `minAmount` (0) is the smallest
+amount it sells.
+
+### silo
+
+Stores its owner's goods in the POI's `fillUnits` (FS: silo): loads tipped or piped into its `unloadTrigger` go in,
+and the owner's trailers parked under its `loadTrigger` fill up from them with the use key, `loadRate` units a second
+(400). It needs one of the triggers or both. `fillTypes` limits what it stores and loads (none: whatever its fill
+units keep); `minAmount` (0) is the smallest load it takes. Other farms' machines can't use it.
+
+### productionPoint
+
+`productions`, each turning goods into others (FS: production point) from the POI's `fillUnits`, which must keep its
+inputs and outputs:
+
+| Setting | Default | |
+|---|---|---|
+| `id` | | Unique on the POI; saves refer to it. |
+| `cycleHours` | 1 | Game hours per cycle (below 1 for several cycles an hour). |
+| `inputs`, `outputs` | | What a cycle takes and makes: `fillType` and `amount`. An output's `mode` is `store` (kept for the owner's trailers at a silo's spout) or `sell` (sold every hour at the market price times its factors, for the owner). |
+| `runningCost` | 0 | What the owner pays for each hour it runs. |
+| `priceFactor`, `priceFactors` | 1 | On the outputs it sells. |
+| `openHours`, `months` | | When it runs. A closed production waits with its cycle half done. |
+
+A production short of inputs, or of room for its outputs, starts its cycle over.
+
+### workshop
+
+Repairs the machine chain parked in its `trigger`, with the use key: 1% of each machine's price for each 100% of wear,
+times `repairPriceFactor` (1). With `configure`, it also changes the options of the machines parked there (a screen
+with each machine's choices): each option fitted costs what it costs more than the one it replaces (a cheaper one
+gives nothing back) times `configure.priceFactor` (1), and `configure.price` (0) for the work.
+
+### washingStation
+
+Washes the machine chain parked in its `trigger`, with the use key, for `price` (0) for a fully dirty machine.
+
+### deliverySpot
+
+Where new machines appear, in its `trigger`, facing the POI's front. With `leases: true`, machines leased for
+contracts ([`contracts.json`](../game/data/contracts.json)) are delivered there.
+
 ## Configurations
 
 A machine can come with options, as in the shop of *Farming Simulator*: wheels, a front hitch, the engine, the color,
@@ -446,6 +487,10 @@ choices are best kept to different settings, so that any combination holds.
 ## Saves
 
 A save keeps each machine's options (`configuration`: configuration id → option id; an option that no longer exists
-loads as the default), and each POI's owner, stored goods, production under way and demand. Every entity keeps its
-state under its components' kinds (the steering mode, the pipe unfolded, the level of each fill unit, the crane's
-joints…). An entity whose definition gains a component gets it fresh; one that loses a component loses its state.
+loads as the default), and each POI's owner. Every entity keeps its state under its components' kinds (the steering
+mode, the pipe unfolded, the level of each fill unit, a POI's stored goods, production under way and demand…). An
+entity whose definition gains a component gets it fresh; one that loses a component loses its state, and goods in a
+fill unit it no longer has are lost (with a warning).
+
+A POI's storage units are best named after the fill type each holds (`wheat`, `flour`): saves from before POI
+components (0.13 and older) kept goods by fill type, and hand them to the unit of that name.

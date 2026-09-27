@@ -56,9 +56,10 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Machines and POIs are entities built from components (FS specializations), on one base in
   `src/Headland.Core/Components` (`Entity`, `EntityDef`, `Component`, `ComponentKinds`, where every kind is
   registered). A kind per file (its def, checked against what it's on, runtime state and save data): shared ones
-  beside the base, machine-only ones in `src/Headland.Core/Machines/Components`; a view per kind in
-  `game/scripts/Components` (base, shared kinds) or `game/scripts/Vehicles/Components`. Systems and UI query them
-  (`machine.Get<Pipe>()`); the JSON reference is `docs/COMPONENTS.md`.
+  beside the base, machine-only ones in `src/Headland.Core/Machines/Components`, POI-only ones (stations, silos,
+  production) in `src/Headland.Core/Pois/Components`; a view per kind in `game/scripts/Components` (base, shared
+  kinds) or `game/scripts/Vehicles/Components`. Systems and UI query them (`machine.Get<Pipe>()`); the JSON
+  reference is `docs/COMPONENTS.md`.
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
   Machines, POIs and the farmer are `.glb` models (`visual.model` on machines and POIs, `player.model` in
   `game.json`), for now simple bases generated from the shapes the game used to draw, a `.bbmodel` beside each.

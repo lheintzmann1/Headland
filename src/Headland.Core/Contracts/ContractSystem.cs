@@ -5,6 +5,7 @@ using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
+using Headland.Core.Pois.Components;
 using Headland.Core.Time;
 using Headland.Core.World;
 
@@ -104,9 +105,10 @@ public sealed class ContractSystem
         return true;
     }
 
-    /// <summary>Where leased machines are delivered: the lot (delivery trigger) of a POI with an open lease action.</summary>
-    private PoiTrigger? Lot() => _sim.World.Pois.SelectMany(p => p.Triggers)
-        .FirstOrDefault(t => t.Type == "delivery" && t.Actions.Any(a => a.Type == "lease" && _sim.Pois.Closed(t.Poi, a) == null));
+    /// <summary>Where leased machines are delivered: the lot of an open delivery spot that leases them.</summary>
+    private PoiTrigger? Lot() => _sim.World.Pois
+        .Select(p => p.Get<DeliverySpot>())
+        .FirstOrDefault(d => d is { Def.Leases: true } && _sim.Pois.Closed(d.Poi, d.Def) == null)?.Lot;
 
     /// <summary>What giving <paramref name="c"/> back, or missing its due day, costs: a share of its reward.</summary>
     public float Penalty(Contract c) => Round10(c.Reward * Rules.Penalty);
@@ -379,12 +381,12 @@ public sealed class ContractSystem
 
     /// <summary>POIs of no farm that buy <paramref name="fillType"/>: the goods of contracts go there.</summary>
     private IEnumerable<Poi> Buyers(string fillType) => _sim.World.Pois.Where(p =>
-        p.FarmId == Farm.None && p.Def.Actions.Any(a => a.Type == "sell" && a.FillTypes.Contains(fillType)));
+        p.FarmId == Farm.None && p.Get<SellingStation>()?.Def.FillTypes.Contains(fillType) == true);
 
     /// <summary>What a delivery job can ask for: goods a buyer takes, from buyers without a delivery on the board or under way.</summary>
     private List<(Poi poi, string fillType)> Deliveries(ContractTypeDef type) => _sim.World.Pois
         .Where(p => p.FarmId == Farm.None && !_all.Any(c => c.Field == null && c.Poi == p))
-        .SelectMany(p => p.Def.Actions.Where(a => a.Type == "sell").SelectMany(a => a.FillTypes).Distinct()
+        .SelectMany(p => (p.Get<SellingStation>()?.Def.FillTypes ?? [])
             .Where(ft => type.Deliver!.FillTypes.Length == 0 || type.Deliver.FillTypes.Contains(ft))
             .Select(ft => (p, ft)))
         .ToList();

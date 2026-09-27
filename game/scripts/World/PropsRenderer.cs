@@ -150,7 +150,7 @@ public partial class PropsRenderer : Node3D
         var color = TriggerColor(t.Type);
         var root = new Node3D
         {
-            Name = $"{t.Poi.Id}_{t.Id}",
+            Name = $"{t.Poi.Id}_{t.Station.Definition.Kind}_{t.Type}",
             Position = Sim.World.OnGround(area.Center, 0.06f),
             Rotation = new Vector3(0f, area.Heading, 0f),
         };

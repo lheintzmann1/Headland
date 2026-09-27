@@ -63,7 +63,7 @@ units are written once, and new kinds of things come from data (and later mods) 
 - [x] Kinds shared as they apply: `lights` (switched by the driver, the time of day, the weather or a trigger, as
       `Lights` and `PlaceableLights`), `animatedParts` (a folding boom, a shed door opening at a trigger, as
       `PlaceableAnimatedObjects`), `fillUnits` (a trailer's bed, a silo, a pallet), `hotspots` (map icons).
-- [ ] POIs from components: today's triggers, storage and actions as `sellingStation` (sell at an unload
+- [x] POIs from components: today's triggers, storage and actions as `sellingStation` (sell at an unload
       trigger), `buyingStation` (buy and refuel at a fill trigger), `silo` (storage with its unloading pit and
       loading spout), `productionPoint` (process), `workshop` (repair, configure), `washingStation` (wash), and
       the delivery spot for new and leased machines.
@@ -89,6 +89,9 @@ conditions. Money is just another input or output:
 | Flour mill     | in: x wheat → out: y flour (per hour) |
 | Farm shop      | in: $ → out: seed                     |
 | Gas station    | in: $ → out: diesel                   |
+
+The triggers, storage and actions have since become POI components (see Components for everything):
+`sellingStation`, `buyingStation`, `silo`, `productionPoint`, `workshop`, `washingStation`, `deliverySpot`.
 
 - [x] POI types in `data/pois/`, placements in the map JSON, validated by `ContentDatabase`.
 - [x] Triggers: unload (tipper, pipe), load (fill a trailer from storage), fill (fuel, seed), wash,

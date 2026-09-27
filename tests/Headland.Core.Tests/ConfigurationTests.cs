@@ -168,7 +168,7 @@ public class ConfigurationTests
     {
         var sim = TestContent.NewSim();
         var configured = PoiTests.Record<MachineConfigured>(sim);
-        var bay = sim.World.PoiById("workshop")!.Trigger("bay")!;
+        var bay = sim.World.PoiById("workshop")!.Trigger("repair")!;
         var (t, trailer) = PoiTests.TrailerAt(sim, bay.Area.Center - new Vector2(4f, 0f), "wheat", 12_000f);
         sim.Player.Enter(t);
         Assert.Contains("Change options…", sim.Pois.UseOptions(t));
@@ -210,7 +210,7 @@ public class ConfigurationTests
     public void TakingAJointAwayUnhitchesWhatHangsOnIt()
     {
         var sim = TestContent.NewSim();
-        var bay = sim.World.PoiById("workshop")!.Trigger("bay")!;
+        var bay = sim.World.PoiById("workshop")!.Trigger("repair")!;
         var t = sim.Machines.Spawn("tractor_125", bay.Area.Center, 0f);
         var front = sim.Machines.Spawn("cultivator_3", bay.Area.Center + new Vector2(0f, 4f), MathF.PI);
         Assert.True(sim.Machines.Attach(t, "front", front));

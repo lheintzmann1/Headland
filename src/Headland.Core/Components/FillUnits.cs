@@ -132,11 +132,21 @@ public sealed class FillUnits(Entity owner, FillUnitsDef def) : Component<FillUn
     {
         foreach (var u in save.Units)
         {
-            if (Unit(u.Id) is not { } unit) continue;
+            var held = u.FillType != null && u.Level >= 1f;
+            if (Unit(u.Id) is not { } unit)
+            {
+                if (held) context.Warnings.Add($"{Owner.Name} no longer keeps '{u.Id}': {u.Level:N0} of {u.FillType} was lost");
+                continue;
+            }
             if (u.FillType != null && !context.Content.FillTypes.ContainsKey(u.FillType))
             {
                 context.Warnings.Add($"Fill type '{u.FillType}' no longer exists: {Owner.Name} was emptied");
                 unit.Remove(unit.Level);
+                continue;
+            }
+            if (held && !unit.Accepts(u.FillType!))
+            {
+                context.Warnings.Add($"{Owner.Name} no longer keeps {u.FillType} in '{u.Id}': {u.Level:N0} was lost");
                 continue;
             }
             unit.Level = Math.Clamp(u.Level, 0f, unit.Capacity);

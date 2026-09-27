@@ -1,9 +1,12 @@
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
+using Headland.Core.Pois;
+using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
 using static Headland.Core.Tests.PoiTests;
 
@@ -18,28 +21,42 @@ public class PoiActionTests
         for (var t = 0f; t < seconds; t += Dt) sim.Tick(Dt);
     }
 
+    /// <summary>What a POI keeps: its fill units.</summary>
+    private static FillUnits Stock(Poi poi) => poi.Get<FillUnits>()!;
+
+    /// <summary>A unit keeping one fill type, named after it (as POIs name their storage).</summary>
+    private static FillUnitDef Bin(string fillType, float capacity = 100_000f) => new() { Id = fillType, Capacity = capacity, FillTypes = [fillType] };
+
     /// <summary>A grain bin keeping up to 10,000 L of wheat, tipped into through its pit.</summary>
-    private static readonly PoiDef Bin = new()
+    private static readonly PoiDef WheatBin = new()
     {
         Id = "test_bin", Name = "Bin", W = 24, D = 16,
-        Triggers = [new PoiTriggerDef { Id = "pit", Type = "unload", W = 20, D = 12 }],
-        Storage = new PoiStorageDef { FillTypes = ["wheat"], Capacity = 10_000 },
-        Actions = [new PoiActionDef { Type = "store", Trigger = "pit" }],
+        Components =
+        [
+            new FillUnitsDef { Units = [Bin("wheat", 10_000)] },
+            new SiloDef { UnloadTrigger = new AreaDef { W = 20, D = 12 } },
+        ],
     };
 
     /// <summary>A press turning 100 L of canola into 40 L of <paramref name="output"/> every half hour, for $10 an hour.</summary>
     private static PoiDef Press(float cycleHours = 0.5f, string output = "diesel", string mode = "store") => new()
     {
         Id = "test_press", Name = "Press",
-        Triggers = [new PoiTriggerDef { Id = "spout", Type = "load", Z = 10, W = 20, D = 12 }],
-        Storage = new PoiStorageDef { FillTypes = ["canola", output], Capacity = 1000 },
-        Actions =
+        Components =
         [
-            new PoiActionDef
+            new FillUnitsDef { Units = [Bin("canola", 1000), Bin(output, 1000)] },
+            new SiloDef { LoadTrigger = new AreaDef { Z = 10, W = 20, D = 12 } },
+            new ProductionPointDef
             {
-                Type = "process", CycleHours = cycleHours, RunningCost = 10, PriceFactor = 0.5f,
-                Inputs = [new FillAmountDef { FillType = "canola", Amount = 100 }],
-                Outputs = [new ProcessOutputDef { FillType = output, Amount = 40, Mode = mode }],
+                Productions =
+                [
+                    new ProductionDef
+                    {
+                        Id = "press", CycleHours = cycleHours, RunningCost = 10, PriceFactor = 0.5f,
+                        Inputs = [new FillAmountDef { FillType = "canola", Amount = 100 }],
+                        Outputs = [new ProductionOutputDef { FillType = output, Amount = 40, Mode = mode }],
+                    },
+                ],
             },
         ],
     };
@@ -47,7 +64,7 @@ public class PoiActionTests
     [Fact]
     public void TheOwnerStoresLoadsUntilTheStorageIsFull()
     {
-        var sim = SimWith([Bin],
+        var sim = SimWith([WheatBin],
             new PoiPlacementDef { Id = "ours", Type = "test_bin", X = 20, Z = 20, Farm = Farm.PlayerId },
             new PoiPlacementDef { Id = "theirs", Type = "test_bin", X = 20, Z = 48 });
         var stored = Record<FillStored>(sim);
@@ -58,7 +75,7 @@ public class PoiActionTests
         Run(sim, 40f);
 
         var bin = sim.World.PoiById("ours")!;
-        Assert.Equal(10_000f, bin.Storage!.Level("wheat"), 1);
+        Assert.Equal(10_000f, Stock(bin).Level("wheat"), 1);
         Assert.Equal(2_000f, trailer.Unit("main")!.Level, 1);
         Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Equal(money, sim.Economy.Money);
@@ -77,17 +94,17 @@ public class PoiActionTests
         var sim = SimWith([Press()], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
         var produced = Record<PoiProduced>(sim);
         var press = sim.World.PoiById("press")!;
-        press.Storage!.Add("canola", 1000f);
+        Stock(press).Add("canola", 1000f);
         var money = sim.Economy.Money;
 
         sim.SkipHours(3);
-        Assert.Equal((400f, 240f), (press.Storage.Level("canola"), press.Storage.Level("diesel")));
+        Assert.Equal((400f, 240f), (Stock(press).Level("canola"), Stock(press).Level("diesel")));
         Assert.Equal(money - 30f, sim.Economy.Money);
         Assert.All(produced, e => Assert.Equal(("diesel", 80f), (e.FillType, e.Amount)));
 
         // Out of canola after two more hours: it stops, and so do the costs.
         sim.SkipHours(4);
-        Assert.Equal((0f, 400f), (press.Storage.Level("canola"), press.Storage.Level("diesel")));
+        Assert.Equal((0f, 400f), (Stock(press).Level("canola"), Stock(press).Level("diesel")));
         Assert.Equal(money - 50f, sim.Economy.Money);
     }
 
@@ -97,12 +114,12 @@ public class PoiActionTests
         var sim = SimWith([Press(mode: "sell")], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
         var sold = Record<ProductionSold>(sim);
         var press = sim.World.PoiById("press")!;
-        press.Storage!.Add("canola", 1000f);
+        Stock(press).Add("canola", 1000f);
         var money = sim.Economy.Money;
 
         sim.SkipHours(2);
         var income = 80f * sim.Economy.Price("diesel", sim.Clock.Month) * 0.5f;
-        Assert.Equal(0f, press.Storage.Level("diesel"));
+        Assert.Equal(0f, Stock(press).Level("diesel"));
         Assert.Equal([("diesel", 80f, income), ("diesel", 80f, income)], sold.Select(e => (e.FillType, e.Amount, e.Income)));
         Assert.Equal(money - 20f + 2f * income, sim.Economy.Money, 1);
         Assert.Equal(160f, sim.Statistics.Sold["diesel"]);
@@ -113,16 +130,16 @@ public class PoiActionTests
     {
         var sim = SimWith([Press(output: "wheat")], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
         var press = sim.World.PoiById("press")!;
-        press.Storage!.Add("canola", 1000f);
+        Stock(press).Add("canola", 1000f);
         sim.SkipHours(2);
-        Assert.Equal(160f, press.Storage.Level("wheat"));
+        Assert.Equal(160f, Stock(press).Level("wheat"));
 
-        var (t, trailer) = TrailerAt(sim, press.Trigger("spout")!.Area.Center, "wheat", 0f);
+        var (t, trailer) = TrailerAt(sim, press.Trigger("load")!.Area.Center, "wheat", 0f);
         sim.Player.Enter(t);
         sim.CommandUse();
         Run(sim, 2f);
         Assert.Equal(160f, trailer.Unit("main")!.Level, 1);
-        Assert.Equal(0f, press.Storage.Level("wheat"), 1);
+        Assert.Equal(0f, Stock(press).Level("wheat"), 1);
     }
 
     [Fact]
@@ -131,23 +148,23 @@ public class PoiActionTests
         var sim = TestContent.NewSim();
         var mill = sim.World.PoiById("mill")!;
         var produced = Record<PoiProduced>(sim);
-        var (t, trailer) = TrailerAt(sim, mill.Trigger("pit")!.Area.Center, "wheat", 16_000f);
+        var (t, trailer) = TrailerAt(sim, mill.Trigger("unload")!.Area.Center, "wheat", 16_000f);
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
         sim.CommandUnload();
         Run(sim, 45f);
         Assert.True(trailer.Unit("main")!.IsEmpty);
-        Assert.Equal(16_000f, mill.Storage!.Level("wheat"), 1);
+        Assert.Equal(16_000f, Stock(mill).Level("wheat"), 1);
         Assert.Equal(1.1f * SaleIncome(sim, "wheat", 16_000f), sim.Economy.Money - money, 0);
 
         // It mills a tonne an hour and ships the flour; the farmer earns nothing from that.
         money = sim.Economy.Money;
         sim.SkipHours(3);
-        Assert.Equal(13_000f, mill.Storage.Level("wheat"), 1);
-        Assert.Equal((0f, 3f * 580f), (mill.Storage.Level("flour"), produced.Sum(e => e.Amount)));
+        Assert.Equal(13_000f, Stock(mill).Level("wheat"), 1);
+        Assert.Equal((0f, 3f * 580f), (Stock(mill).Level("flour"), produced.Sum(e => e.Amount)));
         Assert.Equal(money, sim.Economy.Money);
 
-        mill.Storage.Add("wheat", 60_000f);
+        Stock(mill).Add("wheat", 60_000f);
         trailer.Unit("main")!.Add("wheat", 5000f);
         sim.CommandUnload();
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Flour Mill has no room for Wheat");
@@ -157,18 +174,18 @@ public class PoiActionTests
     public void SlowCyclesKeepTheirProgressAcrossASave()
     {
         var sim = SimWith([Press(cycleHours: 3f)], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
-        sim.World.PoiById("press")!.Storage!.Add("canola", 150f);
+        Stock(sim.World.PoiById("press")!).Add("canola", 150f);
         sim.SkipHours(2);
-        Assert.Equal(0f, sim.World.PoiById("press")!.Storage!.Level("diesel"));
+        Assert.Equal(0f, Stock(sim.World.PoiById("press")!).Level("diesel"));
 
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
         var press = loaded.World.PoiById("press")!;
-        Assert.Equal(150f, press.Storage!.Level("canola"));
+        Assert.Equal(150f, Stock(press).Level("canola"));
         loaded.SkipHours(1);
-        Assert.Equal((50f, 40f), (press.Storage.Level("canola"), press.Storage.Level("diesel")));
+        Assert.Equal((50f, 40f), (Stock(press).Level("canola"), Stock(press).Level("diesel")));
         // Not enough canola for another cycle: it idles.
         loaded.SkipHours(6);
-        Assert.Equal(40f, press.Storage.Level("diesel"));
+        Assert.Equal(40f, Stock(press).Level("diesel"));
     }
 
     [Fact]
@@ -176,12 +193,13 @@ public class PoiActionTests
     {
         var sim = TestContent.NewSim();
         var gas = sim.World.PoiById("gas")!;
-        var t = sim.Machines.Spawn("tractor_95", gas.Trigger("pumps")!.Area.Center, MathF.PI / 2f);
+        var t = sim.Machines.Spawn("tractor_95", gas.Trigger("fill")!.Area.Center, MathF.PI / 2f);
         var tank = t.Unit("fuel")!;
         tank.Remove(100f);
         t.Dirt = 0.5f;
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
+        Assert.Equal(["Refuel with diesel"], sim.Pois.Describe(gas.Trigger("fill")!));
         Assert.Equal(["Refuel"], sim.Pois.UseOptions(t));
 
         sim.CommandUse();
@@ -203,7 +221,7 @@ public class PoiActionTests
     {
         var sim = TestContent.NewSim();
         var repaired = Record<MachineRepaired>(sim);
-        var bay = sim.World.PoiById("workshop")!.Trigger("bay")!;
+        var bay = sim.World.PoiById("workshop")!.Trigger("repair")!;
         var (t, trailer) = TrailerAt(sim, bay.Area.Center - new Vector2(4f, 0f), "wheat", 0f);
         t.Condition = trailer.Condition = 0.5f;
         sim.Player.Enter(t);
@@ -223,16 +241,14 @@ public class PoiActionTests
     }
 
     /// <summary>A silo keeping wheat and barley: tip into its pit, load from its spout.</summary>
-    private static readonly PoiDef Silo = new()
+    private static readonly PoiDef GrainSilo = new()
     {
         Id = "test_silo", Name = "Silo", W = 24, D = 30,
-        Triggers =
+        Components =
         [
-            new PoiTriggerDef { Id = "pit", Type = "unload", Z = -8, W = 20, D = 12 },
-            new PoiTriggerDef { Id = "spout", Type = "load", Z = 8, W = 20, D = 12, Rate = 500 },
+            new FillUnitsDef { Units = [Bin("wheat"), Bin("barley")] },
+            new SiloDef { UnloadTrigger = new AreaDef { Z = -8, W = 20, D = 12 }, LoadTrigger = new AreaDef { Z = 8, W = 20, D = 12 }, LoadRate = 500 },
         ],
-        Storage = new PoiStorageDef { FillTypes = ["wheat", "barley"] },
-        Actions = [new PoiActionDef { Type = "store", Trigger = "pit" }],
     };
 
     [Fact]
@@ -240,7 +256,7 @@ public class PoiActionTests
     {
         var sim = TestContent.NewSim();
         var sold = Record<FillSold>(sim);
-        var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
+        var pit = sim.World.PoiById("elevator")!.Trigger("unload")!;
         var pipe = sim.Content.Machines["combine_7"].Get<PipeDef>()!;
         var combine = sim.Machines.Spawn("combine_7", pit.Area.Center - new Vector2(pipe.X, pipe.Z), 0f);
         combine.Unit("tank")!.Add("wheat", 3000f);
@@ -257,13 +273,13 @@ public class PoiActionTests
     [Fact]
     public void TheOwnersTrailerLoadsFromStorageAcrossASave()
     {
-        var sim = SimWith([Silo],
+        var sim = SimWith([GrainSilo],
             new PoiPlacementDef { Id = "ours", Type = "test_silo", X = 20, Z = 30, Farm = Farm.PlayerId },
             new PoiPlacementDef { Id = "theirs", Type = "test_silo", X = 46, Z = 30 });
         var silo = sim.World.PoiById("ours")!;
-        silo.Storage!.Add("wheat", 5000f);
-        silo.Storage.Add("barley", 3000f);
-        var (t, trailer) = TrailerAt(sim, silo.Trigger("spout")!.Area.Center, "wheat", 0f);
+        Stock(silo).Add("wheat", 5000f);
+        Stock(silo).Add("barley", 3000f);
+        var (t, trailer) = TrailerAt(sim, silo.Trigger("load")!.Area.Center, "wheat", 0f);
         sim.Player.Enter(t);
         Assert.Equal(["wheat", "barley"], sim.Pois.LoadChoices(t));
         Assert.Equal(["Load…"], sim.Pois.UseOptions(t));
@@ -277,14 +293,14 @@ public class PoiActionTests
         Run(loaded, 10f);
 
         Assert.Equal(("wheat", 5000f), (same.Unit("main")!.FillType, MathF.Round(same.Unit("main")!.Level)));
-        Assert.Equal(0f, loaded.World.PoiById("ours")!.Storage!.Level("wheat"));
+        Assert.Equal(0f, Stock(loaded.World.PoiById("ours")!).Level("wheat"));
         Assert.False(loaded.Pois.IsLoading(same.Parent!));
         Assert.Equal(("wheat", 5000f), (Assert.Single(events).FillType, MathF.Round(events[0].Amount)));
 
         // Barley doesn't mix with the wheat on board, and the neighbor's silo is not ours.
         loaded.CommandUse();
         Assert.Contains(loaded.Notifications.Items, n => n.Text == "Nothing stored here fits Tipper 16");
-        loaded.Machines.Teleport(same.Parent!, loaded.World.PoiById("theirs")!.Trigger("spout")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
+        loaded.Machines.Teleport(same.Parent!, loaded.World.PoiById("theirs")!.Trigger("load")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
         loaded.CommandUse();
         Assert.Contains(loaded.Notifications.Items, n => n.Text == "Silo belongs to another farm");
     }
@@ -292,9 +308,9 @@ public class PoiActionTests
     [Fact]
     public void TheUseKeyStopsLoading()
     {
-        var sim = SimWith([Silo], new PoiPlacementDef { Id = "ours", Type = "test_silo", X = 20, Z = 30, Farm = Farm.PlayerId });
-        sim.World.PoiById("ours")!.Storage!.Add("barley", 8000f);
-        var (t, trailer) = TrailerAt(sim, sim.World.PoiById("ours")!.Trigger("spout")!.Area.Center, "wheat", 0f);
+        var sim = SimWith([GrainSilo], new PoiPlacementDef { Id = "ours", Type = "test_silo", X = 20, Z = 30, Farm = Farm.PlayerId });
+        Stock(sim.World.PoiById("ours")!).Add("barley", 8000f);
+        var (t, trailer) = TrailerAt(sim, sim.World.PoiById("ours")!.Trigger("load")!.Area.Center, "wheat", 0f);
         var loaded = Record<FillLoaded>(sim);
         sim.Player.Enter(t);
         sim.CommandUse();
@@ -328,30 +344,30 @@ public class PoiActionTests
         var sim = TestContent.NewSim();
         var silo = sim.World.PoiById("silo")!;
         Assert.Equal(Farm.PlayerId, silo.FarmId);
-        var (t, trailer) = TrailerAt(sim, silo.Trigger("pit")!.Area.Center, "barley", 9000f);
+        var (t, trailer) = TrailerAt(sim, silo.Trigger("unload")!.Area.Center, "barley", 9000f);
         var stored = Record<FillStored>(sim);
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
         sim.CommandUnload();
         Run(sim, 40f);
-        Assert.Equal(9000f, silo.Storage!.Level("barley"), 1);
+        Assert.Equal(9000f, Stock(silo).Level("barley"), 1);
         Assert.True(trailer.Unit("main")!.IsEmpty);
         Assert.Equal(money, sim.Economy.Money);
         Assert.Equal((silo, "barley", 9000f), (Assert.Single(stored).Poi, stored[0].FillType, MathF.Round(stored[0].Amount)));
 
-        sim.Machines.Teleport(t, silo.Trigger("spout")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
+        sim.Machines.Teleport(t, silo.Trigger("load")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
         Assert.Equal(["Load barley"], sim.Pois.UseOptions(t));
         sim.CommandUse();
         Run(sim, 30f);
         Assert.Equal(9000f, trailer.Unit("main")!.Level, 1);
-        Assert.Equal(0f, silo.Storage.Level("barley"), 1);
+        Assert.Equal(0f, Stock(silo).Level("barley"), 1);
     }
 
     [Fact]
     public void ClosedPoisSayWhenTheyOpen()
     {
         var sim = TestContent.NewSim();
-        var yard = sim.World.PoiById("supplies")!.Trigger("yard")!;
+        var yard = sim.World.PoiById("supplies")!.Trigger("fill")!;
         var seeder = sim.Machines.Spawn("seeder_3", yard.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
         Assert.Equal(["Buy seeds (7:00–19:00)"], sim.Pois.Describe(yard));
@@ -384,20 +400,20 @@ public class PoiActionTests
     public void ProcessingRunsOnlyInItsHoursAndMonths()
     {
         var hours = Press(cycleHours: 1f);
-        hours.Actions[0].OpenHours = [8, 12];
+        hours.Get<ProductionPointDef>()!.Productions[0].OpenHours = [8, 12];
         var season = Press(cycleHours: 1f);
         season.Id = "test_press_september";
-        season.Actions[0].Months = [9];
+        season.Get<ProductionPointDef>()!.Productions[0].Months = [9];
         var sim = SimWith([hours, season],
             new PoiPlacementDef { Id = "hours", Type = "test_press", X = 20, Z = 30, Farm = Farm.PlayerId },
             new PoiPlacementDef { Id = "season", Type = "test_press_september", X = 44, Z = 30, Farm = Farm.PlayerId });
-        foreach (var poi in sim.World.Pois) poi.Storage!.Add("canola", 1000f);
+        foreach (var poi in sim.World.Pois) Stock(poi).Add("canola", 1000f);
         var money = sim.Economy.Money;
 
         // August 1st, 7:00 to the next morning: open from 8:00 to 12:00 only.
         sim.SkipHours(24);
-        Assert.Equal(600f, sim.World.PoiById("hours")!.Storage!.Level("canola"));
-        Assert.Equal(1000f, sim.World.PoiById("season")!.Storage!.Level("canola"));
+        Assert.Equal(600f, Stock(sim.World.PoiById("hours")!).Level("canola"));
+        Assert.Equal(1000f, Stock(sim.World.PoiById("season")!).Level("canola"));
         Assert.Equal(money - 40f, sim.Economy.Money);
     }
 
@@ -405,12 +421,11 @@ public class PoiActionTests
     private static PoiDef Market(float highChance) => new()
     {
         Id = "test_market", Name = "Market",
-        Triggers = [new PoiTriggerDef { Id = "pit", Type = "unload" }],
-        Actions =
+        Components =
         [
-            new PoiActionDef
+            new SellingStationDef
             {
-                Type = "sell", Trigger = "pit", FillTypes = ["wheat", "barley"], PriceFactors = new() { ["wheat"] = 1.2f },
+                FillTypes = ["wheat", "barley"], PriceFactors = new() { ["wheat"] = 1.2f },
                 Demand = new DemandDef { HighChance = highChance, HighFactor = [1.5f, 1.5f], HighDays = [2, 2] },
             },
         ],
@@ -421,24 +436,24 @@ public class PoiActionTests
     {
         var sim = TestContent.NewSim();
         var elevator = sim.World.PoiById("elevator")!;
-        var pit = elevator.Trigger("pit")!;
-        var sell = pit.Actions[0];
+        var pit = elevator.Trigger("unload")!;
+        var sell = elevator.Get<SellingStation>()!;
         var market = sim.Economy.Price("wheat", sim.Clock.Month);
         var trailer = sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f);
-        Assert.Equal(market, sim.Pois.Price(elevator, sell, "wheat"));
+        Assert.Equal(market, sim.Pois.Price(sell, "wheat"));
 
         sim.Pois.Unload(trailer, pit, "wheat", 50_000f);
-        Assert.Equal(0.98f, elevator.DemandOf("wheat"), 4);
-        Assert.Equal(0.98f * market, sim.Pois.Price(elevator, sell, "wheat"), 4);
-        Assert.Equal(1f, elevator.DemandOf("barley"));
+        Assert.Equal(0.98f, sell.DemandOf("wheat"), 4);
+        Assert.Equal(0.98f * market, sim.Pois.Price(sell, "wheat"), 4);
+        Assert.Equal(1f, sell.DemandOf("barley"));
 
         sim.SkipHours(12);
-        Assert.Equal(0.99f, elevator.DemandOf("wheat"), 4);
+        Assert.Equal(0.99f, sell.DemandOf("wheat"), 4);
         sim.SkipHours(12);
-        Assert.Equal(1f, elevator.DemandOf("wheat"));
+        Assert.Equal(1f, sell.DemandOf("wheat"));
 
         sim.Pois.Unload(trailer, pit, "wheat", 2_000_000f);
-        Assert.Equal(0.7f, elevator.DemandOf("wheat"), 4);
+        Assert.Equal(0.7f, sell.DemandOf("wheat"), 4);
     }
 
     [Fact]
@@ -447,8 +462,7 @@ public class PoiActionTests
         var sim = SimWith([Market(highChance: 1f)], new PoiPlacementDef { Id = "market", Type = "test_market", X = 30, Z = 30 });
         var started = Record<HighDemandStarted>(sim);
         var ended = Record<HighDemandEnded>(sim);
-        var market = sim.World.PoiById("market")!;
-        var sell = market.Def.Actions[0];
+        var sell = sim.World.PoiById("market")!.Get<SellingStation>()!;
 
         sim.SkipHours(16);
         Assert.Empty(started);
@@ -456,26 +470,26 @@ public class PoiActionTests
         var high = Assert.Single(started);
         Assert.Equal((1.5f, new Time.GameDate(1, 8, 3)), (high.Factor, high.Until));
         var boosted = high.FillType == "wheat" ? 1.2f * 1.5f : 1.5f;
-        Assert.Equal(boosted * sim.Economy.Price(high.FillType, sim.Clock.Month), sim.Pois.Price(market, sell, high.FillType), 4);
+        Assert.Equal(boosted * sim.Economy.Price(high.FillType, sim.Clock.Month), sim.Pois.Price(sell, high.FillType), 4);
 
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
-        Assert.Equal(market.HighDemand, loaded.World.PoiById("market")!.HighDemand);
+        Assert.Equal(sell.HighDemand, loaded.World.PoiById("market")!.Get<SellingStation>()!.HighDemand);
         foreach (var s in new[] { sim, loaded }) s.SkipHours(48);
         Assert.Equal(high.FillType, Assert.Single(ended).FillType);
         Assert.Equal(2, started.Count);
-        Assert.Equal(market.HighDemand, loaded.World.PoiById("market")!.HighDemand);
+        Assert.Equal(sell.HighDemand, loaded.World.PoiById("market")!.Get<SellingStation>()!.HighDemand);
     }
 
     [Fact]
     public void PriceFactorsAreOnTopOfTheMarketPrice()
     {
         var sim = SimWith([Market(highChance: 0f)], new PoiPlacementDef { Id = "market", Type = "test_market", X = 30, Z = 30 });
-        var market = sim.World.PoiById("market")!;
+        var sell = sim.World.PoiById("market")!.Get<SellingStation>()!;
         var month = sim.Clock.Month;
-        Assert.Equal(1.2f * sim.Economy.Price("wheat", month), sim.Pois.Price(market, market.Def.Actions[0], "wheat"), 4);
-        Assert.Equal(sim.Economy.Price("barley", month), sim.Pois.Price(market, market.Def.Actions[0], "barley"), 4);
+        Assert.Equal(1.2f * sim.Economy.Price("wheat", month), sim.Pois.Price(sell, "wheat"), 4);
+        Assert.Equal(sim.Economy.Price("barley", month), sim.Pois.Price(sell, "barley"), 4);
         sim.SkipHours(24 * 40);
-        Assert.Null(market.HighDemand);
+        Assert.Null(sell.HighDemand);
     }
 
     [Fact]

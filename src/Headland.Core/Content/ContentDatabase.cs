@@ -217,13 +217,6 @@ public sealed class ContentDatabase
         var e = new List<string>();
         var workTypes = WorkAreaDef.Types;
         string[] fieldGrounds = ["grass", "cultivated", "seeded", "stubble", "plowed"];
-        string[] triggerTypes = ["unload", "load", "fill", "wash", "repair", "delivery"];
-        // The trigger types each POI action works through (process works on its own).
-        var actionTriggers = new Dictionary<string, string[]>
-        {
-            ["sell"] = ["unload"], ["store"] = ["unload"], ["buy"] = ["fill"], ["refuel"] = ["fill"],
-            ["repair"] = ["repair"], ["configure"] = ["repair"], ["wash"] = ["wash"], ["lease"] = ["delivery"], ["process"] = [],
-        };
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
         if (!Climates.ContainsKey(Game.Climate)) e.Add($"game.climate '{Game.Climate}' not found");
@@ -310,65 +303,6 @@ public sealed class ContentDatabase
             e.AddRange(EntityErrors(p).Select(error => $"poi '{p.Id}'{error}"));
             if (p.W <= 0 || p.D <= 0) e.Add($"poi '{p.Id}': w and d must be > 0");
             if (p.Colliders.Any(q => q.W <= 0 || q.D <= 0)) e.Add($"poi '{p.Id}': colliders need w and d > 0");
-            var triggers = new Dictionary<string, PoiTriggerDef>();
-            foreach (var t in p.Triggers)
-            {
-                if (!triggers.TryAdd(t.Id, t)) e.Add($"poi '{p.Id}': trigger '{t.Id}' is defined more than once");
-                if (!triggerTypes.Contains(t.Type)) e.Add($"poi '{p.Id}' trigger '{t.Id}': unknown type '{t.Type}'");
-                if (t.W <= 0 || t.D <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': w and d must be > 0");
-                if (t.Type == "load" && p.Storage == null) e.Add($"poi '{p.Id}' trigger '{t.Id}': load triggers need a storage");
-                if (t.Rate <= 0) e.Add($"poi '{p.Id}' trigger '{t.Id}': rate must be > 0");
-            }
-            var stored = p.Storage?.FillTypes ?? [];
-            foreach (var ft in stored)
-                if (!FillTypes.ContainsKey(ft)) e.Add($"poi '{p.Id}' storage: unknown fill type '{ft}'");
-            if (p.Storage != null && (p.Storage.Capacity <= 0 || p.Storage.Capacities.Values.Any(c => c <= 0)))
-                e.Add($"poi '{p.Id}' storage: capacities must be > 0");
-            foreach (var a in p.Actions)
-            {
-                var what = $"poi '{p.Id}' {a.Type} action";
-                if (!actionTriggers.TryGetValue(a.Type, out var allowed))
-                {
-                    e.Add($"poi '{p.Id}': unknown action type '{a.Type}'");
-                    continue;
-                }
-                if (allowed.Length == 0)
-                {
-                    if (a.Trigger != "") e.Add($"{what}: works without a trigger");
-                }
-                else if (!triggers.TryGetValue(a.Trigger, out var trigger)) e.Add($"{what}: trigger '{a.Trigger}' not found");
-                else if (!allowed.Contains(trigger.Type)) e.Add($"{what}: works at {string.Join(" or ", allowed)} triggers, not {trigger.Type}");
-                if (a.Type is "sell" or "buy" or "refuel" && a.FillTypes.Length == 0) e.Add($"{what}: needs fillTypes");
-                foreach (var ft in a.FillTypes)
-                    if (!FillTypes.ContainsKey(ft)) e.Add($"{what}: unknown fill type '{ft}'");
-                if (a.Type is "store" or "process" && p.Storage == null) e.Add($"{what}: the poi has no storage");
-                if (a.OpenHours is { } hours && (hours.Length != 2 || hours.Any(h => h is < 0 or > 24) || hours[0] == hours[1]))
-                    e.Add($"{what}: openHours needs [from, to] hours, 0..24 and different");
-                if (a.Months.Any(m => m is < 1 or > 12)) e.Add($"{what}: months must be 1..12");
-                if (a.MinAmount < 0) e.Add($"{what}: minAmount must be >= 0");
-                if (a.PriceFactor <= 0 || a.PriceFactors.Values.Any(f => f <= 0)) e.Add($"{what}: price factors must be > 0");
-                if (a.Price < 0) e.Add($"{what}: price must be >= 0");
-                foreach (var ft in a.PriceFactors.Keys.Where(f => !a.FillTypes.Contains(f) && a.Outputs.All(o => o.FillType != f)))
-                    e.Add($"{what}: price factor for '{ft}', which it does not trade");
-                var d = a.Demand;
-                if (d.Drop < 0 || d.Floor is <= 0 or > 1 || d.Recovery < 0 || d.HighChance is < 0 or > 1)
-                    e.Add($"{what}: demand needs drop >= 0, floor in (0, 1], recovery >= 0 and highChance in [0, 1]");
-                if (d.HighFactor is not [>= 1f, var fMax] || fMax < d.HighFactor[0] || d.HighDays is not [>= 1, var dMax] || dMax < d.HighDays[0])
-                    e.Add($"{what}: demand needs highFactor [min, max] >= 1 and highDays [min, max] >= 1");
-                if (a.Type == "store")
-                    foreach (var ft in a.FillTypes.Where(f => !stored.Contains(f)))
-                        e.Add($"{what}: the storage does not keep '{ft}'");
-                if (a.Type != "process") continue;
-                if (a.Inputs.Length == 0 || a.Outputs.Length == 0) e.Add($"{what}: needs inputs and outputs");
-                if (a.CycleHours <= 0 || a.RunningCost < 0) e.Add($"{what}: cycleHours must be > 0 and runningCost >= 0");
-                foreach (var io in a.Inputs.Concat(a.Outputs))
-                {
-                    if (io.Amount <= 0) e.Add($"{what}: amounts must be > 0");
-                    if (!stored.Contains(io.FillType)) e.Add($"{what}: the storage does not keep '{io.FillType}'");
-                }
-                foreach (var o in a.Outputs.Where(o => o.Mode is not ("store" or "sell")))
-                    e.Add($"{what}: output '{o.FillType}' mode must be store or sell");
-            }
         }
 
         foreach (var t in ContractTypes.Values)

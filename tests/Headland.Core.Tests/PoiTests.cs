@@ -36,7 +36,7 @@ public class PoiTests
         var centers = poi.Def.Colliders.Select(c => poi.ColliderBox(c).Center).ToList();
         Assert.Equal(new Vector2(24f, 35f), centers[0], new Near());
         Assert.Equal(new Vector2(24f, 25f), centers[1], new Near());
-        Assert.True(poi.Trigger("pit")!.Contains(new Vector2(34f, 35f)));
+        Assert.True(poi.Trigger("unload")!.Contains(new Vector2(34f, 35f)));
         Assert.True(poi.Footprint.Contains(new Vector2(39f, 40f)) && !poi.Footprint.Contains(new Vector2(41f, 30f)));
     }
 
@@ -69,44 +69,40 @@ public class PoiTests
     }
 
     [Fact]
-    public void BadTriggersAndActionsAreReported()
+    public void BadStationsAreReported()
     {
-        var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
-        db.Pois["bad"] = new PoiDef
-        {
-            Id = "bad",
-            Triggers =
-            [
-                new PoiTriggerDef { Id = "pit", Type = "fill" }, new PoiTriggerDef { Id = "pit", Type = "teleport" },
-                new PoiTriggerDef { Id = "spout", Type = "load" },
-            ],
-            Actions =
-            [
-                new PoiActionDef { Type = "sell", Trigger = "pit", FillTypes = ["wheat"] },
-                new PoiActionDef { Type = "buy", Trigger = "gate", FillTypes = ["gold"] },
-                new PoiActionDef { Type = "juggle", Trigger = "pit" },
-                new PoiActionDef { Type = "store", Trigger = "pit", FillTypes = ["wheat"], OpenHours = [8], Months = [13] },
-                new PoiActionDef
-                {
-                    Type = "process", Trigger = "pit", Inputs = [new FillAmountDef { FillType = "wheat", Amount = 0 }],
-                    Outputs = [new ProcessOutputDef { FillType = "wheat", Amount = 1, Mode = "burn" }],
-                },
-            ],
-        };
-        var errors = db.Validate();
-        Assert.Contains("poi 'bad': trigger 'pit' is defined more than once", errors);
-        Assert.Contains("poi 'bad' trigger 'pit': unknown type 'teleport'", errors);
-        Assert.Contains("poi 'bad' trigger 'spout': load triggers need a storage", errors);
-        Assert.Contains("poi 'bad' sell action: works at unload triggers, not fill", errors);
-        Assert.Contains("poi 'bad' buy action: trigger 'gate' not found", errors);
-        Assert.Contains("poi 'bad' buy action: unknown fill type 'gold'", errors);
-        Assert.Contains("poi 'bad': unknown action type 'juggle'", errors);
-        Assert.Contains("poi 'bad' store action: the poi has no storage", errors);
-        Assert.Contains("poi 'bad' store action: openHours needs [from, to] hours, 0..24 and different", errors);
-        Assert.Contains("poi 'bad' store action: months must be 1..12", errors);
-        Assert.Contains("poi 'bad' process action: works without a trigger", errors);
-        Assert.Contains("poi 'bad' process action: output 'wheat' mode must be store or sell", errors);
-        Assert.Contains("poi 'bad' process action: amounts must be > 0", errors);
+        var errors = Assert.Throws<ContentException>(() => TestContent.WithPois("""
+            [{ "id": "bad", "name": "Bad", "components": {
+                 "sellingStation": { "trigger": { "w": 0 }, "minAmount": -1, "priceFactors": { "corn": 2 } },
+                 "buyingStation": { "fillTypes": ["gold"], "openHours": [8] },
+                 "silo": { "fillTypes": ["wheat"], "loadRate": 0 },
+                 "productionPoint": { "productions": [
+                   { "id": "mill", "inputs": [ { "fillType": "wheat", "amount": 0 } ], "outputs": [ { "fillType": "flour", "amount": 1, "mode": "burn" } ] },
+                   { "id": "mill" } ] },
+                 "workshop": { "months": [13], "configure": { "price": -5 } },
+                 "washingStation": { "price": -1 } } }]
+            """)).Message;
+        foreach (var error in (string[])
+                 [
+                     "sellingStation: unload trigger: needs w and d > 0", "sellingStation: needs fillTypes",
+                     "sellingStation: minAmount must be >= 0", "sellingStation: price factor for 'corn', which it does not trade",
+                     "buyingStation: unknown fill type 'gold'", "buyingStation: openHours needs [from, to] hours, 0..24 and different",
+                     "silo: needs an unloadTrigger, a loadTrigger or both", "silo: loadRate must be > 0",
+                     "silo: needs the POI's fillUnits to keep the goods", "productionPoint: production 'mill' is defined more than once",
+                     "productionPoint: needs the POI's fillUnits to keep its inputs and outputs",
+                     "productionPoint: production 'mill': amounts must be > 0",
+                     "productionPoint: production 'mill': output 'flour' mode must be store or sell",
+                     "productionPoint: production 'mill': needs inputs and outputs", "workshop: months must be 1..12",
+                     "workshop: configure.price must be >= 0", "washingStation: price must be >= 0",
+                 ])
+            Assert.Contains($"poi 'bad' {error}", errors);
+
+        // What POIs do goes on POIs only, and the format from before components is refused.
+        Assert.Contains("machine 'x' silo: goes on POIs only",
+            Assert.Throws<ContentException>(() => TestContent.WithMachines("""[{ "id": "x", "components": { "silo": {} } }]""")).Message);
+        Assert.Contains("'triggers'", Assert.Throws<ContentException>(() => TestContent.WithPois("""
+            [{ "id": "old", "name": "Old", "triggers": [ { "id": "pit", "type": "unload" } ] }]
+            """)).Message);
     }
 
     [Fact]
@@ -114,7 +110,7 @@ public class PoiTests
     {
         var sim = TestContent.NewSim();
         var bought = Record<FillBought>(sim);
-        var yard = sim.World.PoiById("supplies")!.Trigger("yard")!;
+        var yard = sim.World.PoiById("supplies")!.Trigger("fill")!;
         var seeder = sim.Machines.Spawn("seeder_3", yard.Area.Center + new Vector2(30f, 0f), 0f);
         var tank = seeder.Unit("seed")!;
         tank.Remove(tank.Level);

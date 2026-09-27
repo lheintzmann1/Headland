@@ -454,7 +454,7 @@ public sealed class FieldStateDef
     public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0;
 }
 
-/// <summary>Goods a contract wants brought to a buyer on the map (a POI with a sell action for them).</summary>
+/// <summary>Goods a contract wants brought to a buyer on the map (a POI whose selling station takes them).</summary>
 public sealed class ContractDeliveryDef
 {
     /// <summary>Harvest jobs: the share of the crop harvested on the field that must reach the buyer.</summary>
@@ -558,9 +558,12 @@ public sealed class FieldDef : ShapeDef
 // ---- Points of interest (pois/*.json), placed by maps
 
 /// <summary>
-/// A point of interest: a building or site maps place, from a farmhouse to a grain elevator, drawn by its model. Local
-/// space as for machines: +Z forward (the front), +X left, origin at the footprint's center.
+/// A point of interest: a building or site maps place, from a farmhouse to a grain elevator, drawn by its model, doing
+/// what its components do (selling, storing, repairing…). Local space as for machines: +Z forward (the front), +X left,
+/// origin at the footprint's center. Unknown properties are refused, so a POI written in the format from before
+/// components (triggers, storage, actions at the top) doesn't load as an empty shell.
 /// </summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed class PoiDef : EntityDef
 {
     /// <summary>Ground the POI covers, centered on its origin: width along x, depth along z (meters).</summary>
@@ -568,116 +571,6 @@ public sealed class PoiDef : EntityDef
     public float D { get; set; } = 10f;
     /// <summary>What machines and the farmer bump into.</summary>
     public PoiColliderDef[] Colliders { get; set; } = [];
-    /// <summary>Areas where machines use the POI.</summary>
-    public PoiTriggerDef[] Triggers { get; set; } = [];
-    /// <summary>Goods the POI keeps, which store and process actions use. Owned by the POI's farm.</summary>
-    public PoiStorageDef? Storage { get; set; }
-    /// <summary>What the POI does, for the machines at its triggers or on its own (processing).</summary>
-    public PoiActionDef[] Actions { get; set; } = [];
-}
-
-public sealed class PoiStorageDef
-{
-    public string[] FillTypes { get; set; } = [];
-    /// <summary>Room for each fill type (units).</summary>
-    public float Capacity { get; set; } = 100_000f;
-    /// <summary>Fill types whose room differs from <see cref="Capacity"/>.</summary>
-    public Dictionary<string, float> Capacities { get; set; } = new();
-
-    public float CapacityOf(string fillType) => Capacities.GetValueOrDefault(fillType, Capacity);
-}
-
-/// <summary>
-/// Demand at a sell action: the price of a fill type drops as loads of it come in and recovers day by day, and now
-/// and then a fill type is in high demand for a few days.
-/// </summary>
-public sealed class DemandDef
-{
-    /// <summary>Price drop for each 100,000 units sold (0.04 = 4%), down to <see cref="Floor"/>.</summary>
-    public float Drop { get; set; } = 0.04f;
-    /// <summary>The lowest the demand factor goes.</summary>
-    public float Floor { get; set; } = 0.7f;
-    /// <summary>Demand factor regained per game day.</summary>
-    public float Recovery { get; set; } = 0.02f;
-    /// <summary>Chance per game day that one of the fill types goes in high demand (one at a time per POI).</summary>
-    public float HighChance { get; set; } = 0.03f;
-    /// <summary>High demand: [min, max] price factor, and [min, max] game days it lasts.</summary>
-    public float[] HighFactor { get; set; } = [1.2f, 1.5f];
-    public int[] HighDays { get; set; } = [1, 3];
-}
-
-/// <summary>An amount of a fill type (processing inputs).</summary>
-public class FillAmountDef
-{
-    public string FillType { get; set; } = "";
-    public float Amount { get; set; }
-}
-
-/// <summary>What a processing cycle makes. It goes into the POI's storage first.</summary>
-public sealed class ProcessOutputDef : FillAmountDef
-{
-    /// <summary>"store": kept for the owner's trailers at a load trigger. "sell": sold every hour, for the owner.</summary>
-    public string Mode { get; set; } = "store";
-}
-
-/// <summary>An area of a POI where machines do something: unload, load, fill up, get washed or repaired, get delivered.</summary>
-public sealed class PoiTriggerDef
-{
-    /// <summary>Unique within the POI; actions refer to it.</summary>
-    public string Id { get; set; } = "";
-    /// <summary>
-    /// How machines use it: "unload" (a trailer tipping inside it, a combine's pipe over it); "load" (the owner's
-    /// trailers inside it fill up from the POI's storage), "fill", "wash" and "repair" (machines parked inside it,
-    /// with the use key); "delivery" (where new machines appear).
-    /// </summary>
-    public string Type { get; set; } = "unload";
-    /// <summary>Center in the POI's local space; width along x, depth along z.</summary>
-    public float X { get; set; }
-    public float Z { get; set; }
-    public float W { get; set; } = 10f;
-    public float D { get; set; } = 10f;
-    /// <summary>Load: units per second poured into a trailer.</summary>
-    public float Rate { get; set; } = 400f;
-}
-
-/// <summary>
-/// Something a POI does, seen from the farmer's side. At an unload trigger: "sell" (the POI buys loads of
-/// <see cref="FillTypes"/>, into its storage if it keeps them) or "store" (the owner's loads go into its storage).
-/// At a fill trigger: "buy" (it sells <see cref="FillTypes"/>) or "refuel" (it fills fuel tanks with them). "repair"
-/// and "wash" work at triggers of their own type. "process" needs no trigger: it turns stored inputs into outputs.
-/// </summary>
-public sealed class PoiActionDef
-{
-    public string Type { get; set; } = "sell";
-    /// <summary>Id of the trigger machines use (none for process).</summary>
-    public string Trigger { get; set; } = "";
-    /// <summary>What it trades or stores (store: defaults to everything the storage keeps).</summary>
-    public string[] FillTypes { get; set; } = [];
-    /// <summary>Hours it is open, [from, to) in game hours (past midnight when from > to). Missing: always.</summary>
-    public float[]? OpenHours { get; set; }
-    /// <summary>Months it works in (1..12). Empty: all year.</summary>
-    public int[] Months { get; set; } = [];
-    /// <summary>Smallest load it takes (sell, store) or amount it sells (buy, refuel).</summary>
-    public float MinAmount { get; set; }
-    /// <summary>
-    /// Multiplies the price: for sell, buy and refuel the market price (the fill type's monthly curve), for process
-    /// the market price of the outputs it sells, for repair the standard price (1% of the machine's price for each
-    /// 100% of wear), for configure the price of the options fitted.
-    /// </summary>
-    public float PriceFactor { get; set; } = 1f;
-    /// <summary>Sell, buy, refuel, process: fill types whose factor differs from <see cref="PriceFactor"/>.</summary>
-    public Dictionary<string, float> PriceFactors { get; set; } = new();
-    /// <summary>Sell: how prices react to what farmers sell here.</summary>
-    public DemandDef Demand { get; set; } = new();
-    /// <summary>Wash: price of washing a fully dirty machine. Configure: price of the work for each option changed.</summary>
-    public float Price { get; set; }
-    /// <summary>Process: what one cycle takes from storage and puts into it.</summary>
-    public FillAmountDef[] Inputs { get; set; } = [];
-    public ProcessOutputDef[] Outputs { get; set; } = [];
-    /// <summary>Process: game hours per cycle (below 1 for several cycles an hour).</summary>
-    public float CycleHours { get; set; } = 1f;
-    /// <summary>Process: what the owner pays for each hour it runs.</summary>
-    public float RunningCost { get; set; }
 }
 
 /// <summary>What machines and the farmer bump into at a POI: a box, or a circle (a silo, a tank).</summary>

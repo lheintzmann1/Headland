@@ -29,8 +29,9 @@ Built with **Godot 4.7** and **C#**.
   refuel and wash at the gas station, get machines repaired or their options changed at the workshop (new options
   cost what they cost more than the old ones, and the work), and lease them for contracts at the machinery dealer.
   Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
-  few days. Each place is a point of interest defined in JSON: areas where machines unload, load, fill up or park,
-  what happens there, opening hours, storage and production that runs by the hour.
+  few days. Each place is a point of interest defined in JSON and built from components, as Farming Simulator builds
+  its placeables: selling and buying stations, silos, production points that run by the hour, workshops, washing
+  stations and delivery spots, each with the area where machines use it and its opening hours.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
   maintenance, machines, production costs, wages, land, loan interest, contracts. F2 shows them day by day or month by month, and is where the
   farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and

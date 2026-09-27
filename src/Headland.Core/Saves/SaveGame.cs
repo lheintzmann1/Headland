@@ -9,6 +9,7 @@ using Headland.Core.Economics;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Pois;
+using Headland.Core.Pois.Components;
 using Headland.Core.World;
 
 namespace Headland.Core.Saves;
@@ -26,8 +27,8 @@ public sealed record LoadedGame(Simulation Sim, IReadOnlyList<string> Warnings);
 public static class SaveGame
 {
     /// <summary>Save format version. Bump it (and migrate older saves in <see cref="Load"/>) on breaking changes.</summary>
-    /// <remarks>2: machines keep their state per component.</remarks>
-    public const int Format = 2;
+    /// <remarks>2: machines keep their state per component. 3: POIs too (storage, production, demand).</remarks>
+    public const int Format = 3;
 
     /// <summary>A helper's route segments as saved, one letter per <see cref="PathSegment"/> value.</summary>
     private const string SegmentLetters = "dwr";
@@ -71,6 +72,7 @@ public static class SaveGame
             var node = JsonNode.Parse(file.State, new JsonNodeOptions { PropertyNameCaseInsensitive = true }) as JsonObject
                        ?? throw new SaveException("state.json is empty");
             if (file.Meta.Format < 2) MachinesToComponents(node);
+            if (file.Meta.Format < 3) PoisToComponents(node);
             state = node.Deserialize<SaveState>(Json) ?? throw new SaveException("state.json is empty");
         }
         catch (JsonException e)
@@ -138,14 +140,7 @@ public static class SaveGame
             },
             Farms = sim.Farms.All.Select(f => new FarmSave { Id = f.Id, Name = f.Name }).ToList(),
             Farmlands = sim.World.Farmlands.Select(l => new FarmlandSave { Id = l.Id, Farm = l.FarmId }).ToList(),
-            Pois = sim.World.Pois.Select(p => new PoiSave
-            {
-                Id = p.Id, Farm = p.FarmId, Components = p.SaveComponents(content),
-                Storage = p.Storage?.Levels.Where(kv => kv.Value > 0f).ToDictionary(kv => kv.Key, kv => kv.Value) ?? [],
-                Progress = p.Progress.Any(x => x > 0f) ? [.. p.Progress] : null,
-                Demand = new(p.Demand),
-                HighDemand = p.HighDemand is { } h ? new HighDemandSave { FillType = h.FillType, Factor = h.Factor, EndDay = h.EndDay } : null,
-            }).ToList(),
+            Pois = sim.World.Pois.Select(p => new PoiSave { Id = p.Id, Farm = p.FarmId, Components = p.SaveComponents(content) }).ToList(),
             PoiRngState = sim.Pois.Rng.State,
             Contracts = sim.Contracts.All.Select(CaptureContract).ToList(),
             NextContractId = sim.Contracts.NextId,
@@ -193,7 +188,7 @@ public static class SaveGame
                 Poi = d.Poi.Id, FillType = d.FillType, Amount = d.Amount, Income = d.Income, Stored = d.Stored, Contract = d.Contract?.Id,
             };
         if (sim.Pois.Loadings.TryGetValue(m, out var l))
-            save.Loading = new LoadingSave { Poi = l.Trigger.Poi.Id, Trigger = l.Trigger.Id, FillType = l.FillType, Amount = l.Amount };
+            save.Loading = new LoadingSave { Poi = l.Silo.Poi.Id, FillType = l.FillType, Amount = l.Amount };
         if (m.Get<Drivable>()?.Controller is FieldWorkController h)
             save.Helper = new HelperSave
             {
@@ -289,29 +284,17 @@ public static class SaveGame
 
     private static void RestorePois(Simulation sim, SaveState s, List<string> warnings)
     {
-        var content = sim.Content;
-        var context = new SaveContext(content, warnings);
+        var context = new SaveContext(sim.Content, warnings);
         if (s.PoiRngState != 0) sim.Pois.Rng.State = s.PoiRngState;
         foreach (var p in s.Pois)
         {
             if (sim.World.PoiById(p.Id) is not { } poi)
             {
-                if (p.Storage.Count > 0) warnings.Add($"POI '{p.Id}' no longer exists on this map: what it stored is lost");
+                if (p.Components.ContainsKey("fillUnits")) warnings.Add($"POI '{p.Id}' no longer exists on this map: what it stored is lost");
                 continue;
             }
             if (p.Farm != Ownership.Farm.None && sim.Farms.ById(p.Farm) == null) warnings.Add($"{poi.Name} belonged to an unknown farm");
             else poi.FarmId = p.Farm;
-            foreach (var (ft, level) in p.Storage)
-            {
-                if (poi.Storage?.Keeps(ft) == true) poi.Storage.Set(ft, level);
-                else warnings.Add($"{poi.Name} no longer stores '{ft}': {level:N0} was lost");
-            }
-            foreach (var (ft, demand) in p.Demand)
-                if (content.FillTypes.ContainsKey(ft)) poi.Demand[ft] = Math.Clamp(demand, 0f, 1f);
-            if (p.HighDemand is { } h && content.FillTypes.ContainsKey(h.FillType)) poi.HighDemand = new HighDemand(h.FillType, h.Factor, h.EndDay);
-            if (p.Progress is { } progress)
-                for (var i = 0; i < Math.Min(progress.Length, poi.Progress.Length); i++)
-                    if (poi.Def.Actions[i].Type == "process") poi.Progress[i] = Math.Clamp(progress[i], 0f, 1f);
             poi.LoadComponents(p.Components, context);
         }
     }
@@ -395,8 +378,8 @@ public static class SaveGame
             machine.LoadComponents(m.Components, context);
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
                 sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored, d.Contract is { } id ? sim.Contracts.ById(id) : null);
-            if (m.Loading is { } l && sim.Pois.ById(l.Poi)?.Trigger(l.Trigger) is { Type: "load" } spout && content.FillTypes.ContainsKey(l.FillType))
-                sim.Pois.Loadings[machine] = new Loading(spout, l.FillType, l.Amount);
+            if (m.Loading is { } l && sim.Pois.ById(l.Poi)?.Get<Silo>() is { } silo && content.FillTypes.ContainsKey(l.FillType))
+                sim.Pois.Loadings[machine] = new Loading(silo, l.FillType, l.Amount);
         }
 
         // Helpers last: they work with the implements attached.
@@ -477,6 +460,35 @@ public static class SaveGame
                 ["pipe"] = Part(("out", Take("pipeOut")), ("anim", Take("pipeAnim"))),
                 ["tipper"] = Part(("tipping", Take("tipping")), ("anim", Take("tipAnim"))),
             };
+        }
+    }
+
+    /// <summary>
+    /// Format 2 kept a POI's storage, production progress and demand in flat fields; format 3 keeps them per component.
+    /// Storage goes into fill units named after the fill type each holds (as POIs name their storage units), and
+    /// demand to the selling station; the part of a production cycle done is dropped (under an hour of work).
+    /// </summary>
+    private static void PoisToComponents(JsonObject state)
+    {
+        foreach (var node in state["pois"] as JsonArray ?? [])
+        {
+            if (node is not JsonObject p) continue;
+            JsonNode? Take(string key) => p.Remove(key, out var value) ? value : null;
+            var components = Take("components") as JsonObject ?? new JsonObject();
+            if (Take("storage") is JsonObject { Count: > 0 } storage)
+                components["fillUnits"] = new JsonObject
+                {
+                    ["units"] = new JsonArray(storage.Select(kv => (JsonNode)new JsonObject
+                    {
+                        ["id"] = kv.Key, ["fillType"] = kv.Key, ["level"] = kv.Value?.DeepClone(),
+                    }).ToArray()),
+                };
+            var demand = Take("demand");
+            var high = Take("highDemand");
+            if (demand is JsonObject { Count: > 0 } || high != null)
+                components["sellingStation"] = new JsonObject { ["demand"] = demand, ["highDemand"] = high };
+            Take("progress");
+            p["components"] = components;
         }
     }
 

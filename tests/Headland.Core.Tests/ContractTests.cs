@@ -6,6 +6,7 @@ using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
+using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
 using Headland.Core.World;
 using static Headland.Core.Tests.PoiTests;
@@ -411,7 +412,7 @@ public class ContractTests
         // At the elevator the neighbor's corn goes to the contract, unpaid; the farm's own corn is sold.
         var delivered = Record<ContractDelivery>(sim);
         var sold = Record<FillSold>(sim);
-        var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
+        var pit = sim.World.PoiById("elevator")!.Trigger("unload")!;
         var money = sim.Economy.Money;
         tank.Add("corn", 1000f);
         tank.Remove(sim.Pois.Unload(combine, pit, "corn", job.Harvested / 2f));
@@ -433,7 +434,7 @@ public class ContractTests
         sim.SkipHours(24);
         var job = sim.Contracts.Offers.Single(c => c.Poi?.Id == "mill");
         Assert.True(sim.Contracts.Accept(job));
-        var pit = sim.World.PoiById("mill")!.Trigger("pit")!;
+        var pit = sim.World.PoiById("mill")!.Trigger("unload")!;
         var trailer = sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f);
         var money = sim.Economy.Money;
 
@@ -442,7 +443,7 @@ public class ContractTests
         Assert.Equal((ContractState.Active, job.Amount - 1000f, money), (job.State, job.Delivered, sim.Economy.Money));
         Assert.Contains(sim.Notifications.Items, n => n.Text == $"Delivered {job.Amount - 1000f:N0} L Wheat for the contract: {job.Label}, 1,000 L to go");
         // The last 1,000 L go to the contract, the rest is sold.
-        var income = 2000f * sim.Pois.Price(pit.Poi, pit.Actions[0], "wheat");
+        var income = 2000f * sim.Pois.Price((SellingStation)pit.Station, "wheat");
         sim.Pois.Unload(trailer, pit, "wheat", 3000f);
         Run(sim, 1f);
         Assert.Equal((ContractState.Completed, job.Amount), (job.State, job.Delivered));
@@ -463,7 +464,7 @@ public class ContractTests
         Assert.True(sim.Contracts.Accept(job, lease: true));
 
         // On the dealer's lot, the cultivator on the tractor: the farm's to drive while the contract lasts.
-        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        var lot = sim.World.PoiById("dealer")!.Trigger("delivery")!;
         var machines = Assert.Single(leased).Machines;
         Assert.Equal((before + 2, true), (sim.Machines.All.Count, job.Leased));
         Assert.Same(machines[0], machines[1].Parent);
@@ -522,7 +523,7 @@ public class ContractTests
         var set = sim.Machines.All.Where(m => m.LeaseContract == corn.Id).ToList();
         Assert.Equal(["combine_7", "header_corn_6", "tractor_95", "trailer_16"], set.Select(m => m.Def.Id));
         Assert.Equal((set[0], set[2]), (set[1].Parent, set[3].Parent));
-        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        var lot = sim.World.PoiById("dealer")!.Trigger("delivery")!;
         Assert.All(set, m => Assert.True(lot.Contains(m.Footprint.Center)));
         for (var i = 0; i < set.Count; i++)
         for (var j = i + 1; j < set.Count; j++)
@@ -534,7 +535,7 @@ public class ContractTests
     {
         var sim = Neighbors(Field(2, "seeded", "wheat", "harvestable"));
         var job = sim.Contracts.On(sim.World.FieldById(2)!)!;
-        var lot = sim.World.PoiById("dealer")!.Trigger("lot")!;
+        var lot = sim.World.PoiById("dealer")!.Trigger("delivery")!;
         while (sim.Pois.DeliverSet(["combine_7"], Farm.PlayerId, lot) != null) { }
         var machines = sim.Machines.All.Count;
 
@@ -564,10 +565,8 @@ public class ContractTests
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
         db.ContractTypes["deliver"].Leases = [new ContractLeaseDef { Machines = ["tractor_95"] }];
         db.ContractTypes["cultivate"].Leases = [new ContractLeaseDef { Machines = ["seeder_3", "rocket"], FeePerHa = -1 }];
-        db.Pois["farm_shop"].Actions = [new PoiActionDef { Type = "lease", Trigger = "yard" }];
         Assert.Equal(
         [
-            "poi 'farm_shop' lease action: works at delivery triggers, not fill",
             "contract type 'cultivate' lease 1: feePerHa must be >= 0",
             "contract type 'cultivate' lease 1: unknown machine 'rocket'",
             "contract type 'cultivate' lease 1: no machine does the job's work (cultivator)",

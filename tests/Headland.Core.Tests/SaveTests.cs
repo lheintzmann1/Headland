@@ -7,6 +7,7 @@ using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
+using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
 using Headland.Core.World;
 
@@ -157,6 +158,34 @@ public class SaveTests
     }
 
     private static Machine Find(Simulation sim, string def) => sim.Machines.All.First(m => m.Def.Id == def);
+
+    [Fact]
+    public void AFormat2SaveHandsItsPoiStateToTheirComponents()
+    {
+        // The POIs as version 0.13.0 saved them: grain in the farm silo, wheat and flour at the mill with a cycle half
+        // done, and the elevator's demand lowered by sales, with canola in high demand.
+        var file = SaveGame.Capture(TestContent.NewSim(), "test");
+        var state = JsonNode.Parse(file.State)!.AsObject();
+        state["pois"] = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "pois-format2.json")));
+        file.Meta.Format = 2;
+        var loaded = SaveGame.Load(TestContent.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) });
+        Assert.Empty(loaded.Warnings);
+
+        var pois = loaded.Sim.World;
+        var silo = pois.PoiById("silo")!.Get<FillUnits>()!;
+        Assert.Equal((12_000f, 3_500f, 0f), (silo.Level("wheat"), silo.Level("barley"), silo.Level("corn")));
+        var mill = pois.PoiById("mill")!;
+        Assert.Equal((21_000f, 4_000f), (mill.Get<FillUnits>()!.Level("wheat"), mill.Get<FillUnits>()!.Level("flour")));
+        Assert.Equal(0.9916f, mill.Get<SellingStation>()!.DemandOf("wheat"), 4);
+        var elevator = pois.PoiById("elevator")!.Get<SellingStation>()!;
+        Assert.Equal((0.9f, 0.95f, 1f), (elevator.DemandOf("wheat"), elevator.DemandOf("barley"), elevator.DemandOf("corn")));
+        Assert.Equal(new HighDemand("canola", 1.3f, 5), elevator.HighDemand);
+
+        // Saved again, it's the same game.
+        var again = SaveGame.Load(TestContent.Content, SaveGame.Capture(loaded.Sim, "test")).Sim;
+        Assert.Equal(12_000f, again.World.PoiById("silo")!.Get<FillUnits>()!.Level("wheat"));
+        Assert.Equal(elevator.HighDemand, again.World.PoiById("elevator")!.Get<SellingStation>()!.HighDemand);
+    }
 
     [Fact]
     public void SavesSurviveContentChanges()

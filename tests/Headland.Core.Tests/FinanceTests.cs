@@ -1,7 +1,9 @@
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Ownership;
+using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
 using Headland.Core.Time;
 using static Headland.Core.Tests.PoiTests;
@@ -45,15 +47,15 @@ public class FinanceTests
         var bought = Record<FillBought>(sim);
         var money = sim.Economy.Money;
 
-        var pit = sim.World.PoiById("elevator")!.Trigger("pit")!;
+        var pit = sim.World.PoiById("elevator")!.Trigger("unload")!;
         sim.Pois.Unload(sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f), pit, "wheat", 10_000f);
-        var seeder = sim.Machines.Spawn("seeder_3", sim.World.PoiById("supplies")!.Trigger("yard")!.Area.Center, 0f);
+        var seeder = sim.Machines.Spawn("seeder_3", sim.World.PoiById("supplies")!.Trigger("fill")!.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
         sim.Pois.Use(seeder);
-        var t = sim.Machines.Spawn("tractor_95", sim.World.PoiById("gas")!.Trigger("pumps")!.Area.Center, MathF.PI / 2f);
+        var t = sim.Machines.Spawn("tractor_95", sim.World.PoiById("gas")!.Trigger("fill")!.Area.Center, MathF.PI / 2f);
         t.Unit("fuel")!.Remove(100f);
         sim.Pois.Use(t);
-        sim.Machines.Teleport(t, sim.World.PoiById("workshop")!.Trigger("bay")!.Area.Center, 0f);
+        sim.Machines.Teleport(t, sim.World.PoiById("workshop")!.Trigger("repair")!.Area.Center, 0f);
         t.Condition = 0.5f;
         sim.Pois.Use(t);
 
@@ -68,14 +70,27 @@ public class FinanceTests
     private static readonly PoiDef Press = new()
     {
         Id = "test_press", Name = "Press",
-        Storage = new PoiStorageDef { FillTypes = ["canola", "diesel"], Capacity = 100_000 },
-        Actions =
+        Components =
         [
-            new PoiActionDef
+            new FillUnitsDef
             {
-                Type = "process", RunningCost = 10,
-                Inputs = [new FillAmountDef { FillType = "canola", Amount = 10 }],
-                Outputs = [new ProcessOutputDef { FillType = "diesel", Amount = 4 }],
+                Units =
+                [
+                    new FillUnitDef { Id = "canola", Capacity = 100_000, FillTypes = ["canola"] },
+                    new FillUnitDef { Id = "diesel", Capacity = 100_000, FillTypes = ["diesel"] },
+                ],
+            },
+            new ProductionPointDef
+            {
+                Productions =
+                [
+                    new ProductionDef
+                    {
+                        Id = "press", RunningCost = 10,
+                        Inputs = [new FillAmountDef { FillType = "canola", Amount = 10 }],
+                        Outputs = [new ProductionOutputDef { FillType = "diesel", Amount = 4 }],
+                    },
+                ],
             },
         ],
     };
@@ -84,7 +99,7 @@ public class FinanceTests
     public void EachHourIsBookedOnItsOwnDay()
     {
         var sim = SimWith([Press], new PoiPlacementDef { Id = "press", Type = "test_press", X = 30, Z = 30, Farm = Farm.PlayerId });
-        sim.World.PoiById("press")!.Storage!.Add("canola", 10_000f);
+        sim.World.PoiById("press")!.Get<FillUnits>()!.Add("canola", 10_000f);
 
         // From 7:30 to 7:30 the next day: 16 hours on the first day, and from midnight 8 on the second.
         sim.SkipHours(24);
@@ -236,23 +251,20 @@ public class FinanceTests
         Assert.Equal((100_000f, 0f, 1f), (normal.Economy.Money, normal.Economy.Loan, normal.Economy.PriceLevel));
         Assert.Equal((30_000f, 150_000f, 1.2f), (hard.Economy.Money, hard.Economy.Loan, hard.Economy.PriceLevel));
 
-        float Prices(Simulation sim, string poi, string action, string fillType)
-        {
-            var p = sim.World.PoiById(poi)!;
-            return sim.Pois.Price(p, p.Def.Actions.First(a => a.Type == action), fillType);
-        }
+        float Prices(Simulation sim, string poi, string fillType) => sim.Pois.Price(sim.World.PoiById(poi)!.Get<BuyingStation>()!, fillType);
         float Repair(Simulation sim)
         {
             var t = sim.Machines.All.First(m => m.Def.Id == "tractor_95");
             t.Condition = 0.5f;
-            return sim.Pois.RepairPrice(sim.World.PoiById("workshop")!.Def.Actions.First(a => a.Type == "repair"), t);
+            return sim.Pois.RepairPrice(sim.World.PoiById("workshop")!.Get<Workshop>()!, t);
         }
-        Assert.Equal(1.2f * Prices(normal, "supplies", "buy", "seeds"), Prices(hard, "supplies", "buy", "seeds"), 4);
+        Assert.Equal(1.2f * Prices(normal, "supplies", "seeds"), Prices(hard, "supplies", "seeds"), 4);
         Assert.Equal(1.2f * Repair(normal), Repair(hard), 2);
         Assert.Equal(MathF.Round(1.2f * normal.Farms.Price(normal.World.FarmlandById(5)!)), hard.Farms.Price(hard.World.FarmlandById(5)!));
         Assert.Equal(1.2f * normal.HelperWage, hard.HelperWage, 4);
         // Buyers pay the same.
-        Assert.Equal(Prices(normal, "elevator", "sell", "wheat"), Prices(hard, "elevator", "sell", "wheat"));
+        float Sale(Simulation sim) => sim.Pois.Price(sim.World.PoiById("elevator")!.Get<SellingStation>()!, "wheat");
+        Assert.Equal(Sale(normal), Sale(hard));
     }
 
     [Fact]

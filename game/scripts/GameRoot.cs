@@ -212,8 +212,8 @@ public partial class GameRoot : Node3D
     {
         if (Sim.PlayerVehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
             Screens.Push(new LoadScreen { Sim = Sim, Vehicle = v, Choices = choices });
-        else if (Sim.PlayerVehicle is { } w && Sim.Pois.Workshop(w) is var (bay, action) && w.Chain().Any(m => m.Def.Configurations.Count > 0))
-            Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = w, Bay = bay, Action = action });
+        else if (Sim.PlayerVehicle is { } w && Sim.Pois.Workshop(w) is { } workshop && w.Chain().Any(m => m.Def.Configurations.Count > 0))
+            Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = w, Workshop = workshop });
         else Sim.CommandUse();
     }
 
