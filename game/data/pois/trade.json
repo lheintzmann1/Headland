@@ -1,23 +1,5 @@
 [
-  // Places that buy from and sell to farmers. See farm.json for the POI layout.
-  // Triggers are areas (center x, z; size w, d) where machines use the POI: "unload" (tip a trailer into it, or
-  // point a combine's pipe over it), "load" (the owner's trailers parked inside fill up from the storage, "rate"
-  // units a second), "fill" (park inside and press the use key) or "delivery" (new machines appear there). Actions
-  // say what happens, from the farmer's side: "sell" (the POI buys loads of its fillTypes tipped at an unload
-  // trigger), "store" (its owner's loads go into its storage) or "buy" (it sells its fillTypes at a fill trigger).
-  // "storage" keeps fillTypes, each up to "capacity" units ("capacities": { "wheat": 50000 } for exceptions); it
-  // belongs to the POI's owner.
-  // Conditions, on any action: "openHours": [from, to] (game hours; past midnight when from > to), "months": [...]
-  // (1..12) and "minAmount" (the smallest load taken, or amount sold). Storage that is full takes nothing more.
-  // Prices: "priceFactor" (and "priceFactors": { "wheat": 1.1 }) multiply the market price (filltypes.json). A sell
-  // action's "demand" lowers its price as loads come in and brings it back day by day, and sometimes puts a fill
-  // type in high demand: { "drop": 0.04 per 100,000 units, "floor": 0.7, "recovery": 0.02 a day,
-  // "highChance": 0.03 a day, "highFactor": [1.2, 1.5], "highDays": [1, 3] } (the defaults).
-  // "lease" at a delivery trigger: machines leased for contracts (contracts.json) are delivered there.
-  // "process" (no trigger) takes its inputs from storage every "cycleHours" and puts its outputs there, costing its
-  // owner "runningCost" an hour. Outputs with "mode": "sell" are sold every hour at the market price (times
-  // priceFactor); the rest ("store") wait for the owner's trailers at a load trigger. A sale of a fill type the
-  // POI stores goes into its storage, so the mill below mills what farmers sell it and stops buying when full.
+  // Places that buy from and sell to farmers. What each setting means: docs/COMPONENTS.md (POIs).
   { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
     "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
     "colliders": [

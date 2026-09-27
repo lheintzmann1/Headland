@@ -1,24 +1,28 @@
-# Defining machines
+# Entities and components
 
-A machine is a JSON object in `game/data/machines/*.json`: what it is (name, price, mass), its size, how it looks,
-and the **components** it is built from. A component is one working part: wheels, an engine, a seat, a hitch, a grain
-tank, a tipping bed, a crane. The game has no fixed kinds of machines: a tractor is running gear, a motor, a seat,
-attacher joints and a fuel tank; a trailer is running gear, an attachable, a fill unit and a tipper. New machines,
-including those of mods, are built by combining components in the same way.
+The things the game puts on the map are **entities**: machines (`game/data/machines/*.json`) and points of interest
+(POIs, `game/data/pois/*.json`) today, later the farmer, pallets, bales and animals. Each is a JSON object with a few
+settings of its own (its name, its size, how it looks) and the **components** it is built from. A component is one
+working part: wheels, an engine, a seat, a hitch, a grain tank, a tipping bed, a crane. The game has no fixed kinds of
+machines: a tractor is running gear, a motor, a seat, attacher joints and a fuel tank; a trailer is running gear, an
+attachable, a fill unit and a tipper. New entities, including those of mods, are built by combining components in the
+same way.
 
-The game checks every machine when it starts and names the machine and component at fault. Settings left out take
-the defaults listed below.
+Each kind of component goes on the entities it makes sense for (see [Components](#components)). The game checks every
+entity when it starts and names the entity and component at fault, a kind on something it doesn't go on included.
+Settings left out take the defaults listed below.
 
 ## Space
 
-Positions are in meters, in the machine's own space: **+z forward, +x left, +y up**, with the origin on the ground:
+Positions are in meters, in the entity's own space: **+z forward, +x left, +y up**, with the origin on the ground:
 
 - vehicles: where they turn about, the center of the fixed axle (the middle of them with several), so the rear axle of
   a tractor and the front one of a combine, and the rear frame's axle of an articulated one,
 - trailed implements: likewise the middle of their fixed axles (their drawbar eye is ahead of it),
-- mounted implements and headers: the hitch point.
+- mounted implements and headers: the hitch point,
+- POIs: the center of their footprint, their front (+z) being the side machines come from.
 
-## The machine
+## Machines
 
 ```jsonc
 {
@@ -42,28 +46,120 @@ Positions are in meters, in the machine's own space: **+z forward, +x left, +y u
 ```
 
 `visual` names the machine's glTF `model`, whose parts the game finds by their names, and its paint `color`: see
-[`MODELING.md`](MODELING.md). A machine without a model that loads is left out of the game.
+[`MODELING.md`](MODELING.md). A machine without a model that loads is left out of the game. Its options are its
+[configurations](#configurations).
+
+## POIs
+
+A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps place them (see
+[Placing POIs](#placing-pois)); a POI belongs to the farm the map gives it, or to an NPC.
+
+```jsonc
+{
+  "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 22, "d": 20,
+  "visual": { "model": "res://assets/models/buildings/farm_silo.glb" },
+  "colliders": [
+    { "x": -5, "z": -6, "w": 8, "d": 8, "round": true },
+    { "x": 5, "z": -6, "w": 8, "d": 8, "round": true }
+  ],
+  "triggers": [
+    { "id": "pit",   "type": "unload", "x": -5, "z": 4, "w": 10, "d": 9 },
+    { "id": "spout", "type": "load",   "x": 6,  "z": 4, "w": 9,  "d": 9 }
+  ],
+  "storage": { "fillTypes": ["wheat", "barley", "canola", "corn"], "capacity": 100000 },
+  "actions": [
+    { "type": "store", "trigger": "pit" }
+  ]
+}
+```
+
+| Setting | Default | |
+|---|---|---|
+| `id`, `name`, `description` | | Maps place it by its `id`. |
+| `icon` | none | Its map icon: a Material Symbols icon in `game/assets/icons`, by file name (`storefront`). |
+| `w`, `d` | 10, 10 | The ground it covers, centered on its origin: `w` along x, `d` along z. |
+| `colliders` | none | What machines and the farmer bump into: boxes centered on `x`, `z`, `w` along x and `d` along z (4 × 4), turned by `rotDeg`; or circles `w` across with `round: true` (silos, tanks). |
+| `visual` | | Its glTF `model`, as for machines (see [`MODELING.md`](MODELING.md#buildings-and-other-pois)). A POI whose model doesn't load still works, but nothing is drawn for it. |
+| `triggers` | none | Areas where machines use it: see below. |
+| `storage` | none | Goods it keeps: see below. |
+| `actions` | none | What it does: see below. |
+| `components` | none | As for machines; none of today's kinds go on POIs yet. |
+
+### Triggers
+
+A trigger is an area where machines use the POI: centered on `x`, `z`, `w` along x and `d` along z (10 × 10), with a
+unique `id` that actions refer to, and a `type`:
+
+| `type` | |
+|---|---|
+| `unload` | A trailer tips into it, a combine's pipe pours over it. |
+| `load` | The owner's trailers parked inside fill up from the POI's storage, `rate` units a second (400). |
+| `fill` | Machines parked inside buy supplies or fuel with the use key. |
+| `wash`, `repair` | The machine chain parked inside is washed, or repaired and refitted, with the use key. |
+| `delivery` | Where new machines appear. |
+
+### Storage
+
+`storage` keeps its `fillTypes`, each up to `capacity` units (100,000), or what `capacities` gives for it
+(`"capacities": { "wheat": 50000 }`). It belongs to the POI's owner. Storage that is full takes nothing more.
+
+### Actions
+
+Actions say what happens, from the farmer's side, each at a trigger of its type:
+
+| `type` | Trigger | |
+|---|---|---|
+| `sell` | `unload` | The POI buys loads of its `fillTypes`. A sale of a fill type the POI stores goes into its storage, so a mill mills what farmers sell it and stops buying when full. |
+| `store` | `unload` | Its owner's loads go into its storage (all it keeps without `fillTypes`). |
+| `buy` | `fill` | It sells its `fillTypes`, into any fill unit that takes them. |
+| `refuel` | `fill` | It fills fuel tanks with its `fillTypes`. |
+| `repair` | `repair` | A repair costs 1% of the machine's price for each 100% of wear. |
+| `configure` | `repair` | Changes the options of the machines parked there: each option fitted costs what it costs more than the one it replaces (times `priceFactor`), and `price` for the work. |
+| `wash` | `wash` | Costs `price` for a fully dirty machine. |
+| `lease` | `delivery` | Machines leased for contracts ([`contracts.json`](../game/data/contracts.json)) are delivered there. |
+| `process` | none | Takes its `inputs` from storage every `cycleHours` (1) and puts its `outputs` there, costing its owner `runningCost` an hour. Outputs with `"mode": "sell"` are sold every hour at the market price (times `priceFactor`); the rest (`"store"`) wait for the owner's trailers at a load trigger. |
+
+Conditions, on any action: `openHours: [from, to]` (game hours; past midnight when from > to), `months` (1..12) and
+`minAmount` (the smallest load taken, or amount sold).
+
+Prices: `priceFactor` (and `"priceFactors": { "wheat": 1.1 }`) multiply the market price (`filltypes.json`). A sell
+action's `demand` lowers its price as loads come in and brings it back day by day, and sometimes puts a fill type in
+high demand:
+
+| `demand` | Default | |
+|---|---|---|
+| `drop` | 0.04 | Price drop for each 100,000 units sold. |
+| `floor` | 0.7 | The lowest the demand factor goes. |
+| `recovery` | 0.02 | Demand factor regained per game day. |
+| `highChance` | 0.03 | Chance per game day that one of its fill types goes in high demand. |
+| `highFactor`, `highDays` | [1.2, 1.5], [1, 3] | High demand: [min, max] price factor, and game days it lasts. |
+
+### Placing POIs
+
+A map's `pois` place them: a unique `id` (saves refer to it), the POI `type`, where its origin goes (`x`, `z`), its
+`headingDeg` (0 faces +z, south; 90 faces +x, east), its `farm` (0: an NPC's, the default; 1: the player's) and
+optionally a `name` in place of the type's.
 
 ## Components
 
-| Kind | What it is |
-|---|---|
-| `runningGear` | Axles and their wheels, and how they steer. |
-| `motor` | An engine: the machine drives itself. |
-| `drivable` | A seat: the farmer or a helper drives it. |
-| `attacherJoints` | Where implements hitch: three-point linkages, drawbars, a feeder house. |
-| `frontLoaderBracket` | Consoles for a front loader arm, with its joint. |
-| `attachable` | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
-| `fillUnits` | Tanks and bins: fuel, seed, a grain tank, a trailer's bed. |
-| `animatedParts` | Parts that move between two poses, and folding for transport. |
-| `workAreas` | Where it works the ground: cultivating, sowing, cutting a crop. |
-| `thresher` | A combine's threshing drum, filling a tank with what its header cuts. |
-| `pipe` | An unloading pipe. |
-| `tipper` | A tipping bed. |
-| `lights` | Headlights, work lights and beacons. |
-| `craneArm` | A chain of joints: a forestry crane, a loader's boom. |
-| `winch` | A rope with a hook. |
-| `saw` | A saw blade. |
+| Kind | Goes on | What it is |
+|---|---|---|
+| `runningGear` | machines | Axles and their wheels, and how they steer. |
+| `motor` | machines | An engine: the machine drives itself. |
+| `drivable` | machines | A seat: the farmer or a helper drives it. |
+| `attacherJoints` | machines | Where implements hitch: three-point linkages, drawbars, a feeder house. |
+| `frontLoaderBracket` | machines | Consoles for a front loader arm, with its joint. |
+| `attachable` | machines | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
+| `fillUnits` | machines | Tanks and bins: fuel, seed, a grain tank, a trailer's bed. |
+| `animatedParts` | machines | Parts that move between two poses, and folding for transport. |
+| `workAreas` | machines | Where it works the ground: cultivating, sowing, cutting a crop. |
+| `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
+| `pipe` | machines | An unloading pipe. |
+| `tipper` | machines | A tipping bed. |
+| `lights` | machines | Headlights, work lights and beacons. |
+| `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
+| `winch` | machines | A rope with a hook. |
+| `saw` | machines | A saw blade. |
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
 chain; the lower key lowers every lowerable `attachable`.
@@ -335,6 +431,6 @@ choices are best kept to different settings, so that any combination holds.
 ## Saves
 
 A save keeps each machine's options (`configuration`: configuration id → option id; an option that no longer exists
-loads as the default), and its state under its components' kinds (the steering mode, the pipe unfolded, the level of
-each fill unit, the crane's joints…). A machine whose definition gains a component gets it fresh; one that loses a component loses its
-state.
+loads as the default), and each POI's owner, stored goods, production under way and demand. Every entity keeps its
+state under its components' kinds (the steering mode, the pipe unfolded, the level of each fill unit, the crane's
+joints…). An entity whose definition gains a component gets it fresh; one that loses a component loses its state.

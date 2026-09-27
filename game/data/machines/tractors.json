@@ -1,5 +1,5 @@
 [
-  // Local space: +z forward, +x LEFT, origin at the rear (fixed) axle. See docs/MACHINES.md.
+  // Local space: +z forward, +x LEFT, origin at the rear (fixed) axle. See docs/COMPONENTS.md.
   {
     "id": "tractor_125", "name": "Fieldmaster 125", "category": "tractor", "brand": "Fieldmaster",
     "price": 98000, "mass": 5600,

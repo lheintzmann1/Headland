@@ -71,7 +71,7 @@ units are written once, and new kinds of things come from data (and later mods) 
       cut), props; new POI kinds with their features (`husbandry`, `bunkerSilo`, `manureHeap`, `objectStorage`,
       `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
       placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
-- [ ] The JSON reference of every kind in one place, `docs/MACHINES.md` growing into it.
+- [x] The JSON reference of every kind in one place: `docs/COMPONENTS.md`.
 
 ## Points of interest (POIs)
 

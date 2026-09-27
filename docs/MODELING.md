@@ -91,7 +91,7 @@ root                              origin on the ground, at the center of the rea
 ## Moving parts
 
 Make each moving part a node of its own, named after its role, with its pivot (origin) where it turns. The machine's
-components (see [`MACHINES.md`](MACHINES.md)) decide which roles it has:
+components (see [`COMPONENTS.md`](COMPONENTS.md)) decide which roles it has:
 
 | Role | Component | Pivot | Modeled as |
 |---|---|---|---|
@@ -123,7 +123,7 @@ it.
 
 ## One model for every configuration
 
-A machine's options (its `configurations`, see [`MACHINES.md`](MACHINES.md#configurations)) all come from the same
+A machine's options (its `configurations`, see [`COMPONENTS.md`](COMPONENTS.md#configurations)) all come from the same
 model: model everything any option adds, and put each option's pieces under a node named after it, its
 configuration's id, `_` and its own id, as written in the JSON. That node and everything under it are hidden unless the
 machine has that option; the rest of the model is always there.

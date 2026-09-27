@@ -1,9 +1,5 @@
 [
-  // Services for machines. See farm.json for the POI layout and trade.json for triggers and actions. At a "fill"
-  // trigger, "refuel" fills fuel tanks; "wash" and "repair" work at triggers of their own type, for the whole
-  // machine chain parked there. Washing costs "price" for a fully dirty machine; a repair costs 1% of the machine's
-  // price for each 100% of wear. "configure", at a repair trigger, changes the options of the machines parked there:
-  // each option fitted costs what it costs more than the one it replaces (times "priceFactor"), and "price" for the work.
+  // Services for machines: fuel, washing, repairs and options. What each setting means: docs/COMPONENTS.md (POIs).
   { "id": "gas_station", "name": "Gas Station", "icon": "local_gas_station", "w": 34, "d": 30,
     "visual": { "model": "res://assets/models/buildings/gas_station.glb" },
     "colliders": [
