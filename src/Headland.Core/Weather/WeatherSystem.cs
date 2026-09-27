@@ -90,6 +90,18 @@ public sealed class WeatherSystem
     /// <summary>0..1 precipitation intensity for effects.</summary>
     public float PrecipIntensity => MathUtil.Saturate((RainMm + SnowMm) / 6f);
 
+    // ---- The sun (refreshed by Update) ----
+    /// <summary>How high the sun is above the horizon (radians, below 0 at night).</summary>
+    public float SunElevation { get; private set; }
+    /// <summary>Where it is along its path: 0 rising in the east, π/2 in the south at noon, π setting in the west.</summary>
+    public float SunAzimuth { get; private set; }
+    /// <summary>0 at night … 1 by day, eased through dusk and dawn.</summary>
+    public float Daylight { get; private set; } = 1f;
+    /// <summary>Dark enough for headlights: night, dusk and dawn.</summary>
+    public bool Night => Daylight < 0.35f;
+    /// <summary>Dark enough for a lamp with a light sensor: night, or a sky darkened by rain, snow or fog.</summary>
+    public bool Dim => Night || Condition is WeatherCondition.Rain or WeatherCondition.Storm or WeatherCondition.Snow or WeatherCondition.Fog;
+
     public DayWeather GetDay(int dayIndex)
     {
         EnsureDays(Math.Max(0, dayIndex) + 3);
@@ -121,10 +133,29 @@ public sealed class WeatherSystem
     public (float sunrise, float sunset) SunTimes(float monthFloat) =>
         (MonthlyLerp(_climate.SunriseHour, monthFloat), MonthlyLerp(_climate.SunsetHour, monthFloat));
 
+    /// <summary>
+    /// The sun at an hour of a (fractional) month: it rises in the east at the climate's sunrise, peaks in the south
+    /// higher in summer, and sets in the west.
+    /// </summary>
+    public (float elevation, float azimuth) Sun(float monthFloat, float hourOfDay)
+    {
+        var (sunrise, sunset) = SunTimes(monthFloat);
+        var declination = 23.4f * MathF.Sin(MathF.Tau * (monthFloat - 3.7f) / 12f);
+        var noon = (40f + declination) * MathUtil.Deg2Rad;
+        var t = (hourOfDay - sunrise) / (sunset - sunrise);
+        var elevation = t is > 0f and < 1f ? noon * MathF.Sin(MathF.PI * t) : -0.2f;
+        return (elevation, MathF.PI * Math.Clamp(t, 0f, 1f));
+    }
+
+    /// <summary>Daylight with the sun at <paramref name="elevation"/>: none below -4°, full above 6°.</summary>
+    public static float DaylightAt(float elevation) => MathUtil.SmoothStep(-4f * MathUtil.Deg2Rad, 6f * MathUtil.Deg2Rad, elevation);
+
     /// <summary>Refreshes the snapshot for a moment in time. Cheap: call every frame for smooth values.</summary>
     public void Update(int dayIndex, float hour)
     {
         var day = GetDay(dayIndex);
+        (SunElevation, SunAzimuth) = Sun(1f + (dayIndex % _calendar.DaysPerYear + hour / 24f) / _calendar.DaysPerMonth, hour);
+        Daylight = DaylightAt(SunElevation);
         Temperature = TemperatureAt(dayIndex, hour);
         Wind = day.Wind;
 

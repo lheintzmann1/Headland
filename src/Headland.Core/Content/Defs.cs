@@ -563,8 +563,6 @@ public sealed class FieldDef : ShapeDef
 /// </summary>
 public sealed class PoiDef : EntityDef
 {
-    /// <summary>Map icon: a Material Symbols icon in assets/icons, by file name (e.g. "storefront").</summary>
-    public string? Icon { get; set; }
     /// <summary>Ground the POI covers, centered on its origin: width along x, depth along z (meters).</summary>
     public float W { get; set; } = 10f;
     public float D { get; set; } = 10f;

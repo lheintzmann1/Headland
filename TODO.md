@@ -60,7 +60,7 @@ units are written once, and new kinds of things come from data (and later mods) 
 - [x] One component base for every kind of thing, out of `MachineDef`/`Machine`: a def per kind (checked against
       what it's on), runtime state, save data, a view; `ComponentKinds` covers all. Machines move onto it first,
       unchanged.
-- [ ] Kinds shared as they apply: `lights` (switched by the driver, the time of day, the weather or a trigger, as
+- [x] Kinds shared as they apply: `lights` (switched by the driver, the time of day, the weather or a trigger, as
       `Lights` and `PlaceableLights`), `animatedParts` (a folding boom, a shed door opening at a trigger, as
       `PlaceableAnimatedObjects`), `fillUnits` (a trailer's bed, a silo, a pallet), `hotspots` (map icons).
 - [ ] POIs from components: today's triggers, storage and actions as `sellingStation` (sell at an unload
@@ -171,7 +171,7 @@ components so new machine kinds, including mod machines, are built from blocks.
 ### Tools and special machines
 
 - [ ] Lights: headlights, front/rear work lights, beacons, lightbar, turn signals, hazards; player
-      toggles instead of the automatic headlights in `LightsView`.
+      toggles instead of the automatic headlights in `Lights`.
 - [ ] Front loader and tools (bucket, bale fork, pallet fork); the bucket needs bulk heaps.
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).

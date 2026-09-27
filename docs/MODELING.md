@@ -208,6 +208,9 @@ as for machines). What machines and the farmer bump into is not the model but th
 for round buildings such as silos), so keep them matching the walls. A POI whose model doesn't load still works, but
 nothing is drawn for it.
 
+A POI's moving parts (a door, a gate) are nodes named after their role, as on machines: its `animatedParts` give the
+roles (the parts' ids), and `visual.nodes` maps a role to a node named otherwise. Its lamps are placed by its JSON.
+
 ## The farmer
 
 The farmer follows the same scale, orientation and `root` node: `root`'s origin on the ground between the feet, the

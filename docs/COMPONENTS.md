@@ -56,8 +56,9 @@ A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps
 
 ```jsonc
 {
-  "id": "farm_silo", "name": "Farm silo", "icon": "warehouse", "w": 22, "d": 20,
+  "id": "farm_silo", "name": "Farm silo", "w": 22, "d": 20,
   "visual": { "model": "res://assets/models/buildings/farm_silo.glb" },
+  "components": { "hotspots": { "spots": [ { "icon": "warehouse" } ] } },
   "colliders": [
     { "x": -5, "z": -6, "w": 8, "d": 8, "round": true },
     { "x": 5, "z": -6, "w": 8, "d": 8, "round": true }
@@ -76,14 +77,13 @@ A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps
 | Setting | Default | |
 |---|---|---|
 | `id`, `name`, `description` | | Maps place it by its `id`. |
-| `icon` | none | Its map icon: a Material Symbols icon in `game/assets/icons`, by file name (`storefront`). |
 | `w`, `d` | 10, 10 | The ground it covers, centered on its origin: `w` along x, `d` along z. |
 | `colliders` | none | What machines and the farmer bump into: boxes centered on `x`, `z`, `w` along x and `d` along z (4 × 4), turned by `rotDeg`; or circles `w` across with `round: true` (silos, tanks). |
 | `visual` | | Its glTF `model`, as for machines (see [`MODELING.md`](MODELING.md#buildings-and-other-pois)). A POI whose model doesn't load still works, but nothing is drawn for it. |
 | `triggers` | none | Areas where machines use it: see below. |
 | `storage` | none | Goods it keeps: see below. |
 | `actions` | none | What it does: see below. |
-| `components` | none | As for machines; none of today's kinds go on POIs yet. |
+| `components` | none | As for machines: those that go on POIs, such as `hotspots` (its map icon), `lights` and `animatedParts`. |
 
 ### Triggers
 
@@ -150,19 +150,25 @@ optionally a `name` in place of the type's.
 | `attacherJoints` | machines | Where implements hitch: three-point linkages, drawbars, a feeder house. |
 | `frontLoaderBracket` | machines | Consoles for a front loader arm, with its joint. |
 | `attachable` | machines | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
-| `fillUnits` | machines | Tanks and bins: fuel, seed, a grain tank, a trailer's bed. |
-| `animatedParts` | machines | Parts that move between two poses, and folding for transport. |
+| `fillUnits` | anything | Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins. |
+| `animatedParts` | anything | Parts that move between two poses: folding for transport, a door opening as someone comes by. |
 | `workAreas` | machines | Where it works the ground: cultivating, sowing, cutting a crop. |
 | `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
 | `pipe` | machines | An unloading pipe. |
 | `tipper` | machines | A tipping bed. |
-| `lights` | machines | Headlights, work lights and beacons. |
+| `lights` | anything | Headlights, work lights and beacons, switched by the driver; a building's lamps, lit in the dark, on a timer or as someone comes by. |
 | `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
 | `winch` | machines | A rope with a hook. |
 | `saw` | machines | A saw blade. |
+| `hotspots` | anything | Icons on the map. |
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
 chain; the lower key lowers every lowerable `attachable`.
+
+Some components react to who is around, as FS triggers do: a lamp coming on, a door opening. Their `trigger` is an
+area in the entity's space, centered on `x`, `z` (0, 0), `w` along x and `d` along z (10 × 10), and `by` says who it
+reacts to: `anyone` (the default), the `farmer` (on foot or in a vehicle) or `machines` (driven or not, by their
+footprint's center).
 
 ### runningGear
 
@@ -292,19 +298,21 @@ Trailers are built from that:
 
 ### fillUnits
 
-`units`: each has an `id` (unique on the machine), a `capacity`, the `fillTypes` it takes, and optionally a
-`startFillType` and `startLevel`. A unit holds one fill type at a time.
+`units`: each has an `id` (unique on the entity), a `capacity`, the `fillTypes` it takes, and optionally a
+`startFillType` and `startLevel`. A unit holds one fill type at a time. On a POI they are its storage: what it keeps
+of a fill type is spread over the units that take it, those already holding it filled first.
 
 ### animatedParts
 
 | Setting | Default | |
 |---|---|---|
-| `parts` | none | Each has an `id` (the model node role it moves), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and `fold`. |
+| `parts` | none | Each has an `id` (the model node role it moves), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and `fold` or a `trigger`. |
 | `startFolded` | false | Comes folded. |
 
-Parts with `fold: true` move together when the machine folds for transport; their rest pose is the working one. A
-folded machine (or one still unfolding) doesn't work and can't go down: lowering it unfolds it first, and a helper
-unfolds it too.
+Parts with `fold: true` (on machines only) move together when the machine folds for transport; their rest pose is the
+working one. A folded machine (or one still unfolding) doesn't work and can't go down: lowering it unfolds it first,
+and a helper unfolds it too. A part with a `trigger` moves while someone is in it and back once they left, such as a
+shed's door (FS: animated objects).
 
 ### workAreas
 
@@ -344,9 +352,16 @@ A harvester needs an `attachable`: it works while the vehicle it hangs on thresh
 ### lights
 
 `lamps`: each has a `type` (`head`, `workFront`, `workRear` or `beacon`), a position `x`, `y` (1.5), `z`, where it
-points (`pitchDeg` -18, down when negative; `yawDeg` 0, left when positive, 180 backward), and its beam: `range`
-(30 m), `angleDeg` (32), `energy` (4) and `color` (`#fff0d1`). An optional `id`, unique on the machine, lets a
-configuration option add the lamp or change it (see below). Headlights come on by themselves after dark.
+points (`pitchDeg` -18, down when negative, -90 straight down; `yawDeg` 0, left when positive, 180 backward), and its
+beam: `range` (30 m), `angleDeg` (32), `energy` (4) and `color` (`#fff0d1`). An optional `id`, unique on the entity,
+lets a configuration option add the lamp or change it (see below). Its `switch` says what turns it on:
+
+| `switch` | |
+|---|---|
+| `driver` | The default: the driver switches the lamps of its type. Headlights also come on by themselves at night. |
+| `dark` | A light sensor: on at night, or when rain, snow or fog darken the sky (a yard light). |
+| `hours` | A timer: on between `hours: [from, to]` (game hours; past midnight when from > to). |
+| `trigger` | On while someone is in its `trigger` (see above): a workshop's bay light. |
 
 ### craneArm
 

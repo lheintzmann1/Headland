@@ -193,6 +193,12 @@ public class PoiTests
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
         foreach (var type in types) db.Pois[type.Id] = type;
+        return SimWith(db, pois);
+    }
+
+    /// <summary>The small test world of <paramref name="db"/> (its own content) with these POIs placed.</summary>
+    internal static Simulation SimWith(ContentDatabase db, params PoiPlacementDef[] pois)
+    {
         db.Maps["pois"] = new MapDef
         {
             Id = "pois", Name = "POIs", Size = 64, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,

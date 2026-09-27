@@ -1,10 +1,10 @@
-using Headland.Core.Machines.Components;
+using Headland.Core.Components;
 using Godot;
 
-namespace Headland.Game.Vehicles.Components;
+namespace Headland.Game.Components;
 
 /// <summary>Parts moving between their rest and moved poses (roles: the parts' ids), eased at both ends.</summary>
-public partial class AnimatedPartsView : MachineComponentView
+public partial class AnimatedPartsView : ComponentView
 {
     public AnimatedParts Parts { get; init; } = null!;
 

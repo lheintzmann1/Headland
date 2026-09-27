@@ -67,7 +67,8 @@ Built with **Godot 4.7** and **C#**.
 - **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map and the money
   rules are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
   tanks, work areas, pipe, tipper, lights, crane arm…), so a new machine is a combination of them; POIs are built the
-  same way. [`docs/COMPONENTS.md`](docs/COMPONENTS.md) lists every setting of machines, POIs and components.
+  same way, sharing the kinds that make sense on both (lamps lit at night or as someone comes by, moving parts,
+  storage, map icons). [`docs/COMPONENTS.md`](docs/COMPONENTS.md) lists every setting of machines, POIs and components.
 
 ## Controls
 

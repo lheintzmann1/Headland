@@ -38,6 +38,11 @@ public abstract class Entity : IOwnable
 
     public bool Has<T>() where T : class => Get<T>() != null;
 
+    /// <summary>Its fill units (none without a fillUnits component).</summary>
+    public IReadOnlyList<FillUnit> FillUnits => Get<FillUnits>()?.Units ?? [];
+
+    public FillUnit? Unit(string? id) => Get<FillUnits>()?.Unit(id);
+
     public Vector2 LocalToWorld(Vector2 local) => MathUtil.LocalToWorld(Position, Heading, local);
     public Vector2 LocalToWorld(float x, float z) => LocalToWorld(new Vector2(x, z));
 

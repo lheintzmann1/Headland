@@ -1,7 +1,8 @@
 [
   // Places that buy from and sell to farmers. What each setting means: docs/COMPONENTS.md (POIs).
-  { "id": "farm_shop", "name": "Farm Supplies", "icon": "storefront", "w": 20, "d": 26,
+  { "id": "farm_shop", "name": "Farm Supplies", "w": 20, "d": 26,
     "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
+    "components": { "hotspots": { "spots": [ { "icon": "storefront" } ] } },
     "colliders": [
       { "x": -3, "z": -9, "w": 8, "d": 6 }
     ],
@@ -11,8 +12,9 @@
     "actions": [
       { "type": "buy", "trigger": "yard", "fillTypes": ["seeds"], "openHours": [7, 19] }
     ] },
-  { "id": "grain_elevator", "name": "Grain Elevator", "icon": "sell", "w": 58, "d": 40,
+  { "id": "grain_elevator", "name": "Grain Elevator", "w": 58, "d": 40,
     "visual": { "model": "res://assets/models/buildings/grain_elevator.glb" },
+    "components": { "hotspots": { "spots": [ { "icon": "sell" } ] } },
     "colliders": [
       { "x": 15, "z": -10, "w": 12, "d": 12 },
       { "x": -0.5, "z": -12.5, "w": 9, "d": 9, "round": true },
@@ -24,8 +26,9 @@
     "actions": [
       { "type": "sell", "trigger": "pit", "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 }
     ] },
-  { "id": "flour_mill", "name": "Flour Mill", "icon": "factory", "w": 36, "d": 40,
+  { "id": "flour_mill", "name": "Flour Mill", "w": 36, "d": 40,
     "visual": { "model": "res://assets/models/buildings/flour_mill.glb" },
+    "components": { "hotspots": { "spots": [ { "icon": "factory" } ] } },
     "colliders": [
       { "z": -10, "w": 18, "d": 12 },
       { "x": -12, "z": -4, "w": 7, "d": 7, "round": true },
@@ -42,8 +45,9 @@
         "outputs": [ { "fillType": "flour", "amount": 580, "mode": "sell" } ] }
     ] },
   // Leases machines for contracts, delivered on its lot. Its front, the lot, faces the road.
-  { "id": "machinery_dealer", "name": "Machinery Dealer", "icon": "agriculture", "w": 38, "d": 76,
+  { "id": "machinery_dealer", "name": "Machinery Dealer", "w": 38, "d": 76,
     "visual": { "model": "res://assets/models/buildings/machinery_dealer.glb" },
+    "components": { "hotspots": { "spots": [ { "icon": "agriculture" } ] } },
     "colliders": [
       { "x": 9, "z": -30, "w": 16, "d": 10 },
       { "x": -8, "z": -29, "w": 18, "d": 14 }

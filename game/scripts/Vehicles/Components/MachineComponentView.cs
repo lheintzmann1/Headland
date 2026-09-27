@@ -6,5 +6,5 @@ namespace Headland.Game.Vehicles.Components;
 /// <summary>Draws a component of a machine: running gear, a hitch, a pipe…</summary>
 public partial class MachineComponentView : ComponentView
 {
-    public Machine Machine => (Machine)Owner;
+    public Machine Machine => (Machine)Entity;
 }

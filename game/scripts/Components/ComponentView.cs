@@ -14,24 +14,24 @@ public partial class ComponentView : Node3D
 {
     public Simulation Sim { get; init; } = null!;
     public Rig Rig { get; init; } = null!;
-    public Entity Owner { get; init; } = null!;
+    public Entity Entity { get; init; } = null!;
 
     /// <summary>The view drawing <paramref name="c"/>, or null for a component with nothing to show (a motor).</summary>
     public static ComponentView? For(Component c, Simulation sim, Rig rig) => c switch
     {
-        RunningGear g => new RunningGearView { Sim = sim, Rig = rig, Owner = c.Owner, Gear = g },
-        Drivable d => new DrivableView { Sim = sim, Rig = rig, Owner = c.Owner, Seat = d },
-        AttacherJoints j => new AttacherJointsView { Sim = sim, Rig = rig, Owner = c.Owner, Joints = j },
-        Attachable a => new AttachableView { Sim = sim, Rig = rig, Owner = c.Owner, Hitch = a },
-        FillUnits f => new FillUnitsView { Sim = sim, Rig = rig, Owner = c.Owner, Units = f },
-        AnimatedParts p => new AnimatedPartsView { Sim = sim, Rig = rig, Owner = c.Owner, Parts = p },
-        WorkAreas w => new WorkAreasView { Sim = sim, Rig = rig, Owner = c.Owner, Areas = w },
-        Pipe p => new PipeView { Sim = sim, Rig = rig, Owner = c.Owner, Pipe = p },
-        Tipper t => new TipperView { Sim = sim, Rig = rig, Owner = c.Owner, Tipper = t },
-        Lights l => new LightsView { Sim = sim, Rig = rig, Owner = c.Owner, Lights = l },
-        CraneArm a => new CraneArmView { Sim = sim, Rig = rig, Owner = c.Owner, Crane = a },
-        Winch w => new WinchView { Sim = sim, Rig = rig, Owner = c.Owner, Winch = w },
-        Saw s => new SawView { Sim = sim, Rig = rig, Owner = c.Owner, Saw = s },
+        RunningGear g => new RunningGearView { Sim = sim, Rig = rig, Entity = c.Owner, Gear = g },
+        Drivable d => new DrivableView { Sim = sim, Rig = rig, Entity = c.Owner, Seat = d },
+        AttacherJoints j => new AttacherJointsView { Sim = sim, Rig = rig, Entity = c.Owner, Joints = j },
+        Attachable a => new AttachableView { Sim = sim, Rig = rig, Entity = c.Owner, Hitch = a },
+        FillUnits f => new FillUnitsView { Sim = sim, Rig = rig, Entity = c.Owner, Units = f },
+        AnimatedParts p => new AnimatedPartsView { Sim = sim, Rig = rig, Entity = c.Owner, Parts = p },
+        WorkAreas w => new WorkAreasView { Sim = sim, Rig = rig, Entity = c.Owner, Areas = w },
+        Pipe p => new PipeView { Sim = sim, Rig = rig, Entity = c.Owner, Pipe = p },
+        Tipper t => new TipperView { Sim = sim, Rig = rig, Entity = c.Owner, Tipper = t },
+        Lights l => new LightsView { Sim = sim, Rig = rig, Entity = c.Owner, Lights = l },
+        CraneArm a => new CraneArmView { Sim = sim, Rig = rig, Entity = c.Owner, Crane = a },
+        Winch w => new WinchView { Sim = sim, Rig = rig, Entity = c.Owner, Winch = w },
+        Saw s => new SawView { Sim = sim, Rig = rig, Entity = c.Owner, Saw = s },
         _ => null,
     };
 

@@ -28,6 +28,7 @@ public static class ComponentKinds
         ("craneArm", typeof(CraneArmDef)),
         ("winch", typeof(WinchDef)),
         ("saw", typeof(SawDef)),
+        ("hotspots", typeof(HotspotsDef)),
     ];
 
     public static IEnumerable<string> Names => Kinds.Select(k => k.name);

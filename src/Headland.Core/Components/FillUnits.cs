@@ -1,7 +1,6 @@
-using Headland.Core.Components;
 using Headland.Core.Content;
 
-namespace Headland.Core.Machines.Components;
+namespace Headland.Core.Components;
 
 public sealed class FillUnitDef
 {
@@ -12,14 +11,14 @@ public sealed class FillUnitDef
     public float StartLevel { get; set; }
 }
 
-/// <summary>Tanks and bins: fuel, seed, a grain tank, a trailer's bed.</summary>
-public sealed class FillUnitsDef : MachineComponentDef
+/// <summary>Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins.</summary>
+public sealed class FillUnitsDef : ComponentDef
 {
     public FillUnitDef[] Units { get; set; } = [];
 
     public override IEnumerable<string> Roles => ["load"];
 
-    internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
+    internal override IEnumerable<string> Errors(EntityDef owner, ContentDatabase content)
     {
         foreach (var id in Units.GroupBy(u => u.Id).Where(g => g.Count() > 1).Select(g => g.Key)) yield return $"unit '{id}' is defined more than once";
         foreach (var u in Units)
@@ -32,7 +31,7 @@ public sealed class FillUnitsDef : MachineComponentDef
         }
     }
 
-    internal override Component Create(Machine machine) => new FillUnits(machine, this);
+    internal override Component Create(Entity owner) => new FillUnits(owner, this);
 }
 
 public sealed class FillUnit(FillUnitDef def)
@@ -85,11 +84,46 @@ public sealed class FillUnitsSave
     public List<FillUnitSave> Units { get; set; } = [];
 }
 
-public sealed class FillUnits(Machine machine, FillUnitsDef def) : MachineComponent<FillUnitsDef, FillUnitsSave>(machine, def)
+public sealed class FillUnits(Entity owner, FillUnitsDef def) : Component<FillUnitsDef, FillUnitsSave>(owner, def)
 {
     public IReadOnlyList<FillUnit> Units { get; } = def.Units.Select(u => new FillUnit(u)).ToArray();
 
     public FillUnit? Unit(string? id) => id == null ? null : Units.FirstOrDefault(u => u.Def.Id == id);
+
+    // By fill type, across the units: a silo's bins, a production's stock.
+
+    /// <summary>Whether some unit takes <paramref name="fillType"/>.</summary>
+    public bool Keeps(string fillType) => Units.Any(u => u.Accepts(fillType));
+
+    /// <summary>What the units hold of <paramref name="fillType"/>.</summary>
+    public float Level(string fillType) => Units.Where(u => u.FillType == fillType).Sum(u => u.Level);
+
+    /// <summary>What they have room for: in the units holding it, and the empty ones that take it.</summary>
+    public float Free(string fillType) => Units.Where(u => u.CanAccept(fillType)).Sum(u => u.Free);
+
+    /// <summary>Puts up to <paramref name="amount"/> into the units taking it, those already holding it first; returns what fitted.</summary>
+    public float Add(string fillType, float amount)
+    {
+        var added = 0f;
+        foreach (var u in Units.Where(u => u.CanAccept(fillType)).OrderByDescending(u => u.FillType == fillType))
+        {
+            if (amount - added <= 0f) break;
+            added += u.Add(fillType, amount - added);
+        }
+        return added;
+    }
+
+    /// <summary>Takes up to <paramref name="amount"/> out of the units holding it; returns what there was.</summary>
+    public float Remove(string fillType, float amount)
+    {
+        var removed = 0f;
+        foreach (var u in Units.Where(u => u.FillType == fillType))
+        {
+            if (amount - removed <= 0f) break;
+            removed += u.Remove(amount - removed);
+        }
+        return removed;
+    }
 
     protected override FillUnitsSave Capture(ContentDatabase content) =>
         new() { Units = Units.Select(u => new FillUnitSave { Id = u.Def.Id, FillType = u.FillType, Level = u.Level }).ToList() };
@@ -101,7 +135,7 @@ public sealed class FillUnits(Machine machine, FillUnitsDef def) : MachineCompon
             if (Unit(u.Id) is not { } unit) continue;
             if (u.FillType != null && !context.Content.FillTypes.ContainsKey(u.FillType))
             {
-                context.Warnings.Add($"Fill type '{u.FillType}' no longer exists: {Machine.Def.Name} was emptied");
+                context.Warnings.Add($"Fill type '{u.FillType}' no longer exists: {Owner.Name} was emptied");
                 unit.Remove(unit.Level);
                 continue;
             }

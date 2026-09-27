@@ -1,7 +1,14 @@
 [
   // Services for machines: fuel, washing, repairs and options. What each setting means: docs/COMPONENTS.md (POIs).
-  { "id": "gas_station", "name": "Gas Station", "icon": "local_gas_station", "w": 34, "d": 30,
+  { "id": "gas_station", "name": "Gas Station", "w": 34, "d": 30,
     "visual": { "model": "res://assets/models/buildings/gas_station.glb" },
+    "components": {
+      // Under the canopy, over the pumps: lit by a light sensor.
+      "lights": { "lamps": [
+        { "type": "workFront", "switch": "dark", "x": -7.5, "y": 4.7, "z": -2, "pitchDeg": -90, "range": 9, "angleDeg": 55, "energy": 2.5 },
+        { "type": "workFront", "switch": "dark", "x": 1.5, "y": 4.7, "z": -2, "pitchDeg": -90, "range": 9, "angleDeg": 55, "energy": 2.5 } ] },
+      "hotspots": { "spots": [ { "icon": "local_gas_station" } ] }
+    },
     "colliders": [
       { "x": 11, "z": -9, "w": 9, "d": 7 },
       { "x": -8, "z": -2, "w": 1.2, "d": 0.8 },
@@ -16,8 +23,15 @@
       { "type": "refuel", "trigger": "pumps", "fillTypes": ["diesel"] },
       { "type": "wash", "trigger": "wash", "price": 40 }
     ] },
-  { "id": "workshop", "name": "Workshop", "icon": "build", "w": 24, "d": 32,
+  { "id": "workshop", "name": "Workshop", "w": 24, "d": 32,
     "visual": { "model": "res://assets/models/buildings/workshop.glb" },
+    "components": {
+      // Over the door: comes on while someone is in the bay.
+      "lights": { "lamps": [
+        { "type": "workFront", "switch": "trigger", "trigger": { "z": 7, "w": 18, "d": 16 },
+          "y": 4.6, "z": -2.7, "pitchDeg": -35, "range": 22, "angleDeg": 55, "energy": 3 } ] },
+      "hotspots": { "spots": [ { "icon": "build" } ] }
+    },
     "colliders": [
       { "z": -9, "w": 18, "d": 12 }
     ],

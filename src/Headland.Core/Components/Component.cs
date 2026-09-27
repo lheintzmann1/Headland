@@ -25,6 +25,10 @@ public abstract class ComponentDef
     internal virtual IEnumerable<string> Errors(EntityDef owner, ContentDatabase content) => [];
 
     internal abstract Component Create(Entity owner);
+
+    /// <summary>A fill unit of the entity's <c>fillUnits</c>, by id.</summary>
+    protected static bool HasUnit(EntityDef owner, string? id) =>
+        id != null && owner.Get<FillUnitsDef>()?.Units.Any(u => u.Id == id) == true;
 }
 
 /// <summary>A component of one entity: its runtime state, what it does each tick, and what it saves.</summary>

@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Text.Json.Nodes;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;

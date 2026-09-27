@@ -1,11 +1,11 @@
-using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Machines.Components;
 
-namespace Headland.Core.Machines.Components;
+namespace Headland.Core.Components;
 
 public sealed class AnimatedPartDef
 {
-    /// <summary>Unique on the machine; also the model node role it moves.</summary>
+    /// <summary>Unique on the entity; also the model node role it moves.</summary>
     public string Id { get; set; } = "";
     /// <summary>Its moved pose, from its rest pose as modeled: turned by [x, y, z] degrees about its pivot, shifted by [x, y, z] meters.</summary>
     public float[] RotationDeg { get; set; } = [0f, 0f, 0f];
@@ -14,13 +14,16 @@ public sealed class AnimatedPartDef
     public float Seconds { get; set; } = 2f;
     /// <summary>Moves when the machine folds for transport, rather than on its own; the rest pose is the working one.</summary>
     public bool Fold { get; set; }
+    /// <summary>Moves while someone is in this area, and back once they left (a door opening), rather than on command.</summary>
+    public TriggerDef? Trigger { get; set; }
 }
 
 /// <summary>
-/// Parts that move between two poses: covers, support legs, and the wings of an implement that folds for transport.
-/// A folded machine (or one still unfolding) does not work and cannot go down; lowering it unfolds it first.
+/// Parts that move between two poses: covers, support legs, the wings of an implement that folds for transport, a
+/// shed's door opening as someone comes by (FS: PlaceableAnimatedObjects). A folded machine (or one still unfolding)
+/// does not work and cannot go down; lowering it unfolds it first.
 /// </summary>
-public sealed class AnimatedPartsDef : MachineComponentDef
+public sealed class AnimatedPartsDef : ComponentDef
 {
     public AnimatedPartDef[] Parts { get; set; } = [];
     /// <summary>Comes folded (from the shop, on the map).</summary>
@@ -28,7 +31,7 @@ public sealed class AnimatedPartsDef : MachineComponentDef
 
     public override IEnumerable<string> Roles => Parts.Select(p => p.Id);
 
-    internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
+    internal override IEnumerable<string> Errors(EntityDef owner, ContentDatabase content)
     {
         if (Parts.Length == 0) yield return "needs parts";
         foreach (var id in Parts.GroupBy(p => p.Id).Where(g => g.Count() > 1).Select(g => g.Key)) yield return $"part '{id}' is defined more than once";
@@ -37,11 +40,14 @@ public sealed class AnimatedPartsDef : MachineComponentDef
             if (string.IsNullOrWhiteSpace(p.Id)) yield return "a part has no id";
             if (p.Seconds <= 0f) yield return $"part '{p.Id}': seconds must be > 0";
             if (p.RotationDeg.Length != 3 || p.Offset.Length != 3) yield return $"part '{p.Id}': rotationDeg and offset are [x, y, z]";
+            if (p.Fold && owner is not MachineDef) yield return $"part '{p.Id}': only machines fold";
+            if (p.Fold && p.Trigger != null) yield return $"part '{p.Id}': a part that folds moves with the machine, not by a trigger";
+            if (p.Trigger?.Error() is { } error) yield return $"part '{p.Id}' trigger: {error}";
         }
         if (StartFolded && !Parts.Any(p => p.Fold)) yield return "startFolded needs parts that fold";
     }
 
-    internal override Component Create(Machine machine) => new AnimatedParts(machine, this);
+    internal override Component Create(Entity owner) => new AnimatedParts(owner, this);
 }
 
 /// <summary>A part's pose: 0 at rest … 1 moved, heading for <see cref="Target"/>.</summary>
@@ -58,9 +64,9 @@ public sealed class AnimatedPartsSave
     public Dictionary<string, float[]> Parts { get; set; } = new();
 }
 
-public sealed class AnimatedParts : MachineComponent<AnimatedPartsDef, AnimatedPartsSave>
+public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSave>
 {
-    public AnimatedParts(Machine machine, AnimatedPartsDef def) : base(machine, def)
+    public AnimatedParts(Entity owner, AnimatedPartsDef def) : base(owner, def)
     {
         Parts = def.Parts.Select(p => new AnimatedPart(p) { Target = p.Fold && def.StartFolded, Position = p.Fold && def.StartFolded ? 1f : 0f }).ToArray();
     }
@@ -78,24 +84,28 @@ public sealed class AnimatedParts : MachineComponent<AnimatedPartsDef, AnimatedP
         set
         {
             foreach (var p in Parts.Where(p => p.Def.Fold)) p.Target = value;
-            if (value && Machine.Get<Attachable>() is { } a) a.Lowered = false;
+            if (value && Owner.Get<Attachable>() is { } a) a.Lowered = false;
         }
     }
 
     /// <summary>Fully unfolded: in its working pose.</summary>
     public bool Unfolded => Parts.All(p => !p.Def.Fold || p is { Target: false, Position: 0f });
 
-    /// <summary>Moves a part that doesn't fold to its moved pose (true) or back.</summary>
+    /// <summary>Moves a part that neither folds nor follows a trigger to its moved pose (true) or back.</summary>
     public bool Move(string id, bool moved)
     {
-        if (Part(id) is not { Def.Fold: false } p) return false;
+        if (Part(id) is not { Def: { Fold: false, Trigger: null } } p) return false;
         p.Target = moved;
         return true;
     }
 
     internal override void Update(Simulation sim, float dt)
     {
-        foreach (var p in Parts) p.Position = MathUtil.MoveToward(p.Position, p.Target ? 1f : 0f, dt / p.Def.Seconds);
+        foreach (var p in Parts)
+        {
+            if (p.Def.Trigger is { } trigger) p.Target = trigger.Occupied(Owner, sim);
+            p.Position = MathUtil.MoveToward(p.Position, p.Target ? 1f : 0f, dt / p.Def.Seconds);
+        }
     }
 
     protected override AnimatedPartsSave Capture(ContentDatabase content) =>

@@ -53,6 +53,13 @@ public static class MathUtil
     public static float MoveToward(float from, float to, float maxDelta) =>
         MathF.Abs(to - from) <= maxDelta ? to : from + MathF.Sign(to - from) * maxDelta;
 
+    /// <summary>Whether <paramref name="hour"/> of the day is in [<paramref name="from"/>, <paramref name="to"/>), past midnight when from > to.</summary>
+    public static bool InHours(float hour, float from, float to) => from < to ? hour >= from && hour < to : hour >= from || hour < to;
+
+    /// <summary>Why [from, to) game hours don't make a span (not two hours in 0..24, or both the same), or null.</summary>
+    public static string? HoursError(float[] hours) =>
+        hours.Length != 2 || hours.Any(h => h is < 0 or > 24) || hours[0] == hours[1] ? "needs [from, to] hours, 0..24 and different" : null;
+
     /// <summary>Four corners (CCW order irrelevant for convex tests) of an oriented rectangle.</summary>
     public static void RectCorners(Vector2 center, float heading, float halfWidth, float halfLength, Span<Vector2> out4)
     {

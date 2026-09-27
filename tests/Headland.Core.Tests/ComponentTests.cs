@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Text.Json;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;

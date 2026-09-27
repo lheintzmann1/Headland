@@ -1,15 +1,15 @@
 using Headland.Game.Common;
-using Headland.Game.Weather;
+using Headland.Core.Components;
 using Headland.Core.Machines.Components;
 using Godot;
 
-namespace Headland.Game.Vehicles.Components;
+namespace Headland.Game.Components;
 
 /// <summary>
-/// A spot light per lamp, lit while its type is switched on; headlights also after dark. Beacons turn, and lamps on an
+/// A spot light per lamp, lit while Core says it shines (see <see cref="Lights"/>). Beacons turn, and lamps on an
 /// articulated machine's front frame swing with it.
 /// </summary>
-public partial class LightsView : MachineComponentView
+public partial class LightsView : ComponentView
 {
     private readonly List<(LampDef lamp, SpotLight3D light)> _lamps = [];
     private RunningGear? _gear;
@@ -19,7 +19,7 @@ public partial class LightsView : MachineComponentView
 
     public override void _Ready()
     {
-        _gear = Machine.Get<RunningGear>();
+        _gear = Entity.Get<RunningGear>();
         foreach (var l in Lights.Def.Lamps)
         {
             var light = new SpotLight3D
@@ -42,10 +42,10 @@ public partial class LightsView : MachineComponentView
     public override void _Process(double delta)
     {
         _beacon = (_beacon + (float)delta * 9f) % Mathf.Tau;
-        var dark = EnvironmentController.CurrentDaylight < 0.35f;
-        foreach (var (l, light) in _lamps)
+        for (var i = 0; i < _lamps.Count; i++)
         {
-            light.Visible = Lights.IsOn(l.Type) || l.Type == "head" && dark;
+            var (l, light) = _lamps[i];
+            light.Visible = Lights.Lit(i);
             if (!light.Visible) continue;
             var (x, z, swing) = _gear?.Swing(l.X, l.Z) ?? (l.X, l.Z, 0f);
             light.Position = new Vector3(x, l.Y, z);

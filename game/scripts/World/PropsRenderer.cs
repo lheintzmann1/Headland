@@ -1,9 +1,9 @@
 using Headland.Game.Common;
 using Headland.Core;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Events;
-using Headland.Core.Machines;
 using Headland.Core.Pois;
 using Headland.Core.World;
 using Godot;
@@ -12,7 +12,7 @@ using NVec2 = System.Numerics.Vector2;
 namespace Headland.Game.World;
 
 /// <summary>
-/// POIs (buildings and sites) with their trigger areas, trees (seasonal colors), and field signs with the contracts on
+/// POIs (buildings and sites, each a <see cref="PoiView"/>) with their trigger areas, trees (seasonal colors), and field signs with the contracts on
 /// them, outlining the fields the farm has a contract on.
 /// </summary>
 public partial class PropsRenderer : Node3D
@@ -31,7 +31,7 @@ public partial class PropsRenderer : Node3D
     {
         foreach (var poi in Sim.World.Pois)
         {
-            AddChild(BuildPoi(poi));
+            AddChild(new PoiView { Sim = Sim, Poi = poi });
             foreach (var trigger in poi.Triggers) AddChild(BuildTrigger(trigger));
         }
         BuildTrees();
@@ -58,35 +58,6 @@ public partial class PropsRenderer : Node3D
     {
         var month = Sim.Clock.Month;
         if (month != _shownMonth) ApplySeason(month);
-    }
-
-    // ------------------------------------------------------------------ POIs
-
-    /// <summary>A POI in its local space (+Z its front), drawn by its model (nothing if that doesn't load).</summary>
-    private Node3D BuildPoi(Poi poi)
-    {
-        var root = new Node3D
-        {
-            Name = poi.Id,
-            Position = new Vector3(poi.Position.X, 0f, poi.Position.Y),
-            Rotation = new Vector3(0f, poi.Heading, 0f),
-        };
-        if (Models.Load(poi.Def.Visual, poi.Def.Id) is { } model)
-        {
-            model.Position += new Vector3(0f, LowestGround(poi.Footprint), 0f);
-            root.AddChild(model);
-        }
-        return root;
-    }
-
-    /// <summary>Height of the lowest corner of a box, so slopes never show a gap under the walls.</summary>
-    private float LowestGround(Obb box)
-    {
-        Span<NVec2> corners = stackalloc NVec2[4];
-        MathUtil.RectCorners(box.Center, box.Heading, box.HalfExtents.X, box.HalfExtents.Y, corners);
-        var y = float.MaxValue;
-        foreach (var c in corners) y = Mathf.Min(y, Sim.World.HeightAt(c));
-        return y;
     }
 
     // ------------------------------------------------------------------ Trees
@@ -206,8 +177,8 @@ public partial class PropsRenderer : Node3D
             Modulate = color.Lightened(0.3f),
             NoDepthTest = true,
         });
-        var icon = $"res://assets/icons/{t.Poi.Def.Icon}.svg";
-        if (t.Poi.Def.Icon != null && ResourceLoader.Exists(icon))
+        var icon = $"res://assets/icons/{t.Poi.Get<Hotspots>()?.Icon}.svg";
+        if (t.Poi.Has<Hotspots>() && ResourceLoader.Exists(icon))
             root.AddChild(new Sprite3D
             {
                 Texture = GD.Load<Texture2D>(icon),

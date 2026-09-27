@@ -1,14 +1,15 @@
 using Headland.Game.Common;
+using Headland.Core.Components;
 using Headland.Core.Machines.Components;
 using Godot;
 
-namespace Headland.Game.Vehicles.Components;
+namespace Headland.Game.Components;
 
 /// <summary>
 /// The load (load): modeled full with its pivot at the bottom, and scaled with the fill level of the unit a tipper
 /// empties, else of the first unit that isn't fuel. Its fill materials take the fill type's color.
 /// </summary>
-public partial class FillUnitsView : MachineComponentView
+public partial class FillUnitsView : ComponentView
 {
     private FillUnit? _unit;
     private string? _color;
@@ -17,8 +18,8 @@ public partial class FillUnitsView : MachineComponentView
 
     public override void _Ready()
     {
-        var fuel = Machine.Get<Motor>()?.FuelTank;
-        _unit = Machine.Get<Tipper>()?.Load ?? Units.Units.FirstOrDefault(u => u != fuel);
+        var fuel = Entity.Get<Motor>()?.FuelTank;
+        _unit = Entity.Get<Tipper>()?.Load ?? Units.Units.FirstOrDefault(u => u != fuel);
     }
 
     public override void _Process(double delta)

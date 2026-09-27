@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Machines.Components;

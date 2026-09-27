@@ -87,11 +87,6 @@ public sealed class Machine : Entity
     public Machine Root => Parent?.Root ?? this;
     public Vector2 Forward => MathUtil.Forward(Heading);
 
-    /// <summary>Its fill units (none without a fillUnits component).</summary>
-    public IReadOnlyList<FillUnit> FillUnits => Get<FillUnits>()?.Units ?? [];
-
-    public FillUnit? Unit(string? id) => Get<FillUnits>()?.Unit(id);
-
     public AttacherJointDef? Joint(string id) => Def.Joints.FirstOrDefault(j => j.Id == id);
 
     /// <summary>

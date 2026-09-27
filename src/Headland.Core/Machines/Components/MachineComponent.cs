@@ -17,10 +17,6 @@ public abstract class MachineComponentDef : ComponentDef
     internal sealed override Component Create(Entity owner) => Create((Machine)owner);
 
     internal abstract Component Create(Machine machine);
-
-    /// <summary>A fill unit of the machine's <c>fillUnits</c>, by id.</summary>
-    protected static bool HasUnit(MachineDef machine, string? id) =>
-        id != null && machine.Get<FillUnitsDef>()?.Units.Any(u => u.Id == id) == true;
 }
 
 /// <summary>A component of one machine.</summary>
