@@ -15,7 +15,8 @@ Rules for every item:
 2. **Foundations**: save/load, ownership and farmland, event bus, UI framework. Most later items need these.
 3. **Economy**: POIs, finances and loans, vehicle shop, wear/fuel/maintenance, contracts.
 4. **Controls**: input layer with contexts and modifiers, the in-game menu. The tools in 5 need it.
-5. **Vehicles**: component-based machines, running gear, configurations, lights, tools.
+5. **Vehicles**: component-based machines, running gear, configurations, lights, tools; the old machine
+   code goes as its replacements land.
 6. **World**: authored elevation, water, spline roads, towns and buildings, AI traffic.
 7. **Modding**: mod loader, Lua, map SDK (after the formats from 3–6 settle).
 8. **Audio**: any time after the settings menu; engine sounds after the vehicle refactor.
@@ -167,6 +168,32 @@ FS19 reference values; tune in data.
 - [ ] Buy or lease (upfront fee + cost per hour); delivered at the dealer's delivery spot.
 - [ ] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,
       reconfigure.
+
+### Removing the old machine code
+
+What the component refactor left in place goes as its replacement lands. Each step deletes the old code with
+its docs and tests in the same change; no fallback is kept for later.
+
+- [ ] Placeholders: once the 8 machines have their Blockbench models (Art), delete the placeholder archetypes
+      (`PlaceholderBuilder`, `visual.placeholder`) and the placeholder parts the component views build
+      (wheels, pipe, linkages, booms, hook, saw blade). A machine without a model shows a plain box of its
+      `size`, and the content check warns about it. The farmer and POIs likewise once their models exist (POI
+      `parts` stay as collision shapes).
+- [ ] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
+      (steering, turning from its axles) and drivable (input); the system keeps placing the chain. With
+      "Kinematics from the running gear".
+- [ ] Work types as a registry instead of the `cultivator`/`seeder`/`harvester` switches in `MachineSystem`,
+      `WorkOps` and `WorkAreaDef.Types`: each type's cell change, what it needs (seed, a thresher) and what
+      helpers and contracts check. Plowing, fertilizing, spraying and mowing (the contract jobs waiting under
+      Contracts) are then one type each, and Lua can add more.
+- [ ] Joint and lamp types from data instead of `AttacherJointDef.Types` and `LampDef.Types`.
+- [ ] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
+      instead of `Machine.Status` strings, which `FieldWorkController` matches by prefix to stop; the HUD
+      words them.
+- [ ] The HUD's vehicle panel from the components (each gives its state) instead of the special cases in
+      `Hud.UpdateVehicle` (threshing, seed crop, pipe out); with the HUD redesign.
+- [ ] Format-1 saves: drop `SaveGame.MachinesToComponents` and the `machines-format1.json` fixture once 0.7
+      saves are no longer supported; decide and document how many versions back saves load.
 
 ## Controls
 
