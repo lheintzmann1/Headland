@@ -140,8 +140,8 @@ public class SaveTests
         AssertSameWorld(sim, loaded.Sim);
         var (combine, header, seeder) = (Find(loaded.Sim, "combine_7"), Find(loaded.Sim, "header_grain_6"), Find(loaded.Sim, "seeder_3"));
         Assert.True(combine.Get<Thresher>()!.On);
-        Assert.Equal(242.77448f, combine.Unit("tank")!.Level, 3);
-        Assert.Equal(54.486332f, combine.Get<RunningGear>()!.Distance, 3);
+        Assert.Equal(269.50943f, combine.Unit("tank")!.Level, 3);
+        Assert.Equal(60.838486f, combine.Get<RunningGear>()!.Distance, 3);
         Assert.Equal((true, 1f), (header.Get<Attachable>()!.Lowered, header.Get<Attachable>()!.LowerAnim));
         Assert.Equal(sim.Content.CropIndex("canola"), seeder.Get<WorkAreas>()!.Crop);
         Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);

@@ -42,8 +42,6 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     private const float IdleShare = 0.08f;
     /// <summary>Share of the engine's power that reaches the wheels.</summary>
     private const float Drivetrain = 0.85f;
-    /// <summary>Force it takes to keep a machine rolling, as a share of its weight.</summary>
-    private const float Rolling = 0.05f;
     private const float Gravity = 9.81f;
     private const float WattsPerHp = 745.7f;
     /// <summary>Fuel left (as a share of the tank) below which the farmer is warned.</summary>
@@ -54,6 +52,17 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     private bool _warnedLow;
     /// <summary>Fuel burned but not taken from the tank yet.</summary>
     private float _unburned;
+    /// <summary>What holds the chain back going forward and backward (N), and what the implements thresh (hp).</summary>
+    private float _resistingForward, _resistingBackward, _threshing;
+    /// <summary>How much the driven wheels slip going forward and backward.</summary>
+    private float _slipForward, _slipBackward;
+
+    /// <summary>
+    /// How fast it can go now, forward and backward (m/s): its top speeds, held down by the implements' work speed,
+    /// the power left to move the chain on this ground and slope, and the wheels' slip.
+    /// </summary>
+    public float TopSpeed { get; private set; }
+    public float TopReverse { get; private set; }
 
     /// <summary>The share of the engine's power it delivers: the working implements' and what it takes to move the chain.</summary>
     public float Load { get; internal set; }
@@ -72,75 +81,112 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     public float MaxReverse => Def.MaxReverseKmh * MathUtil.KmhToMs;
 
     /// <summary>
-    /// Speeds the vehicle up, brakes or coasts toward what the driver asks, as fast as the implements working in its
-    /// chain, the engine's power and the ground allow, and burns the fuel that takes. Without fuel it rolls to a stop.
-    /// Returns its new speed (m/s).
+    /// Before the driver asks: reads the ground under the chain and the implements working in it, and works out how fast
+    /// it can go (<see cref="TopSpeed"/>, <see cref="TopReverse"/>).
     /// </summary>
-    internal float Drive(Simulation sim, VehicleInput input, float dt)
+    internal void Prepare(Simulation sim)
     {
         var v = Machine;
-        var world = sim.World;
-        v.Status = null;
-        if (OutOfFuel)
-        {
-            v.Status = "Out of fuel: refuel at a gas station";
-            input = new VehicleInput { Steer = input.Steer, Brake = input.Brake };
-        }
+        v.Status = OutOfFuel ? "Out of fuel: refuel at a gas station" : null;
         var maxF = MaxSpeed;
         var maxR = MaxReverse;
-        var demand = 0f;
-        var totalMass = 0f;
+        float demand = 0f, draft = 0f, rolling = 0f, climbing = 0f;
+        _threshing = 0f;
         foreach (var m in v.Chain())
         {
-            totalMass += m.SelfMassWithLoad(sim.Content);
+            if (m.Get<RunningGear>() is { } gear)
+            {
+                var weight = CarriedMass(m, sim.Content) * Gravity;
+                gear.Touch(sim, weight);
+                rolling += gear.Rolling * weight;
+                climbing += gear.Grade * weight;
+            }
             if (m.Get<WorkAreas>() is not { } w) continue;
             foreach (var area in w.Def.Areas)
             {
                 if (!w.Working(area)) continue;
                 maxF = MathF.Min(maxF, area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
                 demand += area.RequiredPowerHp;
+                // A header's power goes into threshing; the rest is pulled through the ground, by as much force as
+                // takes that power at its work speed.
+                if (area.Type == "harvester") _threshing += area.RequiredPowerHp;
+                else draft += area.RequiredPowerHp * WattsPerHp * Drivetrain / (area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
             }
         }
-        Load = demand / Def.PowerHp;
         if (demand > Def.PowerHp)
         {
             maxF *= MathF.Max(0.3f, Def.PowerHp / demand);
-            v.Status = $"Needs {demand:N0} hp, has {Def.PowerHp:N0} hp";
+            v.Status ??= $"Needs {demand:N0} hp, has {Def.PowerHp:N0} hp";
         }
-        var (cx, cz) = world.WorldToCell(v.Position);
-        if (world.InBounds(cx, cz))
-        {
-            var i = world.CellIndex(cx, cz);
-            if (world.IsWorkable((GroundType)world.Layers.Ground[i]) && world.Layers.Moisture[i] > 204)
-                maxF *= 0.75f;
-        }
+
+        // What holds the chain back (going backward, a slope pulls the other way and nothing is drawn), as fast as the
+        // power left for the wheels moves that, less what the wheels slip.
+        _resistingForward = rolling + climbing + draft;
+        _resistingBackward = rolling - climbing;
+        var driven = v.Get<RunningGear>()!;
+        var weightDriven = CarriedMass(v, sim.Content) * Gravity;
+        _slipForward = driven.SlipFor(_resistingForward, weightDriven);
+        _slipBackward = driven.SlipFor(_resistingBackward, weightDriven);
+        var wheelPower = MathF.Max(0.1f, 1f - _threshing / Def.PowerHp) * Def.PowerHp * WattsPerHp * Drivetrain;
+        if (_resistingForward > 0f) maxF = MathF.Min(maxF, wheelPower / _resistingForward);
+        if (_resistingBackward > 0f) maxR = MathF.Min(maxR, wheelPower / _resistingBackward);
+        TopSpeed = maxF * (1f - _slipForward);
+        TopReverse = maxR * (1f - _slipBackward);
+    }
+
+    /// <summary>
+    /// Speeds the vehicle up, brakes or coasts toward what the driver asks, up to its top speeds, and burns the fuel
+    /// that takes. Without fuel it rolls to a stop. Returns its new speed (m/s).
+    /// </summary>
+    internal float Drive(Simulation sim, VehicleInput input, float dt)
+    {
+        var v = Machine;
+        if (OutOfFuel) input = new VehicleInput { Steer = input.Steer, Brake = input.Brake };
+        var totalMass = 0f;
+        foreach (var m in v.Chain()) totalMass += m.SelfMassWithLoad(sim.Content);
         var accel = Def.Acceleration * Math.Clamp(v.SelfMassWithLoad(sim.Content) / MathF.Max(1f, totalMass), 0.25f, 1f);
 
         var s = v.Speed;
         if (input.Brake) s = MathUtil.MoveToward(s, 0f, Def.Braking * dt);
         else if (input.Throttle > 0.01f)
         {
-            var target = maxF * input.Throttle;
+            var target = TopSpeed * input.Throttle;
             s = s < -0.01f ? MathUtil.MoveToward(s, 0f, Def.Braking * dt)
                 : s < target ? MathF.Min(target, s + accel * dt)
                 : MathUtil.MoveToward(s, target, 1.5f * dt);
         }
         else if (input.Throttle < -0.01f)
         {
-            var target = -maxR * -input.Throttle;
+            var target = -TopReverse * -input.Throttle;
             s = s > 0.01f ? MathUtil.MoveToward(s, 0f, Def.Braking * dt)
                 : s > target ? MathF.Max(target, s - accel * dt)
                 : MathUtil.MoveToward(s, target, 1.5f * dt);
         }
         else s = MathUtil.MoveToward(s, 0f, 1.5f * dt);
-        if (s > maxF) s = MathUtil.MoveToward(s, maxF, Def.Braking * dt);
+        if (s > TopSpeed) s = MathUtil.MoveToward(s, TopSpeed, Def.Braking * dt);
 
-        // Power delivered: the implements', and at the wheels what keeps the chain rolling and speeds it up.
+        // Power delivered: threshing, and at the wheels (spinning faster than the ground goes by as they slip) what
+        // moves the chain against what holds it back and speeds it up.
+        var (resisting, slip) = s < 0f ? (_resistingBackward, _slipBackward) : (_resistingForward, _slipForward);
+        v.Get<RunningGear>()!.Slip = s == 0f ? 0f : slip;
         var speedingUp = MathF.Max(0f, MathF.Abs(s) - MathF.Abs(v.Speed)) / dt;
-        var wheels = totalMass * (Rolling * Gravity + speedingUp) * MathF.Abs(s) / Drivetrain / WattsPerHp;
-        Load = Math.Clamp((demand + wheels) / Def.PowerHp, 0f, 1f);
+        var wheels = MathF.Max(0f, resisting + totalMass * speedingUp) * MathF.Abs(s) / (1f - slip) / Drivetrain / WattsPerHp;
+        Load = Math.Clamp((_threshing + wheels) / Def.PowerHp, 0f, 1f);
         Burn(sim, dt);
         return s;
+    }
+
+    /// <summary>
+    /// The mass a machine's wheels carry: its own with its load, and that of the implements mounted on it (or on those)
+    /// without wheels of their own.
+    /// </summary>
+    private static float CarriedMass(Machine m, ContentDatabase content)
+    {
+        var mass = m.SelfMassWithLoad(content);
+        foreach (var child in m.Attached.Values)
+            if (child.Get<Attachable>()?.Def.Mode == "mounted" && !child.Has<RunningGear>())
+                mass += CarriedMass(child, content);
+        return mass;
     }
 
     protected override MotorSave Capture(ContentDatabase content) => new() { Unburned = _unburned };

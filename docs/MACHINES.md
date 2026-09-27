@@ -111,6 +111,11 @@ more than the outer one, and the farthest from the turning center at `maxSteerDe
 
 Tracks go on fixed axles.
 
+The wheel sets carry the machine's weight on the ground under them: a tire over the length it is pressed flat (longer
+on a flotation tire, shorter on a row-crop one), both tires of a dual, a track's whole belt. The lower that ground
+pressure, the less the machine sinks into soft ground, where it takes more to keep it rolling. Duals, flotation tires
+and above all tracks also grip better, so their wheels slip less under a heavy pull.
+
 How the machine steers follows from what it is built of:
 
 - **Steered axles** (above). With tracks on the fixed axle and steered wheels ahead of it, it is a half-track.
@@ -137,9 +142,16 @@ Needs a `runningGear` that steers.
 | `fuelUnit` | none | The fill unit holding its fuel, filled up at refuel stations. |
 | `fuelPerHour` | 0.19 × `powerHp` | Fuel it burns in an hour at full power. |
 
+How fast it goes depends on what it drives over and pulls. Everything in its chain takes some force to keep rolling:
+little on a road, more on a field, more on loose soil, and more still as the ground softens with the soil's moisture
+and the rain (the more so the higher the ground pressure). A slope adds the weight's pull up it, and a working implement
+the force it draws through the ground (a header's power goes into threshing instead). The engine's power, less the
+threshing, sets how fast it can move all that, and the driven wheels slip more the closer the pull comes to what they
+grip: a little on dry ground, a lot in a soaked field. Downhill the engine has less to do.
+
 While someone drives it (the farmer or a helper), the engine burns fuel from its `fuelUnit` by the power it delivers:
-what the working implements ask for (`requiredPowerHp`) and what it takes to keep its chain rolling and speed it up,
-from 8% of `fuelPerHour` idling to all of it at full power. With the tank empty the engine stops, and a helper with
+threshing, and what it takes to move its chain against all of the above, speed it up and make up for the slip, from
+8% of `fuelPerHour` idling to all of it at full power. With the tank empty the engine stops, and a helper with
 it. Without a `fuelUnit` it never runs out.
 
 ### drivable

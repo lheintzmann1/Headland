@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
+using Headland.Core.World;
 
 namespace Headland.Core.Machines.Components;
 
@@ -28,6 +29,30 @@ public sealed class WheelSetDef
 
     [JsonIgnore]
     public bool IsTracks => Type == "tracks";
+
+    /// <summary>
+    /// The ground under one side (m²): each tire's width by the length it is pressed flat over, longer at low pressure
+    /// (flotation) and shorter at high pressure (row-crop); a track's belt.
+    /// </summary>
+    [JsonIgnore]
+    public float ContactArea => Type switch
+    {
+        "tracks" => Width * Length,
+        "dual" => 2f * Width * Radius * 0.65f,
+        "rowCrop" => Width * Radius * 0.5f,
+        "flotation" => Width * Radius * 0.85f,
+        _ => Width * Radius * 0.65f,
+    };
+
+    /// <summary>How well it grips next to a single tire: the more rubber on the ground, the better.</summary>
+    [JsonIgnore]
+    public float Grip => Type switch
+    {
+        "tracks" => 1.3f,
+        "dual" or "flotation" => 1.1f,
+        "rowCrop" => 0.95f,
+        _ => 1f,
+    };
 
     /// <summary>A track's belt thickness: its end wheels' centers are this much higher than their radius.</summary>
     public const float TrackThickness = 0.06f;
@@ -171,6 +196,14 @@ public sealed class RunningGearDef : ComponentDef
         }
     }
 
+    /// <summary>The ground under all its wheels and tracks (m²).</summary>
+    [JsonIgnore]
+    public float ContactArea => Axles.Sum(a => 2f * a.Wheels.ContactArea);
+
+    /// <summary>How well its wheels and tracks grip, next to single tires.</summary>
+    [JsonIgnore]
+    public float Grip => Axles.Length == 0 ? 1f : Axles.Average(a => a.Wheels.Grip);
+
     /// <summary>Skid steer turns like a wheelbase as long as its tracks.</summary>
     public float TrackLength => Axles.Where(a => a.Wheels.IsTracks).Select(a => a.Wheels.Length).DefaultIfEmpty(0f).Max();
 
@@ -241,12 +274,17 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
 {
     /// <summary>Skid steer turns on the spot up to this speed (m/s), less the faster it goes.</summary>
     private const float SpinSpeed = 1f;
+    /// <summary>Soft ground holds back this much more of a machine's weight per 100 kPa of ground pressure.</summary>
+    private const float Sinkage = 0.08f;
 
     /// <summary>Angles of the self-steering axles (the others follow the steering), radians, positive left.</summary>
     private readonly float[] _selfAngles = new float[def.Axles.Length];
     private readonly (float rear, float front) _frames = def.Frames;
     private readonly float _trackLength = def.TrackLength;
+    private readonly float _contactArea = MathF.Max(0.01f, def.ContactArea);
+    private readonly float _gripFactor = def.Grip;
     private bool _braking;
+    private float _grip;
 
     /// <summary>
     /// The steering in radians, positive turning left: the angle of the steered axle farthest from the turning center,
@@ -261,8 +299,64 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     public SteeringMode Mode { get; set; }
     public SteeringKind SteeringKind { get; } = def.SteeringKind;
 
+    /// <summary>Its weight over the ground under its wheels and tracks (kPa): lower on duals, flotation tires and tracks.</summary>
+    public float Pressure { get; private set; }
+    /// <summary>The share of its weight it takes to keep it rolling on the ground under it: more when soft, and deeper in it.</summary>
+    public float Rolling { get; private set; }
+    /// <summary>The ground's rise for each meter forward (negative downhill).</summary>
+    public float Grade { get; private set; }
+    /// <summary>The share of its driven wheels' turning lost to slipping (0..1).</summary>
+    public float Slip { get; internal set; }
+
     /// <summary>From the turning center to the farthest steered axle, going forward or backward in the current mode.</summary>
     public float WheelbaseFor(bool reverse) => Def.Wheelbase(Mode, reverse);
+
+    /// <summary>
+    /// Reads the ground under it, carrying <paramref name="weight"/> newtons: how steep, how hard to roll on and how
+    /// well it grips. Roads are firm; the rest softens with the soil's moisture and the rain on it, and gives less grip.
+    /// </summary>
+    internal void Touch(Simulation sim, float weight)
+    {
+        var world = sim.World;
+        var (pos, forward) = (Machine.Position, Machine.Forward);
+        Grade = (world.HeightAt(pos + forward) - world.HeightAt(pos - forward)) * 0.5f;
+        Pressure = weight / _contactArea / 1000f;
+        var (cx, cz) = world.WorldToCell(pos);
+        var (ground, moisture) = world.InBounds(cx, cz) && world.CellIndex(cx, cz) is var i
+            ? ((GroundType)world.Layers.Ground[i], world.Layers.Moisture[i] / 255f)
+            : (GroundType.Grass, 0.5f);
+        var wet = sim.Weather.GroundWetness;
+        if (WorldMap.IsSealed(ground))
+        {
+            Rolling = 0.02f;
+            _grip = 0.8f * (1f - 0.25f * wet) * _gripFactor;
+            return;
+        }
+        var soft = MathF.Max(MathUtil.Saturate((moisture - 0.55f) / 0.35f), 0.5f * wet);
+        var (rolling, grip) = ground switch
+        {
+            GroundType.Grass => (0.05f, 0.6f),
+            GroundType.Stubble => (0.06f, 0.7f),
+            GroundType.Seeded => (0.07f, 0.6f),
+            GroundType.Cultivated => (0.08f, 0.6f),
+            GroundType.Plowed => (0.1f, 0.55f),
+            GroundType.Dirt => (0.04f, 0.65f),
+            _ => (0.06f, 0.6f),
+        };
+        Rolling = rolling + Sinkage * soft * Pressure / 100f;
+        _grip = grip * (1f - 0.45f * soft) * _gripFactor;
+    }
+
+    /// <summary>
+    /// How much its driven wheels would slip pulling <paramref name="pull"/> newtons with <paramref name="weight"/> on
+    /// them, on the ground it last touched: a little as long as the ground holds, then more and more as the pull nears
+    /// what it grips.
+    /// </summary>
+    internal float SlipFor(float pull, float weight)
+    {
+        var ratio = MathF.Max(0f, pull) / MathF.Max(1f, _grip * weight);
+        return ratio <= 1f ? 0.02f * ratio + 0.13f * ratio * ratio : MathF.Min(0.9f, 0.15f + 0.75f * (ratio - 1f));
+    }
 
     /// <summary>Distance rolled by the wheels or track <paramref name="x"/> meters left of the turning center.</summary>
     public float SideDistance(float x) => Distance - Turned * x;
@@ -351,8 +445,9 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     /// </summary>
     internal void Roll(float forward, float sideways, float turned, float dt)
     {
-        Distance += forward;
-        Turned += turned;
+        // Slipping, the wheels turn further than the ground goes.
+        Distance += forward / (1f - Slip);
+        Turned += turned / (1f - Slip);
         var rate = Def.SteerRateDeg * MathUtil.Deg2Rad * dt;
         for (var i = 0; i < Def.Axles.Length; i++)
         {

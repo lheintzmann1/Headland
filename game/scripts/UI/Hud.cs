@@ -166,6 +166,7 @@ public partial class Hud : CanvasLayer
         var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract) : "";
         sb.Append($"[b]{v.Def.Name}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
         if (v.Get<Motor>() is { Running: true } motor) sb.Append(Widgets.Colored($"   {motor.FuelPerHour:0.0} L/h", Palette.Dim));
+        if (v.Get<RunningGear>() is { Slip: > 0.05f } gear) sb.Append("   " + Widgets.Colored($"slip {gear.Slip * 100f:0}%", gear.Slip > 0.15f ? Palette.Warning : Palette.Dim));
         if (v.Get<Thresher>() is { } thresher) sb.Append("   " + (thresher.On ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
         sb.Append('\n');
         if (v.Get<Drivable>()?.Controller is FieldWorkController w)

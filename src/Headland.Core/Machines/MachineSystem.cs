@@ -265,13 +265,16 @@ public sealed class MachineSystem
     }
 
     /// <summary>
-    /// Moves a vehicle and its chain: the driver asks (drivable), the engine gives the speed (motor) and the running gear
-    /// the turn; the chain follows, and stops short of what it would bump into.
+    /// Moves a vehicle and its chain: the engine works out how fast it can go (motor), the driver asks (drivable), the
+    /// engine gives the speed and the running gear the turn; the chain follows, and stops short of what it would bump
+    /// into.
     /// </summary>
     private void Drive(Machine v, float dt)
     {
+        var motor = v.Get<Motor>()!;
+        motor.Prepare(_sim);
         var input = v.Get<Drivable>()?.Input(dt) ?? new VehicleInput { Brake = true };
-        var s = v.Get<Motor>()!.Drive(_sim, input, dt);
+        var s = motor.Drive(_sim, input, dt);
         if (MathF.Abs(s) < 1e-4f) s = 0f;
         var gear = v.Get<RunningGear>()!;
         gear.Steer(input, s, dt);

@@ -3,6 +3,7 @@ using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Saves;
+using Headland.Core.World;
 
 namespace Headland.Core.Tests;
 
@@ -59,6 +60,39 @@ public class RunningGearTests
               "runningGear": { "maxSteerDeg": 35, "axles": [ { "z": 0, "track": 2.2, "wheels": { "type": "tracks", "radius": 0.5, "width": 0.6, "length": 2.4 } } ] },
               "motor": { "powerHp": 300 },
               "drivable": {}
+            }
+          },
+          {
+            "id": "test_singles", "name": "Singles", "mass": 5600, "size": { "length": 4.7, "width": 2.45, "height": 3, "centerZ": 1.25 },
+            "components": {
+              "runningGear": { "maxSteerDeg": 40, "axles": [
+                { "z": 0, "track": 1.84, "wheels": { "radius": 0.8, "width": 0.55 } },
+                { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } } ] },
+              "motor": { "powerHp": 125 },
+              "drivable": {},
+              "attacherJoints": { "joints": [ { "id": "rear", "type": "threePoint", "z": -1.2 } ] }
+            }
+          },
+          {
+            "id": "test_duals", "name": "Duals", "mass": 5600, "size": { "length": 4.7, "width": 3.2, "height": 3, "centerZ": 1.25 },
+            "components": {
+              "runningGear": { "maxSteerDeg": 40, "axles": [
+                { "z": 0, "track": 1.84, "wheels": { "type": "dual", "radius": 0.8, "width": 0.55 } },
+                { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } } ] },
+              "motor": { "powerHp": 125 },
+              "drivable": {},
+              "attacherJoints": { "joints": [ { "id": "rear", "type": "threePoint", "z": -1.2 } ] }
+            }
+          },
+          {
+            "id": "test_tracked", "name": "Tracked", "mass": 5600, "size": { "length": 4.7, "width": 2.6, "height": 3, "centerZ": 1.25 },
+            "components": {
+              "runningGear": { "maxSteerDeg": 40, "axles": [
+                { "z": 0, "track": 1.9, "wheels": { "type": "tracks", "radius": 0.5, "width": 0.6, "length": 1.8 } },
+                { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } } ] },
+              "motor": { "powerHp": 125 },
+              "drivable": {},
+              "attacherJoints": { "joints": [ { "id": "rear", "type": "threePoint", "z": -1.2 } ] }
             }
           },
           {
@@ -188,6 +222,92 @@ public class RunningGearTests
         Drive(tractor, -0.3f);
         Run(sim, 3f);
         Assert.Equal(0f, gear.AxleAngle(2));
+    }
+
+    /// <summary>A flat world of grass, nothing on it, with this soil moisture and a dry surface.</summary>
+    private static Simulation FlatSim(float moisture = 0.3f)
+    {
+        var db = TestContent.WithMachines(Machines);
+        db.Maps["flat"] = new MapDef { Id = "flat", Name = "Flat", Size = 200, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f, PlayerX = 2, PlayerZ = 2 };
+        db.Game.Map = "flat";
+        var sim = Simulation.Create(db);
+        var layers = sim.World.Layers;
+        for (var i = 0; i < layers.Moisture.Length; i++) layers.Moisture[i] = WorldGen.ToByte(moisture);
+        sim.Weather.GroundWetness = 0f;
+        return sim;
+    }
+
+    /// <summary>Tilts the world up toward +z: <paramref name="grade"/> meters up per meter.</summary>
+    private static void Ramp(Simulation sim, float grade)
+    {
+        var h = sim.World.Height;
+        for (var z = 0; z <= h.Size; z++)
+        for (var x = 0; x <= h.Size; x++)
+            h.Heights[z * h.Stride + x] = grade * z;
+    }
+
+    [Fact]
+    public void DualsAndTracksPressLessAndSlipLessOnWetGround()
+    {
+        (float pressure, float slip, float speed) Cultivate(string tractor, float moisture, float wetness)
+        {
+            var sim = FlatSim(moisture);
+            sim.Weather.GroundWetness = wetness;
+            var ground = sim.World.Layers.Ground;
+            for (var i = 0; i < ground.Length; i++) ground[i] = (byte)GroundType.Cultivated;
+            var t = sim.Machines.Spawn(tractor, new Vector2(100f, 40f), 0f);
+            var c = sim.Machines.Spawn("cultivator_3", new Vector2(100f, 38.8f), 0f);
+            Assert.True(sim.Machines.Attach(t, "rear", c));
+            c.Get<Attachable>()!.Lowered = true;
+            Drive(t, 1f);
+            Run(sim, 8f);
+            var gear = t.Get<RunningGear>()!;
+            return (gear.Pressure, gear.Slip, t.Speed);
+        }
+
+        var singles = Cultivate("test_singles", 0.95f, 1f);
+        var duals = Cultivate("test_duals", 0.95f, 1f);
+        var tracks = Cultivate("test_tracked", 0.95f, 1f);
+        // Tractor and cultivator on the tires' footprint: about 76 kPa on singles, 46 on duals, 27 with tracks.
+        Assert.InRange(singles.pressure, 70f, 80f);
+        Assert.True(singles.pressure > duals.pressure * 1.5f && duals.pressure > tracks.pressure * 1.5f, $"{singles} {duals} {tracks}");
+        // They sink in less and grip better, so they slip less and go faster.
+        Assert.True(singles.slip > duals.slip && duals.slip > tracks.slip, $"{singles} {duals} {tracks}");
+        Assert.True(singles.speed < duals.speed && duals.speed < tracks.speed, $"{singles} {duals} {tracks}");
+        // On dry ground the wheels hardly slip.
+        var dry = Cultivate("test_singles", 0.3f, 0f);
+        Assert.True(dry.slip < 0.06f && singles.slip > 3f * dry.slip, $"dry {dry}, wet {singles}");
+    }
+
+    [Fact]
+    public void AHeavyLoadGoesSlowerUpASlopeAndBurnsMoreFuel()
+    {
+        // Full throttle, or held at 7.2 km/h (2 m/s).
+        (float speed, float fuel, float slip) Haul(float grade, bool downhill, bool full = true)
+        {
+            var sim = FlatSim();
+            Ramp(sim, grade);
+            var (z, heading, back) = downhill ? (185f, MathF.PI, 1f) : (20f, 0f, -1f);
+            var t = sim.Machines.Spawn("tractor_95", new Vector2(100f, z), heading);
+            var trailer = sim.Machines.Spawn("trailer_16", new Vector2(100f, z + back * (1.35f + 4.4f)), heading);
+            Assert.True(sim.Machines.Attach(t, "drawbar", trailer));
+            trailer.Unit("main")!.Add("wheat", 16000f);
+            if (full) Drive(t, 1f);
+            else t.Get<Drivable>()!.Controller = new WaypointController([t.Position + t.Forward * 150f], 7.2f);
+            Run(sim, 12f);
+            return (t.Speed, t.Get<Motor>()!.FuelPerHour, t.Get<RunningGear>()!.Slip);
+        }
+
+        var flat = Haul(0f, false);
+        var up = Haul(0.05f, false);
+        // 21 t up a 5% slope: the 95 hp engine can't keep flat ground's speed, and the wheels slip more.
+        Assert.True(up.speed < 0.6f * flat.speed, $"up {up}, flat {flat}");
+        Assert.True(up.slip > 2f * flat.slip, $"up {up}, flat {flat}");
+
+        // At the same 2 m/s it burns more climbing, less going down.
+        (flat, up, var down) = (Haul(0f, false, full: false), Haul(0.05f, false, full: false), Haul(0.05f, true, full: false));
+        Assert.True(MathF.Abs(up.speed - flat.speed) < 0.05f && MathF.Abs(down.speed - flat.speed) < 0.05f, $"up {up}, flat {flat}, down {down}");
+        Assert.True(up.fuel > 1.5f * flat.fuel && flat.fuel > down.fuel, $"up {up}, flat {flat}, down {down}");
     }
 
     /// <summary>Drives at a steady speed with full left lock, then checks the turning center goes round a circle of the radius given.</summary>

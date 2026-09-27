@@ -75,7 +75,7 @@ public sealed class WaypointController : IVehicleController
         var d2 = MathF.Max(local.LengthSquared(), 0.01f);
         // The same law steers backward: the fixed axle then leads, and steering left swings it left.
         var curvature = 2f * local.X / d2;
-        var mot = v.Get<Motor>()!.Def;
+        var motor = v.Get<Motor>()!;
         var gear = v.Get<RunningGear>()!;
         var maxSteer = gear.Def.MaxSteer;
         var steer = Math.Clamp(gear.SteerFor(curvature, reverse) / maxSteer, -1f, 1f);
@@ -91,9 +91,11 @@ public sealed class WaypointController : IVehicleController
         var targetSpeed = SpeedKmh * MathUtil.KmhToMs * MathUtil.Lerp(1f, 0.45f, MathUtil.Saturate(MathF.Abs(steer)));
         if (DistanceToStop(v.Position) is { } stop) targetSpeed = MathF.Min(targetSpeed, MathF.Max(CreepSpeed, MathF.Sqrt(2f * StopDecel * stop)));
         var speed = reverse ? -v.Speed : v.Speed;
-        var top = (reverse ? mot.MaxReverseKmh : mot.MaxSpeedKmh) * MathUtil.KmhToMs;
+        // Throttle is a share of the top speed the engine can reach now (on this ground and slope, with these
+        // implements): aim at the speed wanted and half again what it is short of it, so it settles without overshooting.
+        var top = MathF.Max(0.1f, reverse ? motor.TopReverse : motor.TopSpeed);
         if (speed > targetSpeed + 0.5f) input.Brake = true;
-        else input.Throttle = Math.Clamp((targetSpeed - speed) * 2f + targetSpeed / top, 0.05f, 1f) * (reverse ? -1f : 1f);
+        else input.Throttle = Math.Clamp((targetSpeed + 0.5f * (targetSpeed - speed)) / top, 0.05f, 1f) * (reverse ? -1f : 1f);
         return input;
     }
 
