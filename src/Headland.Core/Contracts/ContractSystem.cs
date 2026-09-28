@@ -307,9 +307,15 @@ public sealed class ContractSystem
     }
 
     /// <summary>The first of the job's lease sets that can do it: a work area of its work (a header that cuts its crop).</summary>
-    private ContractLeaseDef? LeaseFor(ContractTypeDef type, CropDef? crop) => type.Leases.FirstOrDefault(l => l.Machines.Any(id =>
-        _sim.Content.Machines[id].Get<WorkAreasDef>()?.Areas.Any(wa => wa.Type == type.Work
-            && (wa.Type != "harvester" || crop == null || wa.HarvestGroups.Contains(crop.HarvestGroup))) == true));
+    private ContractLeaseDef? LeaseFor(ContractTypeDef type, CropDef? crop) =>
+        type.Leases.FirstOrDefault(l => l.Machines.Any(id => Does(_sim.Content.Machines[id], type, crop)));
+
+    /// <summary>Whether <paramref name="machine"/> has a work area doing <paramref name="type"/>'s work (on <paramref name="crop"/>, when there's one).</summary>
+    private static bool Does(MachineDef machine, ContractTypeDef type, CropDef? crop) =>
+        machine.Get<WorkAreasDef>()?.Areas.Any(wa => wa.Type == type.Work && (crop == null || wa.Work.Handles(wa, crop))) == true;
+
+    /// <summary>Whether some machine in the game does the job (on its crop): no one is offered work nothing can do.</summary>
+    private bool Doable(ContractTypeDef type, CropDef? crop) => _sim.Content.Machines.Values.Any(m => Does(m, type, crop));
 
     private Contract Delivery(ContractTypeDef type, int day, int month)
     {
@@ -337,6 +343,7 @@ public sealed class ContractSystem
     {
         crop = null;
         buyer = null;
+        if (!Doable(type, null)) return false;
         var offerState = new FieldState(type.Offer);
         var doneState = new FieldState(type.Done);
         var (offer, done, grown) = Survey(field, offerState, doneState);
@@ -348,6 +355,7 @@ public sealed class ContractSystem
             if (sowable.Count > 0) crop = sowable[rng?.Range(0, sowable.Count) ?? 0];
         }
         if ((offerState.NamesCrop || doneState.NamesCrop) && crop == null) return false;
+        if (crop != null && !Doable(type, crop)) return false;
         if (type.Deliver == null) return true;
         var buyers = crop != null ? Buyers(crop.FillType).ToList() : [];
         if (buyers.Count == 0) return false;

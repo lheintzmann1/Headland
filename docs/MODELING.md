@@ -3,8 +3,9 @@
 The game loads models as **glTF binary (`.glb`)**: glTF keeps named parts with their pivots, so wheels can turn and
 pipes can swing, and it embeds the textures. Machines, buildings and the farmer are all models.
 
-The models in the game today are simple bases, generated from the shapes the game used to draw procedurally, laid out
-and named as this guide says: machines in `game/assets/models/<category>/<machine id>.glb` (with every option in
+The models in the game today are simple bases made of boxes, generated from the shapes the game used to draw
+procedurally (the plow, spreader, sprayer and mower, which came later, in the same way), laid out and named as this
+guide says: machines in `game/assets/models/<category>/<machine id>.glb` (with every option in
 them), buildings in `buildings/<poi id>.glb`, the farmer in `characters/farmer.glb`. Each has a Blockbench project
 (`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of its parts.
 

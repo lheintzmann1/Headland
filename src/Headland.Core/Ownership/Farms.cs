@@ -73,8 +73,8 @@ public sealed class Farms
 
     /// <summary>
     /// True when <paramref name="farmId"/> may work cell <paramref name="i"/> with a work area of type
-    /// <paramref name="work"/> (a seeder sowing <paramref name="crop"/>): anywhere on its own farmland, and on a field
-    /// it has a contract on, the contract's work.
+    /// <paramref name="work"/> (putting <paramref name="crop"/> on the field, as a seeder sows it): anywhere on its own
+    /// farmland, and on a field it has a contract on, the contract's work.
     /// </summary>
     public bool MayWork(int farmId, int i, string work, CropDef? crop)
     {
@@ -103,9 +103,9 @@ public sealed class Farms
         return Allows(c, farmId, work, crop) ? null : $"The contract on {field.Label} is to sow {c.Crop!.Name.ToLowerInvariant()}";
     }
 
-    /// <summary>A contract lets the farm doing it do its work, and sow only its crop.</summary>
+    /// <summary>A contract lets the farm doing it do its work, and put only its crop on the field.</summary>
     private static bool Allows(Contract c, int farmId, string work, CropDef? crop) =>
-        c.State == ContractState.Active && c.FarmId == farmId && c.Type.Work == work && (work != "seeder" || c.Crop == null || c.Crop == crop);
+        c.State == ContractState.Active && c.FarmId == farmId && c.Type.Work == work && (crop == null || c.Crop == null || c.Crop == crop);
 
     /// <summary>What <paramref name="land"/> costs the player's farm at its price level, and pays when sold back.</summary>
     public float Price(Farmland land) => MathF.Round(land.Price * _economy.PriceLevel);

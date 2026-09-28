@@ -18,7 +18,7 @@ internal static class LayerCodec
     [
         ("ground", l => l.Ground), ("crop", l => l.Crop), ("stage", l => l.Stage), ("progress", l => l.Progress),
         ("moisture", l => l.Moisture), ("nitrogen", l => l.Nitrogen), ("health", l => l.Health),
-        ("workAngle", l => l.WorkAngle), ("chill", l => l.Chill),
+        ("workAngle", l => l.WorkAngle), ("chill", l => l.Chill), ("weeds", l => l.Weeds), ("fertilized", l => l.Fertilized),
     ];
 
     public static byte[] Write(WorldMap world)

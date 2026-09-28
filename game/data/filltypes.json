@@ -1,5 +1,6 @@
 [
   // monthlyPriceFactor: January first. Grain is cheap at harvest, dearer in spring.
+  // nitrogen: kg of nitrogen a unit gives the soil when spread (fertilizers).
   { "id": "wheat",  "name": "Wheat",  "unit": "L",  "massPerUnit": 0.78, "pricePerUnit": 0.32, "color": "#c9a45c",
     "monthlyPriceFactor": [1.05, 1.08, 1.12, 1.15, 1.12, 1.0, 0.86, 0.84, 0.9, 0.95, 1.0, 1.02] },
   { "id": "barley", "name": "Barley", "unit": "L",  "massPerUnit": 0.65, "pricePerUnit": 0.29, "color": "#d6bb7a",
@@ -10,5 +11,11 @@
     "monthlyPriceFactor": [1.05, 1.08, 1.1, 1.12, 1.12, 1.1, 1.05, 1.0, 0.9, 0.84, 0.88, 0.98] },
   { "id": "seeds",  "name": "Seeds",  "unit": "kg", "massPerUnit": 1.0,  "pricePerUnit": 0.95, "color": "#8a6f4d" },
   { "id": "diesel", "name": "Diesel", "unit": "L",  "massPerUnit": 0.84, "pricePerUnit": 1.4,  "color": "#3b3a2e" },
-  { "id": "flour",  "name": "Flour",  "unit": "kg", "massPerUnit": 1.0,  "pricePerUnit": 0.62, "color": "#e6dfcc" }
+  { "id": "flour",  "name": "Flour",  "unit": "kg", "massPerUnit": 1.0,  "pricePerUnit": 0.62, "color": "#e6dfcc" },
+  // Calcium ammonium nitrate: 27% nitrogen.
+  { "id": "fertilizer", "name": "Fertilizer", "unit": "kg", "massPerUnit": 1.0, "pricePerUnit": 0.45, "nitrogen": 0.27, "color": "#dcd8cc" },
+  // Sold mixed with water, ready for the sprayer's tank.
+  { "id": "herbicide", "name": "Herbicide", "unit": "L", "massPerUnit": 1.0, "pricePerUnit": 0.6, "color": "#7d949b" },
+  // Cut grass: left lying on the meadow until balers exist.
+  { "id": "grass", "name": "Grass", "unit": "L", "massPerUnit": 0.2, "pricePerUnit": 0.05, "color": "#6e8a3e" }
 ]

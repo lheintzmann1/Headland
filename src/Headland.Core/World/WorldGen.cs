@@ -288,7 +288,7 @@ public static class WorldGen
             Fill(world, shape, (i, cx, cz) =>
             {
                 L.FieldId[i] = (ushort)f.Id;
-                L.Ground[i] = (byte)(crop != null ? GroundType.Seeded : ground);
+                L.Ground[i] = (byte)(crop != null ? ParseGround(crop.Ground) : ground);
                 L.WorkAngle[i] = angle;
                 if (crop == null) return;
                 L.Crop[i] = (byte)(cropIdx + 1);

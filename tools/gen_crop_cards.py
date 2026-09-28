@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate the crop billboard atlas (alpha cards) procedurally.
 
-Atlas layout: 8 columns (cards 0..6 referenced by stages, column 7 = dead) x 4 rows (atlasRow in crop data:
-wheat, barley, canola, corn). Each cell is 128 x 256 px and maps onto a quad CARD_WIDTH meters wide
+Atlas layout: 8 columns (cards 0..6 referenced by stages, column 7 = dead) x 5 rows (atlasRow in crop data:
+wheat, barley, canola, corn, grass). Each cell is 128 x 256 px and maps onto a quad CARD_WIDTH meters wide
 and <stage height> meters tall, so plants are drawn in meter space with per-stage vertical scale.
 
 Usage: tools/gen_crop_cards.py [--out game/assets/textures/crops/crop_atlas.png]
@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageFilter
 CELL_W, CELL_H = 128, 256
 SS = 4  # supersampling
 CARD_WIDTH = 1.1  # meters, must match CropRenderer.CardWidth
-COLS, ROWS = 8, 4
+COLS, ROWS = 8, 5
 
 
 def mix(a, b, t):
@@ -179,6 +179,23 @@ def corn(card, stage):
             card.ellipse(x + 0.07, top * 0.5, 0.035, 0.11, ear)
 
 
+def grass(card, stage):
+    """Meadow grass: a dense sward of thin blades, taller each stage, with seed heads once it's ready to mow."""
+    rng = card.rng
+    h = card.h
+    count = {1: 70, 2: 90}.get(stage, 110)
+    for _ in range(count):
+        x = rng.uniform(0.02, CARD_WIDTH - 0.02)
+        col = mix(GREEN, hexc("#6f8a3f"), rng.uniform(0.0, 0.6))
+        card.blade(x, h * rng.uniform(0.45, 1.0), rng.uniform(-0.12, 0.12), 0.01, col, droop=rng.uniform(0.1, 0.4), steps=6)
+    if stage >= 3:
+        for _ in range(16):
+            x = rng.uniform(0.05, CARD_WIDTH - 0.05)
+            top = h * rng.uniform(0.78, 0.9)
+            card.line(x, h * 0.4, x, top, 0.5, hexc("#7d8a4a"))
+            card.ellipse(x, top, 0.008, 0.035, hexc("#9a9160"))
+
+
 def dead(card):
     rng = card.rng
     for _ in range(30):
@@ -218,6 +235,8 @@ def main():
                 cereal(card, col, 7, ripe, heads=col >= 4, barley=crop["id"] == "barley")
             elif crop["id"] == "canola":
                 canola(card, col)
+            elif crop["id"] == "grass":
+                grass(card, col)
             else:
                 corn(card, col)
             atlas.paste(card.finish(), (col * CELL_W, row * CELL_H))

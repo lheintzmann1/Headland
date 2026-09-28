@@ -85,6 +85,8 @@ public sealed class FillTypeDef
     /// <summary>12 multipliers, January first. Missing means flat price.</summary>
     public float[]? MonthlyPriceFactor { get; set; }
     public string Color { get; set; } = "#c8a860";
+    /// <summary>Nitrogen a unit gives the soil when spread (kg N per unit): what fertilizers are for.</summary>
+    public float Nitrogen { get; set; }
 }
 
 /// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>
@@ -146,6 +148,19 @@ public sealed class CropDef
     public float NitrogenDemandKgPerHa { get; set; } = 150f;
     /// <summary>Chill (real days between −4 and 8 °C, counted from sowing) needed before bolting. 0 = none.</summary>
     public float VernalizationDays { get; set; }
+    /// <summary>The ground its cells show once sown: seeded (bare, drilled soil), or grass for a meadow.</summary>
+    public string Ground { get; set; } = "seeded";
+
+    /// <summary><see cref="Ground"/>, read.</summary>
+    [JsonIgnore]
+    public World.GroundType SownGround => World.WorldGen.ParseGround(Ground);
+    /// <summary>
+    /// A crop that grows back once cut (grass): the stage it starts over from when mown. Null: cutting it clears the
+    /// field.
+    /// </summary>
+    public int? RegrowStage { get; set; }
+    /// <summary>Yield lost where weeds have grown among it (0.2 = 20%; half that where they're still small).</summary>
+    public float WeedYieldLoss { get; set; } = 0.2f;
     public CropStageDef[] Stages { get; set; } = [];
     public string Description { get; set; } = "";
 
@@ -398,7 +413,8 @@ public sealed class ConfigurationOptionDef
 
 /// <summary>
 /// A kind of job the neighbors offer. A field job is done on one of their fields with a work area of type
-/// <see cref="Work"/>; a delivery job (no work) asks for goods at a POI that buys them.
+/// <see cref="Work"/> (a <see cref="Machines.Work.WorkTypes">work type</see>); a delivery job (no work) asks for goods
+/// at a POI that buys them.
 /// </summary>
 public sealed class ContractTypeDef
 {
@@ -406,7 +422,7 @@ public sealed class ContractTypeDef
     /// <summary>What the job is called on the board: "Cultivate", "Harvest".</summary>
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
-    /// <summary>Work area type doing a field job (cultivator, seeder, harvester); empty for a delivery job.</summary>
+    /// <summary>Work area type doing a field job (cultivator, plow, seeder…); empty for a delivery job.</summary>
     public string Work { get; set; } = "";
     /// <summary>Months it is offered in (1..12). Empty: all year.</summary>
     public int[] Months { get; set; } = [];
@@ -436,7 +452,8 @@ public sealed class ContractLeaseDef
 }
 
 /// <summary>
-/// What a field's cells look like: any of <see cref="Ground"/> and any of <see cref="Crop"/>, each ignored when empty.
+/// What a field's cells look like: any of <see cref="Ground"/>, any of <see cref="Crop"/>, any of <see cref="Weeds"/>,
+/// and fertilized or not; each ignored when left out.
 /// </summary>
 public sealed class FieldStateDef
 {
@@ -450,8 +467,12 @@ public sealed class FieldStateDef
     /// crop: the one ripe on the field, or the one to sow.
     /// </summary>
     public string[] Crop { get; set; } = [];
+    /// <summary>Weed states (<see cref="World.WeedState.Names"/>): none, small, grown, sprayed.</summary>
+    public string[] Weeds { get; set; } = [];
+    /// <summary>Fertilized since the last harvest (true) or not (false).</summary>
+    public bool? Fertilized { get; set; }
 
-    public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0;
+    public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0 && Weeds.Length == 0 && Fertilized == null;
 }
 
 /// <summary>Goods a contract wants brought to a buyer on the map (a POI whose selling station takes them).</summary>

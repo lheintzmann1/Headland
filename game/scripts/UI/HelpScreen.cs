@@ -25,8 +25,9 @@ public partial class HelpScreen : Screen
         foreach (var (key, help) in new[] { keys[row], row + half < keys.Count ? keys[row + half] : ("", "") })
             sb.Append($"[cell]{key}   [/cell][cell]{help}        [/cell]");
         sb.Append("[/table]\n\n");
-        sb.Append("[b]Loop[/b]: cultivate stubble, sow in season and let it grow. Harvest with the right header, unload into\n");
-        sb.Append("a trailer and tip at the Grain Elevator, or store it in the farm silo. Hover the ground to inspect soil and crops.");
+        sb.Append("[b]Loop[/b]: cultivate or plow the stubble, sow in season, fertilize and spray the weeds as it grows. Harvest\n");
+        sb.Append("with the right header, unload into a trailer and tip at the Grain Elevator, or store it in the farm silo. Mow\n");
+        sb.Append("meadows when the grass is ready. Hover the ground to inspect soil, weeds and crops.");
 
         var text = Widgets.Rich(0);
         text.Text = sb.ToString();

@@ -55,8 +55,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     private Underpowered? _underpowered;
     /// <summary>Fuel burned but not taken from the tank yet.</summary>
     private float _unburned;
-    /// <summary>What holds the chain back going forward and backward (N), and what the implements thresh (hp).</summary>
-    private float _resistingForward, _resistingBackward, _threshing;
+    /// <summary>What holds the chain back going forward and backward (N), and the power the implements take from the engine (hp).</summary>
+    private float _resistingForward, _resistingBackward, _taken;
     /// <summary>How much the driven wheels slip going forward and backward.</summary>
     private float _slipForward, _slipBackward;
 
@@ -102,7 +102,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         var maxF = MaxSpeed;
         var maxR = MaxReverse;
         float demand = 0f, draft = 0f, rolling = 0f, climbing = 0f;
-        _threshing = 0f;
+        _taken = 0f;
         foreach (var m in v.Chain())
         {
             if (m.Get<RunningGear>() is { } gear)
@@ -118,9 +118,9 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
                 if (!w.Working(area)) continue;
                 maxF = MathF.Min(maxF, area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
                 demand += area.RequiredPowerHp;
-                // A header's power goes into threshing; the rest is pulled through the ground, by as much force as
-                // takes that power at its work speed.
-                if (area.Type == "harvester") _threshing += area.RequiredPowerHp;
+                // Some work takes its power from the engine (a header threshing, a mower's or spreader's discs); the
+                // rest is pulled through the ground, by as much force as takes that power at its work speed.
+                if (!area.Work.Draft) _taken += area.RequiredPowerHp;
                 else draft += area.RequiredPowerHp * WattsPerHp * Drivetrain / (area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
             }
         }
@@ -135,7 +135,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         var weightDriven = OnWheels(v, sim.Content) * Gravity;
         _slipForward = driven.SlipFor(_resistingForward, weightDriven);
         _slipBackward = driven.SlipFor(_resistingBackward, weightDriven);
-        var wheelPower = MathF.Max(0.1f, 1f - _threshing / Def.PowerHp) * Def.PowerHp * WattsPerHp * Drivetrain;
+        var wheelPower = MathF.Max(0.1f, 1f - _taken / Def.PowerHp) * Def.PowerHp * WattsPerHp * Drivetrain;
         if (_resistingForward > 0f) maxF = MathF.Min(maxF, wheelPower / _resistingForward);
         if (_resistingBackward > 0f) maxR = MathF.Min(maxR, wheelPower / _resistingBackward);
         TopSpeed = maxF * (1f - _slipForward);
@@ -173,13 +173,13 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         else s = MathUtil.MoveToward(s, 0f, 1.5f * dt);
         if (s > TopSpeed) s = MathUtil.MoveToward(s, TopSpeed, Def.Braking * dt);
 
-        // Power delivered: threshing, and at the wheels (spinning faster than the ground goes by as they slip) what
+        // Power delivered: what the implements take, and at the wheels (spinning faster than the ground goes by as they slip) what
         // moves the chain against what holds it back and speeds it up.
         var (resisting, slip) = s < 0f ? (_resistingBackward, _slipBackward) : (_resistingForward, _slipForward);
         v.Get<RunningGear>()!.Slip = s == 0f ? 0f : slip;
         var speedingUp = MathF.Max(0f, MathF.Abs(s) - MathF.Abs(v.Speed)) / dt;
         var wheels = MathF.Max(0f, resisting + totalMass * speedingUp) * MathF.Abs(s) / (1f - slip) / Drivetrain / WattsPerHp;
-        Load = Math.Clamp((_threshing + wheels) / Def.PowerHp, 0f, 1f);
+        Load = Math.Clamp((_taken + wheels) / Def.PowerHp, 0f, 1f);
         Burn(sim, dt);
         return s;
     }

@@ -13,7 +13,7 @@ public class ContentTests
     {
         var db = TestContent.Content;
         Assert.Empty(db.Validate());
-        Assert.Equal(4, db.Crops.Count);
+        Assert.Equal(["wheat", "barley", "canola", "corn", "grass"], db.Crops.Select(c => c.Id));
         Assert.Contains("combine_7", db.Machines.Keys);
         Assert.Contains("grain_elevator", db.Pois.Keys);
         Assert.Equal(3, db.Soils.Count);
@@ -49,6 +49,7 @@ public class ContentTests
                 "removed from map 'default' (1 place)",
                 "the cultivator_3 hitched to it on map 'default' stands unhitched",
                 "removed from the lease sets of 'cultivate' contracts",
+                "removed from the lease sets of 'plow' contracts",
                 "removed from the lease sets of 'sow' contracts",
             ],
             db.RemoveMachine("tractor_125"));
@@ -59,7 +60,7 @@ public class ContentTests
         // The cultivator stands where the tractor stood, and the other hitches follow their machines' new places.
         var placed = db.Maps["default"].Machines;
         Assert.Equal(("cultivator_3", 152f, 206f, 90f), (placed[0].Def, placed[0].X, placed[0].Z, placed[0].HeadingDeg));
-        Assert.Equal(new int?[] { null, null, 1, null, 3, null, null }, placed.Select(p => p.AttachToIndex));
+        Assert.Equal(new int?[] { null, null, 1, null, 3, null, null, null, null, null, null }, placed.Select(p => p.AttachToIndex));
         var sim = Simulation.Create(db);
         Assert.DoesNotContain(sim.Machines.All, m => m.Def.Id == "tractor_125");
         Assert.Null(sim.Machines.All.Single(m => m.Def.Id == "cultivator_3").Parent);

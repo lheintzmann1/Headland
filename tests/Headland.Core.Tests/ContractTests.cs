@@ -5,6 +5,7 @@ using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
+using Headland.Core.Machines.Work;
 using Headland.Core.Ownership;
 using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
@@ -19,9 +20,13 @@ public class ContractTests
     /// A small map: the farm's parcel with field 1 (stubble), Ada Morrow's with these fields, an elevator and a
     /// machinery dealer.
     /// </summary>
-    private static Simulation Neighbors(params FieldDef[] fields)
+    private static Simulation Neighbors(params FieldDef[] fields) => Neighbors(null, fields);
+
+    /// <summary>The same, with the content changed first by <paramref name="setup"/>.</summary>
+    private static Simulation Neighbors(Action<ContentDatabase>? setup, params FieldDef[] fields)
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        setup?.Invoke(db);
         db.Maps["neighbors"] = new MapDef
         {
             Id = "neighbors", Name = "Neighbors", Size = 256, Seed = 3, HillAmplitude = 0f, ScatteredTreesPerHa = 0f,
@@ -40,6 +45,21 @@ public class ContractTests
         };
         db.Game.Map = "neighbors";
         return Simulation.Create(db);
+    }
+
+    /// <summary>The game starts in <paramref name="month"/>, and the neighbors only offer <paramref name="jobs"/>.</summary>
+    private static Action<ContentDatabase> Only(int month, params string[] jobs) => db =>
+    {
+        db.Game.StartMonth = month;
+        foreach (var id in db.ContractTypes.Keys.Except(jobs).ToList()) db.ContractTypes.Remove(id);
+    };
+
+    /// <summary>Puts every cell of field <paramref name="id"/> through <paramref name="set"/>.</summary>
+    private static void SetCells(Simulation sim, int id, Action<FieldLayers, int> set)
+    {
+        var L = sim.World.Layers;
+        for (var i = 0; i < L.FieldId.Length; i++)
+            if (L.FieldId[i] == id) set(L, i);
     }
 
     /// <summary>A 50 m square neighbor's field; ids 2 to 7 fill two rows of three.</summary>
@@ -69,10 +89,14 @@ public class ContractTests
     public void ContractTypesComeFromTheData()
     {
         var types = TestContent.Content.ContractTypes;
-        Assert.Equal(["cultivate", "sow", "harvest", "deliver"], types.Keys.ToArray());
+        Assert.Equal(["cultivate", "plow", "sow", "fertilize", "spray", "harvest", "mow", "deliver"], types.Keys.ToArray());
         var harvest = types["harvest"];
         Assert.Equal(("harvester", 0.9f), (harvest.Work, harvest.Deliver!.Share));
         Assert.Equal(["harvestable"], harvest.Offer.Crop);
+        Assert.Equal("sprayer", types["spray"].Work);
+        Assert.Equal(["small", "grown"], types["spray"].Offer.Weeds);
+        Assert.Equal(["none", "sprayed"], types["spray"].Done.Weeds);
+        Assert.Equal((false, true), (types["fertilize"].Offer.Fertilized, types["fertilize"].Done.Fertilized));
         Assert.Equal("", types["deliver"].Work);
         Assert.Equal([4000f, 12000f], types["deliver"].Deliver!.Amount);
     }
@@ -81,10 +105,10 @@ public class ContractTests
     public void ContractTypesAreValidated()
     {
         var db = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
-        db.ContractTypes["plow"] = new ContractTypeDef
+        db.ContractTypes["juggle"] = new ContractTypeDef
         {
-            Id = "plow", Name = "Plow", Work = "plow", Months = [13], Days = [4, 2], Weight = 0,
-            Offer = new FieldStateDef { Ground = ["road"], Crop = ["ripe"] },
+            Id = "juggle", Name = "Juggle", Work = "juggler", Months = [13], Days = [4, 2], Weight = 0,
+            Offer = new FieldStateDef { Ground = ["road"], Crop = ["ripe"], Weeds = ["dandelions"] },
             Deliver = new ContractDeliveryDef { Share = 0.5f, Amount = [1000f, 2000f] },
         };
         db.ContractTypes["haul"] = new ContractTypeDef
@@ -93,21 +117,22 @@ public class ContractTests
             Deliver = new ContractDeliveryDef { Share = 0.5f, FillTypes = ["gravel"], PriceFactor = 0 },
         };
         var errors = db.Validate();
-        Assert.Contains("contract type 'plow': months must be 1..12", errors);
-        Assert.Contains("contract type 'plow': days needs [min, max] >= 1", errors);
-        Assert.Contains("contract type 'plow': weight must be > 0 and rewardPerHa >= 0", errors);
-        Assert.Contains("contract type 'plow': offer ground 'road' is not a field's (grass, cultivated, seeded, stubble, plowed)", errors);
-        Assert.Contains("contract type 'plow': offer crop state 'ripe' is unknown (none, dead, sown, growing, harvestable)", errors);
-        Assert.Contains("contract type 'plow': unknown work 'plow'", errors);
-        Assert.Contains("contract type 'plow': a field job needs offer and done states", errors);
-        Assert.Contains("contract type 'plow': deliver.amount is for delivery jobs (no work)", errors);
-        Assert.Contains("contract type 'plow': deliver.share must be in (0, 1], on harvester jobs", errors);
+        Assert.Contains("contract type 'juggle': months must be 1..12", errors);
+        Assert.Contains("contract type 'juggle': days needs [min, max] >= 1", errors);
+        Assert.Contains("contract type 'juggle': weight must be > 0 and rewardPerHa >= 0", errors);
+        Assert.Contains("contract type 'juggle': offer ground 'road' is not a field's (grass, cultivated, seeded, stubble, plowed)", errors);
+        Assert.Contains("contract type 'juggle': offer crop state 'ripe' is unknown (none, dead, sown, growing, harvestable)", errors);
+        Assert.Contains("contract type 'juggle': offer weed state 'dandelions' is unknown (none, small, grown, sprayed)", errors);
+        Assert.Contains("contract type 'juggle': unknown work 'juggler' (cultivator, plow, seeder, harvester, spreader, sprayer, mower)", errors);
+        Assert.Contains("contract type 'juggle': a field job needs offer and done states", errors);
+        Assert.Contains("contract type 'juggle': deliver.amount is for delivery jobs (no work)", errors);
+        Assert.Contains("contract type 'juggle': deliver.share must be in (0, 1], on jobs that harvest", errors);
         Assert.Contains("contract type 'haul': a delivery job (no work) needs deliver.amount [min, max] > 0", errors);
         Assert.Contains("contract type 'haul': offer and done are for field jobs", errors);
         Assert.Contains("contract type 'haul': deliver.share is for harvest jobs", errors);
         Assert.Contains("contract type 'haul': deliver.priceFactor must be > 0", errors);
         Assert.Contains("contract type 'haul': unknown fill type 'gravel'", errors);
-        Assert.Equal(14, errors.Count);
+        Assert.Equal(15, errors.Count);
     }
 
     [Fact]
@@ -126,13 +151,13 @@ public class ContractTests
         sim.SkipHours(24);
         var offers = sim.Contracts.Offers.ToList();
 
-        // August: field 4 (grass) and field 6 (stubble) need cultivating, field 5's corn is still growing, and fields
-        // 1 to 3 are the farm's own.
+        // August: field 4's grass is ready to mow and field 6 (stubble) needs cultivating, field 5's corn is still
+        // growing, and fields 1 to 3 and the meadow 7 are the farm's own.
         var jobs = offers.Where(c => c.Field != null).OrderBy(c => c.Field!.Id).ToList();
-        Assert.Equal(["Cultivate Field 4", "Cultivate Field 6"], jobs.Select(c => c.Label));
+        Assert.Equal(["Mow grass on Field 4", "Cultivate Field 6"], jobs.Select(c => c.Label));
         Assert.Equal(["aldridge", "brandt"], jobs.Select(c => c.Npc!.Id));
-        Assert.All(jobs, c => Assert.InRange(c.Reward, 450f * c.Field!.AreaHa - 5f, 550f * c.Field.AreaHa + 5f));
-        Assert.All(jobs, c => Assert.InRange(c.Days, 3, 5));
+        Assert.All(jobs, c => Assert.InRange(c.Reward, 0.9f * c.Type.RewardPerHa * c.Field!.AreaHa - 5f, 1.1f * c.Type.RewardPerHa * c.Field.AreaHa + 5f));
+        Assert.All(jobs, c => Assert.InRange(c.Days, c.Type.Days[0], c.Type.Days[1]));
 
         // Each buyer asks for one kind of goods at a time, for their market price and 30% more.
         var deliveries = offers.Where(c => c.Field == null).OrderBy(c => c.Poi!.Id).ToList();
@@ -288,9 +313,12 @@ public class ContractTests
         Assert.Equal(sim.Contracts.All.Select(Describe), loaded.Contracts.All.Select(Describe));
     }
 
-    private static int Cultivated(Simulation sim, int field) =>
-        Enumerable.Range(0, sim.World.Layers.Ground.Length)
-            .Count(i => sim.World.Layers.FieldId[i] == field && sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated);
+    /// <summary>Cells of field <paramref name="field"/> whose grass was cut back to its regrowth stage.</summary>
+    private static int Mown(Simulation sim, int field)
+    {
+        var (L, grass) = (sim.World.Layers, (byte)(sim.Content.CropIndex("grass") + 1));
+        return Enumerable.Range(0, L.Ground.Length).Count(i => L.FieldId[i] == field && L.Crop[i] == grass && L.Stage[i] == 1);
+    }
 
     [Fact]
     public void WorkOnlyAppliesOnTheFarmsLandAndTheFieldsItHasAContractOn()
@@ -298,25 +326,28 @@ public class ContractTests
         var sim = TestContent.NewSim();
         sim.SkipHours(24);
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
-        var c = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 278f), 0f);
-        sim.Machines.Attach(t, "rear", c);
+        var mower = sim.Machines.Spawn("mower_3", new Vector2(269f, 278f), 0f);
+        sim.Machines.Attach(t, "rear", mower);
         sim.Player.Enter(t);
 
-        // Field 4 is Tom Aldridge's: no helper, and a lowered cultivator leaves it as it is.
+        // Field 4 is Tom Aldridge's meadow: no helper, and a lowered mower leaves it as it is.
         sim.CommandHelper();
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Field 4 belongs to Tom Aldridge: take a contract on it first");
         Assert.Null(t.Get<Drivable>()!.Controller as FieldWorkController);
-        c.Get<Attachable>()!.Lowered = true;
+        mower.Get<Attachable>()!.Lowered = true;
+        mower.Get<WorkAreas>()!.On = true;
         sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
         for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
-        Assert.Equal(0, Cultivated(sim, 4));
-        Assert.Equal(new NotAllowed("Field 4 belongs to Tom Aldridge: take a contract on it first"), Assert.Single(c.Conditions));
+        Assert.Equal(0, Mown(sim, 4));
+        Assert.Equal(new NotAllowed("Field 4 belongs to Tom Aldridge: take a contract on it first"), Assert.Single(mower.Conditions));
 
-        // With the contract to cultivate it, it's worked.
-        Assert.True(sim.Contracts.Accept(sim.Contracts.On(sim.World.FieldById(4)!)!));
+        // With the contract to mow it, it's mown.
+        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        Assert.Equal("Mow grass on Field 4", job.Label);
+        Assert.True(sim.Contracts.Accept(job));
         for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
-        Assert.True(Cultivated(sim, 4) > 6 * 40, $"cultivated cells: {Cultivated(sim, 4)}");
-        Assert.Empty(c.Conditions);
+        Assert.True(Mown(sim, 4) > 6 * 40, $"mown cells: {Mown(sim, 4)}");
+        Assert.Empty(mower.Conditions);
     }
 
     [Fact]
@@ -349,10 +380,10 @@ public class ContractTests
         var sim = TestContent.NewSim();
         sim.SkipHours(24);
         var completed = Record<ContractCompleted>(sim);
-        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        var job = sim.Contracts.On(sim.World.FieldById(6)!)!;
         Assert.True(sim.Contracts.Accept(job));
         var L = sim.World.Layers;
-        var cells = Enumerable.Range(0, L.FieldId.Length).Where(i => L.FieldId[i] == 4).ToList();
+        var cells = Enumerable.Range(0, L.FieldId.Length).Where(i => L.FieldId[i] == 6).ToList();
         void Cultivate(float share) => cells.Take((int)(cells.Count * share)).ToList().ForEach(i => L.Ground[i] = (byte)GroundType.Cultivated);
         var money = sim.Economy.Money;
 
@@ -365,8 +396,8 @@ public class ContractTests
         Assert.Equal([new ContractCompleted(job, job.Reward)], completed);
         Assert.Equal((money + job.Reward, job.Reward), (sim.Economy.Money, sim.Economy.Ledger.Today[MoneyCategory.Contracts]));
         Assert.Equal(1, sim.Statistics.ContractsCompleted);
-        Assert.Null(sim.Contracts.On(sim.World.FieldById(4)!));
-        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract done: Cultivate Field 4, ${job.Reward:N0} paid");
+        Assert.Null(sim.Contracts.On(sim.World.FieldById(6)!));
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Contract done: Cultivate Field 6, ${job.Reward:N0} paid");
     }
 
     [Fact]
@@ -457,7 +488,7 @@ public class ContractTests
         sim.SkipHours(24);
         var leased = Record<MachinesLeased>(sim);
         var returned = Record<LeaseReturned>(sim);
-        var job = sim.Contracts.On(sim.World.FieldById(4)!)!;
+        var job = sim.Contracts.On(sim.World.FieldById(6)!)!;
         Assert.Equal(["tractor_125", "cultivator_3"], job.Lease!.Machines);
         Assert.Equal(MathF.Round(150f * job.Field!.AreaHa / 10f) * 10f, job.LeaseFee);
         var before = sim.Machines.All.Count;
@@ -475,7 +506,7 @@ public class ContractTests
 
         // Done: the reward less the lease, and the machines go back, the farmer stepping out.
         var money = sim.Economy.Money;
-        SetGround(sim, 4, GroundType.Cultivated);
+        SetGround(sim, 6, GroundType.Cultivated);
         sim.SkipHours(1);
         Assert.Equal(ContractState.Completed, job.State);
         Assert.Equal((money + job.Reward - job.LeaseFee, -job.LeaseFee), (sim.Economy.Money, sim.Economy.Ledger.Today[MoneyCategory.Leasing]));
@@ -573,5 +604,81 @@ public class ContractTests
             "contract type 'cultivate' lease 1: needs a vehicle",
             "contract type 'deliver': leases are for field jobs",
         ], db.Validate());
+    }
+
+    [Fact]
+    public void RipeMeadowsGetMowingJobsAndRipeCropsHarvests()
+    {
+        var sim = Neighbors(Only(8, "mow", "harvest", "cultivate", "plow"),
+            Field(2, "grass", "grass", "harvestable"), Field(3, "seeded", "wheat", "harvestable"));
+        var mow = sim.Contracts.On(sim.World.FieldById(2)!)!;
+        Assert.Equal(("Mow grass on Field 2", "Harvest wheat on Field 3"), (mow.Label, sim.Contracts.On(sim.World.FieldById(3)!)!.Label));
+        Assert.Equal(["tractor_95", "mower_3"], mow.Lease!.Machines);
+        Assert.Equal(MathF.Round(70f * mow.Field!.AreaHa / 10f) * 10f, mow.LeaseFee);
+
+        // Done once the grass is cut back to grow again.
+        Assert.True(sim.Contracts.Accept(mow));
+        SetCells(sim, 2, (L, i) => L.Stage[i] = 1);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, mow.State);
+    }
+
+    [Fact]
+    public void NoOneIsOfferedWorkNoMachineDoes()
+    {
+        var sim = Neighbors(db =>
+        {
+            Only(8, "mow", "harvest")(db);
+            db.RemoveMachine("mower_3");
+        }, Field(2, "grass", "grass", "harvestable"));
+        sim.SkipHours(24);
+        Assert.Empty(sim.Contracts.Offers);
+    }
+
+    [Fact]
+    public void StubbleGetsPlowingJobsInAutumn()
+    {
+        var sim = Neighbors(Only(10, "plow"), Field(2, "stubble"), Field(3, "seeded", "wheat", "1"));
+        var plow = Assert.Single(sim.Contracts.Offers);
+        Assert.Equal("Plow Field 2", plow.Label);
+        Assert.Equal(["tractor_125", "plow_5"], plow.Lease!.Machines);
+        Assert.True(sim.Contracts.Accept(plow));
+        SetGround(sim, 2, GroundType.Plowed);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, plow.State);
+    }
+
+    [Fact]
+    public void GrowingCropsGetFertilizingJobsInSpring()
+    {
+        var sim = Neighbors(Only(4, "fertilize"), Field(2, "seeded", "wheat", "3"), Field(3, "seeded", "barley", "2"), Field(4, "cultivated"));
+        SetCells(sim, 3, (L, i) => L.Fertilized[i] = 1);
+        foreach (var c in sim.Contracts.Offers.ToList()) Assert.True(sim.Contracts.Accept(c) && sim.Contracts.Cancel(c));
+        sim.SkipHours(24);
+        // Field 3 was fertilized already, and field 4 has no crop.
+        var job = Assert.Single(sim.Contracts.Offers);
+        Assert.Equal("Fertilize wheat on Field 2", job.Label);
+        Assert.Equal(["tractor_95", "spreader_24"], job.Lease!.Machines);
+        Assert.True(sim.Contracts.Accept(job));
+        SetCells(sim, 2, (L, i) => SpreaderWork.Fertilize(L, i, 68f));
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, job.State);
+    }
+
+    [Fact]
+    public void WeedyFieldsGetSprayingJobs()
+    {
+        var sim = Neighbors(Only(5, "spray"), Field(2, "seeded", "wheat", "3"), Field(3, "seeded", "barley", "2"));
+        Assert.Empty(sim.Contracts.Offers);
+        SetCells(sim, 2, (L, i) => L.Weeds[i] = WeedState.Grown);
+        SetCells(sim, 3, (L, i) => L.Weeds[i] = WeedState.Sprayed);
+        sim.SkipHours(24);
+        var job = Assert.Single(sim.Contracts.Offers);
+        Assert.Equal("Spray Field 2", job.Label);
+        Assert.Equal(["tractor_95", "sprayer_12"], job.Lease!.Machines);
+        Assert.True(sim.Contracts.Accept(job));
+        SetCells(sim, 2, (L, i) => L.Weeds[i] = WeedState.Sprayed);
+        sim.SkipHours(1);
+        Assert.Equal(ContractState.Completed, job.State);
     }
 }

@@ -1,5 +1,6 @@
 // Terrain: blends ground materials from a per-chunk data texture written by Headland.Core
-// (WorldMap.FillChunkTexture): R = ground | soil << 4, G = moisture, B = work angle, A = crop cover.
+// (WorldMap.FillChunkTexture): R = ground | soil << 4, G = moisture, B = work angle (top 6 bits) | weeds (low 2),
+// A = crop cover.
 shader_type spatial;
 render_mode cull_back, depth_draw_opaque;
 
@@ -10,6 +11,12 @@ const int L_SOIL = 2;
 const int L_RESIDUE = 3;
 const int L_GRAVEL = 4;
 const int L_SNOW = 5;
+
+// Headland.Core.World.WeedState
+const int W_NONE = 0;
+const int W_SMALL = 1;
+const int W_GROWN = 2;
+const int W_SPRAYED = 3;
 
 // Headland.Core.World.GroundType
 const int G_GRASS = 0;
@@ -78,7 +85,7 @@ float rows(vec2 p, float angle, float period) {
 }
 
 // Returns albedo in rgb and roughness in a; normal via out.
-vec4 surface(int g, vec2 p, float angle, float moist, float cover, float macro, out vec3 n) {
+vec4 surface(int g, vec2 p, float angle, float moist, float cover, float weeds_state, float macro, out vec3 n) {
 	vec3 a;
 	float rough = 0.95;
 	float soil_like = 1.0;
@@ -127,6 +134,15 @@ vec4 surface(int g, vec2 p, float angle, float moist, float cover, float macro, 
 		rough = 0.1;
 		soil_like = 0.0;
 	}
+	// Weeds: green tufts among the crop or on the bare ground, more of them grown; dead brown ones where sprayed.
+	int weeds = int(weeds_state + 0.5);
+	if (weeds != W_NONE) {
+		float tuft = vnoise(p * 9.0) * 0.6 + vnoise(p * 23.0 + 7.3) * 0.4;
+		float amount = weeds == W_SMALL ? 0.2 : weeds == W_GROWN ? 0.45 : 0.25;
+		float m = smoothstep(1.0 - amount, 1.08 - amount, tuft);
+		vec3 tint = weeds == W_SPRAYED ? vec3(0.4, 0.34, 0.2) : alb(L_GRASS, p / 1.5) * vec3(0.9, 1.05, 0.8);
+		a = mix(a, tint, m);
+	}
 	// Moist soil is darker.
 	a *= mix(1.0, 0.62, smoothstep(0.3, 0.9, moist) * soil_like);
 	// Shade under the crop canopy.
@@ -134,11 +150,13 @@ vec4 surface(int g, vec2 p, float angle, float moist, float cover, float macro, 
 	return vec4(a, rough);
 }
 
-void decode(vec4 d, out int g, out float moist, out float angle, out float cover) {
+void decode(vec4 d, out int g, out float moist, out float angle, out float cover, out float weeds) {
 	int code = int(d.r * 255.0 + 0.5);
 	g = code & 15;
 	moist = d.g;
-	angle = d.b * 3.14159265;
+	int b = int(d.b * 255.0 + 0.5);
+	angle = float(b & 252) / 255.0 * 3.14159265;
+	weeds = float(b & 3);
 	cover = d.a;
 }
 
@@ -156,10 +174,11 @@ void fragment() {
 	float m00; float m10; float m01; float m11;
 	float a00; float a10; float a01; float a11;
 	float c00; float c10; float c01; float c11;
-	decode(texelFetch(data_tex, i0, 0), g00, m00, a00, c00);
-	decode(texelFetch(data_tex, i0 + ivec2(1, 0), 0), g10, m10, a10, c10);
-	decode(texelFetch(data_tex, i0 + ivec2(0, 1), 0), g01, m01, a01, c01);
-	decode(texelFetch(data_tex, i0 + ivec2(1, 1), 0), g11, m11, a11, c11);
+	float w00_; float w10_; float w01_; float w11_;
+	decode(texelFetch(data_tex, i0, 0), g00, m00, a00, c00, w00_);
+	decode(texelFetch(data_tex, i0 + ivec2(1, 0), 0), g10, m10, a10, c10, w10_);
+	decode(texelFetch(data_tex, i0 + ivec2(0, 1), 0), g01, m01, a01, c01, w01_);
+	decode(texelFetch(data_tex, i0 + ivec2(1, 1), 0), g11, m11, a11, c11, w11_);
 
 	float w00 = (1.0 - f.x) * (1.0 - f.y);
 	float w10 = f.x * (1.0 - f.y);
@@ -172,13 +191,13 @@ void fragment() {
 	if (g00 == g10 && g00 == g01 && g00 == g11) {
 		float moist = m00 * w00 + m10 * w10 + m01 * w01 + m11 * w11;
 		float cover = c00 * w00 + c10 * w10 + c01 * w01 + c11 * w11;
-		s = surface(g00, p, a00, moist, cover, macro, n);
+		s = surface(g00, p, a00, moist, cover, w00_, macro, n);
 	} else {
 		vec3 n00; vec3 n10; vec3 n01; vec3 n11;
-		vec4 s00 = surface(g00, p, a00, m00, c00, macro, n00);
-		vec4 s10 = surface(g10, p, a10, m10, c10, macro, n10);
-		vec4 s01 = surface(g01, p, a01, m01, c01, macro, n01);
-		vec4 s11 = surface(g11, p, a11, m11, c11, macro, n11);
+		vec4 s00 = surface(g00, p, a00, m00, c00, w00_, macro, n00);
+		vec4 s10 = surface(g10, p, a10, m10, c10, w10_, macro, n10);
+		vec4 s01 = surface(g01, p, a01, m01, c01, w01_, macro, n01);
+		vec4 s11 = surface(g11, p, a11, m11, c11, w11_, macro, n11);
 		s = s00 * w00 + s10 * w10 + s01 * w01 + s11 * w11;
 		n = n00 * w00 + n10 * w10 + n01 * w01 + n11 * w11;
 	}

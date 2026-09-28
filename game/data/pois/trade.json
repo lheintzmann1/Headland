@@ -6,7 +6,7 @@
       { "x": -3, "z": -9, "w": 8, "d": 6 }
     ],
     "components": {
-      "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypes": ["seeds"], "openHours": [7, 19] },
+      "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypes": ["seeds", "fertilizer", "herbicide"], "openHours": [7, 19] },
       "hotspots": { "spots": [ { "icon": "storefront" } ] }
     } },
   { "id": "grain_elevator", "name": "Grain Elevator", "w": 58, "d": 40,

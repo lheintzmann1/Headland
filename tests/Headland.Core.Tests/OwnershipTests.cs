@@ -10,12 +10,12 @@ namespace Headland.Core.Tests;
 public class OwnershipTests
 {
     [Fact]
-    public void TheFarmStartsWithItsYardAndThreeFields()
+    public void TheFarmStartsWithItsYardThreeFieldsAndAMeadow()
     {
         var sim = TestContent.NewSim();
         Assert.Equal("Brookfield Farm", sim.Farms.Player.Name);
         Assert.Equal([1, 2, 3, 4], sim.Farms.FarmlandOf(Farm.PlayerId).Select(l => l.Id));
-        Assert.Equal([1, 2, 3], sim.Farms.FarmlandOf(Farm.PlayerId).SelectMany(l => l.Fields).Select(f => f.Id).Order());
+        Assert.Equal([1, 2, 3, 7], sim.Farms.FarmlandOf(Farm.PlayerId).SelectMany(l => l.Fields).Select(f => f.Id).Order());
         Assert.All(sim.Machines.All, m => Assert.Equal(Farm.PlayerId, m.FarmId));
 
         var neighbor = sim.World.FarmlandById(7)!;

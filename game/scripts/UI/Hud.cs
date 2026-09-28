@@ -307,6 +307,10 @@ public partial class Hud : CanvasLayer
             sb.Append($"Moisture [b]{r.Moisture * 100:0}%[/b]   Nitrogen [b]{r.Nitrogen:0}[/b] kg/ha");
             if (r.Crop != null && r.StageName != "Dead") sb.Append($"   Health [b]{r.Health * 100:0}%[/b]");
             sb.Append('\n');
+            var treated = new List<string>();
+            if (r.Weeds != WeedState.None) treated.Add(WeedName(r.Weeds));
+            if (r.Fertilized > 0) treated.Add(r.Fertilized == 1 ? "fertilized" : $"fertilized {r.Fertilized}×");
+            if (treated.Count > 0) sb.Append(Widgets.Colored(string.Join(" · ", treated), Palette.Dim) + "\n");
         }
         if (r.Crop is { VernalizationDays: > 0 } vc && r.StageName != "Dead" && r.Stage < Array.FindIndex(vc.Stages, s => s.RequiresVernalization))
             sb.Append(r.Chill >= vc.VernalizationDays
@@ -315,13 +319,21 @@ public partial class Hud : CanvasLayer
         if (r.Crop != null && !float.IsNaN(r.DaysToHarvest) && r.DaysToHarvest > 0)
         {
             var days = float.IsInfinity(r.DaysToHarvest) ? "over 2 years" : $"~{r.DaysToHarvest:0} days";
-            sb.Append(Widgets.Colored($"Harvest in {days} · water factor {r.WaterFactor * 100:0}% · expected {r.Crop.YieldPerHa * r.Health:N0} L/ha", Palette.Dim) + "\n");
+            sb.Append(Widgets.Colored($"Harvest in {days} · water factor {r.WaterFactor * 100:0}% · expected {r.ExpectedYieldPerHa:N0} L/ha", Palette.Dim) + "\n");
         }
         if (r.Crop == null && r.Soil != null && !WorldMap.IsSealed(r.Ground))
             sb.Append(Widgets.Colored(r.Soil.Description, Palette.Dim) + "\n");
         foreach (var warn in r.Warnings) sb.Append(Warning(warn) + "\n");
         _inspect.Text = sb.ToString().TrimEnd('\n');
     }
+
+    private static string WeedName(byte weeds) => weeds switch
+    {
+        WeedState.Small => "Small weeds",
+        WeedState.Grown => "Weeds",
+        WeedState.Sprayed => "Sprayed against weeds",
+        _ => "",
+    };
 
     private static string GroundName(GroundType g) => g switch
     {

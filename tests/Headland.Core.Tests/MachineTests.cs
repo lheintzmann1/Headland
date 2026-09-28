@@ -2,6 +2,7 @@ using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Work;
 using Headland.Core.Machines.Components;
 using Headland.Core.World;
 
@@ -494,7 +495,7 @@ public class MachineTests
         var sim = TestContent.NewSim();
         TestContent.OwnField4(sim);
         Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
-            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+            (cx, cz) => CultivatorWork.Till(sim.World, sim.World.CellIndex(cx, cz), 0));
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         Assert.True(sim.Machines.Attach(t, "drawbar", sim.Machines.Spawn("seeder_3", Plot.Shape.Min + new Vector2(2f, -14f), 0f)));
         var helper = sim.HireHelper(t, Plot);
@@ -509,7 +510,7 @@ public class MachineTests
         var sim = TestContent.NewSim();
         TestContent.OwnField4(sim);
         Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
-            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+            (cx, cz) => CultivatorWork.Till(sim.World, sim.World.CellIndex(cx, cz), 0));
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         var seeder = sim.Machines.Spawn("seeder_3", Plot.Shape.Min + new Vector2(2f, -14f), 0f);
         Assert.True(sim.Machines.Attach(t, "drawbar", seeder));
@@ -585,7 +586,7 @@ public class MachineTests
         // The left half of the plot is cultivated already.
         Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ, (cx, cz) =>
         {
-            if (sim.World.CellCenter(cx, cz).X < Plot.Center.X) WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0);
+            if (sim.World.CellCenter(cx, cz).X < Plot.Center.X) CultivatorWork.Till(sim.World, sim.World.CellIndex(cx, cz), 0);
         });
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f));
@@ -604,7 +605,7 @@ public class MachineTests
         TestContent.OwnField4(sim);
         var field = sim.World.FieldById(4)!;
         field.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
-            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+            (cx, cz) => CultivatorWork.Till(sim.World, sim.World.CellIndex(cx, cz), 0));
         var t = sim.Machines.Spawn("tractor_125", field.Center, 0f);
         sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", field.Center - new Vector2(0f, 2f), 0f));
         sim.Player.Enter(t);

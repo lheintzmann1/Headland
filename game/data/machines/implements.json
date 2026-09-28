@@ -84,5 +84,69 @@
         { "id": "green", "name": "Green", "changes": { "visual": { "color": "#4d5c38" } } }
       ] }
     ]
+  },
+  {
+    "id": "plow_5", "name": "Furrow 5", "category": "plow", "price": 19500, "mass": 1650,
+    "size": { "length": 5.0, "width": 2.4, "height": 1.5, "centerZ": -2.4 },
+    "components": {
+      "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
+      "workAreas": {
+        "areas": [ { "type": "plow", "width": 2.0, "length": 1.0, "z": -2.7, "maxWorkSpeedKmh": 10, "requiredPowerHp": 110 } ]
+      }
+    },
+    "visual": { "color": "#5d2b24", "model": "res://assets/models/plows/plow_5.glb" },
+    "description": "Five-furrow mounted plow. Turns the soil over, burying stubble, grass and every weed, where a cultivator only kills the small ones."
+  },
+  {
+    "id": "spreader_24", "name": "Spinner 1500", "category": "spreader", "price": 9800, "mass": 420,
+    "size": { "length": 1.6, "width": 2.4, "height": 1.9, "centerZ": -0.75 },
+    "components": {
+      "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0 },
+      "fillUnits": { "units": [ { "id": "hopper", "capacity": 1500, "fillTypes": ["fertilizer"], "startFillType": "fertilizer", "startLevel": 1000 } ] },
+      "workAreas": {
+        "areas": [
+          { "type": "spreader", "width": 24, "length": 1.0, "z": -3.0, "requiresOn": true, "maxWorkSpeedKmh": 16, "requiredPowerHp": 25,
+            "fillUnit": "hopper", "ratePerHa": 250 }
+        ]
+      }
+    },
+    "visual": { "color": "#46603d", "model": "res://assets/models/spreaders/spreader_24.glb" },
+    "description": "Twin-disc fertilizer spreader. Turn it on (B) to spread 250 kg of fertilizer a hectare over 24 m: some 67 kg of nitrogen."
+  },
+  {
+    "id": "sprayer_12", "name": "Boom 2500", "category": "sprayer", "price": 31000, "mass": 2100,
+    "size": { "length": 5.6, "width": 2.6, "height": 2.4, "centerZ": 1.3 },
+    "components": {
+      "runningGear": { "axles": [ { "z": 0, "track": 1.8, "wheels": { "radius": 0.62, "width": 0.32 } } ] },
+      "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.0, "maxArticulationDeg": 70, "lowerable": true, "hitchLoad": 0.1 },
+      "fillUnits": { "units": [ { "id": "tank", "capacity": 2500, "fillTypes": ["herbicide"], "startFillType": "herbicide", "startLevel": 1500 } ] },
+      // The boom's wings fold forward along the tank for the road.
+      "animatedParts": { "parts": [
+        { "id": "boomL", "rotationDeg": [0, -90, 0], "seconds": 5, "fold": true },
+        { "id": "boomR", "rotationDeg": [0, 90, 0], "seconds": 5, "fold": true } ], "startFolded": true },
+      "workAreas": {
+        "areas": [
+          { "type": "sprayer", "width": 12, "length": 1.0, "z": -1.4, "requiresOn": true, "maxWorkSpeedKmh": 14, "requiredPowerHp": 20,
+            "fillUnit": "tank", "ratePerHa": 100 }
+        ]
+      }
+    },
+    "visual": { "color": "#9c9585", "model": "res://assets/models/sprayers/sprayer_12.glb" },
+    "description": "Trailed field sprayer with a 12 m boom. Lower it (V) to unfold the boom, turn it on (B): 100 L of herbicide mix a hectare kills the weeds and keeps new ones out until the next tillage or harvest."
+  },
+  {
+    "id": "mower_3", "name": "Mower 300", "category": "mower", "price": 13800, "mass": 780,
+    "size": { "length": 1.7, "width": 3.1, "height": 1.1, "centerZ": -0.85 },
+    "components": {
+      "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
+      "workAreas": {
+        "areas": [
+          { "type": "mower", "width": 3.0, "length": 0.6, "z": -1.25, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 55,
+            "harvestGroups": ["grass"] }
+        ]
+      }
+    },
+    "visual": { "color": "#7a5a24", "model": "res://assets/models/mowers/mower_3.glb" },
+    "description": "Rear-mounted disc mower. Lower it (V) and turn it on (B) to cut a meadow that's ready; the grass grows back for the next cut."
   }
 ]

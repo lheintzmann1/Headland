@@ -3,6 +3,7 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Events;
 using Headland.Core.Machines.Components;
+using Headland.Core.Machines.Work;
 using Headland.Core.Ownership;
 using Headland.Core.World;
 
@@ -468,12 +469,15 @@ public sealed class MachineSystem
                 working = true;
 
                 var center = m.LocalToWorld(wa.X, wa.Z);
-                MathUtil.RectCorners(center, m.Heading, wa.Width * 0.5f, wa.Length * 0.5f, pts[..4]);
+                var half = new Vector2(wa.Width * 0.5f, wa.Length * 0.5f);
+                MathUtil.RectCorners(center, m.Heading, half.X, half.Y, pts[..4]);
                 var count = 4;
+                Obb? before = null;
                 if (area.HasPose && Vector2.Distance(area.PrevCenter, center) < 5f)
                 {
-                    MathUtil.RectCorners(area.PrevCenter, area.PrevHeading, wa.Width * 0.5f, wa.Length * 0.5f, pts[4..]);
+                    MathUtil.RectCorners(area.PrevCenter, area.PrevHeading, half.X, half.Y, pts[4..]);
                     count = 8;
+                    before = new Obb(area.PrevCenter, half, area.PrevHeading);
                 }
                 area.HasPose = true;
                 area.PrevCenter = center;
@@ -484,13 +488,9 @@ public sealed class MachineSystem
                 if (limit != null) _cells.RemoveAll(i => !limit.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX)));
                 var refused = KeepAllowed(root.FarmId, w, wa);
                 var fieldId = WorkedFieldId(center);
-                var changed = wa.Type switch
-                {
-                    "cultivator" => Cultivate(m),
-                    "seeder" => Sow(m, w, wa),
-                    "harvester" => Harvest(m, w, wa, fieldId),
-                    _ => 0,
-                };
+                var pass = new WorkPass(_sim, m, w, wa, _cells, fieldId, before);
+                var changed = wa.Work.Work(pass);
+                pass.Finish();
                 if (changed == 0)
                 {
                     if (refused != null) w.Report(new NotAllowed(refused));
@@ -509,7 +509,7 @@ public sealed class MachineSystem
     /// </summary>
     private string? KeepAllowed(int farmId, WorkAreas w, WorkAreaDef wa)
     {
-        var crop = wa.Type == "seeder" ? Content.Crops[w.Crop] : null;
+        var crop = wa.Work.Crop(w, Content);
         var refused = -1;
         _cells.RemoveAll(i =>
         {
@@ -531,92 +531,6 @@ public sealed class MachineSystem
         foreach (var i in _cells)
             if (World.Layers.FieldId[i] is var cell and > 0) return cell;
         return 0;
-    }
-
-    private int Cultivate(Machine m)
-    {
-        var angle = WorldGen.AngleToByte(m.Heading);
-        var n = 0;
-        foreach (var i in _cells)
-            if (WorkOps.Cultivate(World, i, angle)) n++;
-        return n;
-    }
-
-    private int Sow(Machine m, WorkAreas w, WorkAreaDef wa)
-    {
-        var crop = Content.Crops[w.Crop];
-        var unit = m.Unit(wa.FillUnit)!;
-        var kgPerCell = crop.SeedKgPerHa * WorldMap.CellArea / 10000f;
-        var inWindow = _sim.Crops.InSowingWindow(crop, _sim.Clock.Month);
-        var health = inWindow ? (byte)255 : (byte)150;
-        var angle = WorldGen.AngleToByte(m.Heading);
-        var n = 0;
-        if (!inWindow) w.Report(new OutOfSeason(crop));
-        foreach (var i in _cells)
-        {
-            if (!WorkOps.CanSow(World, i)) continue;
-            if (unit.Level < kgPerCell)
-            {
-                var seed = Content.FillTypes[unit.FillType ?? unit.Def.FillTypes[0]];
-                // Too little left to sow a cell: it's out, and stays out until filled up.
-                unit.Remove(unit.Level);
-                w.Report(new OutOf(seed));
-                _sim.Notifications.Post($"{m.Def.Name} is out of {seed.Name.ToLowerInvariant()}", Severity.Warning, 10);
-                break;
-            }
-            unit.Remove(kgPerCell);
-            WorkOps.Sow(World, i, w.Crop, health, angle);
-            n++;
-        }
-        return n;
-    }
-
-    private int Harvest(Machine header, WorkAreas w, WorkAreaDef wa, int fieldId)
-    {
-        var combine = header.Parent!;
-        var thresher = combine.Get<Thresher>()!;
-        var tank = thresher.Tank;
-        var L = World.Layers;
-        var n = 0;
-        CropDef? threshed = null;
-        var threshedAmount = 0f;
-        thresher.Refused = null;
-        foreach (var i in _cells)
-        {
-            var cropId = L.Crop[i];
-            if (cropId == 0) continue;
-            var def = Content.Crops[cropId - 1];
-            var stage = L.Stage[i];
-            if (stage == CropStage.Dead)
-            {
-                WorkOps.ClearToStubble(World, i, WorldGen.AngleToByte(header.Heading));
-                n++;
-                continue;
-            }
-            if (!def.Stages[stage].Harvestable) continue;
-            if (!wa.HarvestGroups.Contains(def.HarvestGroup))
-            {
-                w.Report(new WrongHeader(def));
-                continue;
-            }
-            var liters = def.YieldPerHa * (L.Health[i] / 255f) * WorldMap.CellArea / 10000f;
-            if (!tank.CanAccept(def.FillType) || tank.Free < liters)
-            {
-                thresher.Refused = tank.IsEmpty || tank.FillType == def.FillType
-                    ? new TankFull()
-                    : new TankHolds(Content.FillTypes[tank.FillType!]);
-                _sim.Notifications.Post(thresher.Refused.Text, Severity.Warning, 10);
-                break;
-            }
-            tank.Add(def.FillType, liters);
-            threshed ??= def;
-            threshedAmount += liters;
-            WorkOps.ClearToStubble(World, i, WorldGen.AngleToByte(header.Heading));
-            n++;
-        }
-        // The tank takes one fill type at a time, so one tick threshes one crop.
-        if (threshed != null) Events.Publish(new CropHarvested(combine, threshed.Id, threshed.FillType, threshedAmount, fieldId));
-        return n;
     }
 
     // ------------------------------------------------------------------ Transfers

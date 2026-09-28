@@ -413,7 +413,8 @@ public static class FieldPlanner
 /// <summary>
 /// A field helper: drives a vehicle over a field lane by lane and handles its implements like a farmer would:
 /// lowers each one just before it enters the field, raises it when its work area leaves the field or while
-/// turning, turns seeders/threshers on, and stops when out of seed or fuel, or when the grain tank is full.
+/// turning, turns seeders/threshers on (and one that isn't lowered, such as a spreader, on and off as it would lower
+/// it), and stops for what stops the work: out of seed or fuel, a full grain tank (<see cref="MachineCondition.Stops"/>).
 /// </summary>
 public sealed class FieldWorkController : IVehicleController
 {
@@ -467,7 +468,7 @@ public sealed class FieldWorkController : IVehicleController
         Path = path ?? FieldPlanner.Lanes(field, new LanePlan(width, minR, Margin)
         {
             From = vehicle.Position, Heading = vehicle.Heading, Trail = reach, MaxLanes = maxLanes, Reverse = canReverse,
-            NeedsWork = (a, b, w) => ShareLeft(sim!.World, sim.Content.Crops, a, b, w) >= MinShareLeft,
+            NeedsWork = (a, b, w) => ShareLeft(sim!.World, sim.Content, a, b, w) >= MinShareLeft,
         });
         Driver = new WaypointController(Path.Points, TurnSpeedKmh, Path.Segments);
     }
@@ -505,8 +506,9 @@ public sealed class FieldWorkController : IVehicleController
     public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
 
     /// <summary>
-    /// Takes over the vehicle, steering it normally, and its implements: unfolded, seeders and the thresher a header
-    /// hangs on turned on. Each is lowered as it reaches the field.
+    /// Takes over the vehicle, steering it normally, and its implements: unfolded, and what their work needs turned on
+    /// (seeders, the thresher a header hangs on). Each is lowered as it reaches the field; one that isn't lowered is
+    /// turned on then instead.
     /// </summary>
     internal void TakeOver()
     {
@@ -514,10 +516,14 @@ public sealed class FieldWorkController : IVehicleController
         foreach (var (m, areas) in _tools)
         {
             if (m.Get<AnimatedParts>() is { } parts) parts.Folded = false;
-            if (areas.CanTurnOn) areas.On = true;
-            if (areas.Def.Areas.Any(a => a.Type == "harvester") && m.Parent?.Get<Thresher>() is { } thresher) thresher.On = true;
+            if (!SwitchedOnLanes(m, areas))
+                foreach (var a in areas.Def.Areas)
+                    a.Work.Start(areas);
         }
     }
+
+    /// <summary>A tool that works turned on without being lowered (a spreader): turned on over the field like others are lowered.</summary>
+    internal static bool SwitchedOnLanes(Machine tool, WorkAreas areas) => areas.CanTurnOn && tool.Get<Attachable>() is not { Def.Lowerable: true };
 
     public VehicleInput GetInput(Machine v, float dt)
     {
@@ -528,8 +534,11 @@ public sealed class FieldWorkController : IVehicleController
         }
         if (Finished)
         {
-            foreach (var (t, _) in _tools)
+            foreach (var (t, areas) in _tools)
+            {
                 if (t.Get<Attachable>() is { } a) a.Lowered = false;
+                if (SwitchedOnLanes(t, areas)) areas.On = false;
+            }
             return new VehicleInput { Brake = true };
         }
 
@@ -546,7 +555,9 @@ public sealed class FieldWorkController : IVehicleController
 
         foreach (var (t, areas) in _tools)
         {
-            if (t.Get<Attachable>() is not { Def.Lowerable: true } a) continue;
+            var a = t.Get<Attachable>();
+            var switched = SwitchedOnLanes(t, areas);
+            if (a is not { Def.Lowerable: true } && !switched) continue;
             var (local, width, length) = areas.Bounds;
             var fwd = t.Forward;
             var aligned = onLane && Vector2.Dot(fwd, laneDir) > 0.94f;
@@ -555,11 +566,11 @@ public sealed class FieldWorkController : IVehicleController
             // Lowered just before the work area's leading edge reaches the field, lifted as soon as the work area
             // leaves it (or the implement swings off the lane).
             var ahead = center + fwd * (length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds);
-            if (a.Lowered)
-            {
-                if (!aligned || !Touches(center, side) && !Touches(ahead, side)) a.Lowered = false;
-            }
-            else if (aligned && Touches(ahead, side)) a.Lowered = true;
+            var down = switched ? areas.On : a!.Lowered;
+            var want = down ? aligned && (Touches(center, side) || Touches(ahead, side)) : aligned && Touches(ahead, side);
+            if (want == down) continue;
+            if (switched) areas.On = want;
+            else a!.Lowered = want;
         }
         return input;
     }
@@ -572,7 +583,7 @@ public sealed class FieldWorkController : IVehicleController
         Field.Contains(center) || Field.Contains(center + side) || Field.Contains(center - side);
 
     /// <summary>Share of the field under a swath <paramref name="width"/> wide along a → b that the implements would still change.</summary>
-    private float ShareLeft(WorldMap world, IReadOnlyList<CropDef> crops, Vector2 a, Vector2 b, float width)
+    private float ShareLeft(WorldMap world, ContentDatabase content, Vector2 a, Vector2 b, float width)
     {
         var length = Vector2.Distance(a, b);
         if (length < 0.01f) return 0f;
@@ -585,7 +596,7 @@ public sealed class FieldWorkController : IVehicleController
         {
             if (!Field.Contains(world.CellCenter(i % world.CellsX, i / world.CellsX))) continue;
             inside++;
-            if (_tools.Any(t => t.areas.Def.Areas.Any(a => WorkOps.WouldChange(world, crops, a.Type, i)))) left++;
+            if (_tools.Any(t => t.areas.Def.Areas.Any(a => a.Work.WouldChange(world, content, a, i)))) left++;
         }
         return inside > 0 ? (float)left / inside : 0f;
     }

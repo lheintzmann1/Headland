@@ -5,6 +5,9 @@
   // marked requiresVernalization can start; until then it waits (tillering / rosette) through winter.
   // card = column in the crop atlas (0..6), so several stages can share a look.
   // atlasRow selects the row in assets/textures/crops/crop_atlas.png.
+  // ground = what its cells show once sown: "seeded" (the default) or "grass" (a meadow, where weeds don't come up).
+  // regrowStage = a crop that grows back once mown starts over from this stage (grass); others are cleared.
+  // weedYieldLoss = yield lost where weeds grew up among the crop (default 0.2; half of it where they're small).
   {
     "id": "wheat", "name": "Wheat", "fillType": "wheat", "harvestGroup": "grain", "atlasRow": 0,
     "baseTempC": 0, "yieldPerHa": 8600, "seedKgPerHa": 170,
@@ -61,7 +64,7 @@
     "baseTempC": 8, "yieldPerHa": 9500, "seedKgPerHa": 25,
     "sowingMonths": [4, 5], "harvestMonths": [9, 10, 11],
     "frostKillC": -1, "wiltingPoint": 0.25, "optimalMoistureMin": 0.45, "optimalMoistureMax": 0.85,
-    "nitrogenDemandKgPerHa": 200,
+    "nitrogenDemandKgPerHa": 200, "weedYieldLoss": 0.3,
     "description": "Grain maize. Needs warmth (base 8 °C), a corn header, and hates frost.",
     "stages": [
       { "name": "Sown",       "gdd": 70,  "height": 0.0 },
@@ -71,6 +74,20 @@
       { "name": "Tasseling",  "gdd": 200, "height": 2.4 },
       { "name": "Dough",      "gdd": 150, "height": 2.5 },
       { "name": "Ripe",       "gdd": 0,   "height": 2.4, "harvestable": true }
+    ]
+  },
+  {
+    "id": "grass", "name": "Grass", "fillType": "grass", "harvestGroup": "grass", "atlasRow": 4, "ground": "grass",
+    "baseTempC": 5, "yieldPerHa": 20000, "seedKgPerHa": 30,
+    "sowingMonths": [3, 4, 5], "harvestMonths": [5, 6, 7, 8, 9],
+    "frostKillC": -25, "wiltingPoint": 0.2, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.85,
+    "nitrogenDemandKgPerHa": 90, "regrowStage": 1,
+    "description": "Meadow grass. Sown in spring, mown when it's ready, and it grows back for the next cut; fertilize it after each one. The cut grass is left lying for now.",
+    "stages": [
+      { "name": "Sown",         "gdd": 120, "height": 0.0 },
+      { "name": "Sward",        "gdd": 180, "height": 0.08 },
+      { "name": "Growing",      "gdd": 220, "height": 0.25 },
+      { "name": "Ready to mow", "gdd": 0,   "height": 0.45, "harvestable": true }
     ]
   }
 ]

@@ -16,18 +16,21 @@ Built with **Godot 4.7** and **C#**.
 
 ## What's in it
 
-- **The farming loop.** Cultivate stubble, sow in season, let the crop grow, harvest it with the right header,
-  unload the combine into a trailer and tip the grain at the elevator.
-- **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator and a
-  trailed seed drill, most with options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front
-  weight or loader consoles, beacons, a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color.
+- **The farming loop.** Cultivate or plow the stubble, sow in season, fertilize the growing crop and spray the weeds
+  before they cost it yield, harvest it with the right header, unload the combine into a trailer and tip the grain at
+  the elevator. Meadows are mown when the grass is ready, and it grows back for the next cut.
+- **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator, a plow, a
+  trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road and a mower, most with
+  options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
+  a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color.
   Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch, and working speed
   depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and slip in wet fields,
   less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
-  what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed at the farm shop,
-  refuel and wash at the gas station, get machines repaired or their options changed at the workshop (new options
-  cost what they cost more than the old ones, and the work), and lease them for contracts at the machinery dealer.
+  what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
+  herbicide at the farm shop, refuel and wash at the gas station, get machines repaired or their options changed at the
+  workshop (new options cost what they cost more than the old ones, and the work), and lease them for contracts at the
+  machinery dealer.
   Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
   few days. Each place is a point of interest defined in JSON and built from components, as Farming Simulator builds
   its placeables: selling and buying stations, silos, production points that run by the hour, workshops, washing
@@ -43,8 +46,9 @@ Built with **Godot 4.7** and **C#**.
   own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
   ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors' fields it has
   a contract on.
-- **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating stubble,
-  sowing a seedbed, harvesting a ripe crop), and buyers order goods for more than the market price. C opens the
+- **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating or plowing
+  stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing a meadow), and
+  buyers order goods for more than the market price. C opens the
   board: take up to three at a time, each due within a few days. A field job is done once 95% of the field is; a
   harvest's crop is the neighbor's, and 90% of it must be tipped at the buyer named on the contract, who takes it
   without paying. Giving a contract back, or finishing late, costs 10% of its reward. A field job can also be taken
@@ -55,13 +59,17 @@ Built with **Godot 4.7** and **C#**.
   so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland it
   backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it
   lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
-- **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health. Crops grow by
-  growing degree-days; winter wheat and canola need a winter (vernalization) before they shoot; drought,
-  waterlogging, frost and nitrogen shortage cost health and yield. On a compressed calendar (three days per month)
+- **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health, weeds, and
+  whether it was fertilized. Crops grow by growing degree-days; winter wheat and canola need a winter (vernalization)
+  before they shoot; drought, waterlogging, frost and nitrogen shortage cost health and yield. Weeds come up on tilled
+  ground and among the crops in the growing season and cost up to a fifth of the yield (corn more): a cultivator kills
+  them while they're small, the plow buries them all, and herbicide kills them and keeps new ones out until the next
+  tillage or harvest. Fertilizer gives the soil the nitrogen the crops take from it; grass, cut several times a year,
+  needs it after each cut. On a compressed calendar (three days per month)
   crops still ripen in their real months.
 - **Weather.** A seeded climate model with a three-day forecast, rain, storms, snow, fog, wet ground, snow cover,
   drifting cloud shadows, and a sun that follows the time of day and the season.
-- **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, crop stage, vernalization progress
+- **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, weeds, crop stage, vernalization progress
   and a harvest estimate.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
@@ -82,8 +90,8 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | F | Enter or leave a vehicle |
 | Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
-| V | Lower or raise implements |
-| B | Turn on or off (seed drill, combine) |
+| V | Lower or raise implements (lowering a sprayer unfolds its boom) |
+| B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |

@@ -29,7 +29,10 @@ public partial class CropRenderer : Node3D
         _chunks = new MultiMeshInstance3D[w.ChunksX * w.ChunksZ];
         var mesh = BuildCardMesh();
         var mat = new ShaderMaterial { Shader = GD.Load<Shader>("res://shaders/crop.gdshader") };
-        mat.SetShaderParameter("atlas", GD.Load<Texture2D>("res://assets/textures/crops/crop_atlas.png"));
+        var atlas = GD.Load<Texture2D>("res://assets/textures/crops/crop_atlas.png");
+        mat.SetShaderParameter("atlas", atlas);
+        // Cards are twice as tall as wide, eight to a row; a row per crop (tools/gen_crop_cards.py).
+        mat.SetShaderParameter("atlas_grid", new Vector2(8f, atlas.GetHeight() / (atlas.GetWidth() / 8f * 2f)));
 
         for (var cz = 0; cz < w.ChunksZ; cz++)
         for (var cx = 0; cx < w.ChunksX; cx++)

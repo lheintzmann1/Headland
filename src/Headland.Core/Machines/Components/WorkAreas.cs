@@ -1,14 +1,14 @@
-using Headland.Core.Components;
 using System.Numerics;
+using System.Text.Json.Serialization;
+using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Machines.Work;
 
 namespace Headland.Core.Machines.Components;
 
 public sealed class WorkAreaDef
 {
-    public static readonly string[] Types = ["cultivator", "seeder", "harvester"];
-
-    /// <summary>What it does to the ground it passes over: one of <see cref="Types"/>.</summary>
+    /// <summary>What it does to the ground it passes over: a <see cref="WorkTypes">work type</see>'s id.</summary>
     public string Type { get; set; } = "cultivator";
     public float Width { get; set; } = 3f;
     public float Length { get; set; } = 1f;
@@ -18,37 +18,43 @@ public sealed class WorkAreaDef
     public bool RequiresOn { get; set; }
     public float MaxWorkSpeedKmh { get; set; } = 12f;
     public float RequiredPowerHp { get; set; } = 60f;
-    /// <summary>Harvester: crop harvest groups it cuts.</summary>
+    /// <summary>Harvester, mower: crop harvest groups it cuts.</summary>
     public string[] HarvestGroups { get; set; } = [];
-    /// <summary>Seeder: the fill unit its seed comes from.</summary>
+    /// <summary>Seeder, spreader, sprayer: the fill unit what it sows or spreads comes from.</summary>
     public string? FillUnit { get; set; }
+    /// <summary>Spreader, sprayer: units of its fill spread on a hectare.</summary>
+    public float RatePerHa { get; set; }
+
+    /// <summary>Its work type (known once the content is validated).</summary>
+    [JsonIgnore]
+    public WorkType Work => WorkTypes.Find(Type) ?? throw new InvalidOperationException($"Unknown work type '{Type}'");
 }
 
 /// <summary>
-/// Where an implement works the ground: a cultivator's tines, a drill's coulters, a header's cutter bar. A harvester
-/// cuts for the thresher of the machine it hangs on; its reel turns while that one threshes.
+/// Where an implement works the ground: a cultivator's tines, a drill's coulters, a header's cutter bar, a spreader's
+/// throw. What each area does is its work type's (<see cref="WorkTypes"/>). A harvester cuts for the thresher of the
+/// machine it hangs on; its reel turns while that one threshes.
 /// </summary>
 public sealed class WorkAreasDef : MachineComponentDef
 {
     public WorkAreaDef[] Areas { get; set; } = [];
 
-    public override IEnumerable<string> Roles => Areas.Any(a => a.Type == "harvester") ? ["reel"] : [];
+    public override IEnumerable<string> Roles =>
+        Areas.Select(a => WorkTypes.Find(a.Type)).OfType<WorkType>().SelectMany(w => w.Roles).Distinct();
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (Areas.Length == 0) yield return "needs areas";
         foreach (var a in Areas)
         {
-            if (!WorkAreaDef.Types.Contains(a.Type))
+            if (WorkTypes.Find(a.Type) is not { } work)
             {
-                yield return $"unknown type '{a.Type}'";
+                yield return $"unknown type '{a.Type}' ({WorkTypes.Known})";
                 continue;
             }
-            if (a.Width <= 0f || a.Length <= 0f || a.MaxWorkSpeedKmh <= 0f || a.RequiredPowerHp < 0f)
-                yield return $"{a.Type}: width, length and maxWorkSpeedKmh must be > 0, requiredPowerHp >= 0";
-            if (a.Type == "seeder" && !HasUnit(machine, a.FillUnit)) yield return "a seeder needs the fillUnit its seed comes from";
-            if (a.Type == "harvester" && a.HarvestGroups.Length == 0) yield return "a harvester needs harvestGroups";
-            if (a.Type == "harvester" && machine.Get<AttachableDef>() == null) yield return "a harvester hangs on a thresher: it needs an attachable";
+            if (a.Width <= 0f || a.Length <= 0f || a.MaxWorkSpeedKmh <= 0f || a.RequiredPowerHp < 0f || a.RatePerHa < 0f)
+                yield return $"{a.Type}: width, length and maxWorkSpeedKmh must be > 0, requiredPowerHp and ratePerHa >= 0";
+            foreach (var e in work.Errors(a, machine, content)) yield return e;
         }
     }
 
@@ -99,7 +105,7 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     public bool CanTurnOn => Def.Areas.Any(a => a.RequiresOn);
     public bool On { get; set; }
 
-    public bool Sows => Def.Areas.Any(a => a.Type == "seeder");
+    public bool Sows => Def.Areas.Any(a => a.Work.Sows);
     /// <summary>Seeders: the crop sown, as an index into <see cref="ContentDatabase.Crops"/>.</summary>
     public int Crop { get; set; }
 
@@ -128,7 +134,7 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     {
         if (Machine.Get<AnimatedParts>() is { Unfolded: false }) return false;
         if (Machine.Get<Attachable>() is { Def.Lowerable: true, Lowered: false }) return false;
-        return area.Type == "harvester" ? Machine.Parent?.Get<Thresher>() is { On: true } : !area.RequiresOn || On;
+        return area.Work.Working(this, area);
     }
 
     internal void ForgetPoses()

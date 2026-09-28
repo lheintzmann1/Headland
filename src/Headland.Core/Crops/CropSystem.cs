@@ -59,6 +59,26 @@ public sealed class CropSystem
     public const float WaterlogLossPerDay = 0.005f;
     /// <summary>Health lost at a stage change when no nitrogen at all is available (scaled by the shortfall).</summary>
     public const float NitrogenShortfallLoss = 0.1f;
+    /// <summary>Weeds grow above this temperature.</summary>
+    public const float WeedBaseTempC = 5f;
+    /// <summary>Chance per real day of growing weather that weeds come up in a weed-free cell of tilled or cropped field ground.</summary>
+    public const float WeedSproutPerDay = 0.04f;
+    /// <summary>Chance per real day of growing weather that small weeds grow up.</summary>
+    public const float WeedGrowPerDay = 0.05f;
+
+    /// <summary>Field ground weeds come up on: tilled, sown or stubble (a meadow's sward keeps them out).</summary>
+    public static bool WeedsGrowOn(GroundType g) => g is GroundType.Cultivated or GroundType.Plowed or GroundType.Seeded or GroundType.Stubble;
+
+    /// <summary>The share of its yield a crop keeps with these weeds among it.</summary>
+    public static float WeedFactor(CropDef def, byte weeds) => weeds switch
+    {
+        WeedState.Grown => 1f - def.WeedYieldLoss,
+        WeedState.Small => 1f - def.WeedYieldLoss * 0.5f,
+        _ => 1f,
+    };
+
+    /// <summary>What a hectare of the crop in cell <paramref name="i"/> would yield if harvested now, by its health and the weeds.</summary>
+    public static float YieldPerHa(FieldLayers L, CropDef def, int i) => def.YieldPerHa * (L.Health[i] / 255f) * WeedFactor(def, L.Weeds[i]);
 
     /// <summary>Temperatures that count toward vernalization.</summary>
     public static bool IsChilling(float tempC) => tempC is > -4f and < 8f;
@@ -138,6 +158,14 @@ public sealed class CropSystem
                 var ms = mineralSteps[L.Soil[i]];
                 if (ms > 0 && L.Nitrogen[i] < soil.InitialNitrogen)
                     L.Nitrogen[i] = (byte)Math.Min(255, L.Nitrogen[i] + ms);
+
+                // --- Weeds: come up on field ground in the growing season, then grow ---
+                if (temp > WeedBaseTempC && L.FieldId[i] > 0 && WeedsGrowOn(g))
+                {
+                    var weeds = L.Weeds[i];
+                    if (weeds == WeedState.None && Rng.Hash01(i, hourSeed, 53) < WeedSproutPerDay * realDaysPerHour) L.Weeds[i] = WeedState.Small;
+                    else if (weeds == WeedState.Small && Rng.Hash01(i, hourSeed, 59) < WeedGrowPerDay * realDaysPerHour) L.Weeds[i] = WeedState.Grown;
+                }
 
                 if (def == null) continue;
 

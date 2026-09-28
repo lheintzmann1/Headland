@@ -105,7 +105,7 @@ optionally a `name` in place of the type's.
 | `attachable` | machines | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
 | `fillUnits` | anything | Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins. |
 | `animatedParts` | anything | Parts that move between two poses: folding for transport, a door opening as someone comes by. |
-| `workAreas` | machines | Where it works the ground: cultivating, sowing, cutting a crop. |
+| `workAreas` | machines | Where it works the ground: tilling, sowing, fertilizing, spraying, cutting a crop, mowing. |
 | `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
 | `pipe` | machines | An unloading pipe. |
 | `tipper` | machines | A tipping bed. |
@@ -207,14 +207,15 @@ Needs a `runningGear` that steers.
 How fast it goes depends on what it drives over and pulls. Everything in its chain takes some force to keep rolling:
 little on a road, more on a field, more on loose soil, and more still as the ground softens with the soil's moisture
 and the rain (the more so the higher the ground pressure). A slope adds the weight's pull up it, and a working implement
-the force it draws through the ground (a header's power goes into threshing instead). The engine's power, less the
-threshing, sets how fast it can move all that, and the driven wheels slip more the closer the pull comes to what they
-grip: a little on dry ground, a lot in a soaked field. Downhill the engine has less to do.
+the force it draws through the ground. The engine's power, less what the work takes from it directly (a header
+threshing, a mower, a spreader, a sprayer), sets how fast it can move all that, and the driven wheels slip more the
+closer the pull comes to what they grip: a little on dry ground, a lot in a soaked field. Downhill the engine has less
+to do.
 
 While someone drives it (the farmer or a helper), the engine burns fuel from its `fuelUnit` by the power it delivers:
-threshing, and what it takes to move its chain against all of the above, speed it up and make up for the slip, from
-8% of `fuelPerHour` idling to all of it at full power. With the tank empty the engine stops, and a helper with
-it. Without a `fuelUnit` it never runs out.
+what the implements take from it (threshing, a mower's or a spreader's discs), and what it takes to move its chain
+against all of the above, speed it up and make up for the slip, from 8% of `fuelPerHour` idling to all of it at full
+power. With the tank empty the engine stops, and a helper with it. Without a `fuelUnit` it never runs out.
 
 ### drivable
 
@@ -280,14 +281,29 @@ shed's door (FS: animated objects).
 
 | Setting | Default | |
 |---|---|---|
-| `type` | `cultivator` | `cultivator` (stubble, grass or a failed crop into a seedbed), `seeder` (sows the selected crop), `harvester` (cuts ripe crops for the thresher it hangs on). |
+| `type` | `cultivator` | The kind of work it does (see below). |
 | `maxWorkSpeedKmh` | 12 | |
 | `requiredPowerHp` | 60 | |
 | `requiresOn` | false | Only works turned on. |
-| `fillUnit` | none | Seeder: the unit its seed comes from. |
-| `harvestGroups` | none | Harvester: the crops' harvest groups it cuts (`grain`, `corn`). |
+| `fillUnit` | none | Seeder, spreader, sprayer: the unit what it sows or spreads comes from. |
+| `ratePerHa` | 0 | Spreader, sprayer: units of its fill spread on a hectare. |
+| `harvestGroups` | none | Harvester, mower: the crops' harvest groups it cuts (`grain`, `corn`, `grass`). |
 
-A harvester needs an `attachable`: it works while the vehicle it hangs on threshes.
+The kinds of work (work types, registered in code; mods will add their own):
+
+| `type` | What it does to the ground it passes over |
+|---|---|
+| `cultivator` | Stubble, grass, a meadow or a failed crop into a seedbed. Kills small weeds; grown ones survive it. |
+| `plow` | Turns the ground over (plowed, sown like a seedbed), burying the crop and every weed. |
+| `seeder` | Sows the selected crop into a seedbed or plowed ground, from its `fillUnit` at the crop's `seedKgPerHa`. Out of its sowing window the crop comes up weak. |
+| `spreader` | Spreads the fertilizer in its `fillUnit` at `ratePerHa`, once each time it passes over: the soil gets the fertilizer's `nitrogen` (filltypes.json), and the field counts as fertilized until harvested or cut. |
+| `sprayer` | Sprays the herbicide in its `fillUnit` at `ratePerHa` on tilled, sown or stubble ground: the weeds die, and none come up until the ground is tilled or harvested. |
+| `harvester` | Cuts ripe crops of its `harvestGroups` for the thresher it hangs on, and clears dead ones, leaving stubble. Needs an `attachable`: it works while the vehicle it hangs on threshes. |
+| `mower` | Cuts ripe crops of its `harvestGroups`: grass grows back from its `regrowStage` (crops JSON); the cut grass lies on the field until balers exist. |
+
+The work of a `harvester`, `spreader`, `sprayer` or `mower` takes its power from the engine; that of the others is
+drawn through the ground (see [motor](#motor)). A helper lowers an implement as it reaches the field and raises it as it
+leaves; one that isn't lowered but turned on, such as a spreader, it turns on and off instead.
 
 ### thresher
 

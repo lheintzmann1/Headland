@@ -25,6 +25,25 @@ public static class CropStage
     public const byte Dead = 255;
 }
 
+/// <summary>
+/// Weeds in a cell (<see cref="FieldLayers.Weeds"/>). They come up on tilled field ground and among the crops, grow,
+/// and cost the crop yield. Tillage kills small ones and the plow all of them; herbicide kills them and keeps new ones
+/// out until the ground is tilled or the crop harvested.
+/// </summary>
+public static class WeedState
+{
+    public const byte None = 0;
+    public const byte Small = 1;
+    public const byte Grown = 2;
+    /// <summary>Sprayed with herbicide: the weeds died, and none come up until the ground is tilled or harvested.</summary>
+    public const byte Sprayed = 3;
+
+    /// <summary>Names in contracts.json field states, by value.</summary>
+    public static readonly string[] Names = ["none", "small", "grown", "sprayed"];
+
+    public static bool Living(byte weeds) => weeds is Small or Grown;
+}
+
 /// <summary>Terrain heights on a 1 m grid ((size+1)² samples).</summary>
 public sealed class HeightMap
 {
@@ -82,6 +101,8 @@ public sealed class FieldLayers
         Health = new byte[count];
         WorkAngle = new byte[count];
         Chill = new byte[count];
+        Weeds = new byte[count];
+        Fertilized = new byte[count];
     }
 
     public byte[] Ground { get; }
@@ -105,6 +126,10 @@ public sealed class FieldLayers
     public byte[] WorkAngle { get; }
     /// <summary>Vernalization chill accumulated by the crop, in real days.</summary>
     public byte[] Chill { get; }
+    /// <summary>Weeds: a <see cref="WeedState"/>.</summary>
+    public byte[] Weeds { get; }
+    /// <summary>Times fertilized since the last harvest (or cut, on a meadow).</summary>
+    public byte[] Fertilized { get; }
 }
 
 public enum ObstacleShape { Circle, Box }
@@ -292,7 +317,7 @@ public sealed class WorldMap
 
     /// <summary>
     /// Fills a (64+2)² RGBA8 data texture for a chunk, including a 1-cell border from neighbors.
-    /// R = ground | soil &lt;&lt; 4, G = moisture, B = work angle, A = crop cover (0..255).
+    /// R = ground | soil &lt;&lt; 4, G = moisture, B = work angle (its top 6 bits) | weeds (the low 2), A = crop cover (0..255).
     /// <paramref name="coverLut"/> is indexed by (crop &lt;&lt; 8) | stage.
     /// </summary>
     public void FillChunkTexture(int chunkX, int chunkZ, Span<byte> rgba, ReadOnlySpan<byte> coverLut)
@@ -310,7 +335,7 @@ public sealed class WorldMap
                 var o = (z * n + x) * 4;
                 rgba[o] = (byte)(Layers.Ground[i] | (Layers.Soil[i] << 4));
                 rgba[o + 1] = Layers.Moisture[i];
-                rgba[o + 2] = Layers.WorkAngle[i];
+                rgba[o + 2] = (byte)((Layers.WorkAngle[i] & 0xFC) | Layers.Weeds[i]);
                 rgba[o + 3] = coverLut[(Layers.Crop[i] << 8) | Layers.Stage[i]];
             }
         }

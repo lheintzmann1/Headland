@@ -32,6 +32,7 @@
   ],
   "yards": [
     { "x": 120, "z": 178, "w": 72, "h": 62 },
+    { "x": 132, "z": 160, "w": 60, "h": 18 },
     { "x": 414, "z": 200, "w": 58, "h": 40 },
     { "x": 350, "z": 206, "w": 62, "h": 36 },
     { "x": 472, "z": 256, "w": 40, "h": 50 },
@@ -55,10 +56,11 @@
     { "id": 1, "x": 40,  "z": 60,  "w": 90,  "h": 110, "ground": "stubble",    "angleDeg": 0 },
     { "id": 2, "x": 214, "z": 96,  "w": 110, "h": 120, "ground": "seeded", "crop": "wheat", "stage": "harvestable", "angleDeg": 0 },
     { "id": 3, "x": 40,  "z": 264, "w": 100, "h": 110, "ground": "cultivated", "angleDeg": 0 },
-    { "id": 4, "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass",      "angleDeg": 0 },
+    { "id": 4, "x": 214, "z": 266, "w": 110, "h": 90,  "ground": "grass", "crop": "grass", "stage": "harvestable", "angleDeg": 0 },
     { "id": 5, "x": 346, "z": 266, "w": 100, "h": 100, "ground": "seeded", "crop": "corn",  "stage": "4",  "angleDeg": 90 },
     { "id": 6, "polygon": [[222, 392], [326, 386], [456, 396], [446, 474], [304, 492], [228, 466]],
-      "ground": "stubble", "angleDeg": 90 }
+      "ground": "stubble", "angleDeg": 90 },
+    { "id": 7, "x": 148, "z": 264, "w": 38,  "h": 108, "ground": "grass", "crop": "grass", "stage": "harvestable", "angleDeg": 0 }
   ],
   // Points of interest (pois/*.json types), placed by the center of their footprint. headingDeg turns their front
   // (0 = south, 90 = east). They belong to NPCs unless "farm": 1 gives them to the player.
@@ -82,7 +84,12 @@
     { "def": "tractor_95",     "x": 153, "z": 233, "headingDeg": 90 },
     { "def": "trailer_16",     "x": 146, "z": 233, "headingDeg": 90, "attachToIndex": 4, "joint": "drawbar" },
     { "def": "seeder_3",       "x": 132, "z": 203, "headingDeg": 90 },
-    { "def": "header_corn_6",  "x": 181, "z": 234, "headingDeg": 90 }
+    { "def": "header_corn_6",  "x": 181, "z": 234, "headingDeg": 90 },
+    // On the gravel north of the shed.
+    { "def": "plow_5",         "x": 142, "z": 169, "headingDeg": 90 },
+    { "def": "spreader_24",    "x": 151, "z": 169, "headingDeg": 90 },
+    { "def": "mower_3",        "x": 160, "z": 169, "headingDeg": 90 },
+    { "def": "sprayer_12",     "x": 172, "z": 169, "headingDeg": 90 }
   ],
   "forests": [
     { "x": 0,   "z": 190, "w": 34,  "h": 322, "density": 1.1 },

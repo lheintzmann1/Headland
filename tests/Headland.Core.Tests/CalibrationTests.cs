@@ -1,4 +1,5 @@
 using Headland.Core.Machines;
+using Headland.Core.Machines.Work;
 using Headland.Core.World;
 using Xunit.Abstractions;
 
@@ -16,6 +17,7 @@ public class CalibrationTests(ITestOutputHelper output)
     [InlineData("barley", 4, 1, new[] { 7, 8 })]
     [InlineData("canola", 8, 3, new[] { 6, 7 })]
     [InlineData("corn", 5, 1, new[] { 9, 10, 11 })]
+    [InlineData("grass", 4, 1, new[] { 5, 6, 7 })]
     public void CropsRipenInTheirHarvestMonths(string cropId, int sowMonth, int sowDay, int[] harvestMonths)
     {
         foreach (var seed in new ulong[] { 1, 2, 3, 4 })
@@ -27,7 +29,7 @@ public class CalibrationTests(ITestOutputHelper output)
             TestContent.SkipTo(sim, sowMonth, sowDay, 8f);
             var L = sim.World.Layers;
             var cells = Enumerable.Range(0, L.Ground.Length).Where(i => L.FieldId[i] == 1).ToList();
-            foreach (var i in cells) WorkOps.Sow(sim.World, i, cropIndex, 255, 0);
+            foreach (var i in cells) SeederWork.Sow(sim.World, sim.Content, i, cropIndex, 255, 0);
 
             string? ripeDate = null;
             var ripeMonth = 0;

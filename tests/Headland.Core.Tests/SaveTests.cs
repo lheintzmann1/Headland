@@ -27,6 +27,10 @@ public class SaveTests
     {
         var sim = TestContent.NewSim();
         sim.SkipHours(30);
+        // The wheat sprayed against weeds: it yields what it did when the format-1 fixture was saved, before weeds.
+        var L = sim.World.Layers;
+        for (var i = 0; i < L.Weeds.Length; i++)
+            if (L.FieldId[i] == 2) L.Weeds[i] = WeedState.Sprayed;
         var combine = sim.Machines.All.First(m => m.Def.Id == "combine_7");
         var f2 = sim.World.FieldById(2)!.Shape;
         sim.Player.Enter(combine);
@@ -56,6 +60,8 @@ public class SaveTests
         Assert.Equal(la.Health, lb.Health);
         Assert.Equal(la.WorkAngle, lb.WorkAngle);
         Assert.Equal(la.Chill, lb.Chill);
+        Assert.Equal(la.Weeds, lb.Weeds);
+        Assert.Equal(la.Fertilized, lb.Fertilized);
         Assert.Equal(a.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Get<Attachable>()?.Lowered)),
             b.Machines.All.Select(m => (m.Id, m.Def.Id, m.Position, m.Heading, m.Speed, m.Parent?.Id, m.Get<Attachable>()?.Lowered)));
         Assert.Equal(a.Machines.All.SelectMany(m => m.FillUnits.Select(u => (u.FillType, u.Level))),

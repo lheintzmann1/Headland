@@ -370,7 +370,7 @@ public class PoiActionTests
         var yard = sim.World.PoiById("supplies")!.Trigger("fill")!;
         var seeder = sim.Machines.Spawn("seeder_3", yard.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
-        Assert.Equal(["Buy seeds (7:00–19:00)"], sim.Pois.Describe(yard));
+        Assert.Equal(["Buy seeds, fertilizer, herbicide (7:00–19:00)"], sim.Pois.Describe(yard));
         Assert.Equal(["Buy seeds"], sim.Pois.UseOptions(seeder));
 
         sim.SkipHours(13);

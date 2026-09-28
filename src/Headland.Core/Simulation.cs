@@ -259,8 +259,8 @@ public sealed class Simulation
             return;
         }
         var areas = tool.Get<WorkAreas>()!;
-        var seed = areas.Sows ? Content.Crops[areas.Crop] : null;
-        if (Farms.FieldBlocker(v.FarmId, field, areas.Def.Areas[0].Type, seed) is { } why)
+        var area = areas.Def.Areas[0];
+        if (Farms.FieldBlocker(v.FarmId, field, area.Type, area.Work.Crop(areas, Content)) is { } why)
         {
             Notifications.Post(why, Severity.Warning);
             return;
@@ -317,7 +317,11 @@ public sealed class Simulation
         var helper = (FieldWorkController)drivable.Controller!;
         if (helper.Wages - helper.WagesPaid is var rest and > 0f) PayWages(helper, rest);
         foreach (var m in v.Chain())
-            if (m.Has<WorkAreas>() && m.Get<Attachable>() is { } a) a.Lowered = false;
+        {
+            if (m.Get<WorkAreas>() is not { } areas) continue;
+            if (m.Get<Attachable>() is { } a) a.Lowered = false;
+            if (FieldWorkController.SwitchedOnLanes(m, areas)) areas.On = false;
+        }
         drivable.Controller = Player.Vehicle == v ? Player.Controls : null;
         Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason, helper.Wages));
     }
@@ -393,18 +397,22 @@ public sealed class Simulation
             Stage = stage,
             Health = L.Health[i] / 255f,
             Chill = L.Chill[i],
+            Weeds = L.Weeds[i],
+            Fertilized = L.Fertilized[i],
         };
         if (crop != null && stage != CropStage.Dead)
         {
             report.StageName = crop.Stages[stage].Name;
             report.DaysToHarvest = Crops.EstimateDaysToHarvest(i, Clock);
             report.WaterFactor = CropSystem.WaterFactor(report.Moisture, crop);
+            report.ExpectedYieldPerHa = CropSystem.YieldPerHa(L, crop, i);
             var w = new List<string>();
             if (report.Moisture < crop.WiltingPoint) w.Add("Drought stress");
             else if (report.Moisture < crop.OptimalMoistureMin) w.Add("Soil is dry");
             else if (report.Moisture > 0.95f) w.Add("Waterlogged");
             if (Weather.Temperature < crop.FrostKillC + 3f) w.Add("Frost risk");
             if (L.Nitrogen[i] < crop.NitrogenDemandKgPerHa / Math.Max(1, crop.HarvestableStage)) w.Add("Low nitrogen");
+            if (WeedState.Living(L.Weeds[i])) w.Add($"Weeds cost {(1f - CropSystem.WeedFactor(crop, L.Weeds[i])) * 100f:0}% of the yield: spray them");
             report.Warnings = w;
         }
         else if (crop != null) report.StageName = "Dead";
@@ -429,6 +437,12 @@ public sealed class CellReport(bool valid)
     public float Health { get; init; }
     /// <summary>Vernalization chill accumulated so far (real days).</summary>
     public float Chill { get; init; }
+    /// <summary>A <see cref="WeedState"/>.</summary>
+    public byte Weeds { get; init; }
+    /// <summary>Times fertilized since the last harvest.</summary>
+    public int Fertilized { get; init; }
+    /// <summary>What a hectare of the crop would yield now, by its health and the weeds.</summary>
+    public float ExpectedYieldPerHa { get; set; }
     public float DaysToHarvest { get; set; } = float.NaN;
     public float WaterFactor { get; set; } = float.NaN;
     public List<string> Warnings { get; set; } = [];

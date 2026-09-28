@@ -132,7 +132,8 @@ The triggers, storage and actions have since become POI components (see Componen
 
 - [x] Generation: NPC fields offer jobs by crop state and season (cultivate, sow, harvest), buyers ask for
       goods (deliver to a POI). Reward from area and type, time limit, cap on open contracts.
-- [ ] Plow, fertilize, spray, mow and bale jobs: entries in `contracts.json` once machines do that work.
+- [x] Plow, fertilize, spray and mow jobs: entries in `contracts.json`.
+- [ ] Bale jobs, once balers pick up the cut grass (mowing leaves it lying on the field).
 - [x] Field access: work only applies on the player's farmland or fields with an active contract, and only
       the contract's work. Contract fields show in the world (sign, outline) and in the inspector; the map
       screen shows them once it exists.
@@ -226,10 +227,10 @@ its docs and tests in the same change; no fallback is kept for later.
 - [x] Kinematics out of `MachineSystem.Drive` into the components: motor (speed, power, fuel), running gear
       (steering, turning from its axles) and drivable (input); the system keeps placing the chain. With
       "Kinematics from the running gear".
-- [ ] Work types as a registry instead of the `cultivator`/`seeder`/`harvester` switches in `MachineSystem`,
-      `WorkOps` and `WorkAreaDef.Types`: each type's cell change, what it needs (seed, a thresher) and what
-      helpers and contracts check. Plowing, fertilizing, spraying and mowing (the contract jobs waiting under
-      Contracts) are then one type each, and Lua can add more.
+- [x] Work types as a registry (`WorkTypes`) instead of the `cultivator`/`seeder`/`harvester` switches in
+      `MachineSystem`, `WorkOps` and `WorkAreaDef.Types`: each type's cell change, what it needs (seed, a thresher)
+      and what helpers and contracts check. Plowing, fertilizing, spraying (against weeds, a new field layer) and
+      mowing (grass, a crop that grows back) are one type each, with a machine each; Lua can add more.
 - [ ] Joint and lamp types from data instead of `AttacherJointDef.Types` and `LampDef.Types`.
 - [x] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
       (`Machine.Conditions`) instead of `Machine.Status` strings: a helper stops for those that stop the work, and

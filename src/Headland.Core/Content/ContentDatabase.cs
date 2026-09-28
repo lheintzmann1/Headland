@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Headland.Core.Components;
 using Headland.Core.Machines.Components;
+using Headland.Core.Machines.Work;
 
 namespace Headland.Core.Content;
 
@@ -215,7 +216,6 @@ public sealed class ContentDatabase
     public List<string> Validate()
     {
         var e = new List<string>();
-        var workTypes = WorkAreaDef.Types;
         string[] fieldGrounds = ["grass", "cultivated", "seeded", "stubble", "plowed"];
 
         if (Game.DaysPerMonth < 1) e.Add("game.daysPerMonth must be >= 1");
@@ -243,8 +243,10 @@ public sealed class ContentDatabase
         }
 
         foreach (var f in FillTypeList)
-            if (f.MonthlyPriceFactor is { Length: not 12 })
-                e.Add($"fill type '{f.Id}': monthlyPriceFactor needs 12 values");
+        {
+            if (f.MonthlyPriceFactor is { Length: not 12 }) e.Add($"fill type '{f.Id}': monthlyPriceFactor needs 12 values");
+            if (f.Nitrogen < 0f) e.Add($"fill type '{f.Id}': nitrogen must be >= 0");
+        }
 
         var seenCrops = new HashSet<string>();
         foreach (var c in Crops)
@@ -262,6 +264,10 @@ public sealed class ContentDatabase
                 if (c.CardOf(i) is < 0 or > 6) e.Add($"crop '{c.Id}': stage '{c.Stages[i].Name}' card must be 0..6 (7 is the dead card)");
             if (c.OptimalMoistureMin >= c.OptimalMoistureMax) e.Add($"crop '{c.Id}': optimal moisture range is empty");
             if (c.SowingMonths.Any(m => m is < 1 or > 12)) e.Add($"crop '{c.Id}': sowing months must be 1..12");
+            if (!fieldGrounds.Contains(c.Ground)) e.Add($"crop '{c.Id}': ground must be a field's ({string.Join(", ", fieldGrounds)})");
+            if (c.RegrowStage is { } regrow && (regrow < 0 || regrow >= c.HarvestableStage))
+                e.Add($"crop '{c.Id}': regrowStage must be a stage before the harvestable one");
+            if (c.WeedYieldLoss is < 0f or > 1f) e.Add($"crop '{c.Id}': weedYieldLoss must be 0..1");
         }
 
         foreach (var cl in Climates.Values)
@@ -318,6 +324,8 @@ public sealed class ContentDatabase
                     e.Add($"{what}: {name} ground '{g}' is not a field's ({string.Join(", ", fieldGrounds)})");
                 foreach (var c in state.Crop.Where(c => !FieldStateDef.CropStates.Contains(c)))
                     e.Add($"{what}: {name} crop state '{c}' is unknown ({string.Join(", ", FieldStateDef.CropStates)})");
+                foreach (var w in state.Weeds.Where(w => !World.WeedState.Names.Contains(w)))
+                    e.Add($"{what}: {name} weed state '{w}' is unknown ({string.Join(", ", World.WeedState.Names)})");
             }
             if (t.Work == "" && t.Leases.Length > 0) e.Add($"{what}: leases are for field jobs");
             for (var k = 0; k < t.Leases.Length && t.Work != ""; k++)
@@ -339,10 +347,11 @@ public sealed class ContentDatabase
             }
             else
             {
-                if (!workTypes.Contains(t.Work)) e.Add($"{what}: unknown work '{t.Work}'");
+                var work = WorkTypes.Find(t.Work);
+                if (work == null) e.Add($"{what}: unknown work '{t.Work}' ({WorkTypes.Known})");
                 if (t.Offer.IsEmpty || t.Done.IsEmpty) e.Add($"{what}: a field job needs offer and done states");
                 if (d?.Amount.Length > 0) e.Add($"{what}: deliver.amount is for delivery jobs (no work)");
-                if (d != null && (d.Share is <= 0 or > 1 || t.Work != "harvester")) e.Add($"{what}: deliver.share must be in (0, 1], on harvester jobs");
+                if (d != null && (d.Share is <= 0 or > 1 || work is not { Harvests: true })) e.Add($"{what}: deliver.share must be in (0, 1], on jobs that harvest");
             }
             if (d == null) continue;
             if (d.PriceFactor <= 0) e.Add($"{what}: deliver.priceFactor must be > 0");
