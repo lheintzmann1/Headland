@@ -279,13 +279,16 @@ trailers and sell at the elevator. Stations and silos take categories the same w
 
 | Setting | Default | |
 |---|---|---|
-| `parts` | none | Each has an `id` (the model node role it moves), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and `fold` or a `trigger`. |
+| `parts` | none | Each has an `id` (the model node role it moves), a `name` for the key hints (its id), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and `fold`, a `trigger` or `support`. |
 | `startFolded` | false | Comes folded. |
 
 Parts with `fold: true` (on machines only) move together when the machine folds for transport; their rest pose is the
 working one. The fold key folds and unfolds them, raising the machine as it folds. A folded machine (or one still
 unfolding) doesn't work and doesn't go down: it's unfolded first, and a helper unfolds it by itself. A part with a
-`trigger` moves while someone is in it and back once they left, such as a shed's door (FS: animated objects).
+`trigger` moves while someone is in it and back once they left, such as a shed's door (FS: animated objects). A part
+with `support: true` (on machines that hitch) is a support leg: moved while the machine stands unhitched, back once
+it's hitched. The other parts of a machine, such as covers and markers, move with the driver's key for parts that
+don't fold ("Move the marker"), for the selected implement or, with the vehicle selected, the whole chain.
 
 ### workAreas
 

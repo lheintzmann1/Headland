@@ -52,6 +52,14 @@ public class ComponentTests
           }
         },
         {
+          "id": "test_legged_trailer", "name": "Legged trailer", "size": { "length": 5, "width": 2.4, "height": 2, "centerZ": 0 },
+          "components": {
+            "runningGear": { "axles": [ { "z": 0, "track": 1.9 } ] },
+            "attachable": { "type": "drawbar", "mode": "trailed", "z": 3 },
+            "animatedParts": { "parts": [ { "id": "leg", "offset": [0, -0.4, 0], "seconds": 0.5, "support": true } ] }
+          }
+        },
+        {
           "id": "test_loader", "name": "Loader", "size": { "length": 2.5, "width": 2, "height": 1.5, "centerZ": 1 },
           "components": {
             "attachable": { "type": "frontLoader", "mode": "mounted" },
@@ -220,6 +228,39 @@ public class ComponentTests
         var after = CountCells(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated && sim.World.Layers.FieldId[i] == 4);
         Run(sim, 3f);
         Assert.Equal(after, CountCells(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated && sim.World.Layers.FieldId[i] == 4));
+    }
+
+    [Fact]
+    public void TheDriverMovesThePartsThatDontFoldAndSupportLegsFollowTheHitch()
+    {
+        var sim = Sim(Content());
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
+        var c = sim.Machines.Spawn("test_wide_cultivator", new Vector2(269f, 278f), 0f);
+        Assert.True(sim.Machines.Attach(t, "rear", c));
+        var parts = c.Get<AnimatedParts>()!;
+        sim.Player.Enter(t);
+        string Label() => sim.Offers().Of(InputActions.MoveParts)!.Label;
+
+        Assert.Equal("Move the marker", Label());
+        sim.Perform(InputActions.MoveParts);
+        Run(sim, 1.1f);
+        // The marker moves, the folded wings stay as they are.
+        Assert.Equal((1f, true), (parts.Part("marker")!.Position, parts.Folded));
+        Assert.Equal("Move the marker back", Label());
+
+        // A support leg is down while its machine stands unhitched, and nobody's key moves it.
+        var trailer = sim.Machines.Spawn("test_legged_trailer", new Vector2(269f, 270f), 0f);
+        var leg = trailer.Get<AnimatedParts>()!.Part("leg")!;
+        Assert.Equal((true, 1f), (leg.Target, leg.Position));
+        Assert.True(sim.Machines.Attach(t, "drawbar", trailer));
+        Run(sim, 0.6f);
+        Assert.Equal(0f, leg.Position);
+        Assert.False(trailer.Get<AnimatedParts>()!.Move("leg", true));
+        t.Get<Drivable>()!.Selected = trailer;
+        Assert.Null(sim.Offers().Of(InputActions.MoveParts));
+        sim.Machines.Detach(trailer);
+        Run(sim, 0.6f);
+        Assert.Equal(1f, leg.Position);
     }
 
     [Fact]

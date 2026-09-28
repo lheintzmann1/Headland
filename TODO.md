@@ -284,7 +284,11 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [x] Lights: cycle the lamp groups (off, head, head and work lights), beacons, turn signals, hazards; see
       Lights under Vehicles.
 - [x] Folding: a fold key; lowering a folded implement no longer unfolds it by itself.
-- [ ] Parts that don't fold (covers, markers, support legs) move for the selected implement.
+- [x] Parts that don't fold (covers, markers, support legs) move for the selected implement. Support legs move with
+      the hitch, as FS's support animations.
+- [ ] Covers and markers as FS has them: a cover (FS `Cover`) opens by itself at a fill trigger and while tipping, and
+      nothing fills it closed; ridge markers (FS `RidgeMarker`) step left, right and up, work only lowered, go up when
+      the implement folds, and helpers leave them up. With the actions named by the tool.
 - [ ] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
       lift and tilt the same way.
 - [ ] Winch: reel in and out, hook and unhook.
@@ -425,6 +429,9 @@ A mod is an add-on the game loads, never a fork.
   - `InputBinding`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=51&class=533>
   - `Lights` (vehicle lights: states, beacons, turn, brake and reverse lights, lights off on leaving, AI lights):
     <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=691>
+  - `Cover`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=647>,
+    `RidgeMarker`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=786>,
+    `Attachable` (support animations): <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=628>
   - `PlayerOnFootStateMachine`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=80&class=835>
   - `AITask`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=81&class=843>
   - `AnimalLoadingTrigger` (triggers): <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=88&class=850>

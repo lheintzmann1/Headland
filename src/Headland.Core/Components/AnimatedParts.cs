@@ -1,5 +1,6 @@
 using Headland.Core.Content;
 using Headland.Core.Input;
+using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Components;
@@ -8,6 +9,8 @@ public sealed class AnimatedPartDef
 {
     /// <summary>Unique on the entity; also the model node role it moves.</summary>
     public string Id { get; set; } = "";
+    /// <summary>What the player calls it in key hints ("markers"); its id by default.</summary>
+    public string? Name { get; set; }
     /// <summary>Its moved pose, from its rest pose as modeled: turned by [x, y, z] degrees about its pivot, shifted by [x, y, z] meters.</summary>
     public float[] RotationDeg { get; set; } = [0f, 0f, 0f];
     public float[] Offset { get; set; } = [0f, 0f, 0f];
@@ -17,12 +20,17 @@ public sealed class AnimatedPartDef
     public bool Fold { get; set; }
     /// <summary>Moves while someone is in this area, and back once they left (a door opening), rather than on command.</summary>
     public TriggerDef? Trigger { get; set; }
+    /// <summary>A support leg (FS: support animations): moved while the machine stands unhitched, back once it's hitched.</summary>
+    public bool Support { get; set; }
+
+    /// <summary>Moved by the driver's key: it neither folds, nor follows a trigger or the hitch (a cover, a marker).</summary>
+    public bool Commanded => !Fold && Trigger == null && !Support;
 }
 
 /// <summary>
-/// Parts that move between two poses: covers, support legs, the wings of an implement that folds for transport, a
-/// shed's door opening as someone comes by (FS: PlaceableAnimatedObjects). A folded machine (or one still unfolding)
-/// does not work and cannot go down; lowering it unfolds it first.
+/// Parts that move between two poses: covers and markers the driver moves, support legs going down when the machine is
+/// unhitched, the wings of an implement that folds for transport, a shed's door opening as someone comes by (FS:
+/// PlaceableAnimatedObjects). A folded machine (or one still unfolding) does not work and cannot go down.
 /// </summary>
 public sealed class AnimatedPartsDef : ComponentDef
 {
@@ -43,6 +51,8 @@ public sealed class AnimatedPartsDef : ComponentDef
             if (p.RotationDeg.Length != 3 || p.Offset.Length != 3) yield return $"part '{p.Id}': rotationDeg and offset are [x, y, z]";
             if (p.Fold && owner is not MachineDef) yield return $"part '{p.Id}': only machines fold";
             if (p.Fold && p.Trigger != null) yield return $"part '{p.Id}': a part that folds moves with the machine, not by a trigger";
+            if (p.Support && (p.Fold || p.Trigger != null)) yield return $"part '{p.Id}': a support leg moves with the hitch, neither folds nor follows a trigger";
+            if (p.Support && owner.Get<AttachableDef>() == null) yield return $"part '{p.Id}': only machines that hitch have support legs";
             if (p.Trigger?.Error() is { } error) yield return $"part '{p.Id}' trigger: {error}";
         }
         if (StartFolded && !Parts.Any(p => p.Fold)) yield return "startFolded needs parts that fold";
@@ -69,7 +79,8 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
 {
     public AnimatedParts(Entity owner, AnimatedPartsDef def) : base(owner, def)
     {
-        Parts = def.Parts.Select(p => new AnimatedPart(p) { Target = p.Fold && def.StartFolded, Position = p.Fold && def.StartFolded ? 1f : 0f }).ToArray();
+        // Folded parts start folded when it comes folded; support legs start down, as it stands unhitched.
+        Parts = def.Parts.Select(p => p.Fold && def.StartFolded || p.Support ? new AnimatedPart(p) { Target = true, Position = 1f } : new AnimatedPart(p)).ToArray();
     }
 
     public IReadOnlyList<AnimatedPart> Parts { get; }
@@ -92,21 +103,30 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
     /// <summary>Fully unfolded: in its working pose.</summary>
     public bool Unfolded => Parts.All(p => !p.Def.Fold || p is { Target: false, Position: 0f });
 
-    /// <summary>The fold key, on a machine that folds for transport.</summary>
+    /// <summary>A machine's fold key when it folds for transport, and the key moving its parts moved on command.</summary>
     public void AddActions(ActionList actions, Simulation sim)
     {
-        if (!CanFold) return;
-        actions.Toggle(InputActions.Fold, Folded, "Fold", "Unfold", fold =>
+        if (Owner is not Machine) return;
+        if (CanFold)
+            actions.Toggle(InputActions.Fold, Folded, "Fold", "Unfold", fold =>
+            {
+                Folded = fold;
+                return null;
+            });
+        var commanded = Parts.Where(p => p.Def.Commanded).ToList();
+        if (commanded.Count == 0) return;
+        var names = string.Join(", ", commanded.Select(p => p.Def.Name ?? p.Def.Id).Distinct());
+        actions.Toggle(InputActions.MoveParts, commanded.Any(p => p.Target), $"Move the {names}", $"Move the {names} back", moved =>
         {
-            Folded = fold;
+            foreach (var p in commanded) p.Target = moved;
             return null;
         });
     }
 
-    /// <summary>Moves a part that neither folds nor follows a trigger to its moved pose (true) or back.</summary>
+    /// <summary>Moves a part moved on command (<see cref="AnimatedPartDef.Commanded"/>) to its moved pose (true) or back.</summary>
     public bool Move(string id, bool moved)
     {
-        if (Part(id) is not { Def: { Fold: false, Trigger: null } } p) return false;
+        if (Part(id) is not { Def.Commanded: true } p) return false;
         p.Target = moved;
         return true;
     }
@@ -116,6 +136,7 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
         foreach (var p in Parts)
         {
             if (p.Def.Trigger is { } trigger) p.Target = trigger.Occupied(Owner, sim);
+            else if (p.Def.Support) p.Target = Owner is Machine { Parent: null };
             p.Position = MathUtil.MoveToward(p.Position, p.Target ? 1f : 0f, dt / p.Def.Seconds);
         }
     }

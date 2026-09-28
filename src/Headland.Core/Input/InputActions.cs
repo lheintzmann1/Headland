@@ -19,6 +19,7 @@ public static class InputActions
     public const string SelectImplement = "select_implement";
     public const string Lower = "lower";
     public const string Fold = "fold";
+    public const string MoveParts = "move_parts";
     public const string TurnOn = "turn_on";
     public const string Unload = "unload";
     public const string CycleSeed = "cycle_seed";
@@ -50,6 +51,7 @@ public static class InputActions
         },
         new(Lower, "Lower / raise implements", Driving, "V", "Joy A") { Unavailable = "No implement to lower" },
         new(Fold, "Fold / unfold implements", Driving, "N") { Unavailable = "Nothing to fold" },
+        new(MoveParts, "Move the parts that don't fold: covers, markers", Driving, "Shift+N") { Unavailable = "Nothing to move" },
         new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on" },
         new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
