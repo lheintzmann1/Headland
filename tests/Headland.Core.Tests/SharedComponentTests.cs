@@ -1,6 +1,8 @@
 using System.Numerics;
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
+using Headland.Core.Machines;
 using Headland.Core.Saves;
 
 namespace Headland.Core.Tests;
@@ -93,22 +95,127 @@ public class SharedComponentTests
         Assert.False(lights.Lit(Lamp(lights, "evening")));
     }
 
+    /// <summary>Which of the lamp types (by lamptypes.json id) have a lamp shining.</summary>
+    private static string[] Shining(Lights lights) =>
+        lights.Def.Lamps.Where((_, i) => lights.Lit(i)).Select(l => l.Type).Distinct().Order().ToArray();
+
     [Fact]
-    public void HeadlightsComeOnAtNightAndWhenTheDriverSwitchesThem()
+    public void TheDriverSwitchesTheLightsStepByStepAndSignals()
     {
         var sim = ShedSim();
         var tractor = sim.Machines.Spawn("tractor_125", new Vector2(10f, 50f), 0f);
         var lights = tractor.Get<Lights>()!;
-        var head = Array.FindIndex(lights.Def.Lamps, l => l.Type == "head");
-        At(sim, 12);
-        Assert.False(lights.Lit(head));
-        Assert.True(lights.Switch("head", true));
-        sim.Tick(Dt);
-        Assert.True(lights.Lit(head));
-        lights.Switch("head", false);
+        sim.Player.Enter(tractor);
+        string Label(string action) => sim.Offers().Of(action)!.Label;
+
+        // Nothing comes on by itself at night any more: the light key steps through off, headlights, work lights too.
         At(sim, 23);
-        Assert.True(lights.Lit(head));
-        Assert.False(lights.Switch("beacon", true));
+        Assert.Empty(Shining(lights));
+        Assert.Equal("Headlights, tail lights on", Label(InputActions.Lights));
+        sim.Perform(InputActions.Lights);
+        sim.Tick(Dt);
+        Assert.Equal(["head", "tail"], Shining(lights));
+        Assert.Equal("Front work lights, rear work lights on", Label(InputActions.Lights));
+        sim.Perform(InputActions.Lights);
+        sim.Tick(Dt);
+        Assert.Equal(["head", "tail", "workFront", "workRear"], Shining(lights));
+        Assert.Equal("Lights off", Label(InputActions.Lights));
+        sim.Perform(InputActions.Lights);
+        sim.Tick(Dt);
+        Assert.Empty(Shining(lights));
+
+        // Beacons come with the workshop's option; the turn signals blink one side, the hazards both.
+        Assert.Null(sim.Offers().Of(InputActions.Beacons));
+        sim.Perform(InputActions.Beacons);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "No beacons: a workshop fits them");
+        sim.Perform(InputActions.TurnLeft);
+        sim.Tick(Dt);
+        Assert.Equal(["turnLeft"], Shining(lights));
+        Assert.Equal("Stop signalling", Label(InputActions.TurnLeft));
+        sim.Perform(InputActions.Hazards);
+        sim.Tick(Dt);
+        Assert.Equal(["turnLeft", "turnRight"], Shining(lights));
+        sim.Perform(InputActions.Hazards);
+        sim.Tick(Dt);
+        Assert.Empty(Shining(lights));
+
+        var both = sim.Machines.Spawn("tractor_125", new Vector2(10f, 30f), 0f, configuration: new Dictionary<string, string> { ["beacons"] = "both" });
+        sim.Player.Exit(sim);
+        sim.Player.Enter(both);
+        sim.Perform(InputActions.Beacons);
+        sim.Tick(Dt);
+        Assert.Equal(["beacon"], Shining(both.Get<Lights>()!));
+
+        // Getting out switches everything off but the hazards.
+        sim.Perform(InputActions.Lights);
+        sim.Perform(InputActions.TurnRight);
+        sim.Player.Exit(sim);
+        sim.Tick(Dt);
+        Assert.Empty(Shining(both.Get<Lights>()!));
+        sim.Player.Enter(both);
+        sim.Perform(InputActions.Hazards);
+        sim.Player.Exit(sim);
+        sim.Tick(Dt);
+        Assert.Equal(["turnLeft", "turnRight"], Shining(both.Get<Lights>()!));
+    }
+
+    [Fact]
+    public void BrakeAndReverseLightsFollowTheDriving()
+    {
+        var sim = ShedSim();
+        var tractor = sim.Machines.Spawn("tractor_125", new Vector2(10f, 20f), 0f);
+        var lights = tractor.Get<Lights>()!;
+        sim.Player.Enter(tractor);
+        sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
+        Run(sim, 2f);
+        Assert.Empty(Shining(lights));
+        sim.Player.Controls.Input = new VehicleInput { Brake = true };
+        sim.Tick(Dt);
+        sim.Tick(Dt);
+        Assert.Equal(["brake"], Shining(lights));
+        Run(sim, 3f);
+        // Standing still, braking lights nothing; backing up lights the reverse lights.
+        Assert.Empty(Shining(lights));
+        sim.Player.Controls.Input = new VehicleInput { Throttle = -1f };
+        sim.Tick(Dt);
+        sim.Tick(Dt);
+        Assert.Equal(["reverse"], Shining(lights));
+    }
+
+    [Fact]
+    public void AHelperLightsEverythingAtNightAndImplementsFollowTheirVehicle()
+    {
+        var content = TestContent.WithMachines("""
+            [{ "id": "test_lit_trailer", "name": "Lit trailer", "size": { "length": 6, "width": 2.4, "centerZ": 0 },
+               "components": {
+                 "runningGear": { "axles": [ { "z": 0, "track": 1.9 } ] },
+                 "attachable": { "type": "drawbar", "mode": "trailed", "z": 4 },
+                 "lights": { "lamps": [ { "type": "workRear", "z": -3, "yawDeg": 180 }, { "type": "turnRight", "x": -1, "z": -3 } ] } },
+               "visual": { "model": "res://trailer.glb" } }]
+            """);
+        var sim = Simulation.Create(content);
+        TestContent.OwnField4(sim);
+        var field = sim.World.FieldById(4)!;
+        var t = sim.Machines.Spawn("tractor_125", field.Shape.Min + new Vector2(4f, -10f), 0f);
+        var c = sim.Machines.Spawn("cultivator_3", field.Shape.Min + new Vector2(4f, -12f), 0f);
+        Assert.True(sim.Machines.Attach(t, "rear", c));
+        At(sim, 23);
+        sim.HireHelper(t, field, maxLanes: 1);
+        sim.Tick(Dt);
+        Assert.Equal(["head", "tail", "workFront", "workRear"], Shining(t.Get<Lights>()!));
+
+        var truck = sim.Machines.Spawn("tractor_95", new Vector2(60f, 60f), 0f);
+        var trailer = sim.Machines.Spawn("test_lit_trailer", new Vector2(60f, 55f), 0f);
+        Assert.True(sim.Machines.Attach(truck, "drawbar", trailer));
+        sim.Player.Enter(truck);
+        sim.Perform(InputActions.Lights);
+        sim.Perform(InputActions.Lights);
+        sim.Perform(InputActions.TurnRight);
+        sim.Tick(Dt);
+        Assert.Equal(["turnRight", "workRear"], Shining(trailer.Get<Lights>()!));
+        sim.Machines.Detach(trailer);
+        sim.Tick(Dt);
+        Assert.Empty(Shining(trailer.Get<Lights>()!));
     }
 
     [Fact]

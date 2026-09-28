@@ -14,9 +14,10 @@ public class TypeDataTests
         var content = TestContent.Content;
         Assert.Equal(["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"], content.JointTypes.Keys.ToArray());
         Assert.Equal(["threePoint"], content.JointTypes.Values.Where(j => j.Linkage).Select(j => j.Id));
-        Assert.Equal(["head", "workFront", "workRear", "beacon"], content.LampTypes.Keys.ToArray());
-        Assert.Equal(["head"], content.LampTypes.Values.Where(l => l.Night).Select(l => l.Id));
+        Assert.Equal(["head", "tail", "workFront", "workRear", "beacon", "turnLeft", "turnRight", "brake", "reverse"], content.LampTypes.Keys.ToArray());
+        Assert.Equal([("head", 1), ("tail", 1), ("workFront", 2), ("workRear", 2)], content.LampTypes.Values.Where(l => l.Control == "lights").Select(l => (l.Id, l.Step)));
         Assert.Equal(["beacon"], content.LampTypes.Values.Where(l => l.Rotating).Select(l => l.Id));
+        Assert.Equal(["turnLeft", "turnRight"], content.LampTypes.Values.Where(l => l.Blinking).Select(l => l.Id));
 
         // A tractor's three-point linkage lifts; its drawbar has no linkage to.
         var tractor = content.Machines["tractor_125"];
@@ -36,7 +37,7 @@ public class TypeDataTests
         var content = TestContent.Modded(new()
         {
             ["jointtypes.json"] = TestContent.WithEntry("jointtypes.json", """  { "id": "hookLift", "name": "Hook lift", "linkage": true }"""),
-            ["lamptypes.json"] = TestContent.WithEntry("lamptypes.json", """  { "id": "marker", "name": "Marker lights", "night": true }"""),
+            ["lamptypes.json"] = TestContent.WithEntry("lamptypes.json", """  { "id": "marker", "name": "Marker lights", "step": 3 }"""),
             ["machines/test.json"] = """
                 [{ "id": "truck", "name": "Truck", "size": { "length": 7, "width": 2.5 },
                    "components": {
@@ -56,10 +57,12 @@ public class TypeDataTests
         var truck = sim.Machines.Spawn("truck", new Vector2(60f, 248f), 0f);
         var container = sim.Machines.Spawn("container", new Vector2(60f, 240f), 0f);
         Assert.True(sim.Machines.Attach(truck, "hook", container));
-        // Marker lights come on at night by themselves, as the data says.
-        sim.SkipHours(15);
+        // Marker lights come on at the light key's step the data gives them.
+        truck.Get<Lights>()!.Step = 2;
         sim.Tick(1f / 60f);
-        Assert.True(sim.Weather.Night);
+        Assert.False(truck.Get<Lights>()!.Lit(0));
+        truck.Get<Lights>()!.Step = 3;
+        sim.Tick(1f / 60f);
         Assert.True(truck.Get<Lights>()!.Lit(0));
     }
 
@@ -77,6 +80,6 @@ public class TypeDataTests
         Assert.Contains($"machine 'x' attacherJoints: joint 'rear': unknown type 'hitchPin' {known}", bad.Message);
         Assert.Contains($"machine 'x' attachable: unknown type 'towBall' {known}", bad.Message);
         Assert.Contains($"machine 'x' frontLoaderBracket: unknown type 'loaderArm' {known}", bad.Message);
-        Assert.Contains("machine 'x' lights: unknown lamp type 'laser' (head, workFront, workRear, beacon)", bad.Message);
+        Assert.Contains("machine 'x' lights: unknown lamp type 'laser' (head, tail, workFront, workRear, beacon, turnLeft, turnRight, brake, reverse)", bad.Message);
     }
 }

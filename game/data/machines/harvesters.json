@@ -26,7 +26,21 @@
       "lights": {
         "lamps": [
           { "type": "head", "x":  0.99, "y": 2.2, "z": 1.6 },
-          { "type": "head", "x": -0.99, "y": 2.2, "z": 1.6 }
+          { "type": "head", "x": -0.99, "y": 2.2, "z": 1.6 },
+          { "type": "workFront", "x":  1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+          { "type": "workFront", "x": -1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+          { "type": "workRear", "x":  0.9, "y": 3.7, "z": -5.4, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+          { "type": "workRear", "x": -0.9, "y": 3.7, "z": -5.4, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+          { "type": "turnLeft",  "x":  1.55, "y": 2.2, "z": 1.5, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "turnRight", "x": -1.55, "y": 2.2, "z": 1.5, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "turnLeft",  "x":  1.5, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "turnRight", "x": -1.5, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "tail",  "x":  1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+          { "type": "tail",  "x": -1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+          { "type": "brake", "x":  1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+          { "type": "brake", "x": -1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+          { "type": "reverse", "x":  1.1, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 },
+          { "type": "reverse", "x": -1.1, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 }
         ]
       },
       "wearable": {}

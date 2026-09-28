@@ -6,14 +6,15 @@ using Godot;
 namespace Headland.Game.Components;
 
 /// <summary>
-/// A spot light per lamp, lit while Core says it shines (see <see cref="Lights"/>). Beacons turn, and lamps on an
-/// articulated machine's front frame swing with it.
+/// A spot light per lamp, lit while Core says it shines (see <see cref="Lights"/>). Beacons turn, turn signals blink
+/// (about 1.5 times a second, as the law has them), and lamps on an articulated machine's front frame swing with it.
 /// </summary>
 public partial class LightsView : ComponentView
 {
     private readonly List<(LampDef lamp, SpotLight3D light)> _lamps = [];
     private RunningGear? _gear;
     private float _beacon;
+    private float _blink;
 
     public Lights Lights { get; init; } = null!;
 
@@ -42,10 +43,11 @@ public partial class LightsView : ComponentView
     public override void _Process(double delta)
     {
         _beacon = (_beacon + (float)delta * 9f) % Mathf.Tau;
+        _blink = (_blink + (float)delta * 1.5f) % 1f;
         for (var i = 0; i < _lamps.Count; i++)
         {
             var (l, light) = _lamps[i];
-            light.Visible = Lights.Lit(i);
+            light.Visible = Lights.Lit(i) && (l.TypeDef?.Blinking != true || _blink < 0.5f);
             if (!light.Visible) continue;
             var (x, z, swing) = _gear?.Swing(l.X, l.Z) ?? (l.X, l.Z, 0f);
             light.Position = new Vector3(x, l.Y, z);

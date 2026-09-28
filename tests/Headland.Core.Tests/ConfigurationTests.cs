@@ -58,13 +58,13 @@ public class ConfigurationTests
         Assert.All(tractor.Get<RunningGearDef>()!.Axles, a => Assert.Equal("dual", a.Wheels.Type));
         Assert.Equal((0.8f, 3.6f), (tractor.Get<RunningGearDef>()!.Axles[0].Wheels.Radius, tractor.Size.Width));
         Assert.Equal(["rear", "drawbar", "frontLoader"], tractor.Joints.Select(j => j.Id));
-        Assert.Equal(["head", "head", "beacon", "beacon", "beacon", "beacon"], tractor.Get<LightsDef>()!.Lamps.Select(l => l.Type));
+        Assert.Equal(["head", "head", "beacon", "beacon", "beacon", "beacon"], tractor.Get<LightsDef>()!.Lamps.Select(l => l.Type).Where(t => t is "head" or "beacon"));
         Assert.Equal((145f, 2.4f, 40f), (tractor.Get<MotorDef>()!.PowerHp, tractor.Get<MotorDef>()!.Acceleration, tractor.Get<MotorDef>()!.MaxSpeedKmh));
         Assert.Equal("#48494a", tractor.Visual.Color);
 
         // The machine as it comes is left as it was.
         var standard = content.Machines["tractor_125"];
-        Assert.Equal(("single", 2.45f, 2), (standard.Get<RunningGearDef>()!.Axles[0].Wheels.Type, standard.Size.Width, standard.Get<LightsDef>()!.Lamps.Length));
+        Assert.Equal(("single", 2.45f, 16), (standard.Get<RunningGearDef>()!.Axles[0].Wheels.Type, standard.Size.Width, standard.Get<LightsDef>()!.Lamps.Length));
     }
 
     [Fact]

@@ -1,8 +1,16 @@
 [
-  // Kinds of lamps: the driver switches a machine's lamps of a type together. "night": they also come on by
-  // themselves at night (headlights). "rotating": the beam turns round (beacons).
-  { "id": "head",      "name": "Headlights", "night": true },
-  { "id": "workFront", "name": "Front work lights" },
-  { "id": "workRear",  "name": "Rear work lights" },
-  { "id": "beacon",    "name": "Beacons", "rotating": true }
+  // Kinds of lamps: the driver switches a machine's lamps of a type together, with the control the type answers to.
+  // "control": "lights" (the light key steps through them: off, then each "step" on in turn, 1 headlights and tail
+  // lights, 2 work lights too; a helper driving at night lights them all), "beacons", "turnLeft" or "turnRight" (the
+  // turn signals; the hazards light both), "brake" (while the vehicle slows down), "reverse" (while it backs up).
+  // "rotating": the beam turns round (beacons). "blinking": it flashes (turn signals).
+  { "id": "head",      "name": "Headlights",        "step": 1 },
+  { "id": "tail",      "name": "Tail lights",       "step": 1 },
+  { "id": "workFront", "name": "Front work lights", "step": 2 },
+  { "id": "workRear",  "name": "Rear work lights",  "step": 2 },
+  { "id": "beacon",    "name": "Beacons",           "control": "beacons", "rotating": true },
+  { "id": "turnLeft",  "name": "Left turn signals", "control": "turnLeft", "blinking": true },
+  { "id": "turnRight", "name": "Right turn signals", "control": "turnRight", "blinking": true },
+  { "id": "brake",     "name": "Brake lights",      "control": "brake" },
+  { "id": "reverse",   "name": "Reverse lights",    "control": "reverse" }
 ]

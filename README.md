@@ -103,6 +103,9 @@ file (see below).
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
+| L | Lights: headlights and tail lights, then work lights too, then off; they go off when you get out, and a helper switches them on at night. Brake and reverse lights work by themselves |
+| Shift+L, Ctrl+L | Beacons (where fitted), hazard lights |
+| Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
 | H | Hire or dismiss a field helper |
 | Esc | The menu: contracts, finances and loans, farmland, controls, save, load and quit; Q / E switch its tabs |

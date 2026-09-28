@@ -173,6 +173,20 @@ public partial class Hud : CanvasLayer
         if (v.Get<Motor>() is { Running: true } motor) sb.Append(Widgets.Colored($"   {motor.FuelPerHour:0.0} L/h", Palette.Dim));
         if (v.Get<RunningGear>() is { Slip: > 0.05f } gear) sb.Append("   " + Widgets.Colored($"slip {gear.Slip * 100f:0}%", gear.Slip > 0.15f ? Palette.Warning : Palette.Dim));
         if (v.Get<Thresher>() is { } thresher) sb.Append("   " + (thresher.On ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
+        if (v.Get<Lights>() is { } lights)
+        {
+            var lit = new List<string>();
+            if (lights.Step > 0) lit.Add("lights");
+            if (lights.Beacons) lit.Add("beacons");
+            lit.Add(lights.Signal switch
+            {
+                TurnSignal.Left => "signal left",
+                TurnSignal.Right => "signal right",
+                TurnSignal.Hazards => "hazards",
+                _ => "",
+            });
+            if (lit.Any(l => l.Length > 0)) sb.Append("   " + Widgets.Colored(string.Join(" · ", lit.Where(l => l.Length > 0)), Palette.Info));
+        }
         sb.Append('\n');
         if (v.Get<Drivable>()?.Controller is FieldWorkController w)
             sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");

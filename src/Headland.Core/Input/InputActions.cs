@@ -23,6 +23,11 @@ public static class InputActions
     public const string Unload = "unload";
     public const string CycleSeed = "cycle_seed";
     public const string Steering = "steering";
+    public const string Lights = "lights";
+    public const string Beacons = "beacons";
+    public const string TurnLeft = "turn_left";
+    public const string TurnRight = "turn_right";
+    public const string Hazards = "hazards";
     public const string Use = "use";
     public const string Helper = "helper";
 
@@ -49,6 +54,11 @@ public static class InputActions
         new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
+        new(Lights, "Lights: off, headlights, work lights too", Driving, "L") { Unavailable = "No lights to switch" },
+        new(Beacons, "Beacons on / off", Driving, "Shift+L") { Unavailable = "No beacons: a workshop fits them" },
+        new(TurnLeft, "Turn signal left", Driving, "Ctrl+Q") { Unavailable = "No turn signals" },
+        new(TurnRight, "Turn signal right", Driving, "Ctrl+E") { Unavailable = "No turn signals" },
+        new(Hazards, "Hazard lights", Driving, "Ctrl+L") { Unavailable = "No turn signals" },
         new(Use, "Use a POI: buy, load, refuel, repair, change options, wash", Moving, "R", "Joy X")
         {
             Unavailable = "Park in a marked area first: a shop, silo, gas station, workshop or wash bay",

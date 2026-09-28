@@ -161,8 +161,8 @@ public class ComponentTests
         var m = sim.Machines.Spawn("test_forwarder", new Vector2(269f, 300f), 0f);
         m.Get<CraneArm>()!.MoveTo("boom", 45f);
         m.Get<Winch>()!.ReelTo(3f);
-        Assert.True(m.Get<Lights>()!.Switch("workRear", true));
-        Assert.False(m.Get<Lights>()!.Switch("beacon", true));
+        m.Get<Lights>()!.Step = 2;
+        m.Get<Lights>()!.Signal = TurnSignal.Hazards;
         sim.Player.Enter(m);
         sim.Perform(InputActions.TurnOn);
         Assert.True(m.Get<Saw>()!.On);
@@ -173,7 +173,7 @@ public class ComponentTests
         Assert.Equal((m.Get<CraneArm>()!.Joint("boom")!.Value, 45f), (loaded.Get<CraneArm>()!.Joint("boom")!.Value, loaded.Get<CraneArm>()!.Joint("boom")!.Target));
         Assert.Equal((m.Get<Winch>()!.Length, 3f), (loaded.Get<Winch>()!.Length, loaded.Get<Winch>()!.Target));
         Assert.True(loaded.Get<Saw>()!.On);
-        Assert.Equal(["workRear"], loaded.Get<Lights>()!.On);
+        Assert.Equal((2, TurnSignal.Hazards), (loaded.Get<Lights>()!.Step, loaded.Get<Lights>()!.Signal));
 
         // Saved per component kind; the seat keeps nothing.
         var saved = JsonSerializer.Deserialize<SaveState>(file.State, SaveGame.Json)!.Machines.Single(s => s.Id == m.Id);

@@ -64,6 +64,16 @@
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.4, "maxArticulationDeg": 80 },
       "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypeCategories": ["grain"] } ] },
       "tipper": { "fillUnit": "main", "ratePerSecond": 450 },
+      "lights": {
+        "lamps": [
+          { "type": "turnLeft",  "x":  1.1, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "turnRight", "x": -1.1, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+          { "type": "tail",  "x":  0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+          { "type": "tail",  "x": -0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+          { "type": "brake", "x":  0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+          { "type": "brake", "x": -0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" }
+        ]
+      },
       "wearable": {}
     },
     "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },

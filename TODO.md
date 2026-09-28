@@ -177,8 +177,12 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 ### Tools and special machines
 
-- [ ] Lights: headlights, front/rear work lights, beacons, lightbar, turn signals, hazards; player
-      toggles instead of the automatic headlights in `Lights`.
+- [x] Lights: headlights, tail, brake and reverse lights, front/rear work lights, beacons, lightbar, turn signals,
+      hazards; player toggles instead of the automatic headlights in `Lights`.
+- [ ] More of FS's `Lights`: the light key stepping back (`TOGGLE_LIGHTS_BACK`), keys for the front lights and the
+      front and rear work lights alone, high beams, the roof lights instead of the bumper ones behind a front loader
+      (top and bottom lights), cab lights by the time of day, beacons that come on with the driver (`alwaysActive`),
+      a switch sound (with the audio).
 - [ ] Front loader and tools (bucket, bale fork, pallet fork); the bucket needs bulk heaps.
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).
@@ -277,7 +281,7 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 
 Commands in Core (`MachineSystem`, tested), bound through the input layer.
 
-- [ ] Lights: cycle the lamp groups (off, head, head and work lights), beacons, turn signals, hazards; see
+- [x] Lights: cycle the lamp groups (off, head, head and work lights), beacons, turn signals, hazards; see
       Lights under Vehicles.
 - [x] Folding: a fold key; lowering a folded implement no longer unfolds it by itself.
 - [ ] Parts that don't fold (covers, markers, support legs) move for the selected implement.
@@ -419,6 +423,8 @@ A mod is an add-on the game loads, never a fork.
   - `ConfigurationManager`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=15&class=171>
   - `FillTypeDesc`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=36&class=408>
   - `InputBinding`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=51&class=533>
+  - `Lights` (vehicle lights: states, beacons, turn, brake and reverse lights, lights off on leaving, AI lights):
+    <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=78&class=691>
   - `PlayerOnFootStateMachine`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=80&class=835>
   - `AITask`: <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=81&class=843>
   - `AnimalLoadingTrigger` (triggers): <https://gdn.giants-software.com/documentation_scripting_fs25.php?version=script&category=88&class=850>

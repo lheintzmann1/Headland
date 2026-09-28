@@ -346,14 +346,23 @@ it (see below). Its `switch` says what turns it on:
 
 | `switch` | |
 |---|---|
-| `driver` | The default: the driver switches the lamps of its type. Those of a type with `night` (headlights) also come on by themselves at night. |
+| `driver` | The default: the driver switches the lamps of its type, with the control the type answers to (see below). An implement's follow the vehicle it hangs on, and a helper driving at night lights every step. When the farmer gets out, the lights, beacons and turn signals go off; the hazard lights stay on. |
 | `dark` | A light sensor: on at night, or when rain, snow or fog darken the sky (a yard light). |
 | `hours` | A timer: on between `hours: [from, to]` (game hours; past midnight when from > to). |
 | `trigger` | On while someone is in its `trigger` (see above): a workshop's bay light. |
 
-The types are in `game/data/lamptypes.json` (`head`, `workFront`, `workRear`, `beacon`), each with an `id`, a `name`,
-`night` (false: the driver's lamps of the type also come on by themselves at night) and `rotating` (false: the beam
-turns round, as a beacon's).
+The types are in `game/data/lamptypes.json` (`head`, `tail`, `workFront`, `workRear`, `beacon`, `turnLeft`,
+`turnRight`, `brake`, `reverse`), each
+with an `id`, a `name`, the driver's `control` it answers to, `rotating` (false: the beam turns round, as a beacon's)
+and `blinking` (false: it flashes, as a turn signal):
+
+| `control` | |
+|---|---|
+| `lights` | The default: the light key steps through the types' `step`s (1): off, then the lamps of step 1 (headlights and tail lights), then those of step 2 too (work lights)… and off again. |
+| `beacons` | The beacon key. |
+| `turnLeft`, `turnRight` | The turn signal keys; the hazard key lights both sides. |
+| `brake` | While the vehicle slows down: its driver brakes, or pushes the throttle against the way it rolls. |
+| `reverse` | While the vehicle backs up, or its driver asks it to from a standstill. |
 
 ### craneArm
 

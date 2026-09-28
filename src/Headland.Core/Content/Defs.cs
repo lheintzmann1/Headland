@@ -106,12 +106,23 @@ public sealed class JointTypeDef
 /// <summary>A kind of lamp (lamptypes.json): the driver switches a machine's lamps of a type together.</summary>
 public sealed class LampTypeDef
 {
+    /// <summary>
+    /// The driver's controls lamps answer to: the light key's cycle ("lights", from its <see cref="Step"/>), the
+    /// beacon key, the turn signals (the hazards light both sides), the brakes (while the vehicle slows down) and the
+    /// reverse (while it backs up).
+    /// </summary>
+    public static readonly string[] Controls = ["lights", "beacons", "turnLeft", "turnRight", "brake", "reverse"];
+
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    /// <summary>The driver's lamps of the type also come on by themselves at night (headlights).</summary>
-    public bool Night { get; set; }
+    /// <summary>One of <see cref="Controls"/>.</summary>
+    public string Control { get; set; } = "lights";
+    /// <summary>Lights: the step of the light key's cycle they're on from (1 headlights, 2 work lights too…).</summary>
+    public int Step { get; set; } = 1;
     /// <summary>Its beam turns round (a beacon).</summary>
     public bool Rotating { get; set; }
+    /// <summary>It flashes (a turn signal).</summary>
+    public bool Blinking { get; set; }
 }
 
 /// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>

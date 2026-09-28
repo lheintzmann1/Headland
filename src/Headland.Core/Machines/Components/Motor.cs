@@ -73,6 +73,10 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     public float Load { get; internal set; }
     /// <summary>Fuel it burns now, per hour (0 with the engine off).</summary>
     public float FuelPerHour { get; private set; }
+    /// <summary>The driver slows it down (the brake, or the throttle against the way it rolls): its brake lights shine.</summary>
+    public bool Braking { get; private set; }
+    /// <summary>It backs up, or the driver asks it to from a standstill: its reverse lights shine.</summary>
+    public bool Reversing { get; private set; }
 
     public FillUnit? FuelTank => Machine.Unit(Def.FuelUnit);
 
@@ -161,6 +165,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         var accel = Def.Acceleration * Math.Clamp(v.SelfMassWithLoad(sim.Content) / MathF.Max(1f, totalMass), 0.25f, 1f);
 
         var s = v.Speed;
+        var against = input.Throttle > 0.01f && s < -0.01f || input.Throttle < -0.01f && s > 0.01f;
+        Braking = (input.Brake || against) && MathF.Abs(s) > 0.05f;
         if (input.Brake) s = MathUtil.MoveToward(s, 0f, Def.Braking * dt);
         else if (input.Throttle > 0.01f)
         {
@@ -178,6 +184,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         }
         else s = MathUtil.MoveToward(s, 0f, 1.5f * dt);
         if (s > TopSpeed) s = MathUtil.MoveToward(s, TopSpeed, Def.Braking * dt);
+        Reversing = s < -0.01f || input.Throttle < -0.01f && s <= 0.01f;
 
         // Power delivered: what the implements take, and at the wheels (spinning faster than the ground goes by as they slip) what
         // moves the chain against what holds it back and speeds it up.

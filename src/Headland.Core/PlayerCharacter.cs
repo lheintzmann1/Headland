@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
@@ -164,6 +165,7 @@ public sealed class PlayerCharacter(EventBus events)
         ];
         var spot = spots.FirstOrDefault(s => IsFree(sim, s), spots[0]);
         if (m.Get<Drivable>() is { } seat && seat.Controller == Controls) seat.Controller = null;
+        m.Get<Lights>()?.Leave();
         Controls.Input = default;
         Vehicle = null;
         Position = spot;

@@ -7,13 +7,11 @@ public class InputTests
     private const InputContext OnFoot = InputContext.World | InputContext.OnFoot;
     private const InputContext Driving = InputContext.World | InputContext.Vehicle;
 
-    /// <summary>The simulation's actions, with a camera key and a menu key on the same Q, and a light key.</summary>
+    /// <summary>The simulation's actions, with a camera key and a menu key on the same Q.</summary>
     private static Bindings Catalog() => new(InputActions.Defs.Concat(
     [
         new InputActionDef("camera_left", "Rotate the camera", InputContext.World, "Q"),
         new InputActionDef("tab_left", "Previous tab", InputContext.Menu, "Q"),
-        new InputActionDef("lights", "Lights", InputContext.Vehicle, "L"),
-        new InputActionDef("signal_left", "Turn signal left", InputContext.Vehicle, "Ctrl+Q"),
         new InputActionDef("pan", "Pan", InputContext.World, "Mouse Middle") { Analog = true },
     ]));
 
@@ -64,7 +62,7 @@ public class InputTests
         // Different modifiers or triggers are told apart; an analog action takes its input whatever they are.
         Assert.Empty(bindings.Conflicts(InputActions.Lower, InputBinding.Parse("Ctrl+V")));
         Assert.Empty(bindings.Conflicts(InputActions.Lower, InputBinding.Parse("Hold B")));
-        Assert.Equal([InputActions.MoveLeft], bindings.Conflicts("lights", InputBinding.Parse("Ctrl+A")));
+        Assert.Equal([InputActions.MoveLeft], bindings.Conflicts(InputActions.Lights, InputBinding.Parse("Ctrl+A")));
 
         bindings.Set(InputActions.Use, [InputBinding.Parse("Q")]);
         Assert.Equal(new InputConflict(InputActions.Use, "camera_left", InputBinding.Parse("Q")), Assert.Single(bindings.AllConflicts()));
@@ -83,12 +81,12 @@ public class InputTests
         router.Press("F", Modifiers.Shift, 1);
         Assert.Equal([InputActions.Enter], router.Poll(1));
 
-        // Ctrl+Q signals, Q alone rotates the camera.
+        // Ctrl+Q signals left, Q alone rotates the camera.
         router.Context = Driving;
         router.Press("Q", Modifiers.Ctrl, 2);
         router.Release("Q", 2.1);
         router.Press("Q", Modifiers.None, 3);
-        Assert.Equal(["signal_left", "camera_left"], router.Poll(3));
+        Assert.Equal([InputActions.TurnLeft, "camera_left"], router.Poll(3));
     }
 
     [Fact]
@@ -112,14 +110,14 @@ public class InputTests
     public void AKeyWithAHoldFiresItsPressOnAQuickRelease()
     {
         var bindings = Catalog();
-        bindings.Set("lights", [InputBinding.Parse("L")]);
+        bindings.Set(InputActions.Lights, [InputBinding.Parse("L")]);
         bindings.Set(InputActions.Helper, [InputBinding.Parse("Hold L")]);
         var router = Router(Driving, bindings);
 
         router.Press("L", Modifiers.None, 0);
         Assert.Empty(router.Poll(0.2));
         router.Release("L", 0.25);
-        Assert.Equal(["lights"], router.Poll(0.25));
+        Assert.Equal([InputActions.Lights], router.Poll(0.25));
 
         router.Press("L", Modifiers.None, 1);
         Assert.Empty(router.Poll(1.3));
@@ -145,7 +143,7 @@ public class InputTests
         router.Press("L", Modifiers.None, 2);
         router.Release("L", 2.1);
         Assert.Empty(router.Poll(2.3));
-        Assert.Equal(["lights"], router.Poll(2.41));
+        Assert.Equal([InputActions.Lights], router.Poll(2.41));
     }
 
     [Fact]

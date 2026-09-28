@@ -267,6 +267,11 @@ public sealed class ContentDatabase
         foreach (var (kind, names) in new[] { ("joint", JointTypes.Values.Select(j => (j.Id, j.Name))), ("lamp", LampTypes.Values.Select(l => (l.Id, l.Name))) })
             foreach (var (id, _) in names.Where(x => string.IsNullOrWhiteSpace(x.Name)))
                 e.Add($"{kind} type '{id}': needs a name");
+        foreach (var l in LampTypes.Values)
+        {
+            if (!LampTypeDef.Controls.Contains(l.Control)) e.Add($"lamp type '{l.Id}': unknown control '{l.Control}' ({string.Join(", ", LampTypeDef.Controls)})");
+            else if (l.Control == "lights" && l.Step < 1) e.Add($"lamp type '{l.Id}': step must be >= 1");
+        }
 
         foreach (var f in FillTypeList)
         {
