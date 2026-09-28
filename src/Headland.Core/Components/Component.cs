@@ -24,6 +24,11 @@ public abstract class ComponentDef
     /// <summary>What's wrong with it, checked against the rest of what it's on (and whether it goes on that at all).</summary>
     internal virtual IEnumerable<string> Errors(EntityDef owner, ContentDatabase content) => [];
 
+    /// <summary>Once read: finds the content it names by id (a joint's type), leaving what's missing for <see cref="Errors"/>.</summary>
+    internal virtual void Link(ContentDatabase content)
+    {
+    }
+
     internal abstract Component Create(Entity owner);
 
     /// <summary>A fill unit of the entity's <c>fillUnits</c>, by id.</summary>

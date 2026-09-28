@@ -49,7 +49,7 @@ public partial class LightsView : ComponentView
             if (!light.Visible) continue;
             var (x, z, swing) = _gear?.Swing(l.X, l.Z) ?? (l.X, l.Z, 0f);
             light.Position = new Vector3(x, l.Y, z);
-            var spin = l.Type == "beacon" ? _beacon : 0f;
+            var spin = l.TypeDef?.Rotating == true ? _beacon : 0f;
             light.Rotation = light.Rotation with { Y = Mathf.Pi + Mathf.DegToRad(l.YawDeg) + swing + spin };
         }
     }

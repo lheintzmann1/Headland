@@ -1,21 +1,24 @@
+using System.Text.Json.Serialization;
 using Headland.Core.Content;
 
 namespace Headland.Core.Components;
 
 public sealed class LampDef
 {
-    /// <summary>Lamp types, each switched as a group.</summary>
-    public static readonly string[] Types = ["head", "workFront", "workRear", "beacon"];
-
     /// <summary>What switches a lamp (FS: the driver's lights, and PlaceableLights by time of day or trigger).</summary>
     public static readonly string[] Switches = ["driver", "dark", "hours", "trigger"];
 
     /// <summary>Optional, unique on the entity: names the lamp so that a configuration option can add or change it.</summary>
     public string? Id { get; set; }
-    /// <summary>One of <see cref="Types"/>.</summary>
+    /// <summary>A lamp type's id (lamptypes.json): the driver switches its lamps together.</summary>
     public string Type { get; set; } = "head";
+
+    /// <summary>Its <see cref="Type"/>, once linked to the content.</summary>
+    [JsonIgnore]
+    public LampTypeDef? TypeDef { get; internal set; }
     /// <summary>
-    /// One of <see cref="Switches"/>: "driver" (with its type, as the driver switches it; headlights also at night),
+    /// One of <see cref="Switches"/>: "driver" (with its type, as the driver switches it; a type that says so, such as
+    /// headlights, also at night),
     /// "dark" (a light sensor: at night, or under a sky darkened by rain, snow or fog), "hours" (a timer:
     /// <see cref="Hours"/>) or "trigger" (while someone is in <see cref="Trigger"/>).
     /// </summary>
@@ -45,9 +48,15 @@ public sealed class LightsDef : ComponentDef
 {
     public LampDef[] Lamps { get; set; } = [];
 
+    internal override void Link(ContentDatabase content)
+    {
+        foreach (var l in Lamps) l.TypeDef = content.LampTypes.GetValueOrDefault(l.Type);
+    }
+
     internal override IEnumerable<string> Errors(EntityDef owner, ContentDatabase content)
     {
-        foreach (var l in Lamps.Where(l => !LampDef.Types.Contains(l.Type))) yield return $"unknown lamp type '{l.Type}' ({string.Join(", ", LampDef.Types)})";
+        foreach (var l in Lamps.Where(l => !content.LampTypes.ContainsKey(l.Type)))
+            yield return $"unknown lamp type '{l.Type}' ({string.Join(", ", content.LampTypes.Keys)})";
         if (Lamps.Any(l => l.Range <= 0f || l.AngleDeg is <= 0f or >= 90f || l.Energy < 0f)) yield return "lamps need range > 0, angleDeg in (0, 90) and energy >= 0";
         foreach (var id in Lamps.Where(l => l.Id != null).GroupBy(l => l.Id).Where(g => g.Count() > 1).Select(g => g.Key))
             yield return $"lamp '{id}' is defined more than once";
@@ -103,7 +112,7 @@ public sealed class Lights : Component<LightsDef, LightsSave>
             var l = Def.Lamps[i];
             _lit[i] = l.Switch switch
             {
-                "driver" => _on.Contains(l.Type) || l.Type == "head" && weather.Night,
+                "driver" => _on.Contains(l.Type) || l.TypeDef?.Night == true && weather.Night,
                 "dark" => weather.Dim,
                 "hours" => l.Hours is [var from, var to] && MathUtil.InHours(sim.Clock.HourOfDay, from, to),
                 "trigger" => l.Trigger?.Occupied(Owner, sim) == true,

@@ -20,6 +20,12 @@ public abstract class EntityDef
     /// <summary>Its model (see docs/MODELING.md).</summary>
     public VisualDef Visual { get; set; } = new();
 
+    /// <summary>Links its components to the content they name (joint and lamp types…), once read.</summary>
+    internal void Link(ContentDatabase content)
+    {
+        foreach (var c in Components) c.Link(content);
+    }
+
     /// <summary>Its component def of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>
     public T? Get<T>() where T : class => Components.OfType<T>().FirstOrDefault();
 

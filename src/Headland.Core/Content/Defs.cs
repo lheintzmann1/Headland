@@ -89,6 +89,26 @@ public sealed class FillTypeDef
     public float Nitrogen { get; set; }
 }
 
+/// <summary>A kind of attacher joint (jointtypes.json): an implement hitches to a joint of its attachable's type.</summary>
+public sealed class JointTypeDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>A three-point linkage: its lower links (the model node named after the joint and "Linkage") lift with the implement mounted on it.</summary>
+    public bool Linkage { get; set; }
+}
+
+/// <summary>A kind of lamp (lamptypes.json): the driver switches a machine's lamps of a type together.</summary>
+public sealed class LampTypeDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>The driver's lamps of the type also come on by themselves at night (headlights).</summary>
+    public bool Night { get; set; }
+    /// <summary>Its beam turns round (a beacon).</summary>
+    public bool Rotating { get; set; }
+}
+
 /// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>
 public sealed class NpcDef
 {
@@ -303,18 +323,18 @@ public sealed class MachineDef : EntityDef
         return _variants.Get(all);
     }
 
-    /// <summary>A machine type from its JSON, with its default options.</summary>
-    internal static MachineDef Read(JsonObject json)
+    /// <summary>A machine type from its JSON, with its default options, linked to <paramref name="content"/> as each set of options is built.</summary>
+    internal static MachineDef Read(JsonObject json, ContentDatabase content)
     {
         var source = (JsonObject)json.DeepClone();
         var configurations = source.Remove("configurations", out var node) && node != null
             ? node.Deserialize<List<ConfigurationDef>>(ContentDatabase.JsonOptions) ?? []
             : [];
-        return new Variants(source, configurations).Get(new Dictionary<string, string>());
+        return new Variants(source, configurations, content).Get(new Dictionary<string, string>());
     }
 
     /// <summary>A machine type's JSON, and the defs built from it for each set of options chosen so far.</summary>
-    private sealed class Variants(JsonObject json, List<ConfigurationDef> configurations)
+    private sealed class Variants(JsonObject json, List<ConfigurationDef> configurations, ContentDatabase content)
     {
         private readonly Dictionary<string, MachineDef> _built = new();
         private IReadOnlySet<string>? _moved;
@@ -357,6 +377,7 @@ public sealed class MachineDef : EntityDef
             def.Price += options.Sum(x => x.option.Price);
             def.Mass += options.Sum(x => x.option.Mass);
             def._variants = this;
+            def.Link(content);
             return def;
         }
     }

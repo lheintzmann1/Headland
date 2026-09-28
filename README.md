@@ -76,8 +76,8 @@ Built with **Godot 4.7** and **C#**.
   and a harvest estimate.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
-- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map and the money
-  rules are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
+- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money
+  rules and the kinds of hitches and lamps are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
   tanks, work areas, pipe, tipper, lights, crane arm…), so a new machine is a combination of them; POIs are built the
   same way, sharing the kinds that make sense on both (lamps lit at night or as someone comes by, moving parts,
   storage, map icons). [`docs/COMPONENTS.md`](docs/COMPONENTS.md) lists every setting of machines, POIs and components.

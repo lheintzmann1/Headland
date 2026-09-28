@@ -1,0 +1,100 @@
+using System.Numerics;
+using Headland.Core.Components;
+using Headland.Core.Content;
+using Headland.Core.Machines.Components;
+
+namespace Headland.Core.Tests;
+
+/// <summary>Kinds of joints and lamps are data (jointtypes.json, lamptypes.json), as a mod would add them.</summary>
+public class TypeDataTests
+{
+    /// <summary>The game's content with some of its files replaced or added, as a mod would.</summary>
+    private sealed class Modded(Dictionary<string, string> files) : IContentSource
+    {
+        private readonly FileSystemContentSource _game = new(TestContent.DataDir);
+
+        public IReadOnlyList<string> ListJson(string dir) =>
+            [.. _game.ListJson(dir), .. files.Keys.Where(f => f.StartsWith(dir + "/", StringComparison.Ordinal) && !_game.Exists(f))];
+
+        public string ReadText(string path) => files.TryGetValue(path, out var text) ? text : _game.ReadText(path);
+        public bool Exists(string path) => files.ContainsKey(path) || _game.Exists(path);
+    }
+
+    private static string WithEntry(string file, string entry)
+    {
+        var text = File.ReadAllText(Path.Combine(TestContent.DataDir, file)).TrimEnd();
+        return text[..^1].TrimEnd() + ",\n" + entry + "\n]";
+    }
+
+    [Fact]
+    public void JointAndLampTypesComeFromTheData()
+    {
+        var content = TestContent.Content;
+        Assert.Equal(["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"], content.JointTypes.Keys.ToArray());
+        Assert.Equal(["threePoint"], content.JointTypes.Values.Where(j => j.Linkage).Select(j => j.Id));
+        Assert.Equal(["head", "workFront", "workRear", "beacon"], content.LampTypes.Keys.ToArray());
+        Assert.Equal(["head"], content.LampTypes.Values.Where(l => l.Night).Select(l => l.Id));
+        Assert.Equal(["beacon"], content.LampTypes.Values.Where(l => l.Rotating).Select(l => l.Id));
+
+        // A tractor's three-point linkage lifts; its drawbar has no linkage to.
+        var tractor = content.Machines["tractor_125"];
+        Assert.Contains("rearLinkage", tractor.Roles);
+        Assert.DoesNotContain("drawbarLinkage", tractor.Roles);
+        Assert.All(tractor.Joints, j => Assert.Same(content.JointTypes[j.Type], j.TypeDef));
+        Assert.All(tractor.Get<LightsDef>()!.Lamps, l => Assert.Same(content.LampTypes[l.Type], l.TypeDef));
+        // Options built later are linked too.
+        var withLoader = tractor.Configure(new Dictionary<string, string> { ["frontLoader"] = "bracket", ["beacons"] = "both" });
+        Assert.Same(content.JointTypes["frontLoader"], withLoader.Joints.Single(j => j.Id == "frontLoader").TypeDef);
+        Assert.All(withLoader.Get<LightsDef>()!.Lamps, l => Assert.NotNull(l.TypeDef));
+    }
+
+    [Fact]
+    public void ANewKindOfJointOrLampIsJustData()
+    {
+        var content = ContentDatabase.Load(new Modded(new()
+        {
+            ["jointtypes.json"] = WithEntry("jointtypes.json", """  { "id": "hookLift", "name": "Hook lift", "linkage": true }"""),
+            ["lamptypes.json"] = WithEntry("lamptypes.json", """  { "id": "marker", "name": "Marker lights", "night": true }"""),
+            ["machines/test.json"] = """
+                [{ "id": "truck", "name": "Truck", "size": { "length": 7, "width": 2.5 },
+                   "components": {
+                     "runningGear": { "axles": [ { "z": 0, "track": 2 }, { "z": 4.5, "track": 2, "steering": "front" } ] },
+                     "motor": {}, "drivable": {},
+                     "attacherJoints": { "joints": [ { "id": "hook", "type": "hookLift", "z": -1 } ] },
+                     "lights": { "lamps": [ { "type": "marker", "z": 5 } ] } },
+                   "visual": { "model": "res://truck.glb" } },
+                 { "id": "container", "name": "Container", "size": { "length": 6, "width": 2.4 },
+                   "components": { "attachable": { "type": "hookLift", "mode": "mounted" } },
+                   "visual": { "model": "res://container.glb" } }]
+                """,
+        }));
+        Assert.Contains("hookLinkage", content.Machines["truck"].Roles);
+
+        var sim = Simulation.Create(content);
+        var truck = sim.Machines.Spawn("truck", new Vector2(60f, 248f), 0f);
+        var container = sim.Machines.Spawn("container", new Vector2(60f, 240f), 0f);
+        Assert.True(sim.Machines.Attach(truck, "hook", container));
+        // Marker lights come on at night by themselves, as the data says.
+        sim.SkipHours(15);
+        sim.Tick(1f / 60f);
+        Assert.True(sim.Weather.Night);
+        Assert.True(truck.Get<Lights>()!.Lit(0));
+    }
+
+    [Fact]
+    public void UnknownKindsOfJointsAndLampsAreRefused()
+    {
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [{ "id": "x", "components": {
+                 "attacherJoints": { "joints": [ { "id": "rear", "type": "hitchPin" } ] },
+                 "attachable": { "type": "towBall" },
+                 "frontLoaderBracket": { "type": "loaderArm" },
+                 "lights": { "lamps": [ { "type": "laser" } ] } } }]
+            """));
+        const string known = "(known: threePoint, drawbar, fifthWheel, header, frontLoader)";
+        Assert.Contains($"machine 'x' attacherJoints: joint 'rear': unknown type 'hitchPin' {known}", bad.Message);
+        Assert.Contains($"machine 'x' attachable: unknown type 'towBall' {known}", bad.Message);
+        Assert.Contains($"machine 'x' frontLoaderBracket: unknown type 'loaderArm' {known}", bad.Message);
+        Assert.Contains("machine 'x' lights: unknown lamp type 'laser' (head, workFront, workRear, beacon)", bad.Message);
+    }
+}

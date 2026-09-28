@@ -231,7 +231,8 @@ its docs and tests in the same change; no fallback is kept for later.
       `MachineSystem`, `WorkOps` and `WorkAreaDef.Types`: each type's cell change, what it needs (seed, a thresher)
       and what helpers and contracts check. Plowing, fertilizing, spraying (against weeds, a new field layer) and
       mowing (grass, a crop that grows back) are one type each, with a machine each; Lua can add more.
-- [ ] Joint and lamp types from data instead of `AttacherJointDef.Types` and `LampDef.Types`.
+- [x] Joint and lamp types from data (`jointtypes.json`, `lamptypes.json`) instead of `AttacherJointDef.Types` and
+      `LampDef.Types`.
 - [x] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
       (`Machine.Conditions`) instead of `Machine.Status` strings: a helper stops for those that stop the work, and
       the HUD lists them.

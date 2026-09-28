@@ -224,16 +224,21 @@ No settings. Needs a `motor`.
 
 ### attacherJoints
 
-`joints`: each has an `id`, a `type` (`threePoint`, `drawbar`, `fifthWheel`, `header` or `frontLoader`) and its
-position `x`, `z`, `y` (0.6). Joint ids are unique on the machine.
+`joints`: each has an `id`, a `type` and its position `x`, `z`, `y` (0.6). Joint ids are unique on the machine.
+
+The types are in `game/data/jointtypes.json` (`threePoint`, `drawbar`, `fifthWheel`, `header`, `frontLoader`), each
+with an `id`, a `name` and `linkage` (false): a three-point linkage, whose lower links lift with the implement mounted
+on it (see [`MODELING.md`](MODELING.md#moving-parts)). An implement hitches to a joint of its `attachable`'s type, so a
+new kind of hitch is a new entry there.
 
 ### frontLoaderBracket
 
-Adds a joint of type `frontLoader`, where a loader arm's pivots are.
+Adds a joint where a loader arm's pivots are.
 
 | Setting | Default | |
 |---|---|---|
 | `joint` | `frontLoader` | Its id. |
+| `type` | `frontLoader` | Its type (jointtypes.json). |
 | `x`, `z`, `y` | 0, 1.5, 1.2 | The middle between the pivots. |
 | `width` | 1.8 | From one console to the other. |
 
@@ -328,17 +333,21 @@ leaves; one that isn't lowered but turned on, such as a spreader, it turns on an
 
 ### lights
 
-`lamps`: each has a `type` (`head`, `workFront`, `workRear` or `beacon`), a position `x`, `y` (1.5), `z`, where it
-points (`pitchDeg` -18, down when negative, -90 straight down; `yawDeg` 0, left when positive, 180 backward), and its
-beam: `range` (30 m), `angleDeg` (32), `energy` (4) and `color` (`#fff0d1`). An optional `id`, unique on the entity,
-lets a configuration option add the lamp or change it (see below). Its `switch` says what turns it on:
+`lamps`: each has a `type`, a position `x`, `y` (1.5), `z`, where it points (`pitchDeg` -18, down when negative, -90
+straight down; `yawDeg` 0, left when positive, 180 backward), and its beam: `range` (30 m), `angleDeg` (32), `energy`
+(4) and `color` (`#fff0d1`). An optional `id`, unique on the entity, lets a configuration option add the lamp or change
+it (see below). Its `switch` says what turns it on:
 
 | `switch` | |
 |---|---|
-| `driver` | The default: the driver switches the lamps of its type. Headlights also come on by themselves at night. |
+| `driver` | The default: the driver switches the lamps of its type. Those of a type with `night` (headlights) also come on by themselves at night. |
 | `dark` | A light sensor: on at night, or when rain, snow or fog darken the sky (a yard light). |
 | `hours` | A timer: on between `hours: [from, to]` (game hours; past midnight when from > to). |
 | `trigger` | On while someone is in its `trigger` (see above): a workshop's bay light. |
+
+The types are in `game/data/lamptypes.json` (`head`, `workFront`, `workRear`, `beacon`), each with an `id`, a `name`,
+`night` (false: the driver's lamps of the type also come on by themselves at night) and `rotating` (false: the beam
+turns round, as a beacon's).
 
 ### craneArm
 

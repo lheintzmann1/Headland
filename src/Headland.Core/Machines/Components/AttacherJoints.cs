@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Headland.Core.Components;
 using Headland.Core.Content;
 
@@ -5,15 +6,20 @@ namespace Headland.Core.Machines.Components;
 
 public sealed class AttacherJointDef
 {
-    /// <summary>Joint types; an implement hitches to a joint of its attachable's type.</summary>
-    public static readonly string[] Types = ["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"];
-
     public string Id { get; set; } = "";
-    /// <summary>One of <see cref="Types"/>.</summary>
+    /// <summary>A joint type's id (jointtypes.json): an implement hitches to a joint of its attachable's type.</summary>
     public string Type { get; set; } = "threePoint";
     public float X { get; set; }
     public float Z { get; set; }
     public float Y { get; set; } = 0.6f;
+
+    /// <summary>Its <see cref="Type"/>, once linked to the content.</summary>
+    [JsonIgnore]
+    public JointTypeDef? TypeDef { get; internal set; }
+
+    /// <summary>What's wrong with a joint type's id: one the content doesn't have.</summary>
+    internal static string? TypeError(string type, ContentDatabase content) =>
+        content.JointTypes.ContainsKey(type) ? null : $"unknown type '{type}' (known: {string.Join(", ", content.JointTypes.Keys)})";
 }
 
 /// <summary>Where implements hitch: three-point linkages, drawbars, fifth wheels, a combine's feeder house.</summary>
@@ -23,15 +29,20 @@ public sealed class AttacherJointsDef : MachineComponentDef, IJointSource
 
     IReadOnlyList<AttacherJointDef> IJointSource.Joints => Joints;
 
-    /// <summary>A three-point linkage's lower links (rearLinkage…), lifted with the implement they carry.</summary>
-    public override IEnumerable<string> Roles => Joints.Where(j => j.Type == "threePoint").Select(LinkageRole);
+    /// <summary>A linkage's lower links (rearLinkage…), lifted with the implement they carry.</summary>
+    public override IEnumerable<string> Roles => Joints.Where(j => j.TypeDef?.Linkage == true).Select(LinkageRole);
 
     public static string LinkageRole(AttacherJointDef joint) => $"{joint.Id}Linkage";
 
+    internal override void Link(ContentDatabase content)
+    {
+        foreach (var j in Joints) j.TypeDef = content.JointTypes.GetValueOrDefault(j.Type);
+    }
+
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
-        foreach (var j in Joints.Where(j => !AttacherJointDef.Types.Contains(j.Type)))
-            yield return $"joint '{j.Id}' has unknown type '{j.Type}'";
+        foreach (var j in Joints)
+            if (AttacherJointDef.TypeError(j.Type, content) is { } error) yield return $"joint '{j.Id}': {error}";
     }
 
     internal override Component Create(Machine machine) => new AttacherJoints(machine, this);

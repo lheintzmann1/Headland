@@ -1,0 +1,8 @@
+[
+  // Kinds of lamps: the driver switches a machine's lamps of a type together. "night": they also come on by
+  // themselves at night (headlights). "rotating": the beam turns round (beacons).
+  { "id": "head",      "name": "Headlights", "night": true },
+  { "id": "workFront", "name": "Front work lights" },
+  { "id": "workRear",  "name": "Rear work lights" },
+  { "id": "beacon",    "name": "Beacons", "rotating": true }
+]

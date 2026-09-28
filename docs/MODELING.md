@@ -100,7 +100,7 @@ components (see [`COMPONENTS.md`](COMPONENTS.md)) decide which roles it has:
 | `track0L`, `track0R`, … | `runningGear` | middle of the track on the ground | an axle's track, instead of its wheels; not moved, but the links of its belt run round (see below) |
 | `frontFrame` | `runningGear` with `articulation` | the hinge | the front frame with everything on it (its wheels too); it swings about Y, left when positive |
 | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
-| `rearLinkage`, … (a joint's `id` and `Linkage`) | `attacherJoints`, `threePoint` joints | anywhere | the linkage's lower links, lowered; they lift straight up with the implement they carry |
+| `rearLinkage`, … (a joint's `id` and `Linkage`) | `attacherJoints`, joints of a linkage type (`threePoint`) | anywhere | the linkage's lower links, lowered; they lift straight up with the implement they carry |
 | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left, and the game pours the grain where it unloads |
 | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
 | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |

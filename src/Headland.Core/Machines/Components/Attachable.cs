@@ -10,6 +10,7 @@ namespace Headland.Core.Machines.Components;
 /// </summary>
 public sealed class AttachableDef : MachineComponentDef
 {
+    /// <summary>The joint type (jointtypes.json) it hitches to.</summary>
     public string Type { get; set; } = "threePoint";
     /// <summary>"mounted" or "trailed".</summary>
     public string Mode { get; set; } = "mounted";
@@ -24,7 +25,7 @@ public sealed class AttachableDef : MachineComponentDef
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
-        if (!AttacherJointDef.Types.Contains(Type)) yield return $"unknown type '{Type}'";
+        if (AttacherJointDef.TypeError(Type, content) is { } error) yield return error;
         if (Mode is not ("mounted" or "trailed")) yield return "mode must be mounted or trailed";
         if (Mode == "trailed" && Z <= 0.1f) yield return "a trailed one needs z > 0 (drawbar length)";
         if (Mode == "trailed" && machine.Get<RunningGearDef>() == null) yield return "a trailed one needs a runningGear";

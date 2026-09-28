@@ -56,6 +56,8 @@ public sealed class ContentDatabase
     public Dictionary<string, DifficultyDef> Difficulties { get; } = new();
     public List<FillTypeDef> FillTypeList { get; } = [];
     public Dictionary<string, FillTypeDef> FillTypes { get; } = new();
+    public Dictionary<string, JointTypeDef> JointTypes { get; } = new();
+    public Dictionary<string, LampTypeDef> LampTypes { get; } = new();
     public List<SoilDef> Soils { get; } = [];
     public Dictionary<string, NpcDef> Npcs { get; } = new();
     /// <summary>Crop index + 1 is stored in cells (0 = no crop).</summary>
@@ -84,15 +86,20 @@ public sealed class ContentDatabase
 
         foreach (var f in ReadMany<FillTypeDef>(src, "filltypes.json")) db.AddUnique(db.FillTypes, f.Id, f, "fill type");
         db.FillTypeList.AddRange(db.FillTypes.Values);
+        foreach (var j in ReadMany<JointTypeDef>(src, "jointtypes.json")) db.AddUnique(db.JointTypes, j.Id, j, "joint type");
+        foreach (var l in ReadMany<LampTypeDef>(src, "lamptypes.json")) db.AddUnique(db.LampTypes, l.Id, l, "lamp type");
         db.Soils.AddRange(ReadMany<SoilDef>(src, "soils.json"));
         foreach (var n in ReadMany<NpcDef>(src, "npcs.json")) db.AddUnique(db.Npcs, n.Id, n, "npc");
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
-        foreach (var m in ReadMachines(src, file))
+        foreach (var m in ReadMachines(src, file, db))
             db.AddUnique(db.Machines, m.Id, m, "machine");
         foreach (var file in src.ListJson("pois"))
         foreach (var p in ReadMany<PoiDef>(src, file))
+        {
+            p.Link(db);
             db.AddUnique(db.Pois, p.Id, p, "poi");
+        }
         foreach (var c in ReadMany<ContractTypeDef>(src, "contracts.json")) db.AddUnique(db.ContractTypes, c.Id, c, "contract type");
         foreach (var file in src.ListJson("climates"))
         foreach (var c in ReadMany<ClimateDef>(src, file))
@@ -190,7 +197,7 @@ public sealed class ContentDatabase
     }
 
     /// <summary>Machines are kept as JSON too: their configuration options change it.</summary>
-    private static List<MachineDef> ReadMachines(IContentSource src, string path)
+    private static List<MachineDef> ReadMachines(IContentSource src, string path, ContentDatabase content)
     {
         var id = "";
         try
@@ -203,7 +210,7 @@ public sealed class ContentDatabase
             {
                 if (node is not JsonObject json) throw new JsonException("a machine must be an object");
                 id = json["id"] is JsonValue v && v.TryGetValue<string>(out var s) ? s : "";
-                machines.Add(MachineDef.Read(json));
+                machines.Add(MachineDef.Read(json, content));
             }
             return machines;
         }
@@ -241,6 +248,10 @@ public sealed class ContentDatabase
             if (d.StartLoan < 0 || d.StartLoan > Economy.CreditLimit) e.Add($"difficulty '{d.Id}': startLoan must be 0..economy.creditLimit");
             if (d.PriceLevel <= 0) e.Add($"difficulty '{d.Id}': priceLevel must be > 0");
         }
+
+        foreach (var (kind, names) in new[] { ("joint", JointTypes.Values.Select(j => (j.Id, j.Name))), ("lamp", LampTypes.Values.Select(l => (l.Id, l.Name))) })
+            foreach (var (id, _) in names.Where(x => string.IsNullOrWhiteSpace(x.Name)))
+                e.Add($"{kind} type '{id}': needs a name");
 
         foreach (var f in FillTypeList)
         {

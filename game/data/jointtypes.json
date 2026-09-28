@@ -1,0 +1,10 @@
+[
+  // Kinds of attacher joints: an implement hitches to a joint of its attachable's type. Machines name them in their
+  // attacherJoints, attachable and frontLoaderBracket. "linkage": a three-point linkage, whose lower links (the model
+  // node named after the joint and "Linkage", such as rearLinkage) lift with the implement mounted on it.
+  { "id": "threePoint",  "name": "Three-point linkage", "linkage": true },
+  { "id": "drawbar",     "name": "Drawbar" },
+  { "id": "fifthWheel",  "name": "Fifth wheel" },
+  { "id": "header",      "name": "Feeder house" },
+  { "id": "frontLoader", "name": "Front loader consoles" }
+]
