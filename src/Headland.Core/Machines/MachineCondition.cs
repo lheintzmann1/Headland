@@ -68,6 +68,12 @@ public sealed record OutOfSeason(CropDef Crop) : MachineCondition
     public override string Text => $"{Crop.Name} sown out of season: poor yield";
 }
 
+/// <summary>Worn below <see cref="Components.Wearable.WornBelow"/>: it does its work worse, and a workshop would repair it.</summary>
+public sealed record Worn(float Condition) : MachineCondition
+{
+    public override string Text => $"Worn ({Condition * 100f:0}%): repair it at a workshop";
+}
+
 /// <summary>The ground under the work area may not be worked by its farm (<see cref="Ownership.Farms.WorkBlocker"/>).</summary>
 public sealed record NotAllowed(string Why) : MachineCondition
 {

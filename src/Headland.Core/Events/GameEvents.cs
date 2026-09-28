@@ -74,6 +74,9 @@ public sealed record AccountOverdrawn(float Money) : IGameEvent;
 
 public sealed record MachineRepaired(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
+/// <summary>A machine wore down below <see cref="Machines.Components.Wearable.WornBelow"/>.</summary>
+public sealed record MachineWorn(Machine Machine) : IGameEvent;
+
 public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
 /// <summary>A workshop changed a machine's options: <paramref name="From"/> is the def it had before.</summary>

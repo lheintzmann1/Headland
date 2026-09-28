@@ -85,7 +85,7 @@ public sealed class PoiSystem
     /// and the price level.
     /// </summary>
     public float RepairPrice(Workshop workshop, Machine m) =>
-        workshop.Def.RepairPriceFactor * m.Def.Price / 100f * (1f - m.Condition) * Economy.PriceLevel;
+        workshop.Def.RepairPriceFactor * m.Def.Price / 100f * (m.Get<Wearable>()?.Wear ?? 0f) * Economy.PriceLevel;
 
     public float WashPrice(WashingStation station, Machine m) => station.Def.Price * m.Dirt * Economy.PriceLevel;
 
@@ -542,9 +542,9 @@ public sealed class PoiSystem
     }
 
     private bool Repair(Machine m, Workshop workshop, List<string> why) =>
-        Service(m, workshop.Poi, workshop.Def, 1f - m.Condition, RepairPrice(workshop, m), "Nothing to repair", why, cost =>
+        Service(m, workshop.Poi, workshop.Def, m.Get<Wearable>()?.Wear ?? 0f, RepairPrice(workshop, m), "Nothing to repair", why, cost =>
         {
-            m.Condition = 1f;
+            m.Get<Wearable>()!.Condition = 1f;
             _sim.Events.Publish(new MachineRepaired(m, workshop.Poi, cost));
         });
 

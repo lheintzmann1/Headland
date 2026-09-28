@@ -23,9 +23,9 @@ public class SaveTests
     }
 
     /// <summary>A game in the middle of things: a helper harvesting, grain in the tank, a parcel bought, days passed.</summary>
-    private static Simulation BusyGame()
+    private static Simulation BusyGame(ContentDatabase? content = null)
     {
-        var sim = TestContent.NewSim();
+        var sim = content != null ? Simulation.Create(content) : TestContent.NewSim();
         sim.SkipHours(30);
         // The wheat sprayed against weeds: it yields what it did when the format-1 fixture was saved, before weeds.
         var L = sim.World.Layers;
@@ -133,8 +133,12 @@ public class SaveTests
     [Fact]
     public void AFormat1SaveHandsItsMachineStateToTheirComponents()
     {
-        // The machines of BusyGame() as version 0.7.0 saved them, before components.
-        var file = SaveGame.Capture(BusyGame(), "test");
+        // The machines of BusyGame() as version 0.7.0 saved them, before components, and before machines wore: its game
+        // is this one with wear doing nothing.
+        var content = ContentDatabase.Load(new FileSystemContentSource(TestContent.DataDir));
+        foreach (var wear in content.Machines.Values.Select(m => m.Get<WearableDef>()).OfType<WearableDef>())
+            (wear.PowerLoss, wear.SpeedLoss, wear.UsageIncrease) = (0f, 0f, 0f);
+        var file = SaveGame.Capture(BusyGame(content), "test");
         var state = JsonNode.Parse(file.State)!.AsObject();
         var format1 = JsonNode.Parse(File.ReadAllText(Path.Combine(TestContent.RepoRoot, "tests", "Headland.Core.Tests", "Fixtures", "machines-format1.json")))!.AsArray();
         // Format 1 kept nothing of the motor (fuel burned but not yet taken from the tank): the game it matches is the
@@ -143,7 +147,7 @@ public class SaveTests
         var machines = state["machines"]!.AsArray();
         foreach (var m in machines.Where(m => !ids.Contains((int)m!["id"]!)).ToList()) machines.Remove(m);
         foreach (var m in machines) m!["components"]!.AsObject().Remove("motor");
-        var sim = SaveGame.Load(TestContent.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) }).Sim;
+        var sim = SaveGame.Load(content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) }).Sim;
         state["machines"] = format1;
         file.Meta.Format = 1;
         var loaded = SaveGame.Load(sim.Content, file with { State = Encoding.UTF8.GetBytes(state.ToJsonString()) });

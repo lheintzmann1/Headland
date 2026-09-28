@@ -59,6 +59,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     private float _resistingForward, _resistingBackward, _taken;
     /// <summary>How much the driven wheels slip going forward and backward.</summary>
     private float _slipForward, _slipBackward;
+    /// <summary>The power it delivers now (hp).</summary>
+    private float _delivered;
 
     /// <summary>
     /// How fast it can go now, forward and backward (m/s): its top speeds, held down by the implements' work speed,
@@ -82,6 +84,9 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
 
     public float MaxSpeed => Def.MaxSpeedKmh * MathUtil.KmhToMs;
     public float MaxReverse => Def.MaxReverseKmh * MathUtil.KmhToMs;
+
+    /// <summary>The power it has: its own, less what wear took (<see cref="Wearable"/>).</summary>
+    public float PowerHp => Def.PowerHp * Machine.PowerFactor();
 
     public IEnumerable<MachineCondition> Conditions
     {
@@ -116,7 +121,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
             foreach (var area in w.Def.Areas)
             {
                 if (!w.Working(area)) continue;
-                maxF = MathF.Min(maxF, area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
+                maxF = MathF.Min(maxF, w.MaxSpeedKmh(area) * MathUtil.KmhToMs);
                 demand += area.RequiredPowerHp;
                 // Some work takes its power from the engine (a header threshing, a mower's or spreader's discs); the
                 // rest is pulled through the ground, by as much force as takes that power at its work speed.
@@ -124,8 +129,9 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
                 else draft += area.RequiredPowerHp * WattsPerHp * Drivetrain / (area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
             }
         }
-        _underpowered = demand > Def.PowerHp ? new Underpowered(demand, Def.PowerHp) : null;
-        if (_underpowered != null) maxF *= MathF.Max(0.3f, Def.PowerHp / demand);
+        var power = PowerHp;
+        _underpowered = demand > power ? new Underpowered(demand, power) : null;
+        if (_underpowered != null) maxF *= MathF.Max(0.3f, power / demand);
 
         // What holds the chain back (going backward, a slope pulls the other way and nothing is drawn), as fast as the
         // power left for the wheels moves that, less what the wheels slip.
@@ -135,7 +141,7 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         var weightDriven = OnWheels(v, sim.Content) * Gravity;
         _slipForward = driven.SlipFor(_resistingForward, weightDriven);
         _slipBackward = driven.SlipFor(_resistingBackward, weightDriven);
-        var wheelPower = MathF.Max(0.1f, 1f - _taken / Def.PowerHp) * Def.PowerHp * WattsPerHp * Drivetrain;
+        var wheelPower = MathF.Max(0.1f, 1f - _taken / power) * power * WattsPerHp * Drivetrain;
         if (_resistingForward > 0f) maxF = MathF.Min(maxF, wheelPower / _resistingForward);
         if (_resistingBackward > 0f) maxR = MathF.Min(maxR, wheelPower / _resistingBackward);
         TopSpeed = maxF * (1f - _slipForward);
@@ -179,7 +185,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
         v.Get<RunningGear>()!.Slip = s == 0f ? 0f : slip;
         var speedingUp = MathF.Max(0f, MathF.Abs(s) - MathF.Abs(v.Speed)) / dt;
         var wheels = MathF.Max(0f, resisting + totalMass * speedingUp) * MathF.Abs(s) / (1f - slip) / Drivetrain / WattsPerHp;
-        Load = Math.Clamp((_taken + wheels) / Def.PowerHp, 0f, 1f);
+        _delivered = MathF.Min(_taken + wheels, PowerHp);
+        Load = _delivered / PowerHp;
         Burn(sim, dt);
         return s;
     }
@@ -214,10 +221,14 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
 
     protected override void Restore(MotorSave save, SaveContext context) => _unburned = Math.Clamp(save.Unburned, 0f, BurnLot);
 
-    /// <summary>Burns fuel for the engine's load while it runs, and warns the farm when the tank runs low or dry.</summary>
+    /// <summary>
+    /// Burns fuel for the power it delivers while it runs, more when worn, and warns the farm when the tank runs low or
+    /// dry.
+    /// </summary>
     private void Burn(Simulation sim, float dt)
     {
-        FuelPerHour = Running ? Def.FullPowerFuelPerHour * (IdleShare + (1f - IdleShare) * Load) : 0f;
+        var share = IdleShare + (1f - IdleShare) * _delivered / Def.PowerHp;
+        FuelPerHour = Running ? Def.FullPowerFuelPerHour * Machine.UsageFactor() * share : 0f;
         if (FuelPerHour <= 0f || FuelTank is not { } tank) return;
         _unburned += FuelPerHour * dt / 3600f;
         if (_unburned < BurnLot && _unburned < tank.Level) return;

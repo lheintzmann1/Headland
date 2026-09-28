@@ -27,8 +27,11 @@ public sealed record LoadedGame(Simulation Sim, IReadOnlyList<string> Warnings);
 public static class SaveGame
 {
     /// <summary>Save format version. Bump it (and migrate older saves in <see cref="Load"/>) on breaking changes.</summary>
-    /// <remarks>2: machines keep their state per component. 3: POIs too (storage, production, demand).</remarks>
-    public const int Format = 3;
+    /// <remarks>
+    /// 2: machines keep their state per component. 3: POIs too (storage, production, demand). 4: a machine's condition
+    /// is its wearable's.
+    /// </remarks>
+    public const int Format = 4;
 
     /// <summary>A helper's route segments as saved, one letter per <see cref="PathSegment"/> value.</summary>
     private const string SegmentLetters = "dwr";
@@ -73,6 +76,7 @@ public static class SaveGame
                        ?? throw new SaveException("state.json is empty");
             if (file.Meta.Format < 2) MachinesToComponents(node);
             if (file.Meta.Format < 3) PoisToComponents(node);
+            if (file.Meta.Format < 4) WearToComponents(node);
             state = node.Deserialize<SaveState>(Json) ?? throw new SaveException("state.json is empty");
         }
         catch (JsonException e)
@@ -178,7 +182,6 @@ public static class SaveGame
             X = m.Position.X, Z = m.Position.Y, Heading = m.Heading, Speed = m.Speed,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
             WorkedHa = m.WorkedHa,
-            Condition = m.Condition,
             Dirt = m.Dirt,
             Components = m.SaveComponents(sim.Content),
         };
@@ -373,7 +376,6 @@ public static class SaveGame
             machine.Heading = m.Heading;
             machine.Speed = m.Speed;
             machine.WorkedHa = m.WorkedHa;
-            machine.Condition = Math.Clamp(m.Condition, 0f, 1f);
             machine.Dirt = Math.Clamp(m.Dirt, 0f, 1f);
             machine.LoadComponents(m.Components, context);
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
@@ -468,6 +470,18 @@ public static class SaveGame
     /// Storage goes into fill units named after the fill type each holds (as POIs name their storage units), and
     /// demand to the selling station; the part of a production cycle done is dropped (under an hour of work).
     /// </summary>
+    /// <summary>Format 3 and older kept a machine's condition beside its components: it's its wearable's now.</summary>
+    private static void WearToComponents(JsonObject state)
+    {
+        foreach (var node in state["machines"] as JsonArray ?? [])
+        {
+            if (node is not JsonObject m || !m.Remove("condition", out var condition) || condition == null) continue;
+            var components = m["components"] as JsonObject ?? new JsonObject();
+            components["wearable"] = new JsonObject { ["condition"] = condition };
+            m["components"] = components;
+        }
+    }
+
     private static void PoisToComponents(JsonObject state)
     {
         foreach (var node in state["pois"] as JsonArray ?? [])

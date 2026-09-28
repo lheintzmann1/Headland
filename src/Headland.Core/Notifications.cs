@@ -68,6 +68,10 @@ public sealed class Notifications
         events.Subscribe<LoanRepaid>(e => Post(e.Loan > 0f ? $"Repaid ${e.Amount:N0}: the loan is ${e.Loan:N0}" : "The loan is paid off", Severity.Good, 0));
         events.Subscribe<AccountOverdrawn>(_ => Post("The account is overdrawn: sell goods or borrow before buying anything", Severity.Warning));
         events.Subscribe<MachineRepaired>(e => Post($"Repaired {e.Machine.Def.Name} for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<MachineWorn>(e =>
+        {
+            if (e.Machine.FarmId == Ownership.Farm.PlayerId) Post($"{e.Machine.Def.Name} is worn: repair it at a workshop", Severity.Warning, 0);
+        });
         events.Subscribe<MachineConfigured>(e => Post($"Refitted {e.Machine.Def.Name} ({Changes(e.From, e.Machine.Def)}) for ${e.Cost:N0}", Severity.Good));
         events.Subscribe<MachineWashed>(e => Post(e.Cost > 0.5f ? $"Washed {e.Machine.Def.Name} for ${e.Cost:N0}" : $"Washed {e.Machine.Def.Name}", Severity.Good));
         events.Subscribe<ImplementAttached>(e => Post($"Attached {e.Implement.Def.Name}", Severity.Good));

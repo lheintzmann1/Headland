@@ -79,8 +79,6 @@ public sealed class Machine : Entity
     /// <summary>Hectares worked by this machine (statistics).</summary>
     public float WorkedHa { get; set; }
 
-    /// <summary>Mechanical condition, 1 = like new, 0 = worn out. Restored at a repair POI.</summary>
-    public float Condition { get; set; } = 1f;
     /// <summary>Dirt on the machine, 0 = clean, 1 = caked. Washed off at a wash POI.</summary>
     public float Dirt { get; set; }
 

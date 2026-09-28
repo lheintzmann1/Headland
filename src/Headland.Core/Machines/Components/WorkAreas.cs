@@ -123,6 +123,9 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
         if (!_conditions.Contains(condition)) _conditions.Add(condition);
     }
 
+    /// <summary>How fast <paramref name="area"/> works at most: its work speed, less what wear took (<see cref="Wearable"/>).</summary>
+    public float MaxSpeedKmh(WorkAreaDef area) => area.MaxWorkSpeedKmh * Machine.SpeedFactor();
+
     /// <summary>The narrowest of its areas: lanes are laid out for it.</summary>
     public float MinWidth => Def.Areas.Min(a => a.Width);
 

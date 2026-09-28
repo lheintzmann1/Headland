@@ -2,6 +2,7 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
@@ -56,7 +57,7 @@ public class FinanceTests
         t.Unit("fuel")!.Remove(100f);
         sim.Pois.Use(t);
         sim.Machines.Teleport(t, sim.World.PoiById("workshop")!.Trigger("repair")!.Area.Center, 0f);
-        t.Condition = 0.5f;
+        t.Get<Wearable>()!.Condition = 0.5f;
         sim.Pois.Use(t);
 
         Assert.Equal(10_000f * sim.Economy.Price("wheat", sim.Clock.Month), books.Today[MoneyCategory.Sales], 1);
@@ -255,7 +256,7 @@ public class FinanceTests
         float Repair(Simulation sim)
         {
             var t = sim.Machines.All.First(m => m.Def.Id == "tractor_95");
-            t.Condition = 0.5f;
+            t.Get<Wearable>()!.Condition = 0.5f;
             return sim.Pois.RepairPrice(sim.World.PoiById("workshop")!.Get<Workshop>()!, t);
         }
         Assert.Equal(1.2f * Prices(normal, "supplies", "seeds"), Prices(hard, "supplies", "seeds"), 4);

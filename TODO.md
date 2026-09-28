@@ -189,12 +189,12 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 FS19 reference values; tune in data.
 
-- [ ] Condition 100% → 0%, dropping only while moving or working: about 100% per 16 operating hours,
-      faster on fields and much faster while working.
-- [ ] Effects at 0%: −30% power and +30% fuel for vehicles; ×0.7 max work speed for implements; +30%
-      seed use for seeders.
-- [ ] Repair at a workshop POI: price / 100 × (1 − condition), +20% when done remotely from the garage
-      menu.
+- [x] Condition 100% → 0%, dropping only while moving or working: about 100% per 16 operating hours,
+      faster on fields and much faster while working (the `wearable` component).
+- [x] Effects at 0%: −30% power and +30% fuel for vehicles; ×0.7 max work speed for implements; +30%
+      seed use for seeders (and fertilizer and herbicide for spreaders and sprayers).
+- [x] Repair at a workshop POI: price / 100 × (1 − condition).
+- [ ] Repair remotely from the garage menu, for 20% more (with the garage).
 - [x] Fuel: tank per motor, use from power actually delivered, refuel at a gas station, engine stops when
       empty.
 - [ ] Farm fuel tank: diesel bought in bulk into a tank on the farm, refueling there.

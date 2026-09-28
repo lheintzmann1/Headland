@@ -188,6 +188,8 @@ public partial class Hud : CanvasLayer
                 bits.Add($"{ft?.Name ?? "empty"} {u.Level:N0}/{u.Capacity:N0} {unit}");
             }
             if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
+            if (m.Get<Wearable>() is { } wear)
+                bits.Add(Widgets.Colored($"condition {wear.Condition * 100f:0}%", wear.Condition < Wearable.WornBelow ? Palette.Warning : Palette.Dim));
             if (m.Get<Tipper>() is { Tipping: true }) bits.Add(Widgets.Colored("tipping", Palette.Busy));
             if (Sim.Pois.LoadingFillType(m) is { } loading) bits.Add(Widgets.Colored($"loading {Sim.Content.FillTypes[loading].Name.ToLowerInvariant()}", Palette.Busy));
             if (m.Get<Pipe>() is { Out: true }) bits.Add(Widgets.Colored("pipe out", Palette.Busy));

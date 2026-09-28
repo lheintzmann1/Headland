@@ -29,6 +29,7 @@ public static class ComponentKinds
         ("craneArm", typeof(CraneArmDef)),
         ("winch", typeof(WinchDef)),
         ("saw", typeof(SawDef)),
+        ("wearable", typeof(WearableDef)),
         ("hotspots", typeof(HotspotsDef)),
         ("sellingStation", typeof(SellingStationDef)),
         ("buyingStation", typeof(BuyingStationDef)),

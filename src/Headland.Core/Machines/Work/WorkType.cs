@@ -98,13 +98,13 @@ internal sealed class WorkPass(Simulation sim, Machine machine, WorkAreas areas,
     public bool Fresh(int i) => before is not { } b || !b.Contains(World.CellCenter(i % World.CellsX, i / World.CellsX));
 
     /// <summary>
-    /// Takes what a cell needs from the area's fill unit, at <paramref name="perHa"/> units per hectare. False when
-    /// there isn't enough: the area is out of it (<see cref="OutOf"/>) until filled up again.
+    /// Takes what a cell needs from the area's fill unit, at <paramref name="perHa"/> units per hectare (more on a worn
+    /// machine). False when there isn't enough: the area is out of it (<see cref="OutOf"/>) until filled up again.
     /// </summary>
     public bool Use(float perHa)
     {
         var unit = Machine.Unit(Area.FillUnit)!;
-        var need = perHa * WorldMap.CellArea / 10000f;
+        var need = perHa * Machine.UsageFactor() * WorldMap.CellArea / 10000f;
         if (unit.Level - _used >= need)
         {
             _used += need;

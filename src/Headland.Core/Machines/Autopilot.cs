@@ -462,6 +462,7 @@ public sealed class FieldWorkController : IVehicleController
         // Past the field edge the rearmost work area clears the field before the turn, and after it the vehicle is
         // lined up in time to lower a front one (a combine's header) before it reaches the field.
         Margin = margin ?? MathF.Max(MathF.Max(0f, reach) + 0.8f, ahead + RunIn);
+        // The implements' own speed: a worn one works slower, which the engine sees to (a reloaded helper aims the same).
         _workSpeedKmh = speedKmh > 0f ? speedKmh : _tools.Min(t => t.areas.Def.Areas.Min(a => a.MaxWorkSpeedKmh)) * 0.9f;
         // Backing up with a trailed implement would jackknife it.
         var canReverse = vehicle.Chain().All(m => m == vehicle || m.Get<Attachable>()?.Def.Mode == "mounted");

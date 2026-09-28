@@ -172,7 +172,6 @@ public sealed class MachineSave
     public int? Parent { get; set; }
     public string? Joint { get; set; }
     public float WorkedHa { get; set; }
-    public float Condition { get; set; } = 1f;
     public float Dirt { get; set; }
     /// <summary>What each of its components keeps, by component kind (runningGear, fillUnits, pipe…).</summary>
     public Dictionary<string, JsonElement> Components { get; set; } = new();

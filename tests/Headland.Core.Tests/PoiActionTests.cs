@@ -223,7 +223,7 @@ public class PoiActionTests
         var repaired = Record<MachineRepaired>(sim);
         var bay = sim.World.PoiById("workshop")!.Trigger("repair")!;
         var (t, trailer) = TrailerAt(sim, bay.Area.Center - new Vector2(4f, 0f), "wheat", 0f);
-        t.Condition = trailer.Condition = 0.5f;
+        t.Get<Wearable>()!.Condition = trailer.Get<Wearable>()!.Condition = 0.5f;
         sim.Player.Enter(t);
         var cost = (72_000f + 21_000f) / 100f * 0.5f;
         Assert.Equal([$"Repair (${cost:N0})", "Change options…"], sim.Pois.UseOptions(t));
@@ -235,7 +235,7 @@ public class PoiActionTests
 
         sim.Economy.Earn(1000f, MoneyCategory.Other);
         sim.CommandUse();
-        Assert.Equal((1f, 1f), (t.Condition, trailer.Condition));
+        Assert.Equal((1f, 1f), (t.Get<Wearable>()!.Condition, trailer.Get<Wearable>()!.Condition));
         Assert.Equal(1100f - cost, sim.Economy.Money, 1);
         Assert.Equal([t, trailer], repaired.Select(e => e.Machine));
     }
@@ -497,9 +497,9 @@ public class PoiActionTests
     {
         var sim = TestContent.NewSim();
         var t = sim.Machines.All.First(m => m.Def.Id == "tractor_95");
-        (t.Condition, t.Dirt) = (0.7f, 0.3f);
+        (t.Get<Wearable>()!.Condition, t.Dirt) = (0.7f, 0.3f);
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
         var same = loaded.Machines.ById(t.Id)!;
-        Assert.Equal((0.7f, 0.3f), (same.Condition, same.Dirt));
+        Assert.Equal((0.7f, 0.3f), (same.Get<Wearable>()!.Condition, same.Dirt));
     }
 }

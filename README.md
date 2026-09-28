@@ -25,7 +25,10 @@ Built with **Godot 4.7** and **C#**.
   a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color.
   Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch, and working speed
   depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and slip in wet fields,
-  less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry.
+  less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry. Machines wear
+  as they drive and work, faster on a field and much faster working: a worn engine is weaker and thirstier, a worn
+  implement slower and more wasteful of what it spreads, until the workshop repairs it (1% of its price for all its
+  wear).
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
   herbicide at the farm shop, refuel and wash at the gas station, get machines repaired or their options changed at the

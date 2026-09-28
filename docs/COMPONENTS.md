@@ -113,6 +113,7 @@ optionally a `name` in place of the type's.
 | `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
 | `winch` | machines | A rope with a hook. |
 | `saw` | machines | A saw blade. |
+| `wearable` | machines | Wear: its condition drops with use, and a worn machine does worse. |
 | `hotspots` | anything | Icons on the map. |
 | `sellingStation` | POIs | Buys the loads tipped or piped into its trigger. |
 | `buyingStation` | POIs | Sells supplies and fuel to the machines parked in its trigger. |
@@ -369,6 +370,24 @@ lets a configuration option add the lamp or change it (see below). Its `switch` 
 | `diameter` | 0.75 | |
 | `maxCut` | 0.6 | The thickest trunk it cuts. |
 
+### wearable
+
+A machine's condition drops from 100% to 0% while it moves or works, never standing idle, and a
+[workshop](#workshop) brings it back. A worn machine does worse, the more so the more worn: at 0% its engine has
+`powerLoss` less power and burns `usageIncrease` more fuel for the power it delivers, and its work areas work at
+`speedLoss` less speed and use `usageIncrease` more seed, fertilizer or herbicide. Below 20% it says it's worn.
+
+| Setting | Default | |
+|---|---|---|
+| `hours` | 16 | Operating hours (real time) from 100% to 0%, moving on a road. |
+| `fieldFactor` | 2 | How much faster it wears on a field. |
+| `workFactor` | 5 | How much faster again it wears working: its work areas working the ground as it moves (a vehicle pulling or carrying them too), or its thresher on. |
+| `powerLoss` | 0.3 | At 0%: the share of its engine's power lost. |
+| `speedLoss` | 0.3 | At 0%: the share of its work areas' `maxWorkSpeedKmh` lost. |
+| `usageIncrease` | 0.3 | At 0%: how much more fuel, seed, fertilizer and herbicide it uses. |
+
+The defaults are Farming Simulator 19's. `"wearable": {}` gives a machine those.
+
 ### hotspots
 
 `spots`: icons on the map (FS: hotspots), each with an `icon` (a Material Symbols icon in `game/assets/icons`, by file
@@ -510,3 +529,6 @@ fill unit it no longer has are lost (with a warning).
 
 A POI's storage units are best named after the fill type each holds (`wheat`, `flour`): saves from before POI
 components (0.13 and older) kept goods by fill type, and hand them to the unit of that name.
+
+A machine's condition is its `wearable`'s: saves from before it (0.14 and older) hand it over, and a machine without
+a `wearable` loses it.
