@@ -73,8 +73,8 @@ public sealed class Machine : Entity
     public string? ParentJoint { get; set; }
     public Dictionary<string, Machine> Attached { get; } = new();
 
-    /// <summary>Latest warning for the HUD ("Out of seed", "Wrong header", ...), cleared each tick when fine.</summary>
-    public string? Status { get; set; }
+    /// <summary>What keeps it from working as it should (out of seed, a full tank…), as its components report it.</summary>
+    public IEnumerable<MachineCondition> Conditions => Components.OfType<IConditionSource>().SelectMany(c => c.Conditions);
 
     /// <summary>Hectares worked by this machine (statistics).</summary>
     public float WorkedHa { get; set; }

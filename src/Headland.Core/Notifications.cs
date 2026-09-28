@@ -79,7 +79,7 @@ public sealed class Notifications
             switch (e.End)
             {
                 case HelperEnd.Finished: Post($"Helper finished {e.Field.Label}{wages}", Severity.Good); break;
-                case HelperEnd.Stopped: Post($"Helper stopped on {e.Field.Label}: {e.Reason}{wages}", Severity.Warning); break;
+                case HelperEnd.Stopped: Post($"Helper stopped on {e.Field.Label}: {e.Reason?.Text}{wages}", Severity.Warning); break;
                 default: Post($"Helper dismissed{wages}"); break;
             }
         });

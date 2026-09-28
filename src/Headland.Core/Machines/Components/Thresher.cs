@@ -21,12 +21,23 @@ public sealed class ThresherSave
     public bool On { get; set; }
 }
 
-public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable
+public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable, IConditionSource
 {
     public bool CanTurnOn => true;
     public bool On { get; set; }
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
+
+    /// <summary>Why the tank took nothing more on the header's last pass (full, or holding another crop), if so.</summary>
+    internal MachineCondition? Refused { get; set; }
+
+    /// <summary>Why the tank took nothing more, while that's still so: until it's unloaded.</summary>
+    public IEnumerable<MachineCondition> Conditions => Refused switch
+    {
+        TankFull when Tank.Free < 10f => [Refused],
+        TankHolds holds when Tank.FillType == holds.FillType.Id => [Refused],
+        _ => [],
+    };
 
     internal override void OnDetached() => On = false;
 

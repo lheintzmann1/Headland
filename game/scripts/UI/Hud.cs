@@ -193,7 +193,7 @@ public partial class Hud : CanvasLayer
             if (m.Get<Pipe>() is { Out: true }) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
             if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
             if (m != v || bits.Count > 0) sb.Append('\n');
-            if (m.Status != null) sb.Append($"  {Warning(m.Status)}\n");
+            foreach (var c in m.Conditions) sb.Append($"  {Warning(c.Text)}\n");
         }
         _vehicle.Text = sb.ToString().TrimEnd('\n');
     }

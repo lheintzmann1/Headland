@@ -37,7 +37,7 @@ public sealed class MotorSave
     public float Unburned { get; set; }
 }
 
-public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<MotorDef, MotorSave>(machine, def)
+public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<MotorDef, MotorSave>(machine, def), IConditionSource
 {
     /// <summary>An idling engine burns this share of what it burns at full power.</summary>
     private const float IdleShare = 0.08f;
@@ -51,6 +51,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     private const float BurnLot = 0.01f;
 
     private bool _warnedLow;
+    /// <summary>What the working implements asked for, when that was more than the engine has.</summary>
+    private Underpowered? _underpowered;
     /// <summary>Fuel burned but not taken from the tank yet.</summary>
     private float _unburned;
     /// <summary>What holds the chain back going forward and backward (N), and what the implements thresh (hp).</summary>
@@ -81,6 +83,15 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     public float MaxSpeed => Def.MaxSpeedKmh * MathUtil.KmhToMs;
     public float MaxReverse => Def.MaxReverseKmh * MathUtil.KmhToMs;
 
+    public IEnumerable<MachineCondition> Conditions
+    {
+        get
+        {
+            if (OutOfFuel) yield return new OutOfFuel();
+            if (_underpowered != null) yield return _underpowered;
+        }
+    }
+
     /// <summary>
     /// Before the driver asks: reads the ground under the chain and the implements working in it, and works out how fast
     /// it can go (<see cref="TopSpeed"/>, <see cref="TopReverse"/>).
@@ -88,7 +99,6 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
     internal void Prepare(Simulation sim)
     {
         var v = Machine;
-        v.Status = OutOfFuel ? "Out of fuel: refuel at a gas station" : null;
         var maxF = MaxSpeed;
         var maxR = MaxReverse;
         float demand = 0f, draft = 0f, rolling = 0f, climbing = 0f;
@@ -114,11 +124,8 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
                 else draft += area.RequiredPowerHp * WattsPerHp * Drivetrain / (area.MaxWorkSpeedKmh * MathUtil.KmhToMs);
             }
         }
-        if (demand > Def.PowerHp)
-        {
-            maxF *= MathF.Max(0.3f, Def.PowerHp / demand);
-            v.Status ??= $"Needs {demand:N0} hp, has {Def.PowerHp:N0} hp";
-        }
+        _underpowered = demand > Def.PowerHp ? new Underpowered(demand, Def.PowerHp) : null;
+        if (_underpowered != null) maxF *= MathF.Max(0.3f, Def.PowerHp / demand);
 
         // What holds the chain back (going backward, a slope pulls the other way and nothing is drawn), as fast as the
         // power left for the wheels moves that, less what the wheels slip.

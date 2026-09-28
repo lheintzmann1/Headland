@@ -197,7 +197,7 @@ public class MachineTests
         var sown = CountCells(sim, i => sim.World.Layers.Crop[i] == canola && sim.World.Layers.FieldId[i] == 3);
         Assert.True(sown > 6 * 50, $"sown cells: {sown}");
         Assert.True(s.Unit("seed")!.Level < seedBefore);
-        Assert.Null(s.Status); // August is inside canola's sowing window
+        Assert.Empty(s.Conditions); // August is inside canola's sowing window
     }
 
     [Fact]
@@ -230,7 +230,7 @@ public class MachineTests
         Drive(combine, 1f);
         Run(sim, 10f);
         Assert.True(combine.Unit("tank")!.IsEmpty);
-        Assert.Equal("Wrong header for Wheat", header.Status);
+        Assert.Equal(new WrongHeader(sim.Content.CropById("wheat")!), Assert.Single(header.Conditions));
     }
 
     [Fact]
@@ -339,7 +339,7 @@ public class MachineTests
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Fieldmaster 125 ran out of fuel");
         Run(sim, 5f);
         Assert.Equal(0f, t.Speed);
-        Assert.Equal("Out of fuel", dismissed?.Reason);
+        Assert.IsType<OutOfFuel>(dismissed?.Reason);
 
         // Refueled, it drives again.
         tank.Add("diesel", 50f);
@@ -390,7 +390,7 @@ public class MachineTests
         sim.Machines.Attach(combine, "header", sim.Machines.Spawn("header_corn_6", field.Shape.Min + new Vector2(3f, -8f), 0f));
         var helper = sim.HireHelper(combine, field);
         for (var s = 0f; s < 600f && !helper.Finished; s += Dt) sim.Tick(Dt);
-        Assert.True(helper.Finished && !helper.Stopped, helper.StopReason);
+        Assert.True(helper.Finished && !helper.Stopped, helper.StopReason?.Text);
         var cells = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1);
         var standing = CountCells(sim, i => sim.World.Layers.FieldId[i] == 1 && sim.World.Layers.Crop[i] != 0);
         Assert.True(standing < cells * 0.01f, $"{standing * 100f / cells:F1}% left standing");
@@ -402,7 +402,7 @@ public class MachineTests
         var (sim, _, helper) = HireCultivatorHelper();
         for (var s = 0f; s < 900f && !helper.Finished; s += Dt) sim.Tick(Dt);
         Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
-        Assert.False(helper.Stopped, helper.StopReason);
+        Assert.False(helper.Stopped, helper.StopReason?.Text);
 
         int inside = 0, insideDone = 0, outsideDone = 0;
         for (var cz = 0; cz < sim.World.CellsZ; cz++)
@@ -485,7 +485,7 @@ public class MachineTests
     {
         for (var s = 0f; s < 900f && !helper.Finished; s += Dt) sim.Tick(Dt);
         Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
-        Assert.False(helper.Stopped, helper.StopReason);
+        Assert.False(helper.Stopped, helper.StopReason?.Text);
     }
 
     [Fact]
@@ -501,6 +501,54 @@ public class MachineTests
         Assert.DoesNotContain(PathSegment.Reverse, helper.Path.Segments);
         RunHelper(sim, helper);
         Assert.True(PlotShare(sim, i => sim.World.Layers.Crop[i] != 0) > 0.99f);
+    }
+
+    [Fact]
+    public void AHelperStopsWhenTheSeederRunsOutAndTheSeederSaysSoUntilRefilled()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        Plot.Shape.Rasterize(WorldMap.CellSize, sim.World.CellsX, sim.World.CellsZ,
+            (cx, cz) => WorkOps.Cultivate(sim.World, sim.World.CellIndex(cx, cz), 0));
+        var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
+        var seeder = sim.Machines.Spawn("seeder_3", Plot.Shape.Min + new Vector2(2f, -14f), 0f);
+        Assert.True(sim.Machines.Attach(t, "drawbar", seeder));
+        var seed = seeder.Unit("seed")!;
+        seed.Remove(seed.Level - 0.05f); // some 100 m² of canola
+        var dismissed = new List<HelperDismissed>();
+        sim.Events.Subscribe<HelperDismissed>(dismissed.Add);
+        sim.HireHelper(t, Plot);
+        for (var s = 0f; s < 120f && dismissed.Count == 0; s += Dt) sim.Tick(Dt);
+
+        var outOfSeed = new OutOf(sim.Content.FillTypes["seeds"]);
+        Assert.Equal(HelperEnd.Stopped, Assert.Single(dismissed).End);
+        Assert.Equal(outOfSeed, dismissed[0].Reason);
+        Assert.True(seed.IsEmpty);
+        Assert.Equal([outOfSeed], seeder.Conditions);
+        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Helper stopped on Field 4: Out of seeds: buy more at a shop"));
+
+        seed.Add("seeds", 500f);
+        Assert.Empty(seeder.Conditions);
+    }
+
+    [Fact]
+    public void AFullTankStopsTheCombineUntilItIsUnloaded()
+    {
+        var sim = TestContent.NewSim();
+        var combine = sim.Machines.Spawn("combine_7", new Vector2(260f, 88f), 0f);
+        var header = sim.Machines.Spawn("header_grain_6", new Vector2(260f, 90f), 0f);
+        Assert.True(sim.Machines.Attach(combine, "header", header));
+        var tank = combine.Unit("tank")!;
+        tank.Add("wheat", tank.Capacity - 5f);
+        combine.Get<Thresher>()!.On = true;
+        header.Get<Attachable>()!.Lowered = true;
+        Drive(combine, 1f);
+        Run(sim, 10f);
+        Assert.Contains(new TankFull(), combine.Conditions);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain tank full: unload into a trailer");
+
+        tank.Remove(5000f);
+        Assert.DoesNotContain(new TankFull(), combine.Conditions);
     }
 
     [Fact]

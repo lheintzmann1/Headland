@@ -489,7 +489,8 @@ public sealed class FieldWorkController : IVehicleController
     /// <summary>Headland distance driven past the field edge before turning.</summary>
     public float Margin { get; }
     public bool Stopped { get; private set; }
-    public string? StopReason { get; private set; }
+    /// <summary>What it stopped for (out of seed, a full tank, no fuel).</summary>
+    public MachineCondition? StopReason { get; private set; }
     public bool Finished => Driver.Finished || Stopped;
 
     /// <summary>Pay per hour of work, agreed when hired. Helpers drive in real time, so the clock speed doesn't change it.</summary>
@@ -520,17 +521,10 @@ public sealed class FieldWorkController : IVehicleController
 
     public VehicleInput GetInput(Machine v, float dt)
     {
-        foreach (var (t, _) in _tools)
-        {
-            if (t.Status is not { } s || !(s.StartsWith("Out of seed") || s.StartsWith("Grain tank full") || s.StartsWith("Tank holds")))
-                continue;
-            Stopped = true;
-            StopReason = s;
-        }
-        if (v.Get<Motor>() is { OutOfFuel: true })
+        if (!Stopped && v.Chain().SelectMany(m => m.Conditions).FirstOrDefault(c => c.Stops) is { } reason)
         {
             Stopped = true;
-            StopReason = "Out of fuel";
+            StopReason = reason;
         }
         if (Finished)
         {

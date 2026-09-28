@@ -231,9 +231,9 @@ its docs and tests in the same change; no fallback is kept for later.
       helpers and contracts check. Plowing, fertilizing, spraying and mowing (the contract jobs waiting under
       Contracts) are then one type each, and Lua can add more.
 - [ ] Joint and lamp types from data instead of `AttacherJointDef.Types` and `LampDef.Types`.
-- [ ] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
-      instead of `Machine.Status` strings, which `FieldWorkController` matches by prefix to stop; the HUD
-      words them.
+- [x] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
+      (`Machine.Conditions`) instead of `Machine.Status` strings: a helper stops for those that stop the work, and
+      the HUD lists them.
 - [ ] The HUD's vehicle panel from the components (each gives its state) instead of the special cases in
       `Hud.UpdateVehicle` (threshing, seed crop, pipe out); with the HUD redesign.
 - [ ] Format-1 saves: drop `SaveGame.MachinesToComponents` and the `machines-format1.json` fixture once 0.7

@@ -73,8 +73,10 @@ public sealed class WorkAreasSave
     public List<float[]?> Poses { get; set; } = [];
 }
 
-public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable
+public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable, IConditionSource
 {
+    private readonly List<MachineCondition> _conditions = [];
+
     public WorkAreas(Machine machine, WorkAreasDef def) : base(machine, def)
     {
         Areas = def.Areas.Select(a => new WorkArea(a)).ToArray();
@@ -100,6 +102,20 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     public bool Sows => Def.Areas.Any(a => a.Type == "seeder");
     /// <summary>Seeders: the crop sown, as an index into <see cref="ContentDatabase.Crops"/>.</summary>
     public int Crop { get; set; }
+
+    /// <summary>
+    /// What kept its areas from working on their last pass over the ground (out of seed, the wrong header…); running
+    /// out lasts until it's filled up again.
+    /// </summary>
+    public IEnumerable<MachineCondition> Conditions => _conditions.Where(c => c is not OutOf || Def.Areas.All(a => Machine.Unit(a.FillUnit) is not { IsEmpty: false }));
+
+    /// <summary>Its areas are working the ground again: what kept them from it before is forgotten.</summary>
+    internal void ClearConditions() => _conditions.Clear();
+
+    internal void Report(MachineCondition condition)
+    {
+        if (!_conditions.Contains(condition)) _conditions.Add(condition);
+    }
 
     /// <summary>The narrowest of its areas: lanes are laid out for it.</summary>
     public float MinWidth => Def.Areas.Min(a => a.Width);

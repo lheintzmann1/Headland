@@ -310,13 +310,13 @@ public class ContractTests
         sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
         for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
         Assert.Equal(0, Cultivated(sim, 4));
-        Assert.Equal("Field 4 belongs to Tom Aldridge: take a contract on it first", c.Status);
+        Assert.Equal(new NotAllowed("Field 4 belongs to Tom Aldridge: take a contract on it first"), Assert.Single(c.Conditions));
 
         // With the contract to cultivate it, it's worked.
         Assert.True(sim.Contracts.Accept(sim.Contracts.On(sim.World.FieldById(4)!)!));
         for (var s = 0f; s < 6f; s += 1f / 60f) sim.Tick(1f / 60f);
         Assert.True(Cultivated(sim, 4) > 6 * 40, $"cultivated cells: {Cultivated(sim, 4)}");
-        Assert.Null(c.Status);
+        Assert.Empty(c.Conditions);
     }
 
     [Fact]

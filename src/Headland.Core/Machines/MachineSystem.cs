@@ -454,6 +454,7 @@ public sealed class MachineSystem
         {
             if (m.Get<WorkAreas>() is not { } w) continue;
             var lowering = m.Get<Attachable>() is { Def.Lowerable: true, LowerAnim: < 0.9f };
+            var working = false;
             foreach (var area in w.Areas)
             {
                 var wa = area.Def;
@@ -462,6 +463,9 @@ public sealed class MachineSystem
                     area.HasPose = false;
                     continue;
                 }
+                // What kept it from working before is forgotten as it works again (and reported anew if it still does).
+                if (!working) w.ClearConditions();
+                working = true;
 
                 var center = m.LocalToWorld(wa.X, wa.Z);
                 MathUtil.RectCorners(center, m.Heading, wa.Width * 0.5f, wa.Length * 0.5f, pts[..4]);
@@ -484,12 +488,12 @@ public sealed class MachineSystem
                 {
                     "cultivator" => Cultivate(m),
                     "seeder" => Sow(m, w, wa),
-                    "harvester" => Harvest(m, wa, fieldId),
+                    "harvester" => Harvest(m, w, wa, fieldId),
                     _ => 0,
                 };
                 if (changed == 0)
                 {
-                    if (refused != null) m.Status = refused;
+                    if (refused != null) w.Report(new NotAllowed(refused));
                     continue;
                 }
                 var ha = changed * WorldMap.CellArea / 10000f;
@@ -535,7 +539,6 @@ public sealed class MachineSystem
         var n = 0;
         foreach (var i in _cells)
             if (WorkOps.Cultivate(World, i, angle)) n++;
-        m.Status = null;
         return n;
     }
 
@@ -548,14 +551,17 @@ public sealed class MachineSystem
         var health = inWindow ? (byte)255 : (byte)150;
         var angle = WorldGen.AngleToByte(m.Heading);
         var n = 0;
-        m.Status = inWindow ? null : $"{crop.Name} sown out of season: poor yield";
+        if (!inWindow) w.Report(new OutOfSeason(crop));
         foreach (var i in _cells)
         {
             if (!WorkOps.CanSow(World, i)) continue;
             if (unit.Level < kgPerCell)
             {
-                m.Status = "Out of seed: buy seed at the shop";
-                _sim.Notifications.Post($"{m.Def.Name} is out of seed", Severity.Warning, 10);
+                var seed = Content.FillTypes[unit.FillType ?? unit.Def.FillTypes[0]];
+                // Too little left to sow a cell: it's out, and stays out until filled up.
+                unit.Remove(unit.Level);
+                w.Report(new OutOf(seed));
+                _sim.Notifications.Post($"{m.Def.Name} is out of {seed.Name.ToLowerInvariant()}", Severity.Warning, 10);
                 break;
             }
             unit.Remove(kgPerCell);
@@ -565,15 +571,16 @@ public sealed class MachineSystem
         return n;
     }
 
-    private int Harvest(Machine header, WorkAreaDef wa, int fieldId)
+    private int Harvest(Machine header, WorkAreas w, WorkAreaDef wa, int fieldId)
     {
         var combine = header.Parent!;
-        var tank = combine.Get<Thresher>()!.Tank;
+        var thresher = combine.Get<Thresher>()!;
+        var tank = thresher.Tank;
         var L = World.Layers;
         var n = 0;
         CropDef? threshed = null;
         var threshedAmount = 0f;
-        header.Status = null;
+        thresher.Refused = null;
         foreach (var i in _cells)
         {
             var cropId = L.Crop[i];
@@ -589,16 +596,16 @@ public sealed class MachineSystem
             if (!def.Stages[stage].Harvestable) continue;
             if (!wa.HarvestGroups.Contains(def.HarvestGroup))
             {
-                header.Status = $"Wrong header for {def.Name}";
+                w.Report(new WrongHeader(def));
                 continue;
             }
             var liters = def.YieldPerHa * (L.Health[i] / 255f) * WorldMap.CellArea / 10000f;
             if (!tank.CanAccept(def.FillType) || tank.Free < liters)
             {
-                header.Status = tank.IsEmpty || tank.FillType == def.FillType
-                    ? "Grain tank full: unload into a trailer"
-                    : $"Tank holds {Content.FillTypes[tank.FillType!].Name}: empty it first";
-                _sim.Notifications.Post(header.Status, Severity.Warning, 10);
+                thresher.Refused = tank.IsEmpty || tank.FillType == def.FillType
+                    ? new TankFull()
+                    : new TankHolds(Content.FillTypes[tank.FillType!]);
+                _sim.Notifications.Post(thresher.Refused.Text, Severity.Warning, 10);
                 break;
             }
             tank.Add(def.FillType, liters);

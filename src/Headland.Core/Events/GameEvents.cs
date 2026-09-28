@@ -149,4 +149,4 @@ public sealed record HelperHired(Machine Vehicle, FieldInfo Field) : IGameEvent;
 /// A helper left its vehicle; <paramref name="Reason"/> says why it stopped early (out of seed, tank full), and
 /// <paramref name="Wages"/> what it earned on the job.
 /// </summary>
-public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, HelperEnd End, string? Reason, float Wages) : IGameEvent;
+public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, HelperEnd End, MachineCondition? Reason, float Wages) : IGameEvent;
