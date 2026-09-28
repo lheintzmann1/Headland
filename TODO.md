@@ -272,9 +272,8 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 
 - [ ] Lights: cycle the lamp groups (off, head, head and work lights), beacons, turn signals, hazards; see
       Lights under Vehicles.
-- [ ] Folding: a fold key (`MachineSystem.ToggleFold` exists); lowering a folded implement then stops
-      unfolding it by itself. Parts that don't fold (covers, markers, support legs) move for the selected
-      implement.
+- [x] Folding: a fold key; lowering a folded implement no longer unfolds it by itself.
+- [ ] Parts that don't fold (covers, markers, support legs) move for the selected implement.
 - [ ] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
       lift and tilt the same way.
 - [ ] Winch: reel in and out, hook and unhook.

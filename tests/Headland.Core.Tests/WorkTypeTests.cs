@@ -135,9 +135,11 @@ public class WorkTypeTests
         var tank = sprayer.Unit("tank")!;
         var before = tank.Level;
 
-        // It comes folded: lowering it unfolds the boom first.
+        // It comes folded: the boom is unfolded, then lowered.
         sim.Player.Enter(t);
-        Assert.True(sprayer.Get<AnimatedParts>()!.Folded);
+        var boom = sprayer.Get<AnimatedParts>()!;
+        Assert.True(boom.Folded);
+        sim.CommandFold();
         sim.CommandLower();
         sim.CommandTurnOn();
         Run(sim, 6f);
@@ -148,6 +150,14 @@ public class WorkTypeTests
         var sprayed = Count(sim, 1, i => L.Weeds[i] == WeedState.Sprayed);
         Assert.True(sprayed > 20 * 40, $"sprayed cells: {sprayed}");
         Assert.Equal(sprayed * 100f * WorldMap.CellArea / 10000f, before - tank.Level, 1);
+
+        // Folded back for the road, raised, and spraying no more.
+        sim.CommandFold();
+        Assert.False(sprayer.Get<Attachable>()!.Lowered);
+        Run(sim, 6f);
+        Assert.True(boom.Folded);
+        Assert.All(boom.Parts, p => Assert.Equal(1f, p.Position));
+        Assert.Equal(sprayed, Count(sim, 1, i => L.Weeds[i] == WeedState.Sprayed));
 
         // No weeds come up where it sprayed, until the harvest.
         var cell = Enumerable.Range(0, L.FieldId.Length).First(i => L.FieldId[i] == 1 && L.Weeds[i] == WeedState.Sprayed);

@@ -29,6 +29,7 @@ public static class InputSetup
         ("prev_vehicle", Shift(Key.Tab), "Switch to the previous vehicle"),
         ("attach", Key.G, "Attach / detach implement"),
         ("lower", Key.V, "Lower / raise implements"),
+        ("fold", Key.N, "Fold / unfold implements"),
         ("turn_on", Key.B, "Turn on / off"),
         ("unload", Key.U, "Pipe / tip trailer"),
         ("cycle_seed", Key.X, "Change seed"),

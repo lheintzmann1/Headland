@@ -160,6 +160,10 @@ public sealed class MachineSystem
     public static List<Attachable> Lowerable(Machine vehicle) =>
         vehicle.Chain().Where(m => m != vehicle).Select(m => m.Get<Attachable>()).OfType<Attachable>().Where(a => a.Def.Lowerable).ToList();
 
+    /// <summary>What the fold key folds and unfolds in the vehicle's chain.</summary>
+    public static List<AnimatedParts> Foldable(Machine vehicle) =>
+        vehicle.Chain().Select(m => m.Get<AnimatedParts>()).OfType<AnimatedParts>().Where(p => p.CanFold).ToList();
+
     /// <summary>What the turn-on key switches in the vehicle's chain.</summary>
     public static List<ISwitchable> Switchable(Machine vehicle) =>
         vehicle.Chain().SelectMany(m => m.Components.OfType<ISwitchable>()).Where(s => s.CanTurnOn).ToList();
@@ -173,12 +177,10 @@ public sealed class MachineSystem
             return;
         }
         var lower = !tools.Any(t => t.Lowered);
-        foreach (var t in tools)
-        {
-            t.Lowered = lower;
-            // Lowering a folded implement unfolds it first.
-            if (lower && t.Machine.Get<AnimatedParts>() is { Folded: true } parts) parts.Folded = false;
-        }
+        // A folded implement stays up: it's unfolded first, with the fold key.
+        var folded = lower ? tools.Where(t => t.Machine.Get<AnimatedParts>() is { Folded: true }).ToList() : [];
+        foreach (var t in tools.Except(folded)) t.Lowered = lower;
+        if (folded.Count > 0) _sim.Notifications.Post($"Unfold the {folded[0].Machine.Def.Name} first");
     }
 
     public void ToggleOn(Machine vehicle)
@@ -196,7 +198,7 @@ public sealed class MachineSystem
     /// <summary>Folds the vehicle's chain for transport (raising it), or unfolds it.</summary>
     public void ToggleFold(Machine vehicle)
     {
-        var parts = vehicle.Chain().Select(m => m.Get<AnimatedParts>()).OfType<AnimatedParts>().Where(p => p.CanFold).ToList();
+        var parts = Foldable(vehicle);
         if (parts.Count == 0)
         {
             _sim.Notifications.Post("Nothing to fold");

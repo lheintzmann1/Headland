@@ -233,6 +233,7 @@ public sealed class Simulation
 
     public void CommandAttach() => WithVehicle(Machines.ToggleAttach);
     public void CommandLower() => WithVehicle(Machines.ToggleLower);
+    public void CommandFold() => WithVehicle(Machines.ToggleFold);
     public void CommandTurnOn() => WithVehicle(Machines.ToggleOn);
     public void CommandUnload() => WithVehicle(Machines.ToggleUnload);
     public void CommandCycleSeed() => WithVehicle(Machines.CycleSeed);

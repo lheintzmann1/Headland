@@ -180,7 +180,7 @@ public class ComponentTests
     }
 
     [Fact]
-    public void AFoldedImplementUnfoldsBeforeItGoesDownAndWorks()
+    public void AFoldedImplementIsUnfoldedBeforeItGoesDownAndWorks()
     {
         var sim = Sim(Content());
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
@@ -192,8 +192,15 @@ public class ComponentTests
         Assert.Equal(1f, parts.Part("wing_left")!.Position);
 
         sim.Player.Enter(t);
+        // Folded, it stays up: it's unfolded with the fold key first.
+        sim.Machines.ToggleLower(t);
+        Assert.True(parts.Folded);
+        Assert.False(lift.Lowered);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Unfold the {c.Def.Name} first");
+        sim.Machines.ToggleFold(t);
         sim.Machines.ToggleLower(t);
         Assert.False(parts.Folded);
+        Assert.True(lift.Lowered);
         Run(sim, 1f);
         Assert.Equal(0f, lift.LowerAnim); // still unfolding
         Run(sim, 1.5f);

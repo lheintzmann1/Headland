@@ -283,9 +283,9 @@ trailers and sell at the elevator. Stations and silos take categories the same w
 | `startFolded` | false | Comes folded. |
 
 Parts with `fold: true` (on machines only) move together when the machine folds for transport; their rest pose is the
-working one. A folded machine (or one still unfolding) doesn't work and can't go down: lowering it unfolds it first,
-and a helper unfolds it too. A part with a `trigger` moves while someone is in it and back once they left, such as a
-shed's door (FS: animated objects).
+working one. The fold key folds and unfolds them, raising the machine as it folds. A folded machine (or one still
+unfolding) doesn't work and doesn't go down: it's unfolded first, and a helper unfolds it by itself. A part with a
+`trigger` moves while someone is in it and back once they left, such as a shed's door (FS: animated objects).
 
 ### workAreas
 

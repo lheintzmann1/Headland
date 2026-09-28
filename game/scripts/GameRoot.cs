@@ -179,6 +179,7 @@ public partial class GameRoot : Node3D
         else if (e.IsActionPressed("next_vehicle")) Sim.SwitchVehicle(1);
         else if (e.IsActionPressed("attach")) Sim.CommandAttach();
         else if (e.IsActionPressed("lower")) Sim.CommandLower();
+        else if (e.IsActionPressed("fold")) Sim.CommandFold();
         else if (e.IsActionPressed("turn_on")) Sim.CommandTurnOn();
         else if (e.IsActionPressed("unload")) Sim.CommandUnload();
         else if (e.IsActionPressed("cycle_seed")) Sim.CommandCycleSeed();

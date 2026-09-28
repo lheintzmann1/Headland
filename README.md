@@ -93,7 +93,8 @@ Esc closes screens. Keys can be changed in the settings file (see below).
 | F | Enter or leave a vehicle |
 | Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
-| V | Lower or raise implements (lowering a sprayer unfolds its boom) |
+| V | Lower or raise implements |
+| N | Fold or unfold implements (a sprayer's boom) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |

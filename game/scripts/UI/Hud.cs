@@ -216,6 +216,8 @@ public partial class Hud : CanvasLayer
             else if (v.Chain().Skip(1).LastOrDefault() is { } leaf) lines.Add($"{K("attach")} Detach {leaf.Def.Name}");
             var tools = MachineSystem.Lowerable(v);
             if (tools.Count > 0) lines.Add($"{K("lower")} {(tools.Any(t => t.Lowered) ? "Raise" : "Lower")}");
+            var folding = MachineSystem.Foldable(v);
+            if (folding.Count > 0) lines.Add($"{K("fold")} {(folding.Any(p => p.Folded) ? "Unfold" : "Fold")}");
             var switches = MachineSystem.Switchable(v);
             if (switches.Count > 0) lines.Add($"{K("turn_on")} Turn {(switches.Any(s => s.On) ? "off" : "on")}");
             if (v.Get<Pipe>() is { } pipe) lines.Add($"{K("unload")} {(pipe.Out ? "Fold" : "Unfold")} pipe");
