@@ -3,8 +3,8 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Screens above the HUD, last opened on top. Esc (ui_cancel) closes the top screen. A backdrop dims the world
-/// under the topmost modal screen.
+/// Screens above the HUD, last opened on top. The menu key (Esc) closes the top screen, or opens the in-game menu when
+/// none is open. A backdrop dims the world under the topmost modal screen.
 /// </summary>
 public partial class ScreenStack : CanvasLayer
 {
@@ -45,13 +45,6 @@ public partial class ScreenStack : CanvasLayer
     {
         if (Top is T open) Close(open);
         else Push(create());
-    }
-
-    public override void _UnhandledInput(InputEvent e)
-    {
-        if (Top == null || !e.IsActionPressed("ui_cancel")) return;
-        Close(Top);
-        GetViewport().SetInputAsHandled();
     }
 
     /// <summary>Puts the backdrop right under the topmost modal screen, so it dims what's below and not the screen.</summary>

@@ -181,9 +181,10 @@ public partial class GameRoot : Node3D
         switch (action)
         {
             case GameActions.ToggleHelp: Screens.Toggle(() => new HelpScreen { Sim = Sim }); break;
-            case GameActions.ToggleFinances: Screens.Toggle(() => new FinancesScreen { Sim = Sim }); break;
-            case GameActions.ToggleFarmland: Screens.Toggle(() => new FarmlandScreen { Sim = Sim }); break;
-            case GameActions.ToggleContracts: Screens.Toggle(() => new ContractsScreen { Sim = Sim }); break;
+            case GameActions.Menu when Screens.Top is { } top: top.Close(); break;
+            case GameActions.Menu: Screens.Push(new MenuScreen { Game = this }); break;
+            case GameActions.MenuPrevTab: (Screens.Top as MenuScreen)?.Step(-1); break;
+            case GameActions.MenuNextTab: (Screens.Top as MenuScreen)?.Step(1); break;
             case GameActions.ToggleDebug: Hud.DebugVisible = !Hud.DebugVisible; break;
             case GameActions.Screenshot: SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png"); break;
             case InputActions.Use: Use(); break;

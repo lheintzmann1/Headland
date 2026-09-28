@@ -149,7 +149,7 @@ public partial class Hud : CanvasLayer
         {
             var left = c.DueDay - Sim.Clock.DayIndex;
             var due = left <= 1 ? Widgets.Colored("last day", Palette.Warning) : Widgets.Colored($"{left} days left", Palette.Dim);
-            sb.Append($"{Widgets.Colored(c.Label, Palette.Contract)}  {ContractsScreen.Progress(Sim, c)}  {due}\n");
+            sb.Append($"{Widgets.Colored(c.Label, Palette.Contract)}  {ContractsPage.Progress(Sim, c)}  {due}\n");
         }
         _contracts.Text = sb.ToString().TrimEnd('\n');
     }

@@ -3,7 +3,7 @@ using Headland.Core.Input;
 namespace Headland.Game.Controls;
 
 /// <summary>
-/// The actions the game answers itself (the camera, time, saves, screens), bound beside the simulation's
+/// The actions the game answers itself (the camera, time, saves, the menu), bound beside the simulation's
 /// (<see cref="InputActions"/>).
 /// </summary>
 public static class GameActions
@@ -18,9 +18,9 @@ public static class GameActions
     public const string Quicksave = "quicksave";
     public const string Quickload = "quickload";
     public const string ToggleHelp = "toggle_help";
-    public const string ToggleFinances = "toggle_finances";
-    public const string ToggleFarmland = "toggle_farmland";
-    public const string ToggleContracts = "toggle_contracts";
+    public const string Menu = "menu";
+    public const string MenuPrevTab = "menu_prev_tab";
+    public const string MenuNextTab = "menu_next_tab";
     public const string ToggleDebug = "toggle_debug";
     public const string Screenshot = "screenshot";
 
@@ -47,10 +47,10 @@ public static class GameActions
         new(SkipDay, "Sleep until tomorrow 6:00", World, "F9"),
         new(Quicksave, "Quicksave", World, "F5"),
         new(Quickload, "Quickload", World, "F8"),
-        new(ToggleHelp, "Help", Screens, "F1", "Joy Back"),
-        new(ToggleFinances, "Finances and loans", Screens, "F2"),
-        new(ToggleFarmland, "Farmland: buy and sell parcels", Screens, "L"),
-        new(ToggleContracts, "Contracts: take, follow and give back jobs", Screens, "C"),
+        new(ToggleHelp, "Help: the keys for what you're doing", World, "F1", "Joy Back"),
+        new(Menu, "Menu: contracts, finances, farmland, controls, save and load; closes the screen on top", Screens, "Escape", "Joy Start"),
+        new(MenuPrevTab, "Previous tab", InputContext.Menu, "Q", "Joy LB"),
+        new(MenuNextTab, "Next tab", InputContext.Menu, "E", "Joy RB"),
         new(ToggleDebug, "Debug overlay", Screens, "F3"),
         new(Screenshot, "Screenshot", Screens, "F12"),
     ];

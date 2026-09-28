@@ -39,8 +39,8 @@ Built with **Godot 4.7** and **C#**.
   its placeables: selling and buying stations, silos, production points that run by the hour, workshops, washing
   stations and delivery spots, each with the area where machines use it and its opening hours.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, machines, production costs, wages, land, loan interest, contracts. F2 shows them day by day or month by month, and is where the
-  farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
+  maintenance, machines, production costs, wages, land, loan interest, contracts. The menu's finances show them day
+  by day or month by month, and are where the farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.
 - **Difficulty.** Easy, normal and hard set the money and loan the farm starts with, and how much everything it
@@ -85,8 +85,10 @@ Built with **Godot 4.7** and **C#**.
 ## Controls
 
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
-that do something where you are, and F1 lists every key for walking or for the vehicle you drive; Esc closes screens. A gamepad works too (left stick to walk and drive, A lowers, B turns on, X uses, Y gets in). Keys
-can be changed in the settings file (see below).
+that do something where you are, and F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
+(contracts, finances, farmland, every key, save and load), or closes the screen on top. A gamepad works too (left stick
+to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
+file (see below).
 
 | Key | Action |
 |---|---|
@@ -103,9 +105,7 @@ can be changed in the settings file (see below).
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
 | H | Hire or dismiss a field helper |
-| F2 | Finances and loans |
-| L | Farmland: buy and sell parcels |
-| C | Contracts: take, follow and give back jobs |
+| Esc | The menu: contracts, finances and loans, farmland, controls, save, load and quit; Q / E switch its tabs |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

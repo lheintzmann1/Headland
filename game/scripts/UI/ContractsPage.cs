@@ -6,10 +6,10 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// C: the contract board. The farm's contracts under way, with their progress, due day and a button to give them
+/// The menu's contract board. The farm's contracts under way, with their progress, due day and a button to give them
 /// back, and the offers on the board to take, with the farm's machines or leased ones.
 /// </summary>
-public partial class ContractsScreen : Screen
+public partial class ContractsPage : MenuPage
 {
     private readonly List<Action> _refreshers = [];
     private Label _balance = null!;
@@ -22,27 +22,25 @@ public partial class ContractsScreen : Screen
 
     public Simulation Sim { get; init; } = null!;
 
+    public override string Subtitle =>
+        $"The neighbors' field work and the buyers' orders; new offers every morning. Giving a contract back, or not " +
+        $"finishing it in time, costs {Sim.Contracts.Rules.Penalty * 100f:0}% of its reward.";
+
     protected override void Build()
     {
-        var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
         var account = new HBoxContainer();
         account.AddChild(Widgets.Label("Balance"));
         _balance = Widgets.Label();
         account.AddChild(_balance);
-        content.AddChild(account);
+        AddChild(account);
 
         _underWay = Widgets.Label(variation: "StrongLabel");
-        content.AddChild(_underWay);
+        AddChild(_underWay);
         _active = new GridContainer { Columns = 6, ThemeTypeVariation = "TableGrid" };
-        content.AddChild(_active);
-        content.AddChild(Widgets.Label("On the board", "StrongLabel"));
+        AddChild(_active);
+        AddChild(Widgets.Label("On the board", "StrongLabel"));
         _offers = new GridContainer { Columns = 8, ThemeTypeVariation = "TableGrid" };
-        content.AddChild(_offers);
-
-        var rules = Sim.Contracts.Rules;
-        AddChild(Widgets.Dialog("Contracts", content,
-            $"The neighbors' field work and the buyers' orders; new offers every morning. Giving a contract back, or not " +
-            $"finishing it in time, costs {rules.Penalty * 100f:0}% of its reward. Esc closes."));
+        AddChild(_offers);
         _changes = Sim.Events.SubscribeAll(e =>
         {
             if (e is IContractEvent) _rebuild = true;

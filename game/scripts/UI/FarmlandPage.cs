@@ -4,8 +4,8 @@ using Godot;
 
 namespace Headland.Game.UI;
 
-/// <summary>L: every parcel on the map with its fields, owner and price, to buy from its NPC or sell back.</summary>
-public partial class FarmlandScreen : Screen
+/// <summary>The menu's farmland: every parcel on the map with its fields, owner and price, to buy from its NPC or sell back.</summary>
+public partial class FarmlandPage : MenuPage
 {
     private readonly List<(Farmland land, Label owner, Button deal, Label why)> _rows = [];
     private Label _balance = null!;
@@ -13,14 +13,15 @@ public partial class FarmlandScreen : Screen
 
     public Simulation Sim { get; init; } = null!;
 
+    public override string Subtitle => "Parcels come with the fields in them, and sell back for their price.";
+
     protected override void Build()
     {
-        var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
         var account = new HBoxContainer();
         account.AddChild(Widgets.Label("Balance"));
         _balance = Widgets.Label();
         account.AddChild(_balance);
-        content.AddChild(account);
+        AddChild(account);
 
         var table = new GridContainer { Columns = 7, ThemeTypeVariation = "TableGrid" };
         foreach (var header in new[] { "Parcel", "Area", "Fields", "Owner", "Price", "", "" })
@@ -39,9 +40,7 @@ public partial class FarmlandScreen : Screen
             table.AddChild(why);
             _rows.Add((land, owner, deal, why));
         }
-        content.AddChild(table);
-
-        AddChild(Widgets.Dialog("Farmland", content, "Parcels come with the fields in them, and sell back for their price. Esc closes."));
+        AddChild(table);
         Refresh();
         if (_rows.FirstOrDefault(r => !r.deal.Disabled).deal is { } first) first.CallDeferred(Control.MethodName.GrabFocus);
     }

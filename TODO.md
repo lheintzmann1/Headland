@@ -290,11 +290,13 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 
 ### In-game menu
 
-- [ ] Esc opens a menu with tabs, switched with Q/E or the mouse, instead of a key per screen: map, prices,
+- [x] Esc opens a menu with tabs, switched with Q/E or the mouse, instead of a key per screen: map, prices,
       contracts, finances and loans, farmland, vehicles (garage), statistics, helpers, controls help,
       settings, save/load/quit. The existing screens become its pages; F2, L and C go. Esc still closes the
-      top screen first.
-- [ ] Remember the last tab; a few direct shortcuts (M for the map) open the menu on their tab.
+      top screen first. The pages still to build (map, prices, garage, statistics, helpers, settings) become tabs
+      as they come.
+- [x] Remember the last tab.
+- [ ] A few direct shortcuts (M for the map) open the menu on their tab, with the map tab.
 
 ## Map and terrain
 

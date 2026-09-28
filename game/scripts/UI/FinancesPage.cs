@@ -6,10 +6,10 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// F2: the balance and the bank loan, with buttons to borrow and repay, and the farm's books: money in and out by
-/// category over the last days or months.
+/// The menu's finances: the balance and the bank loan, with buttons to borrow and repay, and the farm's books: money in
+/// and out by category over the last days or months.
 /// </summary>
-public partial class FinancesScreen : Screen
+public partial class FinancesPage : MenuPage
 {
     private Label _balance = null!;
     private Label _loan = null!;
@@ -23,10 +23,18 @@ public partial class FinancesScreen : Screen
 
     public Simulation Sim { get; init; } = null!;
 
+    public override string Subtitle
+    {
+        get
+        {
+            var level = Sim.Economy.PriceLevel;
+            var prices = Math.Abs(level - 1f) < 0.001f ? "" : $", prices {(level > 1f ? "+" : "")}{(level - 1f) * 100f:0}%";
+            return $"{Sim.Difficulty.Name} difficulty{prices}. Money in and out by category.";
+        }
+    }
+
     protected override void Build()
     {
-        var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
-
         var account = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
         account.AddChild(Widgets.Label("Balance"));
         _balance = Widgets.Label();
@@ -34,9 +42,9 @@ public partial class FinancesScreen : Screen
         account.AddChild(Widgets.Label("Loan"));
         _loan = Widgets.Label(variation: "MoneyLabel");
         account.AddChild(_loan);
-        content.AddChild(account);
+        AddChild(account);
         _terms = Widgets.Label(variation: "DimLabel");
-        content.AddChild(_terms);
+        AddChild(_terms);
 
         var bank = new HBoxContainer();
         _borrow = Widgets.Button("", () => Bank(() => Sim.Economy.Borrow()));
@@ -45,20 +53,17 @@ public partial class FinancesScreen : Screen
         bank.AddChild(_borrow);
         bank.AddChild(_repay);
         bank.AddChild(_repayAll);
-        content.AddChild(bank);
+        AddChild(bank);
 
         var tabs = new HBoxContainer();
         var group = new ButtonGroup();
         tabs.AddChild(Widgets.Tab("Days", group, !_byMonth, () => Show(byMonth: false)));
         tabs.AddChild(Widgets.Tab("Months", group, _byMonth, () => Show(byMonth: true)));
-        content.AddChild(tabs);
+        AddChild(tabs);
 
         _table = new GridContainer { ThemeTypeVariation = "TableGrid" };
-        content.AddChild(_table);
+        AddChild(_table);
 
-        var level = Sim.Economy.PriceLevel;
-        var prices = Math.Abs(level - 1f) < 0.001f ? "" : $", prices {(level > 1f ? "+" : "")}{(level - 1f) * 100f:0}%";
-        AddChild(Widgets.Dialog("Finances", content, $"{Sim.Difficulty.Name} difficulty{prices}. Money in and out by category. Esc closes."));
         tabs.GetChild<Button>(0).CallDeferred(Control.MethodName.GrabFocus);
         Refresh();
     }

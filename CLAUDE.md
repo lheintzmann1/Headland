@@ -59,7 +59,9 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   setting gets a default, validation on load, and a README line.
 - UI: build controls with `UI/Widgets`, style them through `ui/theme.tres` type variations (no per-control theme
   overrides), BBCode colors from `UI/Palette`, icons as `Widgets.Icon` (Material Symbols SVGs in `assets/icons`,
-  white so they can be tinted). Screens derive from `Screen` and go on the `ScreenStack` (Esc closes the top one).
+  white so they can be tinted). Screens derive from `Screen` and go on the `ScreenStack` (Esc closes the top one, or
+  opens the in-game menu); the menu's tabs are `MenuPage`s listed in `MenuScreen`, and a new screen of the game (map,
+  shop…) is one of them.
 - Machines and POIs are entities built from components (FS specializations), on one base in
   `src/Headland.Core/Components` (`Entity`, `EntityDef`, `Component`, `ComponentKinds`, where every kind is
   registered). A kind per file (its def, checked against what it's on, runtime state and save data): shared ones
