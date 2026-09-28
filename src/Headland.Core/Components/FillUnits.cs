@@ -6,7 +6,9 @@ public sealed class FillUnitDef
 {
     public string Id { get; set; } = "main";
     public float Capacity { get; set; } = 1000f;
+    /// <summary>What it takes: these fill types, and those of <see cref="FillTypeCategories"/> once linked.</summary>
     public string[] FillTypes { get; set; } = [];
+    public string[] FillTypeCategories { get; set; } = [];
     public string? StartFillType { get; set; }
     public float StartLevel { get; set; }
 }
@@ -18,13 +20,19 @@ public sealed class FillUnitsDef : ComponentDef
 
     public override IEnumerable<string> Roles => ["load"];
 
+    internal override void Link(ContentDatabase content)
+    {
+        foreach (var u in Units) u.FillTypes = content.WithCategories(u.FillTypes, u.FillTypeCategories);
+    }
+
     internal override IEnumerable<string> Errors(EntityDef owner, ContentDatabase content)
     {
         foreach (var id in Units.GroupBy(u => u.Id).Where(g => g.Count() > 1).Select(g => g.Key)) yield return $"unit '{id}' is defined more than once";
         foreach (var u in Units)
         {
             if (u.Capacity <= 0f) yield return $"unit '{u.Id}': capacity must be > 0";
-            if (u.FillTypes.Length == 0) yield return $"unit '{u.Id}': needs fillTypes";
+            foreach (var error in content.CategoryErrors(u.FillTypeCategories)) yield return $"unit '{u.Id}': {error}";
+            if (u.FillTypes.Length == 0) yield return $"unit '{u.Id}': needs fillTypes or fillTypeCategories";
             foreach (var ft in u.FillTypes.Where(ft => !content.FillTypes.ContainsKey(ft))) yield return $"unit '{u.Id}' accepts unknown fill type '{ft}'";
             if (u.StartLevel is var level and > 0f && (level > u.Capacity || u.StartFillType == null || !u.FillTypes.Contains(u.StartFillType)))
                 yield return $"unit '{u.Id}': startLevel needs a startFillType it accepts, and room for it";

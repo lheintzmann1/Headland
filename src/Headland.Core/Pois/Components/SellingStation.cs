@@ -29,7 +29,9 @@ public sealed class DemandDef
 public sealed class SellingStationDef : StationDef, IPriced
 {
     public AreaDef Trigger { get; set; } = new();
+    /// <summary>What it buys: these fill types, and those of <see cref="FillTypeCategories"/> once linked.</summary>
     public string[] FillTypes { get; set; } = [];
+    public string[] FillTypeCategories { get; set; } = [];
     /// <summary>Smallest load it takes.</summary>
     public float MinAmount { get; set; }
     public float PriceFactor { get; set; } = 1f;
@@ -43,9 +45,12 @@ public sealed class SellingStationDef : StationDef, IPriced
 
     internal override IEnumerable<string> FillTypesOf(PoiDef poi) => FillTypes;
 
+    internal override void Link(ContentDatabase content) => FillTypes = content.WithCategories(FillTypes, FillTypeCategories);
+
     internal override IEnumerable<string> StationErrors(PoiDef poi, ContentDatabase content)
     {
-        if (FillTypes.Length == 0) yield return "needs fillTypes";
+        foreach (var error in content.CategoryErrors(FillTypeCategories)) yield return error;
+        if (FillTypes.Length == 0) yield return "needs fillTypes or fillTypeCategories";
         if (MinAmount < 0f) yield return "minAmount must be >= 0";
         foreach (var e in Priced.Errors(this, FillTypes)) yield return e;
         var d = Demand;

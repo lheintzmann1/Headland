@@ -17,7 +17,7 @@
       "attacherJoints": { "joints": [ { "id": "header", "type": "header", "x": 0, "z": 1.6, "y": 1.0 } ] },
       "fillUnits": {
         "units": [
-          { "id": "tank", "capacity": 9000, "fillTypes": ["wheat", "barley", "canola", "corn"] },
+          { "id": "tank", "capacity": 9000, "fillTypeCategories": ["grain"] },
           { "id": "fuel", "capacity": 600, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 600 }
         ]
       },

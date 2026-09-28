@@ -111,7 +111,7 @@ The triggers, storage and actions have since become POI components (see Componen
 - [x] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;
       labels in `PropsRenderer` come from the POI def.
 - [ ] Later: buy and place POIs/buildings on your own farmland (FS construction mode).
-- [ ] Fill type categories (FS `fillTypeCategories`): `filltypes.json` groups fill types (grain, fertilizer…),
+- [x] Fill type categories (FS `fillTypeCategories`): `filltypes.json` groups fill types (grain, fertilizer…),
       and stations take categories as well as fill types, so a mod's new grain sells at the elevator by itself.
 - [ ] More FS station settings (placeable XML): silo storage costs per unit and day, loading that starts by
       itself when a trailer parks under the spout (`autoStart`), silo extensions adding room to a silo nearby

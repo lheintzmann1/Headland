@@ -8,24 +8,6 @@ namespace Headland.Core.Tests;
 /// <summary>Kinds of joints and lamps are data (jointtypes.json, lamptypes.json), as a mod would add them.</summary>
 public class TypeDataTests
 {
-    /// <summary>The game's content with some of its files replaced or added, as a mod would.</summary>
-    private sealed class Modded(Dictionary<string, string> files) : IContentSource
-    {
-        private readonly FileSystemContentSource _game = new(TestContent.DataDir);
-
-        public IReadOnlyList<string> ListJson(string dir) =>
-            [.. _game.ListJson(dir), .. files.Keys.Where(f => f.StartsWith(dir + "/", StringComparison.Ordinal) && !_game.Exists(f))];
-
-        public string ReadText(string path) => files.TryGetValue(path, out var text) ? text : _game.ReadText(path);
-        public bool Exists(string path) => files.ContainsKey(path) || _game.Exists(path);
-    }
-
-    private static string WithEntry(string file, string entry)
-    {
-        var text = File.ReadAllText(Path.Combine(TestContent.DataDir, file)).TrimEnd();
-        return text[..^1].TrimEnd() + ",\n" + entry + "\n]";
-    }
-
     [Fact]
     public void JointAndLampTypesComeFromTheData()
     {
@@ -51,10 +33,10 @@ public class TypeDataTests
     [Fact]
     public void ANewKindOfJointOrLampIsJustData()
     {
-        var content = ContentDatabase.Load(new Modded(new()
+        var content = TestContent.Modded(new()
         {
-            ["jointtypes.json"] = WithEntry("jointtypes.json", """  { "id": "hookLift", "name": "Hook lift", "linkage": true }"""),
-            ["lamptypes.json"] = WithEntry("lamptypes.json", """  { "id": "marker", "name": "Marker lights", "night": true }"""),
+            ["jointtypes.json"] = TestContent.WithEntry("jointtypes.json", """  { "id": "hookLift", "name": "Hook lift", "linkage": true }"""),
+            ["lamptypes.json"] = TestContent.WithEntry("lamptypes.json", """  { "id": "marker", "name": "Marker lights", "night": true }"""),
             ["machines/test.json"] = """
                 [{ "id": "truck", "name": "Truck", "size": { "length": 7, "width": 2.5 },
                    "components": {
@@ -67,7 +49,7 @@ public class TypeDataTests
                    "components": { "attachable": { "type": "hookLift", "mode": "mounted" } },
                    "visual": { "model": "res://container.glb" } }]
                 """,
-        }));
+        });
         Assert.Contains("hookLinkage", content.Machines["truck"].Roles);
 
         var sim = Simulation.Create(content);

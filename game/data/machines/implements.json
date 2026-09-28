@@ -26,7 +26,7 @@
     "components": {
       "runningGear": { "axles": [ { "z": 0, "track": 2.6, "wheels": { "radius": 0.45, "width": 0.3 } } ] },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 3.1, "maxArticulationDeg": 75, "lowerable": true },
-      "fillUnits": { "units": [ { "id": "seed", "capacity": 1600, "fillTypes": ["seeds"], "startFillType": "seeds", "startLevel": 900 } ] },
+      "fillUnits": { "units": [ { "id": "seed", "capacity": 1600, "fillTypeCategories": ["seed"], "startFillType": "seeds", "startLevel": 900 } ] },
       "workAreas": {
         "areas": [
           { "type": "seeder", "width": 3.0, "length": 0.8, "z": -0.9, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 80, "fillUnit": "seed" }
@@ -62,7 +62,7 @@
         ]
       },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.4, "maxArticulationDeg": 80 },
-      "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypes": ["wheat", "barley", "canola", "corn"] } ] },
+      "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypeCategories": ["grain"] } ] },
       "tipper": { "fillUnit": "main", "ratePerSecond": 450 },
       "wearable": {}
     },
@@ -106,7 +106,7 @@
     "size": { "length": 1.6, "width": 2.4, "height": 1.9, "centerZ": -0.75 },
     "components": {
       "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0 },
-      "fillUnits": { "units": [ { "id": "hopper", "capacity": 1500, "fillTypes": ["fertilizer"], "startFillType": "fertilizer", "startLevel": 1000 } ] },
+      "fillUnits": { "units": [ { "id": "hopper", "capacity": 1500, "fillTypeCategories": ["fertilizer"], "startFillType": "fertilizer", "startLevel": 1000 } ] },
       "workAreas": {
         "areas": [
           { "type": "spreader", "width": 24, "length": 1.0, "z": -3.0, "requiresOn": true, "maxWorkSpeedKmh": 16, "requiredPowerHp": 25,
@@ -124,7 +124,7 @@
     "components": {
       "runningGear": { "axles": [ { "z": 0, "track": 1.8, "wheels": { "radius": 0.62, "width": 0.32 } } ] },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.0, "maxArticulationDeg": 70, "lowerable": true, "hitchLoad": 0.1 },
-      "fillUnits": { "units": [ { "id": "tank", "capacity": 2500, "fillTypes": ["herbicide"], "startFillType": "herbicide", "startLevel": 1500 } ] },
+      "fillUnits": { "units": [ { "id": "tank", "capacity": 2500, "fillTypeCategories": ["herbicide"], "startFillType": "herbicide", "startLevel": 1500 } ] },
       // The boom's wings fold forward along the tank for the road.
       "animatedParts": { "parts": [
         { "id": "boomL", "rotationDeg": [0, -90, 0], "seconds": 5, "fold": true },

@@ -34,6 +34,27 @@ internal static class TestContent
     /// <summary>The game's content with an extra file in <paramref name="dir"/> (machines, pois…), as a mod would add.</summary>
     public static ContentDatabase With(string dir, string json) => ContentDatabase.Load(new ExtraFile($"{dir}/test.json", json));
 
+    /// <summary>The game's content with some of its files replaced or added (path → text), as a mod would.</summary>
+    public static ContentDatabase Modded(Dictionary<string, string> files) => ContentDatabase.Load(new ModdedFiles(files));
+
+    /// <summary>A data file's JSON array (<paramref name="file"/>, such as filltypes.json) with one more entry.</summary>
+    public static string WithEntry(string file, string entry)
+    {
+        var text = File.ReadAllText(Path.Combine(DataDir, file)).TrimEnd();
+        return text[..^1].TrimEnd() + ",\n" + entry + "\n]";
+    }
+
+    private sealed class ModdedFiles(Dictionary<string, string> files) : IContentSource
+    {
+        private readonly FileSystemContentSource _game = new(DataDir);
+
+        public IReadOnlyList<string> ListJson(string dir) =>
+            [.. _game.ListJson(dir), .. files.Keys.Where(f => f.StartsWith(dir + "/", StringComparison.Ordinal) && !_game.Exists(f))];
+
+        public string ReadText(string path) => files.TryGetValue(path, out var text) ? text : _game.ReadText(path);
+        public bool Exists(string path) => files.ContainsKey(path) || _game.Exists(path);
+    }
+
     private sealed class ExtraFile(string path, string json) : IContentSource
     {
         private readonly FileSystemContentSource _game = new(DataDir);

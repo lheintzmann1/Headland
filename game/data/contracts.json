@@ -12,7 +12,8 @@
   // it is offered, and "weight" makes it come up more or less often than the other jobs that fit.
   // "deliver" on a harvest job: the crop belongs to the neighbor and at least "share" of what was harvested must be
   // tipped at the buyer named on the contract. A delivery job (no "work") asks for "amount": [min, max] units of
-  // goods a buyer on the map takes ("fillTypes", default any), and pays their market price times "priceFactor".
+  // goods a buyer on the map takes ("fillTypes" and "fillTypeCategories", default any), and pays their market price
+  // times "priceFactor".
   // "leases": machine sets a field job can be taken with, from a POI whose delivery spot leases them (the dealer).
   // An offer gets the first set that can do it (for a harvest, one whose header cuts the crop), for "feePerHa" by
   // the field's area, taken from the reward. The machines wait on the dealer's lot, implements hitched, and go back

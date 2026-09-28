@@ -87,6 +87,11 @@ public sealed class FillTypeDef
     public string Color { get; set; } = "#c8a860";
     /// <summary>Nitrogen a unit gives the soil when spread (kg N per unit): what fertilizers are for.</summary>
     public float Nitrogen { get; set; }
+    /// <summary>
+    /// The categories it's in (FS: fill type categories): grain, fertilizer… Fill units and stations take whole
+    /// categories, so a new fill type goes where its category does.
+    /// </summary>
+    public string[] Categories { get; set; } = [];
 }
 
 /// <summary>A kind of attacher joint (jointtypes.json): an implement hitches to a joint of its attachable's type.</summary>
@@ -503,8 +508,9 @@ public sealed class ContractDeliveryDef
     public float Share { get; set; }
     /// <summary>Delivery jobs: [min, max] units asked for, rounded to the thousand.</summary>
     public float[] Amount { get; set; } = [];
-    /// <summary>Delivery jobs: the fill types it may ask for (empty: any a buyer takes).</summary>
+    /// <summary>Delivery jobs: the fill types it may ask for, and those of these categories (both empty: any a buyer takes).</summary>
     public string[] FillTypes { get; set; } = [];
+    public string[] FillTypeCategories { get; set; } = [];
     /// <summary>Delivery jobs: the reward, as the market price of the goods times this.</summary>
     public float PriceFactor { get; set; } = 1f;
 }

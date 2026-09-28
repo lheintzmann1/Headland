@@ -71,6 +71,17 @@ public sealed class ContentDatabase
     public List<ModRef> Mods { get; } = [];
 
     public CropDef? CropById(string id) => Crops.Find(c => c.Id == id);
+
+    /// <summary>The fill types in <paramref name="category"/>, in their order in filltypes.json.</summary>
+    public IEnumerable<string> FillTypesIn(string category) => FillTypeList.Where(f => f.Categories.Contains(category)).Select(f => f.Id);
+
+    /// <summary><paramref name="fillTypes"/> and those of <paramref name="categories"/>, each once: what a unit or a station takes.</summary>
+    internal string[] WithCategories(string[] fillTypes, string[] categories) =>
+        categories.Length == 0 ? fillTypes : fillTypes.Concat(categories.SelectMany(FillTypesIn)).Distinct().ToArray();
+
+    /// <summary>What's wrong with <paramref name="categories"/>: those no fill type is in.</summary>
+    internal IEnumerable<string> CategoryErrors(string[] categories) =>
+        categories.Where(c => !FillTypesIn(c).Any()).Select(c => $"no fill type is in category '{c}'");
     public int CropIndex(string id) => Crops.FindIndex(c => c.Id == id);
     public int SoilIndex(string id) => Soils.FindIndex(s => s.Id == id);
 
@@ -100,7 +111,11 @@ public sealed class ContentDatabase
             p.Link(db);
             db.AddUnique(db.Pois, p.Id, p, "poi");
         }
-        foreach (var c in ReadMany<ContractTypeDef>(src, "contracts.json")) db.AddUnique(db.ContractTypes, c.Id, c, "contract type");
+        foreach (var c in ReadMany<ContractTypeDef>(src, "contracts.json"))
+        {
+            if (c.Deliver is { } d) d.FillTypes = db.WithCategories(d.FillTypes, d.FillTypeCategories);
+            db.AddUnique(db.ContractTypes, c.Id, c, "contract type");
+        }
         foreach (var file in src.ListJson("climates"))
         foreach (var c in ReadMany<ClimateDef>(src, file))
             db.AddUnique(db.Climates, c.Id, c, "climate");
@@ -257,6 +272,7 @@ public sealed class ContentDatabase
         {
             if (f.MonthlyPriceFactor is { Length: not 12 }) e.Add($"fill type '{f.Id}': monthlyPriceFactor needs 12 values");
             if (f.Nitrogen < 0f) e.Add($"fill type '{f.Id}': nitrogen must be >= 0");
+            if (f.Categories.Any(string.IsNullOrWhiteSpace)) e.Add($"fill type '{f.Id}': categories need names");
         }
 
         var seenCrops = new HashSet<string>();
@@ -367,6 +383,7 @@ public sealed class ContentDatabase
             if (d == null) continue;
             if (d.PriceFactor <= 0) e.Add($"{what}: deliver.priceFactor must be > 0");
             foreach (var ft in d.FillTypes.Where(f => !FillTypes.ContainsKey(f))) e.Add($"{what}: unknown fill type '{ft}'");
+            e.AddRange(CategoryErrors(d.FillTypeCategories).Select(error => $"{what}: deliver.fillTypeCategories: {error}"));
         }
 
         foreach (var map in Maps.Values)

@@ -15,8 +15,9 @@ public sealed class SiloDef : StationDef
     public AreaDef? LoadTrigger { get; set; }
     /// <summary>Units per second poured into a trailer at the spout.</summary>
     public float LoadRate { get; set; } = 400f;
-    /// <summary>What it stores and loads (empty: all its fill units keep).</summary>
+    /// <summary>What it stores and loads: these fill types and those of <see cref="FillTypeCategories"/> (both empty: all its fill units keep).</summary>
     public string[] FillTypes { get; set; } = [];
+    public string[] FillTypeCategories { get; set; } = [];
     /// <summary>Smallest load it takes.</summary>
     public float MinAmount { get; set; }
 
@@ -27,8 +28,11 @@ public sealed class SiloDef : StationDef
 
     internal override IEnumerable<string> FillTypesOf(PoiDef poi) => FillTypes;
 
+    internal override void Link(ContentDatabase content) => FillTypes = content.WithCategories(FillTypes, FillTypeCategories);
+
     internal override IEnumerable<string> StationErrors(PoiDef poi, ContentDatabase content)
     {
+        foreach (var error in content.CategoryErrors(FillTypeCategories)) yield return error;
         if (UnloadTrigger == null && LoadTrigger == null) yield return "needs an unloadTrigger, a loadTrigger or both";
         if (LoadRate <= 0f) yield return "loadRate must be > 0";
         if (MinAmount < 0f) yield return "minAmount must be >= 0";

@@ -265,9 +265,15 @@ Trailers are built from that:
 
 ### fillUnits
 
-`units`: each has an `id` (unique on the entity), a `capacity`, the `fillTypes` it takes, and optionally a
-`startFillType` and `startLevel`. A unit holds one fill type at a time. On a POI they are its storage: what it keeps
-of a fill type is spread over the units that take it, those already holding it filled first.
+`units`: each has an `id` (unique on the entity), a `capacity`, what it takes, and optionally a `startFillType` and
+`startLevel`. A unit holds one fill type at a time. On a POI they are its storage: what it keeps of a fill type is
+spread over the units that take it, those already holding it filled first.
+
+What a unit takes is its `fillTypes` and the fill types of its `fillTypeCategories` (FS: fill type categories), each
+fill type naming its `categories` in `game/data/filltypes.json` (`grain`, `seed`, `fertilizer`, `herbicide`, `fuel`,
+`product`, `forage`). A unit or station taking a category takes a new fill type of it too: a mod's oats go into grain
+trailers and sell at the elevator. Stations and silos take categories the same way, and so do delivery contracts
+(`deliver.fillTypeCategories`).
 
 ### animatedParts
 
@@ -415,10 +421,10 @@ paid is not.
 
 ### sellingStation
 
-Buys loads tipped or piped into its `trigger`: its `fillTypes` (FS: selling station), at the market price times its
-factors, less as its demand drops, more in high demand. `minAmount` (0) is the smallest load it takes; a load under
-way may finish below it. A sale of a fill type the POI's `fillUnits` keep goes into them, so a mill takes only what it
-has room to mill, and stops buying when full.
+Buys loads tipped or piped into its `trigger`: its `fillTypes` and `fillTypeCategories` (FS: selling station), at the
+market price times its factors, less as its demand drops, more in high demand. `minAmount` (0) is the smallest load it
+takes; a load under way may finish below it. A sale of a fill type the POI's `fillUnits` keep goes into them, so a mill
+takes only what it has room to mill, and stops buying when full.
 
 `demand` lowers the price of a fill type as loads of it come in and brings it back day by day, and sometimes puts one
 of its fill types in high demand:
@@ -435,16 +441,16 @@ Goods a contract asks for at this POI go to the contract instead, unpaid (the co
 
 ### buyingStation
 
-Sells its `fillTypes` to the machines parked in its `trigger`, with the use key: into any fill unit that takes them
-(seed into a drill), and into a motor's fuel tank, which is refueling (booked as fuel). `minAmount` (0) is the smallest
-amount it sells.
+Sells its `fillTypes` and `fillTypeCategories` to the machines parked in its `trigger`, with the use key: into any
+fill unit that takes them (seed into a drill), and into a motor's fuel tank, which is refueling (booked as fuel).
+`minAmount` (0) is the smallest amount it sells.
 
 ### silo
 
 Stores its owner's goods in the POI's `fillUnits` (FS: silo): loads tipped or piped into its `unloadTrigger` go in,
 and the owner's trailers parked under its `loadTrigger` fill up from them with the use key, `loadRate` units a second
-(400). It needs one of the triggers or both. `fillTypes` limits what it stores and loads (none: whatever its fill
-units keep); `minAmount` (0) is the smallest load it takes. Other farms' machines can't use it.
+(400). It needs one of the triggers or both. `fillTypes` and `fillTypeCategories` limit what it stores and loads (none:
+whatever its fill units keep); `minAmount` (0) is the smallest load it takes. Other farms' machines can't use it.
 
 ### productionPoint
 

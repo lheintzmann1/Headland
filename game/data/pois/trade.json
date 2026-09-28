@@ -6,7 +6,7 @@
       { "x": -3, "z": -9, "w": 8, "d": 6 }
     ],
     "components": {
-      "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypes": ["seeds", "fertilizer", "herbicide"], "openHours": [7, 19] },
+      "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypeCategories": ["seed", "fertilizer", "herbicide"], "openHours": [7, 19] },
       "hotspots": { "spots": [ { "icon": "storefront" } ] }
     } },
   { "id": "grain_elevator", "name": "Grain Elevator", "w": 58, "d": 40,
@@ -17,7 +17,7 @@
       { "x": -12.5, "z": -12.5, "w": 9, "d": 9, "round": true }
     ],
     "components": {
-      "sellingStation": { "trigger": { "x": -7, "z": 10, "w": 28, "d": 20 }, "fillTypes": ["wheat", "barley", "canola", "corn"], "minAmount": 500 },
+      "sellingStation": { "trigger": { "x": -7, "z": 10, "w": 28, "d": 20 }, "fillTypeCategories": ["grain"], "minAmount": 500 },
       "hotspots": { "spots": [ { "icon": "sell" } ] }
     } },
   // Mills the wheat farmers sell it into flour, sold every hour; it stops buying when its wheat bin is full.
