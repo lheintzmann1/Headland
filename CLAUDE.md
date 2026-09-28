@@ -12,7 +12,8 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
   `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, POIs, contracts, soils, climates, maps, npcs),
   `ui/theme.tres` (the project `Theme`), `assets/` (textures, fonts, icons, future models, `CREDITS.md`),
   `export_presets.cfg` (Linux/Windows/macOS, used by CI).
-- `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports; tags `v*` publish a release).
+- `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports, the macOS app re-signed
+  and launch-tested on a macOS runner; tags `v*` publish a release).
 - `tools/`: asset pipeline (Python + PIL/numpy): `convert_tiles.py` (iso tiles → top-down atlases),
   `fetch_textures.py` (CC0 ambientCG ground textures), `gen_crop_cards.py` (procedural crop atlas).
 

@@ -106,10 +106,49 @@ jobs:
           path: build/Headland-${{ matrix.dir }}.*
           if-no-files-found: error
 
+  # macOS 26 refuses to launch the app with Godot's built-in ad-hoc signature (launchd: error 163), so it's
+  # re-signed ad hoc with Apple's codesign, then started through launchd to prove macOS runs it and .NET loads.
+  # No hardened runtime (only notarization needs it), so the .NET JIT needs no entitlements.
+  sign-macos:
+    name: Sign macOS
+    needs: export
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: Headland-macos
+
+      - name: Re-sign
+        run: |
+          ditto -x -k Headland-macos.zip . && rm Headland-macos.zip
+          # Nested code first (the .NET runtime Godot puts in Resources), then the bundle, which seals it.
+          find Headland.app -type f ! -path 'Headland.app/Contents/MacOS/*' -print0 |
+            while IFS= read -r -d '' f; do
+              if file -b "$f" | grep -q '^Mach-O'; then codesign --force --sign - "$f"; fi
+            done
+          codesign --force --sign - Headland.app
+          codesign --verify --deep --strict --verbose=2 Headland.app
+          ditto -c -k --keepParent Headland.app Headland-macos.zip
+
+      - name: Launch headless
+        run: |
+          # open goes through launchd like a double-click. The "<id>: model res://..." lines come from C# (Rig).
+          open -W -n --stdout "$PWD/out.log" --stderr "$PWD/err.log" Headland.app --args --headless --quit
+          cat out.log err.log
+          grep -q ': model res://' out.log
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Headland-macos
+          path: Headland-macos.zip
+          overwrite: true
+          if-no-files-found: error
+
   release:
     name: Publish release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: export
+    needs: [export, sign-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
