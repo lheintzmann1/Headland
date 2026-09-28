@@ -1,9 +1,11 @@
 using Headland.Game.Common;
+using Headland.Game.Controls;
 using Headland.Core;
 using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Pois;
 using Headland.Core.World;
 using Godot;
@@ -205,9 +207,9 @@ public partial class PropsRenderer : Node3D
     /// <summary>How to use a trigger, with the key on the player's layout.</summary>
     private static string Hint(string type) => type switch
     {
-        "unload" => $"tip or pipe here ({InputSetup.Label("unload")})",
+        "unload" => $"tip or pipe here ({InputLayer.Label(InputActions.Unload)})",
         "delivery" => "keep clear",
-        _ => $"park here ({InputSetup.Label("use")})",
+        _ => $"park here ({InputLayer.Label(InputActions.Use)})",
     };
 
     private Label3D FieldSign(FieldInfo f) => new()

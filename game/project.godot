@@ -1,6 +1,6 @@
 ; Engine configuration file.
-; Input actions are registered from code (scripts/Common/InputSetup.cs) using physical keys,
-; so QWERTY and AZERTY keyboards both get WASD/ZQSD in the same place.
+; Input goes through the input layer (scripts/Controls/InputLayer.cs, bindings in settings.cfg) using physical
+; keys, so QWERTY and AZERTY keyboards both get WASD/ZQSD in the same place.
 ; ETC2/ASTC texture import is required by the universal (Intel + Apple Silicon) macOS export.
 
 config_version=5

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Headland.Game.Camera;
 using Headland.Game.Common;
+using Headland.Game.Controls;
 using Headland.Game.Debug;
 using Headland.Game.Saves;
 using Headland.Game.UI;
@@ -9,6 +10,7 @@ using Headland.Game.Weather;
 using Headland.Game.World;
 using Headland.Core;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Saves;
 using Headland.Core.Time;
@@ -28,6 +30,7 @@ public partial class GameRoot : Node3D
     private static UserSettings? _settings;
 
     public UserSettings Settings { get; private set; } = null!;
+    public InputLayer InputLayer { get; private set; } = null!;
     public Simulation Sim { get; private set; } = null!;
     public IsoCamera Camera { get; private set; } = null!;
     public Hud Hud { get; private set; } = null!;
@@ -54,7 +57,9 @@ public partial class GameRoot : Node3D
             _settings.ApplyAudio();
         }
         Settings = _settings;
-        InputSetup.Register(Settings.Keys);
+        InputLayer = new InputLayer { Bindings = Settings.Controls, Name = "Input" };
+        AddChild(InputLayer);
+        InputLayer.Fired += OnAction;
 
         var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1],
             args.FirstOrDefault(a => a.StartsWith("--difficulty="))?.Split('=', 2)[1]);
@@ -83,7 +88,7 @@ public partial class GameRoot : Node3D
             AddChild(new ScenarioRunner { Game = this, Scenario = scenario, ShotsDir = shots, Name = "Scenario" });
         }
         else if (slot != null) Sim.Notifications.Post($"Loaded {slot}: {Sim.Clock.Date} {Sim.Clock.TimeString}", Severity.Info, 0);
-        else Sim.Notifications.Post($"Welcome to {Sim.Map.Name} ({Sim.Difficulty.Name}). Press {InputSetup.Label("toggle_help")} for controls.", Severity.Info, 0);
+        else Sim.Notifications.Post($"Welcome to {Sim.Map.Name} ({Sim.Difficulty.Name}). Press {InputLayer.Label(GameActions.ToggleHelp)} for controls.", Severity.Info, 0);
         foreach (var w in warnings) Sim.Notifications.Post(w, Severity.Warning, 0);
     }
 
@@ -127,23 +132,27 @@ public partial class GameRoot : Node3D
 
     private void ApplyMovementInput()
     {
-        var fwd = Input.GetActionStrength("move_forward") - Input.GetActionStrength("move_back");
-        var right = Input.GetActionStrength("move_right") - Input.GetActionStrength("move_left");
+        var fwd = InputLayer.Strength(InputActions.MoveForward) - InputLayer.Strength(InputActions.MoveBack);
+        var right = InputLayer.Strength(InputActions.MoveRight) - InputLayer.Strength(InputActions.MoveLeft);
         var p = Sim.Player;
         if (p.Vehicle != null)
         {
             p.MoveInput = NVec2.Zero;
-            p.Controls.Input = new VehicleInput { Throttle = fwd, Steer = -right, Brake = Input.IsActionPressed("brake") };
+            p.Controls.Input = new VehicleInput { Throttle = fwd, Steer = -right, Brake = InputLayer.Held(InputActions.Brake) };
         }
         else
         {
             p.MoveInput = Camera.GroundForward * fwd + Camera.GroundRight * right;
-            p.Running = Input.IsActionPressed("run");
+            p.Running = InputLayer.Held(InputActions.Run);
         }
     }
 
     public override void _Process(double delta)
     {
+        InputLayer.Context = !PlayerInputEnabled ? InputContext.None
+            : Screens.BlocksInput ? InputContext.Menu
+            : InputContext.World | (Sim.Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot);
+        Camera.Dragging = InputLayer.MouseMode == MouseMode.Drag;
         var p = Sim.Player;
         var focus = FocusOverride?.Invoke() ?? (p.Vehicle?.Footprint.Center ?? p.Position);
         Camera.Follow = Sim.World.OnGround(focus);
@@ -165,43 +174,43 @@ public partial class GameRoot : Node3D
         Hud.Hover = Sim.World.Raycast(origin.ToCore(), dir.ToCore(), out var hit) ? new NVec2(hit.X, hit.Z) : null;
     }
 
-    public override void _UnhandledInput(InputEvent e)
+    /// <summary>What an action fired by the input layer does: those of the game here, the rest in the simulation.</summary>
+    private void OnAction(string action)
     {
-        if (!PlayerInputEnabled || e is not InputEventKey { Pressed: true, Echo: false }) return;
-        if (e.IsActionPressed("toggle_help")) Screens.Toggle(() => new HelpScreen());
-        else if (e.IsActionPressed("toggle_finances")) Screens.Toggle(() => new FinancesScreen { Sim = Sim });
-        else if (e.IsActionPressed("toggle_farmland")) Screens.Toggle(() => new FarmlandScreen { Sim = Sim });
-        else if (e.IsActionPressed("toggle_contracts")) Screens.Toggle(() => new ContractsScreen { Sim = Sim });
-        else if (Screens.BlocksInput) return;
-        else if (e.IsActionPressed("enter")) Sim.ToggleEnterExit();
-        // Before next_vehicle: Shift+Tab also matches the plain Tab binding.
-        else if (e.IsActionPressed("prev_vehicle")) Sim.SwitchVehicle(-1);
-        else if (e.IsActionPressed("next_vehicle")) Sim.SwitchVehicle(1);
-        else if (e.IsActionPressed("attach")) Sim.CommandAttach();
-        else if (e.IsActionPressed("lower")) Sim.CommandLower();
-        else if (e.IsActionPressed("fold")) Sim.CommandFold();
-        else if (e.IsActionPressed("turn_on")) Sim.CommandTurnOn();
-        else if (e.IsActionPressed("unload")) Sim.CommandUnload();
-        else if (e.IsActionPressed("cycle_seed")) Sim.CommandCycleSeed();
-        else if (e.IsActionPressed("steering")) Sim.CommandSteering();
-        else if (e.IsActionPressed("use")) Use();
-        else if (e.IsActionPressed("helper")) Sim.CommandHelper();
-        else if (e.IsActionPressed("cam_rotate_left")) Camera.RotateStep(-1);
-        else if (e.IsActionPressed("cam_rotate_right")) Camera.RotateStep(1);
-        else if (e.IsActionPressed("pause")) Sim.Clock.Paused = !Sim.Clock.Paused;
-        else if (e.IsActionPressed("skip_day")) SleepUntilMorning();
-        else if (e.IsActionPressed("quicksave")) Saves.Save(SaveManager.QuickSlot);
-        else if (e.IsActionPressed("quickload")) Saves.Load(SaveManager.QuickSlot);
-        else if (e.IsActionPressed("toggle_debug")) Hud.DebugVisible = !Hud.DebugVisible;
-        else if (e.IsActionPressed("screenshot")) SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png");
-        else
+        switch (action)
         {
-            for (var i = 0; i < GameClock.Speeds.Length; i++)
-            {
-                if (!e.IsActionPressed($"time_{i + 1}")) continue;
-                Sim.Clock.TimeScale = GameClock.Speeds[i];
+            case GameActions.ToggleHelp: Screens.Toggle(() => new HelpScreen()); break;
+            case GameActions.ToggleFinances: Screens.Toggle(() => new FinancesScreen { Sim = Sim }); break;
+            case GameActions.ToggleFarmland: Screens.Toggle(() => new FarmlandScreen { Sim = Sim }); break;
+            case GameActions.ToggleContracts: Screens.Toggle(() => new ContractsScreen { Sim = Sim }); break;
+            case GameActions.ToggleDebug: Hud.DebugVisible = !Hud.DebugVisible; break;
+            case GameActions.Screenshot: SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png"); break;
+            case InputActions.Enter: Sim.ToggleEnterExit(); break;
+            case InputActions.PrevVehicle: Sim.SwitchVehicle(-1); break;
+            case InputActions.NextVehicle: Sim.SwitchVehicle(1); break;
+            case InputActions.Attach: Sim.CommandAttach(); break;
+            case InputActions.Lower: Sim.CommandLower(); break;
+            case InputActions.Fold: Sim.CommandFold(); break;
+            case InputActions.TurnOn: Sim.CommandTurnOn(); break;
+            case InputActions.Unload: Sim.CommandUnload(); break;
+            case InputActions.CycleSeed: Sim.CommandCycleSeed(); break;
+            case InputActions.Steering: Sim.CommandSteering(); break;
+            case InputActions.Use: Use(); break;
+            case InputActions.Helper: Sim.CommandHelper(); break;
+            case GameActions.CamRotateLeft: Camera.RotateStep(-1); break;
+            case GameActions.CamRotateRight: Camera.RotateStep(1); break;
+            case GameActions.ZoomIn: Camera.Zoom /= 1.12f; break;
+            case GameActions.ZoomOut: Camera.Zoom *= 1.12f; break;
+            case GameActions.Pause: Sim.Clock.Paused = !Sim.Clock.Paused; break;
+            case GameActions.SkipDay: SleepUntilMorning(); break;
+            case GameActions.Quicksave: Saves.Save(SaveManager.QuickSlot); break;
+            case GameActions.Quickload: Saves.Load(SaveManager.QuickSlot); break;
+            default:
+                var speed = Array.IndexOf(GameActions.TimeSpeeds, action);
+                if (speed < 0 || speed >= GameClock.Speeds.Length) break;
+                Sim.Clock.TimeScale = GameClock.Speeds[speed];
                 Sim.Clock.Paused = false;
-            }
+                break;
         }
     }
 

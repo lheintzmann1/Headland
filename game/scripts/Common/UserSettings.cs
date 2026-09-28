@@ -1,3 +1,5 @@
+using Headland.Core.Input;
+using Headland.Game.Controls;
 using Godot;
 
 namespace Headland.Game.Common;
@@ -36,8 +38,8 @@ public sealed class UserSettings
         ["master"] = 1f, ["music"] = 0.7f, ["vehicles"] = 1f, ["environment"] = 1f, ["ui"] = 1f,
     };
 
-    // [controls]: action → physical key, named as on a US QWERTY keyboard (Godot key names, e.g. "W", "Shift+Tab").
-    public Dictionary<string, Key> Keys { get; } = InputSetup.Bindings.ToDictionary(b => b.action, b => b.key);
+    // [controls]: action → its bindings (see InputBinding: keys named as on a US QWERTY keyboard, "Shift+Tab", "Joy A").
+    public Bindings Controls { get; } = GameActions.Catalog();
 
     // [gameplay]
     /// <summary>Real minutes between autosaves; 0 turns autosave off.</summary>
@@ -71,17 +73,49 @@ public sealed class UserSettings
         foreach (var (setting, _) in Buses)
             s.Volumes[setting] = Math.Clamp(cfg.GetValue("audio", setting, s.Volumes[setting]).AsSingle(), 0f, 1f);
 
-        foreach (var (action, _, _) in InputSetup.Bindings)
-        {
-            if (!cfg.HasSectionKey("controls", action)) continue;
-            var name = cfg.GetValue("controls", action).AsString();
-            var key = OS.FindKeycodeFromString(name);
-            if (key != Key.None) s.Keys[action] = key;
-            else GD.PushWarning($"{path}: unknown key '{name}' for {action}; keeping {OS.GetKeycodeString(s.Keys[action])}");
-        }
+        foreach (var action in s.Controls.Actions)
+            if (cfg.HasSectionKey("controls", action.Id))
+                s.LoadBindings(path, action, cfg.GetValue("controls", action.Id));
+        foreach (var c in s.Controls.AllConflicts())
+            GD.PushWarning($"{path}: {c.Binding} is bound to both {c.Action} and {c.Other}");
 
         s.AutosaveMinutes = Math.Clamp(cfg.GetValue("gameplay", "autosave_minutes", s.AutosaveMinutes).AsSingle(), 0f, 240f);
         return s;
+    }
+
+    /// <summary>
+    /// An action's bindings: a list of them, or a single one as older files have it, which replaces its keyboard
+    /// binding only (the defaults for the mouse and the gamepad stay). A wrong one keeps the defaults, with a warning.
+    /// </summary>
+    private void LoadBindings(string path, InputActionDef action, Variant value)
+    {
+        var single = value.VariantType == Variant.Type.String;
+        string[]? texts = value.VariantType switch
+        {
+            Variant.Type.String => [value.AsString()],
+            Variant.Type.Array => value.AsGodotArray().Select(v => v.AsString()).ToArray(),
+            Variant.Type.PackedStringArray => value.AsStringArray(),
+            _ => null,
+        };
+        var bindings = new List<InputBinding>();
+        foreach (var text in texts ?? [])
+        {
+            string? error;
+            if (InputBinding.TryParse(text, out var parsed, out error) && InputLayer.Check(parsed, out error) is { } binding)
+            {
+                bindings.Add(binding);
+                continue;
+            }
+            GD.PushWarning($"{path}: {action.Id}: {error}; keeping {string.Join(", ", action.Defaults)}");
+            return;
+        }
+        if (texts == null)
+        {
+            GD.PushWarning($"{path}: {action.Id} needs a list of bindings; keeping {string.Join(", ", action.Defaults)}");
+            return;
+        }
+        if (single) bindings.AddRange(action.Defaults.Where(b => b.Device != InputDevice.Keyboard));
+        Controls.Set(action.Id, bindings);
     }
 
     public void Save(string path = DefaultPath)
@@ -95,7 +129,8 @@ public sealed class UserSettings
         cfg.SetValue("graphics", "antialiasing", Antialiasing);
         cfg.SetValue("graphics", "shadows", Shadows);
         foreach (var (setting, _) in Buses) cfg.SetValue("audio", setting, Volumes[setting]);
-        foreach (var (action, _, _) in InputSetup.Bindings) cfg.SetValue("controls", action, OS.GetKeycodeString(Keys[action]));
+        foreach (var action in Controls.Actions)
+            cfg.SetValue("controls", action.Id, new Godot.Collections.Array(Controls.Of(action.Id).Select(b => Variant.From(b.ToString()))));
         cfg.SetValue("gameplay", "autosave_minutes", AutosaveMinutes);
         var err = cfg.Save(path);
         if (err != Error.Ok) GD.PushWarning($"{path}: cannot write ({err})");

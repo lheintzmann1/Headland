@@ -1,5 +1,5 @@
 using System.Text;
-using Headland.Game.Common;
+using Headland.Game.Controls;
 
 namespace Headland.Game.UI;
 
@@ -10,13 +10,12 @@ public partial class HelpScreen : Screen
 
     protected override void Build()
     {
-        var keys = InputSetup.Bindings
-            .Where(b => !b.action.StartsWith("time_") || b.action == "time_1")
-            .Select(b => b.action == "time_1"
-                ? (Widgets.Colored("1–6", Palette.Key), "Time speed ×1 … ×240")
-                : (Widgets.Key(b.action), b.help))
-            .Append((Widgets.Colored("Wheel", Palette.Key), "Zoom"))
-            .Append((Widgets.Colored("Middle drag", Palette.Key), "Pan"))
+        var speeds = GameActions.TimeSpeeds;
+        var keys = InputLayer.Current.Actions
+            .Where(a => !speeds.Contains(a.Id) || a.Id == speeds[0])
+            .Select(a => a.Id == speeds[0]
+                ? (Widgets.Colored($"{InputLayer.Label(speeds[0])}–{InputLayer.Label(speeds[^1])}", Palette.Key), "Time speed ×1 … ×240")
+                : (Widgets.Key(a.Id), a.Help))
             .ToList();
         var half = (keys.Count + 1) / 2;
 
@@ -31,6 +30,6 @@ public partial class HelpScreen : Screen
 
         var text = Widgets.Rich(0);
         text.Text = sb.ToString();
-        AddChild(Widgets.Dialog("Controls", text, $"Keys follow your keyboard layout. {InputSetup.Label("toggle_help")} or Esc closes."));
+        AddChild(Widgets.Dialog("Controls", text, $"Keys follow your keyboard layout. {InputLayer.Label(GameActions.ToggleHelp)} or Esc closes."));
     }
 }

@@ -28,9 +28,9 @@ Rules for every item:
       JSON; show the number on field signs (`PropsRenderer`), the HUD, helper notifications and the
       inspector.
 - [x] **Switch-vehicle key** (FS: Tab / Shift+Tab): jump into the next/previous farm vehicle. Physical
-      key, label via `InputSetup.Label`, listed in F1 help and README controls. A helper driving a vehicle
+      key, label from the input layer, listed in F1 help and README controls. A helper driving a vehicle
       keeps working.
-- [x] Fix the stale `scripts/Core/InputSetup.cs` path in the `game/project.godot` header comment.
+- [x] Fix the stale input script path in the `game/project.godot` header comment.
 
 ## Foundations
 
@@ -249,7 +249,7 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 
 ### Input
 
-- [ ] Input layer over Godot's `InputMap`: actions on keys with Ctrl/Shift/Alt, mouse buttons and axes, and
+- [x] Input layer over Godot's `InputMap`: actions on keys with Ctrl/Shift/Alt, mouse buttons and axes, and
       gamepad; press, hold and double-tap; physical keys as today. Bindings saved in `settings.cfg`, rebinding
       with conflict checks per context (the settings screen in UI).
 - [ ] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;

@@ -6,7 +6,7 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 ## Layout
 
 - `src/Headland.Core/`: the whole simulation in plain C# (net8.0, **no Godot references**): time, weather,
-  world/field layers, crops, machines, economy, player. Godot only renders and feeds input.
+  world/field layers, crops, machines, economy, player, input bindings. Godot only renders and feeds input.
 - `tests/Headland.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
 - `game/`: the Godot project (assembly `Headland`, namespaces `Headland.Game.*`). `scripts/` (C# presentation),
   `shaders/` (GDShader), `data/` (JSON content "raws": crops, machines, POIs, contracts, soils, climates, maps, npcs),
@@ -48,7 +48,10 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
 - Calendar is compressed (3 days/month); agronomy scales by real days per game day so crops keep real months.
 - Godot C#: one Node class per file (file name = class name), parameterless constructors with `init` properties
   (`new TerrainRenderer { Sim = sim }`), `FileAccess` means Godot's (global alias in `scripts/GlobalUsings.cs`).
-- Input actions use **physical keys** (AZERTY gets ZQSD automatically); labels come from `InputSetup.Label`.
+- Input goes through the input layer: actions, contexts, bindings and their timing in Core (`Input/`, the
+  simulation's actions in `InputActions`), the game's own actions in `Controls/GameActions`, Godot events turned into
+  named inputs by `Controls/InputLayer`. Keys go by **physical** position (AZERTY gets ZQSD automatically); labels
+  come from `InputLayer.Label`; the player's bindings live in `settings.cfg`.
   Player overrides and other preferences live in `user://settings.cfg` (`Common/UserSettings.cs`); a new
   setting gets a default, validation on load, and a README line.
 - UI: build controls with `UI/Widgets`, style them through `ui/theme.tres` type variations (no per-control theme

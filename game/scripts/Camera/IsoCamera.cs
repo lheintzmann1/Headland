@@ -4,8 +4,9 @@ using NVec2 = System.Numerics.Vector2;
 namespace Headland.Game.Camera;
 
 /// <summary>
-/// Orthographic camera at the classic 2:1 angle (30° pitch, 45° yaw), rotating in 90° steps.
-/// Wheel zooms, middle-drag pans (the offset eases back once the followed entity moves).
+/// Orthographic camera at the classic 2:1 angle (30° pitch, 45° yaw), rotating in 90° steps. The game zooms it
+/// (<see cref="Zoom"/>) and has it pan while the pan action holds the mouse (<see cref="Dragging"/>); the offset
+/// eases back once the followed entity moves.
 /// </summary>
 public partial class IsoCamera : Camera3D
 {
@@ -19,13 +20,14 @@ public partial class IsoCamera : Camera3D
     private float _sizeTarget = 42f;
     private Vector3 _target;
     private Vector3 _pan;
-    private bool _dragging;
     private bool _snapped;
 
     /// <summary>World point to follow (set every frame by the game).</summary>
     public Vector3 Follow { get; set; }
     /// <summary>Speed of the followed entity, used to recenter after panning.</summary>
     public float FollowSpeed { get; set; }
+    /// <summary>The mouse's motion pans the view (set every frame by the game).</summary>
+    public bool Dragging { get; set; }
 
     public float Zoom
     {
@@ -53,26 +55,13 @@ public partial class IsoCamera : Camera3D
 
     public override void _UnhandledInput(InputEvent e)
     {
-        switch (e)
-        {
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelUp, Pressed: true }:
-                Zoom /= 1.12f;
-                break;
-            case InputEventMouseButton { ButtonIndex: MouseButton.WheelDown, Pressed: true }:
-                Zoom *= 1.12f;
-                break;
-            case InputEventMouseButton { ButtonIndex: MouseButton.Middle } mb:
-                _dragging = mb.Pressed;
-                break;
-            case InputEventMouseMotion motion when _dragging:
-                var perPixel = Size / GetViewport().GetVisibleRect().Size.Y;
-                var right = new Vector3(GroundRight.X, 0, GroundRight.Y);
-                var fwd = new Vector3(GroundForward.X, 0, GroundForward.Y);
-                // Vertical screen motion covers more ground because the view is tilted.
-                _pan -= right * motion.Relative.X * perPixel;
-                _pan += fwd * motion.Relative.Y * perPixel / Mathf.Sin(Mathf.DegToRad(PitchDeg));
-                break;
-        }
+        if (e is not InputEventMouseMotion motion || !Dragging) return;
+        var perPixel = Size / GetViewport().GetVisibleRect().Size.Y;
+        var right = new Vector3(GroundRight.X, 0, GroundRight.Y);
+        var fwd = new Vector3(GroundForward.X, 0, GroundForward.Y);
+        // Vertical screen motion covers more ground because the view is tilted.
+        _pan -= right * motion.Relative.X * perPixel;
+        _pan += fwd * motion.Relative.Y * perPixel / Mathf.Sin(Mathf.DegToRad(PitchDeg));
     }
 
     public override void _Process(double delta)
@@ -81,7 +70,7 @@ public partial class IsoCamera : Camera3D
         var k = 1f - Mathf.Exp(-10f * dt);
         _yaw = Mathf.LerpAngle(_yaw, TargetYaw, 1f - Mathf.Exp(-8f * dt));
         Size = Mathf.Lerp(Size, _sizeTarget, k);
-        if (FollowSpeed > 1f && !_dragging) _pan = _pan.Lerp(Vector3.Zero, 1f - Mathf.Exp(-1.5f * dt));
+        if (FollowSpeed > 1f && !Dragging) _pan = _pan.Lerp(Vector3.Zero, 1f - Mathf.Exp(-1.5f * dt));
 
         var goal = Follow + _pan;
         _target = _snapped ? _target.Lerp(goal, k) : goal;

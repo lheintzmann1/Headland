@@ -85,7 +85,8 @@ Built with **Godot 4.7** and **C#**.
 ## Controls
 
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. Press F1 in game for the full list;
-Esc closes screens. Keys can be changed in the settings file (see below).
+Esc closes screens. A gamepad works too (left stick to walk and drive, A lowers, B turns on, X uses, Y gets in). Keys
+can be changed in the settings file (see below).
 
 | Key | Action |
 |---|---|
@@ -120,7 +121,7 @@ startup; a missing or invalid value falls back to its default.
 |---|---|
 | `[graphics]` | `window_mode` (windowed, maximized, fullscreen, exclusive_fullscreen), `resolution`, `vsync`, `max_fps` (0 = no cap), `render_scale` (0.5–1, FSR below 1), `antialiasing` (off, fxaa, msaa2, msaa4), `shadows` (off, low, medium, high) |
 | `[audio]` | `master`, `music`, `vehicles`, `environment`, `ui`: volumes from 0 to 1 |
-| `[controls]` | One key per action, named as on a US QWERTY keyboard (`"W"`, `"Shift+Tab"`): the position counts, not the letter |
+| `[controls]` | A list of bindings per action (`["W", "Joy LY-"]`): keys named as on a US QWERTY keyboard, since the position counts and not the letter, with `Ctrl+`, `Shift+` or `Alt+` (`"Shift+Tab"`); mouse buttons (`"Mouse Middle"`, `"Mouse Wheel Up"`); gamepad buttons and axes (`"Joy A"`, `"Joy LX-"`, `"Joy LT"`). `"Hold V"` fires after a long press and `"Double V"` on a double tap. Two actions sharing a binding where both work are reported at startup |
 | `[gameplay]` | `autosave_minutes` (0 = off) |
 
 ## Running from source

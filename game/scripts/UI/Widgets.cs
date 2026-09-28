@@ -1,4 +1,4 @@
-using Headland.Game.Common;
+using Headland.Game.Controls;
 using Godot;
 
 namespace Headland.Game.UI;
@@ -117,7 +117,7 @@ public static class Widgets
     }
 
     /// <summary>BBCode for a key prompt: the action's key on the player's keyboard layout, highlighted.</summary>
-    public static string Key(string action) => Colored($"[lb]{InputSetup.Label(action)}[rb]", Palette.Key);
+    public static string Key(string action) => Colored($"[lb]{InputLayer.Label(action)}[rb]", Palette.Key);
 
     /// <summary>BBCode for a tinted icon from assets/icons.</summary>
     public static string Icon(string name, string color, int size = IconSize) =>
