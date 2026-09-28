@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Crops;
@@ -211,13 +212,15 @@ public sealed class Simulation
     /// <summary>
     /// What each key does now for the player (FS: the action events registered for them): on foot, getting into the
     /// vehicle nearby; driving, getting out, hitching, what the components of the chain offer (lowering, folding,
-    /// turning on, unloading…), the use key and the helper. The HUD hints them and the help lists them.
+    /// turning on, unloading…) and the helper; and the use key where something is offered to it
+    /// (<see cref="Activations"/>). The HUD hints them and the help lists them.
     /// </summary>
     public ActionList Offers()
     {
         var actions = new ActionList(Notifications);
         actions.Add(InputActions.NextVehicle, "Switch to the next vehicle", () => SwitchVehicle(1), hinted: false);
         actions.Add(InputActions.PrevVehicle, "Switch to the previous vehicle", () => SwitchVehicle(-1), hinted: false);
+        if (Activations() is [var nearest, ..]) actions.Add(InputActions.Use, nearest.Label, () => Activate());
         if (Player.Vehicle is not { } v)
         {
             if (Player.NearestEnterable(this) is { } near) actions.Add(InputActions.Enter, $"Enter {near.Def.Name}", () => Player.Enter(near));
@@ -231,10 +234,36 @@ public sealed class Simulation
         foreach (var m in v.Chain())
         foreach (var source in m.Components.OfType<IActionSource>())
             source.AddActions(actions, this);
-        var uses = Pois.UseOptions(v);
-        actions.Add(InputActions.Use, uses.Count > 0 ? string.Join(", ", uses) : "Use", () => Pois.Use(v), hinted: uses.Count > 0);
         AddHelper(actions, v);
         return actions;
+    }
+
+    /// <summary>
+    /// What the use key does where the player is, walking or in their vehicle's chain (or for <paramref name="vehicle"/>'s
+    /// chain), as the components whose triggers they're in offer it: usable ones first, nearest first.
+    /// </summary>
+    public IReadOnlyList<Activation> Activations(Machine? vehicle = null)
+    {
+        var user = (vehicle?.Root ?? Player.Vehicle) is { } v
+            ? new ActivationUser(v.FarmId, v.Footprint.Center, v)
+            : new ActivationUser(Player.FarmId, Player.Position, null);
+        return World.Pois
+            .SelectMany(p => p.Components.OfType<IActivatable>())
+            .SelectMany(a => a.Activations(user, this))
+            .OrderBy(a => !a.Usable)
+            .ThenBy(a => a.Distance)
+            .ToList();
+    }
+
+    /// <summary>The use key: runs the nearest usable activation, else says why the nearest can't be used.</summary>
+    public void Activate(Machine? vehicle = null)
+    {
+        switch (Activations(vehicle))
+        {
+            case [{ Usable: true } nearest, ..]: nearest.Run!(); break;
+            case [var nearest, ..]: Notifications.Post(nearest.Blocked ?? "Nothing to do here"); break;
+            default: Notifications.Post(InputActions.Def(InputActions.Use)!.Unavailable!); break;
+        }
     }
 
     /// <summary>

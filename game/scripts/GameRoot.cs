@@ -12,6 +12,7 @@ using Headland.Core;
 using Headland.Core.Content;
 using Headland.Core.Input;
 using Headland.Core.Machines;
+using Headland.Core.Pois.Components;
 using Headland.Core.Saves;
 using Headland.Core.Time;
 using Godot;
@@ -206,17 +207,15 @@ public partial class GameRoot : Node3D
         }
     }
 
-    /// <summary>
-    /// The use key: asks what to load when a silo holds several goods the trailer takes, and opens the workshop when
-    /// machines of the chain have options to change there.
-    /// </summary>
+    /// <summary>The use key: the nearest activation's screen when it asks the player first, else what it does.</summary>
     private void Use()
     {
-        if (Sim.Player.Vehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
-            Screens.Push(new LoadScreen { Sim = Sim, Vehicle = v, Choices = choices });
-        else if (Sim.Player.Vehicle is { } w && Sim.Pois.Workshop(w) is { } workshop && w.Chain().Any(m => m.Def.Configurations.Count > 0))
-            Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = w, Workshop = workshop });
-        else Sim.Perform(InputActions.Use);
+        switch (Sim.Activations().FirstOrDefault(a => a.Usable)?.Menu)
+        {
+            case LoadMenu load: Screens.Push(new LoadScreen { Sim = Sim, Vehicle = load.Vehicle, Choices = load.Choices }); break;
+            case WorkshopMenu shop: Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = shop.Vehicle, Workshop = shop.Workshop }); break;
+            default: Sim.Perform(InputActions.Use); break;
+        }
     }
 
     public void SleepUntilMorning()

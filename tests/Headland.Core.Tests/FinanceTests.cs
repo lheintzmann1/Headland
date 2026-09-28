@@ -53,13 +53,13 @@ public class FinanceTests
         sim.Pois.Unload(sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f), pit, "wheat", 10_000f);
         var seeder = sim.Machines.Spawn("seeder_3", sim.World.PoiById("supplies")!.Trigger("fill")!.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
-        sim.Pois.Use(seeder);
+        sim.Activate(seeder);
         var t = sim.Machines.Spawn("tractor_95", sim.World.PoiById("gas")!.Trigger("fill")!.Area.Center, MathF.PI / 2f);
         t.Unit("fuel")!.Remove(100f);
-        sim.Pois.Use(t);
+        sim.Activate(t);
         sim.Machines.Teleport(t, sim.World.PoiById("workshop")!.Trigger("repair")!.Area.Center, 0f);
         t.Get<Wearable>()!.Condition = 0.5f;
-        sim.Pois.Use(t);
+        sim.Activate(t);
 
         Assert.Equal(10_000f * sim.Economy.Price("wheat", sim.Clock.Month), books.Today[MoneyCategory.Sales], 1);
         Assert.Equal(["seeds", "diesel"], bought.Select(b => b.FillType));

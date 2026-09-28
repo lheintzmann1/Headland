@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Machines;
 
 namespace Headland.Core.Pois.Components;
 
@@ -45,7 +46,10 @@ public sealed class SiloDef : StationDef
     internal override Component Create(Poi poi) => new Silo(poi, this);
 }
 
-public sealed class Silo(Poi poi, SiloDef def) : PoiComponent<SiloDef>(poi, def)
+/// <summary>The trailers under a silo's spout could load several goods: the game asks which.</summary>
+public sealed record LoadMenu(Machine Vehicle, IReadOnlyList<string> Choices) : ActivationMenu;
+
+public sealed class Silo(Poi poi, SiloDef def) : PoiComponent<SiloDef>(poi, def), IActivatable
 {
     /// <summary>Where its goods are: the POI's fill units.</summary>
     public FillUnits Storage => Poi.Get<FillUnits>()!;
@@ -54,4 +58,27 @@ public sealed class Silo(Poi poi, SiloDef def) : PoiComponent<SiloDef>(poi, def)
     public IReadOnlyList<string> FillTypes => Def.FillTypes.Length > 0
         ? Def.FillTypes
         : Storage.Units.SelectMany(u => u.Def.FillTypes).Distinct().ToArray();
+
+    /// <summary>
+    /// The use key loads the chain's trailers standing under its spout with what they already carry, else what it
+    /// holds most of (asking first when they could take several), or stops them.
+    /// </summary>
+    public IEnumerable<Activation> Activations(ActivationUser user, Simulation sim)
+    {
+        if (Trigger("load") is not { } spout || user.Vehicle is not { } v || user.In(spout.Area) is not { Count: > 0 } under) yield break;
+        var pois = sim.Pois;
+        var distance = user.Distance(spout.Area, under);
+        if (pois.IsLoading(v))
+        {
+            yield return new Activation("Stop loading", this, distance) { Run = () => pois.StopLoading(v) };
+            yield break;
+        }
+        var choices = pois.LoadChoices(v);
+        yield return choices switch
+        {
+            [] => new Activation("Load", this, distance) { Blocked = pois.LoadBlocker(v) },
+            [var only] => new Activation($"Load {pois.Names([only])}", this, distance) { Run = () => pois.StartLoading(v, only) },
+            [var first, ..] => new Activation("Load…", this, distance) { Run = () => pois.StartLoading(v, first), Menu = new LoadMenu(v, choices) },
+        };
+    }
 }

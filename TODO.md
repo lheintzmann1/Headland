@@ -255,7 +255,7 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 - [x] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;
       the HUD's key hints and the F1 help list the current context's actions, built from what the vehicle's
       components offer.
-- [ ] Activatables (FS `Activatable`): a component whose trigger the farmer or their vehicle is in offers the use
+- [x] Activatables (FS `Activatable`): a component whose trigger the farmer or their vehicle is in offers the use
       key an action, with its label, who may use it (farm, opening hours) and what it does. The HUD lists them
       and the use key runs the nearest, instead of `PoiSystem.Use` knowing each case; components register their
       actions only while they apply (FS `InputBinding.registerActionEvent`), and Lua components add their own.

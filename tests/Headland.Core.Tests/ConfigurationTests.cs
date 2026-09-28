@@ -171,7 +171,7 @@ public class ConfigurationTests
         var bay = sim.World.PoiById("workshop")!.Trigger("repair")!;
         var (t, trailer) = PoiTests.TrailerAt(sim, bay.Area.Center - new Vector2(4f, 0f), "wheat", 12_000f);
         sim.Player.Enter(t);
-        Assert.Contains("Change options…", sim.Pois.UseOptions(t));
+        Assert.Contains("Change options…", Assert.Single(sim.Activations()).Label);
         var money = sim.Economy.Money;
 
         // Duals ($4,600) and a front linkage ($3,400), with $250 of work for each.

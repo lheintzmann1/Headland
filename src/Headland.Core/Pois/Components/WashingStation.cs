@@ -22,4 +22,18 @@ public sealed class WashingStationDef : StationDef
     internal override Component Create(Poi poi) => new WashingStation(poi, this);
 }
 
-public sealed class WashingStation(Poi poi, WashingStationDef def) : PoiComponent<WashingStationDef>(poi, def);
+public sealed class WashingStation(Poi poi, WashingStationDef def) : PoiComponent<WashingStationDef>(poi, def), IActivatable
+{
+    /// <summary>The use key washes the chain in its bay (driven in, or the farm's machines there when the farmer walks in).</summary>
+    public IEnumerable<Activation> Activations(ActivationUser user, Simulation sim)
+    {
+        if (user.InBay(Trigger("wash")!.Area, sim.Machines.All) is not var (root, distance)) yield break;
+        var chain = root.Chain().ToList();
+        var dirty = chain.Any(m => m.Dirt > 0.005f);
+        yield return new Activation(dirty ? $"Wash (${chain.Sum(m => sim.Pois.WashPrice(this, m)):N0})" : "Wash", this, distance)
+        {
+            Run = () => sim.Pois.Wash(chain, this),
+            Blocked = sim.Pois.Closed(Poi, Def) ?? (dirty ? null : "Nothing to wash"),
+        };
+    }
+}

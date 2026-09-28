@@ -117,12 +117,12 @@ public class PoiTests
         tank.Remove(tank.Level);
         var money = sim.Economy.Money;
 
-        sim.Pois.Use(seeder);
+        sim.Activate(seeder);
         Assert.True(tank.IsEmpty);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in a marked area first: a shop, silo, gas station, workshop or wash bay");
 
         sim.Machines.Teleport(seeder, yard.Area.Center, 0f);
-        sim.Pois.Use(seeder);
+        sim.Activate(seeder);
         var cost = 1600f * sim.Economy.Price("seeds", sim.Clock.Month);
         Assert.Equal(1600f, tank.Level);
         Assert.Equal(money - cost, sim.Economy.Money, 0);

@@ -22,6 +22,9 @@ public class PoiActionTests
         for (var t = 0f; t < seconds; t += Dt) sim.Tick(Dt);
     }
 
+    /// <summary>What the use key offers the player (or <paramref name="vehicle"/>'s chain) where they are.</summary>
+    private static string[] Labels(Simulation sim, Machines.Machine? vehicle = null) => sim.Activations(vehicle).Select(a => a.Label).ToArray();
+
     /// <summary>What a POI keeps: its fill units.</summary>
     private static FillUnits Stock(Poi poi) => poi.Get<FillUnits>()!;
 
@@ -201,7 +204,7 @@ public class PoiActionTests
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
         Assert.Equal(["Refuel with diesel"], sim.Pois.Describe(gas.Trigger("fill")!));
-        Assert.Equal(["Refuel"], sim.Pois.UseOptions(t));
+        Assert.Equal(["Refuel"], Labels(sim));
 
         sim.Perform(InputActions.Use);
         Assert.Equal(180f, tank.Level);
@@ -227,7 +230,7 @@ public class PoiActionTests
         t.Get<Wearable>()!.Condition = trailer.Get<Wearable>()!.Condition = 0.5f;
         sim.Player.Enter(t);
         var cost = (72_000f + 21_000f) / 100f * 0.5f;
-        Assert.Equal([$"Repair (${cost:N0})", "Change options…"], sim.Pois.UseOptions(t));
+        Assert.Equal([$"Repair (${cost:N0}), change options…"], Labels(sim));
 
         sim.Economy.Spend(sim.Economy.Money - 100f, MoneyCategory.Other);
         sim.Perform(InputActions.Use);
@@ -283,7 +286,8 @@ public class PoiActionTests
         var (t, trailer) = TrailerAt(sim, silo.Trigger("load")!.Area.Center, "wheat", 0f);
         sim.Player.Enter(t);
         Assert.Equal(["wheat", "barley"], sim.Pois.LoadChoices(t));
-        Assert.Equal(["Load…"], sim.Pois.UseOptions(t));
+        Assert.Equal(["Load…"], Labels(sim));
+        Assert.Equal(["wheat", "barley"], Assert.IsType<LoadMenu>(sim.Activations()[0].Menu).Choices);
 
         sim.Perform(InputActions.Use);
         Assert.True(sim.Pois.IsLoading(t));
@@ -322,6 +326,77 @@ public class PoiActionTests
         Assert.Equal(loaded[0].Amount, trailer.Unit("main")!.Level);
     }
 
+    /// <summary>A service POI whose pumps and wash bay overlap across its middle.</summary>
+    private static readonly PoiDef Service = new()
+    {
+        Id = "test_service", Name = "Service", W = 24, D = 24,
+        Components =
+        [
+            new BuyingStationDef { Trigger = new AreaDef { Z = -3, W = 20, D = 10 }, FillTypes = ["diesel"] },
+            new WashingStationDef { Trigger = new AreaDef { Z = 3, W = 20, D = 10 }, Price = 40 },
+        ],
+    };
+
+    /// <summary>Moves a machine so that its footprint's center is at <paramref name="center"/>, facing east.</summary>
+    private static void CenterAt(Simulation sim, Machines.Machine m, Vector2 center) =>
+        sim.Machines.Teleport(m, center - MathUtil.Forward(MathF.PI / 2f) * m.Def.Size.CenterZ, MathF.PI / 2f);
+
+    [Fact]
+    public void TheUseKeyRunsTheNearestActivation()
+    {
+        var sim = SimWith([Service], new PoiPlacementDef { Id = "service", Type = "test_service", X = 30, Z = 30 });
+        var t = sim.Machines.Spawn("tractor_95", new Vector2(10f, 10f), 0f);
+        t.Unit("fuel")!.Remove(100f);
+        t.Dirt = 0.5f;
+        sim.Player.Enter(t);
+
+        // Nearer the pumps: refueling first, the wash after it.
+        CenterAt(sim, t, new Vector2(30f, 29f));
+        Assert.Equal(["Refuel", "Wash ($20)"], Labels(sim));
+        sim.Perform(InputActions.Use);
+        Assert.Equal((180f, 0.5f), (t.Unit("fuel")!.Level, t.Dirt));
+
+        CenterAt(sim, t, new Vector2(30f, 31f));
+        Assert.Equal(["Wash ($20)", "Refuel"], Labels(sim));
+        sim.Perform(InputActions.Use);
+        Assert.Equal(0f, t.Dirt);
+
+        // What can't be used comes after, with why.
+        Assert.Equal(["Refuel", "Wash"], Labels(sim));
+        Assert.Equal("Nothing to wash", sim.Activations()[1].Blocked);
+
+        CenterAt(sim, t, new Vector2(50f, 50f));
+        Assert.Empty(sim.Activations());
+        Assert.Null(sim.Offers().Of(InputActions.Use));
+        sim.Perform(InputActions.Use);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in a marked area first: a shop, silo, gas station, workshop or wash bay");
+    }
+
+    [Fact]
+    public void OnFootTheWorkshopServesTheFarmsMachinesInItsBay()
+    {
+        var sim = TestContent.NewSim();
+        var workshop = sim.World.PoiById("workshop")!;
+        var bay = workshop.Trigger("repair")!.Area;
+        var t = sim.Machines.Spawn("tractor_95", bay.Center, 0f);
+        t.Get<Wearable>()!.Condition = 0.5f;
+        Assert.Empty(sim.Activations());
+
+        sim.Player.Position = bay.Center + new Vector2(4f, 0f);
+        var cost = sim.Pois.RepairPrice(workshop.Get<Workshop>()!, t);
+        var repair = Assert.Single(sim.Activations());
+        Assert.Equal($"Repair (${cost:N0}), change options…", repair.Label);
+        Assert.Equal(new WorkshopMenu(t, workshop.Get<Workshop>()!), repair.Menu);
+        Assert.Equal($"Repair (${cost:N0}), change options…", sim.Offers().Of(InputActions.Use)!.Label);
+        sim.Perform(InputActions.Use);
+        Assert.Equal(1f, t.Get<Wearable>()!.Condition);
+
+        // Another farm's machine is none of the farmer's business.
+        sim.Machines.Teleport(t, new Vector2(300f, 300f), 0f);
+        sim.Machines.Spawn("trailer_16", bay.Center, 0f, Farm.None);
+        Assert.Empty(sim.Activations());
+    }
+
     [Fact]
     public void NewMachinesAreDeliveredToFreeSpots()
     {
@@ -357,7 +432,7 @@ public class PoiActionTests
         Assert.Equal((silo, "barley", 9000f), (Assert.Single(stored).Poi, stored[0].FillType, MathF.Round(stored[0].Amount)));
 
         sim.Machines.Teleport(t, silo.Trigger("load")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
-        Assert.Equal(["Load barley"], sim.Pois.UseOptions(t));
+        Assert.Equal(["Load barley"], Labels(sim));
         sim.Perform(InputActions.Use);
         Run(sim, 30f);
         Assert.Equal(9000f, trailer.Unit("main")!.Level, 1);
@@ -372,11 +447,11 @@ public class PoiActionTests
         var seeder = sim.Machines.Spawn("seeder_3", yard.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
         Assert.Equal(["Buy seeds, fertilizer, herbicide (7:00–19:00)"], sim.Pois.Describe(yard));
-        Assert.Equal(["Buy seeds"], sim.Pois.UseOptions(seeder));
+        Assert.Equal(["Buy seeds"], Labels(sim, seeder));
 
         sim.SkipHours(13);
-        Assert.Empty(sim.Pois.UseOptions(seeder));
-        sim.Pois.Use(seeder);
+        Assert.Equal("Farm Supplies is closed: open 7:00–19:00", Assert.Single(sim.Activations(seeder)).Blocked);
+        sim.Activate(seeder);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Farm Supplies is closed: open 7:00–19:00");
         Assert.Equal(400f, seeder.Unit("seed")!.Level);
     }

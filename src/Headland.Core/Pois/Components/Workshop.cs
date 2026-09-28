@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Machines;
 
 namespace Headland.Core.Pois.Components;
 
@@ -37,8 +38,32 @@ public sealed class WorkshopDef : StationDef
     internal override Component Create(Poi poi) => new Workshop(poi, this);
 }
 
-public sealed class Workshop(Poi poi, WorkshopDef def) : PoiComponent<WorkshopDef>(poi, def)
+/// <summary>Machines in a workshop's bay have options to change: the game opens the workshop's screen for them.</summary>
+public sealed record WorkshopMenu(Machine Vehicle, Workshop Workshop) : ActivationMenu;
+
+public sealed class Workshop(Poi poi, WorkshopDef def) : PoiComponent<WorkshopDef>(poi, def), IActivatable
 {
     /// <summary>Where machines park to be repaired or refitted.</summary>
     public PoiTrigger Bay => Trigger("repair")!;
+
+    /// <summary>
+    /// The use key repairs the chain in its bay (driven in, or the farm's machines there when the farmer walks in), or
+    /// opens its screen where it fits options too.
+    /// </summary>
+    public IEnumerable<Activation> Activations(ActivationUser user, Simulation sim)
+    {
+        if (user.InBay(Bay.Area, sim.Machines.All) is not var (root, distance)) yield break;
+        var chain = root.Chain().ToList();
+        var cost = chain.Sum(m => sim.Pois.RepairPrice(this, m));
+        var options = Def.Configure != null && chain.Any(m => m.Def.Configurations.Count > 0);
+        var what = new List<string>();
+        if (cost > 0.5f) what.Add($"Repair (${cost:N0})");
+        if (options) what.Add("Change options…");
+        yield return new Activation(what.Count > 0 ? Activation.Join(what) : "Repair", this, distance)
+        {
+            Run = () => sim.Pois.Repair(chain, this),
+            Blocked = sim.Pois.Closed(Poi, Def) ?? (what.Count == 0 ? "Nothing to repair" : null),
+            Menu = options ? new WorkshopMenu(root, this) : null,
+        };
+    }
 }

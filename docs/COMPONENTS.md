@@ -415,6 +415,11 @@ Machines use most of them at a **trigger**: an area in the POI's space, centered
 `d` along z (10 × 10), drawn on the ground with what can be done there. They are open at some times only when they
 have `openHours: [from, to]` (game hours; past midnight when from > to) and `months` (1..12); none: always.
 
+The buying station, the silo's spout, the workshop and the washing station are **activatables** (FS: `Activatable`):
+while the player's vehicle stands in one's trigger (or the farmer walks into a workshop or a wash bay beside the farm's
+machines), it offers the use key what it does there, and the HUD shows it. Where several are offered, the use key runs
+the nearest; one that can't be used now (closed, another farm's, nothing to do) says why.
+
 Prices: `priceFactor` (1) and `"priceFactors": { "wheat": 1.1 }` for the fill types whose factor differs multiply
 the market price (`filltypes.json`). What the farm pays is also multiplied by the difficulty's price level; what it's
 paid is not.
@@ -470,14 +475,16 @@ A production short of inputs, or of room for its outputs, starts its cycle over.
 
 ### workshop
 
-Repairs the machine chain parked in its `trigger`, with the use key: 1% of each machine's price for each 100% of wear,
+Repairs the machine chain parked in its `trigger`, with the use key (driving in, or walking in beside the farm's
+machines): 1% of each machine's price for each 100% of wear,
 times `repairPriceFactor` (1). With `configure`, it also changes the options of the machines parked there (a screen
 with each machine's choices): each option fitted costs what it costs more than the one it replaces (a cheaper one
 gives nothing back) times `configure.priceFactor` (1), and `configure.price` (0) for the work.
 
 ### washingStation
 
-Washes the machine chain parked in its `trigger`, with the use key, for `price` (0) for a fully dirty machine.
+Washes the machine chain parked in its `trigger`, with the use key (driving in, or walking in beside the farm's
+machines), for `price` (0) for a fully dirty machine.
 
 ### deliverySpot
 

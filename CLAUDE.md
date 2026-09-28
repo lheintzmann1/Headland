@@ -53,7 +53,8 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   named inputs by `Controls/InputLayer`. Keys go by **physical** position (AZERTY gets ZQSD automatically); labels
   come from `InputLayer.Label`; the player's bindings live in `settings.cfg`. What a key does comes from
   `Simulation.Offers()`: components offer their actions (`IActionSource`, toggles of one action switch together), the
-  HUD hints and F1 list them, and the game runs them with `Sim.Perform(action)`.
+  HUD hints and F1 list them, and the game runs them with `Sim.Perform(action)`. The use key runs what the components
+  whose trigger the player is in offer (`IActivatable`, `Simulation.Activations`), the nearest first.
   Player overrides and other preferences live in `user://settings.cfg` (`Common/UserSettings.cs`); a new
   setting gets a default, validation on load, and a README line.
 - UI: build controls with `UI/Widgets`, style them through `ui/theme.tres` type variations (no per-control theme

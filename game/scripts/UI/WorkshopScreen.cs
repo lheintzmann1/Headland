@@ -1,6 +1,5 @@
 using Headland.Core;
 using Headland.Core.Content;
-using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Pois.Components;
 using Godot;
@@ -8,7 +7,7 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// The use key in a workshop's bay: repair the vehicle's chain, and change the options of its machines (wheels, engine,
+/// The use key in a workshop's bay (driving, or walking in beside the farm's machines): repair the chain, and change the options of its machines (wheels, engine,
 /// hitches, color…) for what the new ones cost more and the work.
 /// </summary>
 public partial class WorkshopScreen : Screen
@@ -38,7 +37,7 @@ public partial class WorkshopScreen : Screen
         var repair = new HBoxContainer();
         _repair = Widgets.Button("", () =>
         {
-            Sim.Perform(InputActions.Use);
+            Sim.Pois.Repair(Vehicle.Chain(), Workshop);
             Refresh();
         });
         repair.AddChild(_repair);

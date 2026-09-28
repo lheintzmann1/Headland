@@ -166,7 +166,7 @@ public class WearTests
         var price = sim.Pois.RepairPrice(sim.World.PoiById("workshop")!.Get<Pois.Components.Workshop>()!, t);
         Assert.Equal(72_000f / 100f * wear.Wear, price, 1);
         var money = sim.Economy.Money;
-        sim.Pois.Use(t);
+        sim.Activate(t);
         Assert.Equal((1f, money - price), (wear.Condition, sim.Economy.Money));
         Assert.Empty(t.Conditions);
     }

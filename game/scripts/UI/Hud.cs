@@ -3,6 +3,7 @@ using Headland.Game.Common;
 using Headland.Core.Components;
 using Headland.Core;
 using Headland.Core.Contracts;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -203,9 +204,23 @@ public partial class Hud : CanvasLayer
     /// <summary>The keys that do something now, with what they do (<see cref="Simulation.Offers"/>).</summary>
     private void UpdatePrompt()
     {
-        var hints = Sim.Offers().Offers.Where(o => o.Hinted).Select(o => $"{Widgets.Key(o.Action)} {o.Label}").ToList();
+        var hints = Sim.Offers().Offers.Where(o => o.Hinted).Select(o => o.Action == InputActions.Use ? UseHint() : $"{Widgets.Key(o.Action)} {o.Label}").ToList();
         _prompt.Text = string.Join("    ", hints);
         _prompt.GetParent<Control>().Visible = hints.Count > 0;
+    }
+
+    /// <summary>
+    /// What the use key does: the nearest activation (or why it can't be used), then dimmed the others offered here,
+    /// which it runs once nearer.
+    /// </summary>
+    private string UseHint()
+    {
+        var all = Sim.Activations();
+        var first = all[0];
+        var sb = new StringBuilder($"{Widgets.Key(InputActions.Use)} ");
+        sb.Append(first.Usable ? first.Label : Widgets.Colored($"{first.Label}: {first.Blocked}", Palette.Dim));
+        foreach (var other in all.Skip(1).Where(a => a.Usable)) sb.Append(Widgets.Colored($" · {other.Label}", Palette.Dim));
+        return sb.ToString();
     }
 
     private void UpdateNotes()

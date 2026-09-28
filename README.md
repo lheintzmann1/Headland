@@ -100,7 +100,7 @@ can be changed in the settings file (see below).
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
-| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash |
+| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
 | H | Hire or dismiss a field helper |
 | F2 | Finances and loans |
 | L | Farmland: buy and sell parcels |

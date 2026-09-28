@@ -37,4 +37,19 @@ public sealed class BuyingStationDef : StationDef, IPriced
     internal override Component Create(Poi poi) => new BuyingStation(poi, this);
 }
 
-public sealed class BuyingStation(Poi poi, BuyingStationDef def) : PoiComponent<BuyingStationDef>(poi, def);
+public sealed class BuyingStation(Poi poi, BuyingStationDef def) : PoiComponent<BuyingStationDef>(poi, def), IActivatable
+{
+    /// <summary>The use key refuels the machines of the chain parked in its trigger and buys what their other units take.</summary>
+    public IEnumerable<Activation> Activations(ActivationUser user, Simulation sim)
+    {
+        var area = Trigger("fill")!.Area;
+        var parked = user.In(area);
+        if (parked.Count == 0) yield break;
+        var wants = parked.SelectMany(m => sim.Pois.Wants(m, this)).Distinct().ToList();
+        yield return new Activation(wants.Count > 0 ? Activation.Join(wants) : "Buy", this, user.Distance(area, parked))
+        {
+            Run = () => sim.Pois.Buy(parked, this),
+            Blocked = sim.Pois.Closed(Poi, Def) ?? (wants.Count == 0 ? $"{Poi.Name} sells nothing the {parked[0].Def.Name} takes" : null),
+        };
+    }
+}

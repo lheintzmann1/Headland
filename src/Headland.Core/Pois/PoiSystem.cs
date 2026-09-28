@@ -25,7 +25,8 @@ internal sealed record Loading(Silo Silo, string FillType, float Amount);
 /// silo's pit stored; the owner's trailers fill up at a silo's spout; machines parked at a buying station buy supplies
 /// and fuel, at a workshop get repaired (or their options changed), at a washing station washed; production points
 /// turn stored goods into others every hour; new machines appear at delivery spots. Machines move the goods (tipping,
-/// piping); the POI's components decide what happens to them.
+/// piping); the POI's components decide what happens to them, and offer the use key what it does in their triggers
+/// (<see cref="IActivatable"/>).
 /// </summary>
 public sealed class PoiSystem
 {
@@ -115,7 +116,7 @@ public sealed class PoiSystem
         _ => [],
     };
 
-    private string Names(IEnumerable<string> fillTypes) =>
+    internal string Names(IEnumerable<string> fillTypes) =>
         string.Join(", ", fillTypes.Select(f => Content.FillTypes[f].Name.ToLowerInvariant()));
 
     // ------------------------------------------------------------------ Conditions
@@ -315,7 +316,7 @@ public sealed class PoiSystem
     }
 
     /// <summary>Why nothing can be loaded at the chain's spout.</summary>
-    private string LoadBlocker(Machine vehicle)
+    internal string LoadBlocker(Machine vehicle)
     {
         var (m, silo) = AtSpouts(vehicle).OrderByDescending(x => Cargo(x.m).Any()).First();
         if (m.FarmId != silo.Poi.FarmId) return $"{silo.Poi.Name} belongs to another farm";
@@ -436,75 +437,44 @@ public sealed class PoiSystem
 
     // ------------------------------------------------------------------ Filling, repairs, washing
 
-    /// <summary>
-    /// The use key. Under a silo's spout it starts loading what the chain can take (the first of
-    /// <see cref="LoadChoices"/>), or stops. Machines of the chain parked at a buying station buy supplies and fuel
-    /// there, and the whole chain is repaired or washed once any of it stands in a workshop's bay or a washing station.
-    /// </summary>
-    public void Use(Machine vehicle)
+    /// <summary>What refueling or buying at <paramref name="shop"/> gets <paramref name="m"/>: "Refuel", "Buy seeds".</summary>
+    internal IEnumerable<string> Wants(Machine m, BuyingStation shop)
     {
-        if (IsLoading(vehicle))
-        {
-            StopLoading(vehicle);
-            return;
-        }
-        var chain = vehicle.Chain().ToList();
-        var parked = false;
-        var served = false;
+        var tank = m.Get<Motor>()?.FuelTank;
+        if (tank != null && shop.Def.FillTypes.Any(tank.Accepts)) yield return "Refuel";
+        if (shop.Def.FillTypes.Where(ft => m.FillUnits.Any(u => u != tank && u.Accepts(ft))).ToList() is { Count: > 0 } supplies)
+            yield return $"Buy {Names(supplies)}";
+    }
+
+    /// <summary>Refuels <paramref name="machines"/> at <paramref name="shop"/> and buys what their other units take; says why when nothing could be bought.</summary>
+    public void Buy(IEnumerable<Machine> machines, BuyingStation shop)
+    {
         var why = new List<string>();
-        if (AtSpouts(vehicle).Any())
-        {
-            parked = true;
-            if (LoadChoices(vehicle) is [var first, ..]) served = StartLoading(vehicle, first);
-            else why.Add(LoadBlocker(vehicle));
-        }
-        foreach (var m in chain)
-        {
-            if (TriggerAt(m.Footprint.Center, "fill")?.Station is not BuyingStation shop) continue;
-            parked = true;
-            served |= FillUp(m, shop, why);
-        }
-        if (Bay(chain, "repair")?.Station is Workshop workshop)
-        {
-            parked = true;
-            foreach (var m in chain) served |= Repair(m, workshop, why);
-        }
-        if (Bay(chain, "wash")?.Station is WashingStation washer)
-        {
-            parked = true;
-            foreach (var m in chain) served |= Wash(m, washer, why);
-        }
-        if (!parked) _sim.Notifications.Post("Park in a marked area first: a shop, silo, gas station, workshop or wash bay");
-        else if (!served) _sim.Notifications.Post(why.Contains("Not enough money") ? "Not enough money" : why.FirstOrDefault() ?? "Nothing to do here");
+        var served = false;
+        foreach (var m in machines) served |= FillUp(m, shop, why);
+        if (!served) Tell(why);
     }
 
-    /// <summary>What the use key does for the vehicle's chain where it stands ("Buy seeds", "Repair ($1,250)").</summary>
-    public List<string> UseOptions(Machine vehicle)
+    /// <summary>Repairs every machine of <paramref name="chain"/> at <paramref name="workshop"/>; says why when none could be.</summary>
+    public void Repair(IEnumerable<Machine> chain, Workshop workshop)
     {
-        var options = new List<string>();
-        var chain = vehicle.Chain().ToList();
-        if (IsLoading(vehicle)) options.Add("Stop loading");
-        else if (LoadChoices(vehicle) is { Count: > 0 } loads) options.Add(loads.Count == 1 ? $"Load {Names(loads)}" : "Load…");
-        foreach (var m in chain)
-        {
-            if (TriggerAt(m.Footprint.Center, "fill")?.Station is not BuyingStation shop || Closed(shop.Poi, shop.Def) != null) continue;
-            var tank = m.Get<Motor>()?.FuelTank;
-            if (tank != null && shop.Def.FillTypes.Any(tank.Accepts)) options.Add("Refuel");
-            if (shop.Def.FillTypes.Where(ft => m.FillUnits.Any(u => u != tank && u.Accepts(ft))).ToList() is { Count: > 0 } supplies)
-                options.Add($"Buy {Names(supplies)}");
-        }
-        if (Bay(chain, "repair")?.Station is Workshop workshop && Closed(workshop.Poi, workshop.Def) == null
-            && chain.Sum(m => RepairPrice(workshop, m)) is var repair and > 0.5f)
-            options.Add($"Repair (${repair:N0})");
-        if (Workshop(vehicle) is { } fitter && Closed(fitter.Poi, fitter.Def) == null && chain.Any(m => m.Def.Configurations.Count > 0))
-            options.Add("Change options…");
-        if (Bay(chain, "wash")?.Station is WashingStation washer && Closed(washer.Poi, washer.Def) == null && chain.Any(m => m.Dirt > 0.005f))
-            options.Add($"Wash (${chain.Sum(m => WashPrice(washer, m)):N0})");
-        return options.Distinct().ToList();
+        var why = new List<string>();
+        var served = false;
+        foreach (var m in chain) served |= Repair(m, workshop, why);
+        if (!served) Tell(why);
     }
 
-    private PoiTrigger? Bay(IEnumerable<Machine> chain, string type) =>
-        chain.Select(m => TriggerAt(m.Footprint.Center, type)).FirstOrDefault(t => t != null);
+    /// <summary>Washes every machine of <paramref name="chain"/> at <paramref name="washer"/>; says why when none could be.</summary>
+    public void Wash(IEnumerable<Machine> chain, WashingStation washer)
+    {
+        var why = new List<string>();
+        var served = false;
+        foreach (var m in chain) served |= Wash(m, washer, why);
+        if (!served) Tell(why);
+    }
+
+    private void Tell(List<string> why) =>
+        _sim.Notifications.Post(why.Contains("Not enough money") ? "Not enough money" : why.FirstOrDefault() ?? "Nothing to do here");
 
     /// <summary>Buys what <paramref name="m"/>'s units take at <paramref name="shop"/>: into its fuel tank refueling, into the others purchases.</summary>
     private bool FillUp(Machine m, BuyingStation shop, List<string> why)
