@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -21,10 +22,12 @@ public sealed class ThresherSave
     public bool On { get; set; }
 }
 
-public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable, IConditionSource
+public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable, IConditionSource, IActionSource
 {
     public bool CanTurnOn => true;
     public bool On { get; set; }
+
+    public void AddActions(ActionList actions, Simulation sim) => actions.AddSwitch(this);
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
 

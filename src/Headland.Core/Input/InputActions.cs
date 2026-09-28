@@ -37,17 +37,22 @@ public static class InputActions
         new(MoveRight, "Move / steer right", Moving, "D", "Joy LX+") { Analog = true },
         new(Run, "Run", InputContext.OnFoot, "Shift", "Joy L3") { Analog = true },
         new(Brake, "Handbrake", Driving, "Space", "Joy LT") { Analog = true },
-        new(Enter, "Enter / exit vehicle", Moving, "F", "Joy Y"),
+        new(Attach, "Attach / detach implement", Driving, "G", "Joy Down") { Unavailable = "Nothing to attach nearby: back up to an implement's hitch" },
+        new(Lower, "Lower / raise implements", Driving, "V", "Joy A") { Unavailable = "No implement to lower" },
+        new(Fold, "Fold / unfold implements", Driving, "N") { Unavailable = "Nothing to fold" },
+        new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on" },
+        new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
+        new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
+        new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
+        new(Use, "Use a POI: buy, load, refuel, repair, change options, wash", Moving, "R", "Joy X")
+        {
+            Unavailable = "Park in a marked area first: a shop, silo, gas station, workshop or wash bay",
+        },
+        new(Helper, "Hire / dismiss a field helper", Driving, "H"),
+        new(Enter, "Enter / exit vehicle", Moving, "F", "Joy Y") { Unavailable = "No vehicle nearby" },
         new(NextVehicle, "Switch to the next vehicle", Moving, "Tab", "Joy Right"),
         new(PrevVehicle, "Switch to the previous vehicle", Moving, "Shift+Tab", "Joy Left"),
-        new(Attach, "Attach / detach implement", Driving, "G", "Joy Down"),
-        new(Lower, "Lower / raise implements", Driving, "V", "Joy A"),
-        new(Fold, "Fold / unfold implements", Driving, "N"),
-        new(TurnOn, "Turn on / off", Driving, "B", "Joy B"),
-        new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up"),
-        new(CycleSeed, "Change seed", Driving, "X"),
-        new(Steering, "Steering: normal, all-wheel, crab", Driving, "K"),
-        new(Use, "Use a POI: buy, load, refuel, repair, change options, wash", Moving, "R", "Joy X"),
-        new(Helper, "Hire / dismiss a field helper", Driving, "H"),
     ];
+
+    public static InputActionDef? Def(string id) => Defs.FirstOrDefault(d => d.Id == id);
 }

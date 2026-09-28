@@ -84,8 +84,8 @@ Built with **Godot 4.7** and **C#**.
 
 ## Controls
 
-Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. Press F1 in game for the full list;
-Esc closes screens. A gamepad works too (left stick to walk and drive, A lowers, B turns on, X uses, Y gets in). Keys
+Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
+that do something where you are, and F1 lists every key for walking or for the vehicle you drive; Esc closes screens. A gamepad works too (left stick to walk and drive, A lowers, B turns on, X uses, Y gets in). Keys
 can be changed in the settings file (see below).
 
 | Key | Action |

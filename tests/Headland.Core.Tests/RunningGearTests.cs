@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Saves;
@@ -190,7 +191,7 @@ public class RunningGearTests
         Assert.Equal((3.2f, 1.6f), (gear.Def.Wheelbase(SteeringMode.Normal), gear.Def.Wheelbase(SteeringMode.AllWheel)));
 
         sim.Player.Enter(sprayer);
-        sim.CommandSteering();
+        sim.Perform(InputActions.Steering);
         Assert.Equal(SteeringMode.AllWheel, gear.Mode);
         // The rear axle steers against the front one; the middle between them goes round the turning center.
         Drive(sprayer, 0.15f, 1f);
@@ -206,8 +207,8 @@ public class RunningGearTests
         var crab = sim.Machines.Spawn("test_sprayer", new Vector2(230f, 150f), 0f);
         sim.Player.Exit(sim);
         sim.Player.Enter(crab);
-        sim.CommandSteering();
-        sim.CommandSteering();
+        sim.Perform(InputActions.Steering);
+        sim.Perform(InputActions.Steering);
         var crabGear = crab.Get<RunningGear>()!;
         Assert.Equal(SteeringMode.Crab, crabGear.Mode);
         Drive(crab, 0.3f, 0.5f);
@@ -219,7 +220,7 @@ public class RunningGearTests
         // The mode is saved; the next press goes back to normal.
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim.Machines.ById(crab.Id)!;
         Assert.Equal(SteeringMode.Crab, loaded.Get<RunningGear>()!.Mode);
-        sim.CommandSteering();
+        sim.Perform(InputActions.Steering);
         Assert.Equal(SteeringMode.Normal, crabGear.Mode);
     }
 
@@ -452,7 +453,8 @@ public class RunningGearTests
 
         // Backed under it, the fifth wheel takes the kingpin, and a third of the loaded semi-trailer's weight.
         Assert.Equal(("fifth", semi), (sim.Machines.FindAttachable(truck)?.joint.Id, sim.Machines.FindAttachable(truck)?.child));
-        sim.Machines.ToggleAttach(truck);
+        sim.Player.Enter(truck);
+        sim.Perform(InputActions.Attach);
         semi.Unit("main")!.Add("wheat", 30000f);
         Run(sim, 0.1f);
         var loaded = 7000f + 30000f * 0.78f;

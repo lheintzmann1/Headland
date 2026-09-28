@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -134,7 +135,7 @@ public class PoiTests
         var sim = TestContent.NewSim();
         var (t, trailer) = TrailerAt(sim, new Vector2(441f, 230f), "wheat", 8000f);
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         while (trailer.Unit("main")!.Level > 4000f) sim.Tick(Dt);
 
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
@@ -155,7 +156,7 @@ public class PoiTests
         var (t, trailer) = TrailerAt(sim, new Vector2(441f, 230f), "wheat", 1000f);
         trailer.Unit("main")!.FillType = "seeds";
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator does not buy Seeds");
     }

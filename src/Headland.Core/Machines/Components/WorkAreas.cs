@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json.Serialization;
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines.Work;
 
 namespace Headland.Core.Machines.Components;
@@ -79,7 +80,7 @@ public sealed class WorkAreasSave
     public List<float[]?> Poses { get; set; } = [];
 }
 
-public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable, IConditionSource
+public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable, IConditionSource, IActionSource
 {
     private readonly List<MachineCondition> _conditions = [];
 
@@ -108,6 +109,19 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     public bool Sows => Def.Areas.Any(a => a.Work.Sows);
     /// <summary>Seeders: the crop sown, as an index into <see cref="ContentDatabase.Crops"/>.</summary>
     public int Crop { get; set; }
+
+    /// <summary>The turn-on key when it must be on to work; a seeder's seed key.</summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        actions.AddSwitch(this);
+        if (!Sows) return;
+        actions.Add(InputActions.CycleSeed, "Change seed", () =>
+        {
+            Crop = (Crop + 1) % sim.Content.Crops.Count;
+            var crop = sim.Content.Crops[Crop];
+            sim.Notifications.Post($"Seeder: {crop.Name} (sow {MachineSystem.Months(crop.SowingMonths)})");
+        });
+    }
 
     /// <summary>
     /// What kept its areas from working on their last pass over the ground (out of seed, the wrong header…); running

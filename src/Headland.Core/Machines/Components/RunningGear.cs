@@ -1,6 +1,7 @@
 using Headland.Core.Components;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.World;
 
 namespace Headland.Core.Machines.Components;
@@ -271,7 +272,7 @@ public sealed class RunningGearSave
     public string? Mode { get; set; }
 }
 
-public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineComponent<RunningGearDef, RunningGearSave>(machine, def)
+public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineComponent<RunningGearDef, RunningGearSave>(machine, def), IActionSource
 {
     /// <summary>Skid steer turns on the spot up to this speed (m/s), less the faster it goes.</summary>
     private const float SpinSpeed = 1f;
@@ -299,6 +300,23 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     public float Turned { get; set; }
     public SteeringMode Mode { get; set; }
     public SteeringKind SteeringKind { get; } = def.SteeringKind;
+
+    /// <summary>The steering key, on a vehicle that steers more than one way (normal, all-wheel, crab).</summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        if (Machine.Parent != null || Def.Modes.Length < 2) return;
+        actions.Add(InputActions.Steering, $"Steering: {MachineSystem.SteeringName(Mode)}", () =>
+        {
+            if (Machine.Get<Drivable>()?.Controller is FieldWorkController)
+            {
+                sim.Notifications.Post("The helper steers: dismiss them first");
+                return;
+            }
+            var modes = Def.Modes;
+            Mode = modes[(Array.IndexOf(modes, Mode) + 1) % modes.Length];
+            sim.Notifications.Post($"Steering: {MachineSystem.SteeringName(Mode)}");
+        });
+    }
 
     /// <summary>Its weight over the ground under its wheels and tracks (kPa): lower on duals, flotation tires and tracks.</summary>
     public float Pressure { get; private set; }

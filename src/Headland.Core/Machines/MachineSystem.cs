@@ -11,8 +11,8 @@ namespace Headland.Core.Machines;
 
 /// <summary>
 /// Drives machines and their components: moves vehicles and places their chains (the components work out speed and
-/// steering), hitching, the player's commands, and work areas. Each component then updates itself (animations,
-/// transfers).
+/// steering), hitching, and work areas. Each component then updates itself (animations, transfers); the player's keys
+/// go to what the components offer (see <see cref="Simulation.Offers"/>).
 /// </summary>
 public sealed class MachineSystem
 {
@@ -141,111 +141,7 @@ public sealed class MachineSystem
         return best;
     }
 
-    /// <summary>Attaches the nearest compatible implement, or detaches the last one in the chain.</summary>
-    public void ToggleAttach(Machine vehicle)
-    {
-        if (FindAttachable(vehicle) is var (p, j, c))
-        {
-            Attach(p, j.Id, c);
-            return;
-        }
-        var leaf = vehicle.Chain().LastOrDefault(m => m != vehicle);
-        if (leaf != null) Detach(leaf);
-        else _sim.Notifications.Post("Nothing to attach nearby: back up to an implement's hitch");
-    }
-
-    // ------------------------------------------------------------------ Commands
-
-    /// <summary>Implements of the vehicle's chain that are lowered and raised (the vehicle's own attachable excluded).</summary>
-    public static List<Attachable> Lowerable(Machine vehicle) =>
-        vehicle.Chain().Where(m => m != vehicle).Select(m => m.Get<Attachable>()).OfType<Attachable>().Where(a => a.Def.Lowerable).ToList();
-
-    /// <summary>What the fold key folds and unfolds in the vehicle's chain.</summary>
-    public static List<AnimatedParts> Foldable(Machine vehicle) =>
-        vehicle.Chain().Select(m => m.Get<AnimatedParts>()).OfType<AnimatedParts>().Where(p => p.CanFold).ToList();
-
-    /// <summary>What the turn-on key switches in the vehicle's chain.</summary>
-    public static List<ISwitchable> Switchable(Machine vehicle) =>
-        vehicle.Chain().SelectMany(m => m.Components.OfType<ISwitchable>()).Where(s => s.CanTurnOn).ToList();
-
-    public void ToggleLower(Machine vehicle)
-    {
-        var tools = Lowerable(vehicle);
-        if (tools.Count == 0)
-        {
-            _sim.Notifications.Post("No implement to lower");
-            return;
-        }
-        var lower = !tools.Any(t => t.Lowered);
-        // A folded implement stays up: it's unfolded first, with the fold key.
-        var folded = lower ? tools.Where(t => t.Machine.Get<AnimatedParts>() is { Folded: true }).ToList() : [];
-        foreach (var t in tools.Except(folded)) t.Lowered = lower;
-        if (folded.Count > 0) _sim.Notifications.Post($"Unfold the {folded[0].Machine.Def.Name} first");
-    }
-
-    public void ToggleOn(Machine vehicle)
-    {
-        var parts = Switchable(vehicle);
-        if (parts.Count == 0)
-        {
-            _sim.Notifications.Post("Nothing to turn on");
-            return;
-        }
-        var on = !parts.Any(p => p.On);
-        foreach (var p in parts) p.On = on;
-    }
-
-    /// <summary>Folds the vehicle's chain for transport (raising it), or unfolds it.</summary>
-    public void ToggleFold(Machine vehicle)
-    {
-        var parts = Foldable(vehicle);
-        if (parts.Count == 0)
-        {
-            _sim.Notifications.Post("Nothing to fold");
-            return;
-        }
-        var fold = !parts.Any(p => p.Folded);
-        foreach (var p in parts) p.Folded = fold;
-    }
-
-    /// <summary>Combine: fold/unfold the pipe. Trailer: start/stop tipping.</summary>
-    public void ToggleUnload(Machine vehicle)
-    {
-        if (vehicle.Get<Pipe>() is { } pipe)
-        {
-            pipe.Out = !pipe.Out;
-            return;
-        }
-        var tippers = vehicle.Chain().Select(m => m.Get<Tipper>()).OfType<Tipper>().ToList();
-        if (tippers.Count == 0)
-        {
-            _sim.Notifications.Post("Nothing to unload");
-            return;
-        }
-        foreach (var t in tippers)
-        {
-            if (t.Tipping) t.Tipping = false;
-            else if (t.Start(_sim) is { } why) _sim.Notifications.Post(why, t.Load.IsEmpty ? Severity.Info : Severity.Warning);
-        }
-    }
-
-    /// <summary>Switches the vehicle to its next steering mode (normal, all-wheel, crab).</summary>
-    public void CycleSteering(Machine vehicle)
-    {
-        if (vehicle.Get<RunningGear>() is not { Def.Modes.Length: > 1 } gear)
-        {
-            _sim.Notifications.Post("It has only one way to steer");
-            return;
-        }
-        if (vehicle.Get<Drivable>()?.Controller is FieldWorkController)
-        {
-            _sim.Notifications.Post("The helper steers: dismiss them first");
-            return;
-        }
-        var modes = gear.Def.Modes;
-        gear.Mode = modes[(Array.IndexOf(modes, gear.Mode) + 1) % modes.Length];
-        _sim.Notifications.Post($"Steering: {SteeringName(gear.Mode)}");
-    }
+    // ------------------------------------------------------------------ Names
 
     public static string SteeringName(SteeringMode mode) => mode switch
     {
@@ -253,22 +149,6 @@ public sealed class MachineSystem
         SteeringMode.Crab => "crab",
         _ => "normal",
     };
-
-    public void CycleSeed(Machine vehicle)
-    {
-        var seeders = vehicle.Chain().Select(m => m.Get<WorkAreas>()).OfType<WorkAreas>().Where(w => w.Sows).ToList();
-        if (seeders.Count == 0)
-        {
-            _sim.Notifications.Post("No seeder attached");
-            return;
-        }
-        foreach (var s in seeders)
-        {
-            s.Crop = (s.Crop + 1) % Content.Crops.Count;
-            var crop = Content.Crops[s.Crop];
-            _sim.Notifications.Post($"Seeder: {crop.Name} (sow {Months(crop.SowingMonths)})");
-        }
-    }
 
     public static string Months(int[] months) =>
         months.Length == 0 ? "any time" : string.Join(", ", months.Select(m => Time.Calendar.MonthNames[m - 1][..3]));

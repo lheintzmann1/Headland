@@ -1,5 +1,6 @@
 using Headland.Core;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Pois.Components;
 using Godot;
@@ -37,7 +38,7 @@ public partial class WorkshopScreen : Screen
         var repair = new HBoxContainer();
         _repair = Widgets.Button("", () =>
         {
-            Sim.CommandUse();
+            Sim.Perform(InputActions.Use);
             Refresh();
         });
         repair.AddChild(_repair);

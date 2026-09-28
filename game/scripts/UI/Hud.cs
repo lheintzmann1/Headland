@@ -200,48 +200,12 @@ public partial class Hud : CanvasLayer
         _vehicle.Text = sb.ToString().TrimEnd('\n');
     }
 
+    /// <summary>The keys that do something now, with what they do (<see cref="Simulation.Offers"/>).</summary>
     private void UpdatePrompt()
     {
-        var lines = new List<string>();
-        var K = Widgets.Key;
-        var v = Sim.Player.Vehicle;
-        if (v == null)
-        {
-            var near = Sim.Player.NearestEnterable(Sim);
-            if (near != null) lines.Add($"{K("enter")} Enter {near.Def.Name}");
-        }
-        else
-        {
-            if (Sim.Machines.FindAttachable(v) is var (_, _, child)) lines.Add($"{K("attach")} Attach {child.Def.Name}");
-            else if (v.Chain().Skip(1).LastOrDefault() is { } leaf) lines.Add($"{K("attach")} Detach {leaf.Def.Name}");
-            var tools = MachineSystem.Lowerable(v);
-            if (tools.Count > 0) lines.Add($"{K("lower")} {(tools.Any(t => t.Lowered) ? "Raise" : "Lower")}");
-            var folding = MachineSystem.Foldable(v);
-            if (folding.Count > 0) lines.Add($"{K("fold")} {(folding.Any(p => p.Folded) ? "Unfold" : "Fold")}");
-            var switches = MachineSystem.Switchable(v);
-            if (switches.Count > 0) lines.Add($"{K("turn_on")} Turn {(switches.Any(s => s.On) ? "off" : "on")}");
-            if (v.Get<Pipe>() is { } pipe) lines.Add($"{K("unload")} {(pipe.Out ? "Fold" : "Unfold")} pipe");
-            foreach (var t in v.Chain().Where(m => m.Has<Tipper>()))
-            {
-                var pit = Sim.Pois.TriggerAt(t.Footprint.Center, "unload");
-                if (pit == null) continue;
-                var tipper = t.Get<Tipper>()!;
-                var load = tipper.Load;
-                var price = load.FillType != null ? Sim.Pois.SalePrice(t, pit, load.FillType) : null;
-                var at = price is { } p ? $" at ${p:0.00}/{Sim.Content.FillTypes[load.FillType!].Unit}" : "";
-                if (load.FillType != null && Sim.Contracts.Taking(t.FarmId, pit.Poi, load.FillType) is { } job)
-                    at = $" for the contract ({job.Owed:N0} {job.Goods!.Unit} to go)";
-                lines.Add($"{K("unload")} {(tipper.Tipping ? "Stop tipping" : $"Tip into {pit.Poi.Name}{at}")}");
-            }
-            if (v.Chain().Any(m => m.Get<WorkAreas>() is { Sows: true })) lines.Add($"{K("cycle_seed")} Change seed");
-            if (v.Get<RunningGear>() is { Def.Modes.Length: > 1 } gear) lines.Add($"{K("steering")} Steering: {MachineSystem.SteeringName(gear.Mode)}");
-            if (Sim.Pois.UseOptions(v) is { Count: > 0 } uses) lines.Add($"{K("use")} {string.Join(", ", uses)}");
-            if (v.Get<Drivable>()?.Controller is FieldWorkController) lines.Add($"{K("helper")} Dismiss helper");
-            else if (v.Chain().Any(m => m.Has<WorkAreas>()) && Sim.FieldNear(v) is { } f) lines.Add($"{K("helper")} Hire helper for {f.Label} (${Sim.HelperWage:N0}/h)");
-            lines.Add($"{K("enter")} Exit");
-        }
-        _prompt.Text = string.Join("    ", lines);
-        _prompt.GetParent<Control>().Visible = lines.Count > 0;
+        var hints = Sim.Offers().Offers.Where(o => o.Hinted).Select(o => $"{Widgets.Key(o.Action)} {o.Label}").ToList();
+        _prompt.Text = string.Join("    ", hints);
+        _prompt.GetParent<Control>().Visible = hints.Count > 0;
     }
 
     private void UpdateNotes()

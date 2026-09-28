@@ -2,6 +2,7 @@ using System.Numerics;
 using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Crops;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Machines.Work;
@@ -139,9 +140,9 @@ public class WorkTypeTests
         sim.Player.Enter(t);
         var boom = sprayer.Get<AnimatedParts>()!;
         Assert.True(boom.Folded);
-        sim.CommandFold();
-        sim.CommandLower();
-        sim.CommandTurnOn();
+        sim.Perform(InputActions.Fold);
+        sim.Perform(InputActions.Lower);
+        sim.Perform(InputActions.TurnOn);
         Run(sim, 6f);
         Assert.True(sprayer.Get<AnimatedParts>()!.Unfolded);
         sim.Player.Controls.Input = new VehicleInput { Throttle = 1f };
@@ -152,7 +153,7 @@ public class WorkTypeTests
         Assert.Equal(sprayed * 100f * WorldMap.CellArea / 10000f, before - tank.Level, 1);
 
         // Folded back for the road, raised, and spraying no more.
-        sim.CommandFold();
+        sim.Perform(InputActions.Fold);
         Assert.False(sprayer.Get<Attachable>()!.Lowered);
         Run(sim, 6f);
         Assert.True(boom.Folded);

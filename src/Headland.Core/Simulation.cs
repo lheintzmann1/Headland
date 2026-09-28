@@ -5,6 +5,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Crops;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -202,19 +203,51 @@ public sealed class Simulation
         if (date.Day == 1) Events.Publish(new MonthStarted(date.Year, date.Month));
     }
 
-    // ---------------------------------------------------------------- Player commands
+    // ---------------------------------------------------------------- Player actions
 
-    /// <summary>F: enter the nearest vehicle, or step out.</summary>
-    public void ToggleEnterExit()
+    /// <summary>The player's situation for their keys: walking about or driving (the game adds its menus).</summary>
+    public InputContext Situation => InputContext.World | (Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot);
+
+    /// <summary>
+    /// What each key does now for the player (FS: the action events registered for them): on foot, getting into the
+    /// vehicle nearby; driving, getting out, hitching, what the components of the chain offer (lowering, folding,
+    /// turning on, unloading…), the use key and the helper. The HUD hints them and the help lists them.
+    /// </summary>
+    public ActionList Offers()
     {
-        if (Player.Vehicle != null)
+        var actions = new ActionList(Notifications);
+        actions.Add(InputActions.NextVehicle, "Switch to the next vehicle", () => SwitchVehicle(1), hinted: false);
+        actions.Add(InputActions.PrevVehicle, "Switch to the previous vehicle", () => SwitchVehicle(-1), hinted: false);
+        if (Player.Vehicle is not { } v)
         {
-            Player.Exit(this);
-            return;
+            if (Player.NearestEnterable(this) is { } near) actions.Add(InputActions.Enter, $"Enter {near.Def.Name}", () => Player.Enter(near));
+            return actions;
         }
-        var m = Player.NearestEnterable(this);
-        if (m != null) Player.Enter(m);
-        else Notifications.Post("No vehicle nearby");
+        actions.Add(InputActions.Enter, "Exit", () => Player.Exit(this));
+        if (Machines.FindAttachable(v) is var (parent, joint, child))
+            actions.Add(InputActions.Attach, $"Attach {child.Def.Name}", () => Machines.Attach(parent, joint.Id, child));
+        else if (v.Chain().Skip(1).LastOrDefault() is { } leaf)
+            actions.Add(InputActions.Attach, $"Detach {leaf.Def.Name}", () => Machines.Detach(leaf));
+        foreach (var m in v.Chain())
+        foreach (var source in m.Components.OfType<IActionSource>())
+            source.AddActions(actions, this);
+        var uses = Pois.UseOptions(v);
+        actions.Add(InputActions.Use, uses.Count > 0 ? string.Join(", ", uses) : "Use", () => Pois.Use(v), hinted: uses.Count > 0);
+        AddHelper(actions, v);
+        return actions;
+    }
+
+    /// <summary>
+    /// Does what <paramref name="action"/> does now for the player (see <see cref="Offers"/>), or says why nothing
+    /// happens: it's for a vehicle and they walk, or there's nothing for it to do.
+    /// </summary>
+    public void Perform(string action)
+    {
+        var def = InputActions.Def(action);
+        if (def != null && (def.Contexts & Situation) == 0)
+            Notifications.Post(Player.Vehicle == null ? "Get into a vehicle first" : "Get out of the vehicle first");
+        else if (Offers().Of(action) is { } offer) offer.Run();
+        else if (def?.Unavailable is { } why) Notifications.Post(why);
     }
 
     /// <summary>Tab / Shift+Tab: jump into the next or previous vehicle. A helper keeps driving the one left behind.</summary>
@@ -229,25 +262,21 @@ public sealed class Simulation
         Player.Enter(next);
     }
 
-    public Machine? PlayerVehicle => Player.Vehicle;
-
-    public void CommandAttach() => WithVehicle(Machines.ToggleAttach);
-    public void CommandLower() => WithVehicle(Machines.ToggleLower);
-    public void CommandFold() => WithVehicle(Machines.ToggleFold);
-    public void CommandTurnOn() => WithVehicle(Machines.ToggleOn);
-    public void CommandUnload() => WithVehicle(Machines.ToggleUnload);
-    public void CommandCycleSeed() => WithVehicle(Machines.CycleSeed);
-    public void CommandSteering() => WithVehicle(Machines.CycleSteering);
-    public void CommandUse() => WithVehicle(Pois.Use);
-
-    /// <summary>H: hire a helper to work the field the vehicle is in (or the nearest one), or dismiss it.</summary>
-    public void CommandHelper() => WithVehicle(v =>
+    /// <summary>The helper key: dismiss the helper driving, or hire one for the field the vehicle works in or next to.</summary>
+    private void AddHelper(ActionList actions, Machine v)
     {
         if (v.Get<Drivable>()?.Controller is FieldWorkController)
         {
-            DismissHelper(v, HelperEnd.Dismissed);
+            actions.Add(InputActions.Helper, "Dismiss helper", () => DismissHelper(v, HelperEnd.Dismissed));
             return;
         }
+        var field = v.Chain().Any(m => m.Has<WorkAreas>()) ? FieldNear(v) : null;
+        actions.Add(InputActions.Helper, field != null ? $"Hire helper for {field.Label} (${HelperWage:N0}/h)" : "Hire helper",
+            () => HireHelper(v), hinted: field != null);
+    }
+
+    private void HireHelper(Machine v)
+    {
         var field = FieldNear(v);
         if (field == null)
         {
@@ -278,7 +307,7 @@ public sealed class Simulation
             return;
         }
         Hire(v, helper);
-    });
+    }
 
     /// <summary>What a helper hired now earns per hour of work.</summary>
     public float HelperWage => Content.Economy.HelperWagePerHour * Economy.PriceLevel;
@@ -364,12 +393,6 @@ public sealed class Simulation
             .OrderBy(x => x.d)
             .Select(x => x.f)
             .FirstOrDefault();
-    }
-
-    private void WithVehicle(Action<Machine> action)
-    {
-        if (Player.Vehicle is { } v) action(v);
-        else Notifications.Post("Get into a vehicle first (F)");
     }
 
     // ---------------------------------------------------------------- Queries

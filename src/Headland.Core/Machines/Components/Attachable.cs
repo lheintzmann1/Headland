@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -43,7 +44,7 @@ public sealed class AttachableSave
     public float LowerAnim { get; set; }
 }
 
-public sealed class Attachable(Machine machine, AttachableDef def) : MachineComponent<AttachableDef, AttachableSave>(machine, def)
+public sealed class Attachable(Machine machine, AttachableDef def) : MachineComponent<AttachableDef, AttachableSave>(machine, def), IActionSource
 {
     /// <summary>Lowered and raised in about 0.6 s: the time a helper lowers ahead of the field.</summary>
     private const float LowerRate = 1.5f;
@@ -57,6 +58,18 @@ public sealed class Attachable(Machine machine, AttachableDef def) : MachineComp
         // A folded implement unfolds before it goes down.
         var down = Lowered && Machine.Get<AnimatedParts>() is not { Unfolded: false };
         LowerAnim = MathUtil.MoveToward(LowerAnim, down ? 1f : 0f, dt * LowerRate);
+    }
+
+    /// <summary>The lower key, once hitched. A folded implement stays up: it's unfolded first, with the fold key.</summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        if (!Def.Lowerable || Machine.Parent == null) return;
+        actions.Toggle(InputActions.Lower, Lowered, "Lower", "Raise", lower =>
+        {
+            if (lower && Machine.Get<AnimatedParts>() is { Folded: true }) return $"Unfold the {Machine.Def.Name} first";
+            Lowered = lower;
+            return null;
+        });
     }
 
     internal override void OnHitched()

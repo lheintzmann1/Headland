@@ -3,6 +3,7 @@ using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Machines.Work;
@@ -331,7 +332,7 @@ public class ContractTests
         sim.Player.Enter(t);
 
         // Field 4 is Tom Aldridge's meadow: no helper, and a lowered mower leaves it as it is.
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Field 4 belongs to Tom Aldridge: take a contract on it first");
         Assert.Null(t.Get<Drivable>()!.Controller as FieldWorkController);
         mower.Get<Attachable>()!.Lowered = true;

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Headland.Core.Components;
 using Headland.Core;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Time;
@@ -108,7 +109,7 @@ public partial class ScenarioRunner : Node
         Sim.Player.Enter(t95);
         Game.FocusOverride = null;
         var money = Sim.Economy.Money;
-        Sim.CommandUnload();
+        Sim.Perform(InputActions.Unload);
         var tipper = trailer.Get<Tipper>()!;
         await Until(() => tipper.Anim > 0.9f && tipper.Load.Fraction < 0.6f, 60f);
         await Shot("sell");

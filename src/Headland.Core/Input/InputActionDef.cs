@@ -40,6 +40,8 @@ public sealed class InputActionDef(string id, string help, InputContext contexts
     public InputContext Contexts { get; } = contexts;
     public IReadOnlyList<InputBinding> Defaults { get; } = defaults.Select(InputBinding.Parse).ToArray();
     public bool Analog { get; init; }
+    /// <summary>What the player is told when it does nothing now ("No implement to lower").</summary>
+    public string? Unavailable { get; init; }
 
     public override string ToString() => Id;
 }

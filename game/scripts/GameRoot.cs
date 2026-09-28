@@ -179,24 +179,13 @@ public partial class GameRoot : Node3D
     {
         switch (action)
         {
-            case GameActions.ToggleHelp: Screens.Toggle(() => new HelpScreen()); break;
+            case GameActions.ToggleHelp: Screens.Toggle(() => new HelpScreen { Sim = Sim }); break;
             case GameActions.ToggleFinances: Screens.Toggle(() => new FinancesScreen { Sim = Sim }); break;
             case GameActions.ToggleFarmland: Screens.Toggle(() => new FarmlandScreen { Sim = Sim }); break;
             case GameActions.ToggleContracts: Screens.Toggle(() => new ContractsScreen { Sim = Sim }); break;
             case GameActions.ToggleDebug: Hud.DebugVisible = !Hud.DebugVisible; break;
             case GameActions.Screenshot: SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png"); break;
-            case InputActions.Enter: Sim.ToggleEnterExit(); break;
-            case InputActions.PrevVehicle: Sim.SwitchVehicle(-1); break;
-            case InputActions.NextVehicle: Sim.SwitchVehicle(1); break;
-            case InputActions.Attach: Sim.CommandAttach(); break;
-            case InputActions.Lower: Sim.CommandLower(); break;
-            case InputActions.Fold: Sim.CommandFold(); break;
-            case InputActions.TurnOn: Sim.CommandTurnOn(); break;
-            case InputActions.Unload: Sim.CommandUnload(); break;
-            case InputActions.CycleSeed: Sim.CommandCycleSeed(); break;
-            case InputActions.Steering: Sim.CommandSteering(); break;
             case InputActions.Use: Use(); break;
-            case InputActions.Helper: Sim.CommandHelper(); break;
             case GameActions.CamRotateLeft: Camera.RotateStep(-1); break;
             case GameActions.CamRotateRight: Camera.RotateStep(1); break;
             case GameActions.ZoomIn: Camera.Zoom /= 1.12f; break;
@@ -207,9 +196,12 @@ public partial class GameRoot : Node3D
             case GameActions.Quickload: Saves.Load(SaveManager.QuickSlot); break;
             default:
                 var speed = Array.IndexOf(GameActions.TimeSpeeds, action);
-                if (speed < 0 || speed >= GameClock.Speeds.Length) break;
-                Sim.Clock.TimeScale = GameClock.Speeds[speed];
-                Sim.Clock.Paused = false;
+                if (speed >= 0 && speed < GameClock.Speeds.Length)
+                {
+                    Sim.Clock.TimeScale = GameClock.Speeds[speed];
+                    Sim.Clock.Paused = false;
+                }
+                else if (InputActions.Def(action) != null) Sim.Perform(action);
                 break;
         }
     }
@@ -220,11 +212,11 @@ public partial class GameRoot : Node3D
     /// </summary>
     private void Use()
     {
-        if (Sim.PlayerVehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
+        if (Sim.Player.Vehicle is { } v && !Sim.Pois.IsLoading(v) && Sim.Pois.LoadChoices(v) is { Count: > 1 } choices)
             Screens.Push(new LoadScreen { Sim = Sim, Vehicle = v, Choices = choices });
-        else if (Sim.PlayerVehicle is { } w && Sim.Pois.Workshop(w) is { } workshop && w.Chain().Any(m => m.Def.Configurations.Count > 0))
+        else if (Sim.Player.Vehicle is { } w && Sim.Pois.Workshop(w) is { } workshop && w.Chain().Any(m => m.Def.Configurations.Count > 0))
             Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = w, Workshop = workshop });
-        else Sim.CommandUse();
+        else Sim.Perform(InputActions.Use);
     }
 
     public void SleepUntilMorning()

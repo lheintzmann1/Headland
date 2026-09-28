@@ -138,7 +138,7 @@
       "wearable": {}
     },
     "visual": { "color": "#9c9585", "model": "res://assets/models/sprayers/sprayer_12.glb" },
-    "description": "Trailed field sprayer with a 12 m boom. Lower it (V) to unfold the boom, turn it on (B): 100 L of herbicide mix a hectare kills the weeds and keeps new ones out until the next tillage or harvest."
+    "description": "Trailed field sprayer with a 12 m boom. Unfold the boom (N), lower it (V) and turn it on (B): 100 L of herbicide mix a hectare kills the weeds and keeps new ones out until the next tillage or harvest."
   },
   {
     "id": "mower_3", "name": "Mower 300", "category": "mower", "price": 13800, "mass": 780,

@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines.Components;
 using Headland.Core.Time;
 
@@ -111,7 +112,7 @@ public class GameEventTests
         sim.Machines.Attach(t, "drawbar", trailer);
         trailer.Unit("main")!.Add("wheat", 8000f);
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         for (var s = 0f; s < 60f && (trailer.Get<Tipper>()!.Tipping || trailer.Get<Tipper>()!.Anim > 0f); s += Dt) sim.Tick(Dt);
 
         var sale = Assert.Single(sold);
@@ -134,9 +135,9 @@ public class GameEventTests
         sim.Player.Enter(t);
         Assert.Equal([new VehicleEntered(t)], entered);
 
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         Assert.Equal(4, Assert.Single(hired).Field.Id);
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         var end = Assert.Single(dismissed);
         Assert.Equal((t, HelperEnd.Dismissed), (end.Vehicle, end.End));
         Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);

@@ -2,6 +2,7 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois.Components;
@@ -209,7 +210,7 @@ public class FinanceTests
         TractorAtField4(sim);
         sim.Clock.TimeScale = 240f;
         var money = sim.Economy.Money;
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
 
         // $150 an hour: $3 after 72 seconds, paid in whole dollars.
         for (var s = 0f; s < 72f; s += 1f / 60f) sim.Tick(1f / 60f);
@@ -217,7 +218,7 @@ public class FinanceTests
         Assert.Equal(-3f, sim.Economy.Ledger.Days.Sum(d => d[MoneyCategory.Wages]));
 
         // Dismissing settles the rest.
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         var end = Assert.Single(dismissed);
         Assert.InRange(end.Wages, 3f, 3.01f);
         Assert.Equal(money - end.Wages, sim.Economy.Money, 2);
@@ -231,7 +232,7 @@ public class FinanceTests
         var hired = Record<HelperHired>(sim);
         TractorAtField4(sim);
         sim.Economy.Spend(sim.Economy.Money + 1f, MoneyCategory.Other);
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         Assert.Empty(hired);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Not enough money to pay a helper");
     }

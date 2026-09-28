@@ -1,4 +1,5 @@
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Components;
@@ -64,7 +65,7 @@ public sealed class AnimatedPartsSave
     public Dictionary<string, float[]> Parts { get; set; } = new();
 }
 
-public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSave>
+public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSave>, IActionSource
 {
     public AnimatedParts(Entity owner, AnimatedPartsDef def) : base(owner, def)
     {
@@ -90,6 +91,17 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
 
     /// <summary>Fully unfolded: in its working pose.</summary>
     public bool Unfolded => Parts.All(p => !p.Def.Fold || p is { Target: false, Position: 0f });
+
+    /// <summary>The fold key, on a machine that folds for transport.</summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        if (!CanFold) return;
+        actions.Toggle(InputActions.Fold, Folded, "Fold", "Unfold", fold =>
+        {
+            Folded = fold;
+            return null;
+        });
+    }
 
     /// <summary>Moves a part that neither folds nor follows a trigger to its moved pose (true) or back.</summary>
     public bool Move(string id, bool moved)

@@ -1,6 +1,7 @@
 using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -32,7 +33,7 @@ public sealed class PipeSave
     public float Anim { get; set; }
 }
 
-public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def)
+public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def), IActionSource
 {
     /// <summary>Unfolded in 2.5 s.</summary>
     private const float FoldRate = 0.4f;
@@ -46,6 +47,14 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
     public Vector2 Outlet => Machine.LocalToWorld(Def.X, Def.Z);
+
+    /// <summary>The unload key swings it out and back.</summary>
+    public void AddActions(ActionList actions, Simulation sim) =>
+        actions.Toggle(InputActions.Unload, Out, "Unfold pipe", "Fold pipe", unfold =>
+        {
+            Out = unfold;
+            return null;
+        });
 
     internal override void Update(Simulation sim, float dt)
     {

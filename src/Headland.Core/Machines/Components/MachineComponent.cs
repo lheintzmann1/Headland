@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -39,6 +40,20 @@ public interface ISwitchable
     bool CanTurnOn { get; }
 
     bool On { get; set; }
+}
+
+internal static class Switchables
+{
+    /// <summary>Offers the turn-on key for a part that runs only once turned on.</summary>
+    public static void AddSwitch(this ActionList actions, ISwitchable part)
+    {
+        if (!part.CanTurnOn) return;
+        actions.Toggle(InputActions.TurnOn, part.On, "Turn on", "Turn off", on =>
+        {
+            part.On = on;
+            return null;
+        });
+    }
 }
 
 /// <summary>A component def with attacher joints, where implements hitch.</summary>

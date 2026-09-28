@@ -1,6 +1,7 @@
 using Headland.Core.Components;
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -35,10 +36,12 @@ public sealed class SawSave
     public bool On { get; set; }
 }
 
-public sealed class Saw(Machine machine, SawDef def) : MachineComponent<SawDef, SawSave>(machine, def), ISwitchable
+public sealed class Saw(Machine machine, SawDef def) : MachineComponent<SawDef, SawSave>(machine, def), ISwitchable, IActionSource
 {
     public bool CanTurnOn => true;
     public bool On { get; set; }
+
+    public void AddActions(ActionList actions, Simulation sim) => actions.AddSwitch(this);
 
     /// <summary>The blade's center, in the machine's space (x left, y up, z forward).</summary>
     public Vector3 Blade

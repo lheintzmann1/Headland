@@ -3,6 +3,7 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
@@ -71,7 +72,7 @@ public class PoiActionTests
         var (t, trailer) = TrailerAt(sim, new Vector2(20f, 20f), "wheat", 12_000f);
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Run(sim, 40f);
 
         var bin = sim.World.PoiById("ours")!;
@@ -81,10 +82,10 @@ public class PoiActionTests
         Assert.Equal(money, sim.Economy.Money);
         Assert.Equal(("ours", 10_000f), (Assert.Single(stored).Poi.Id, MathF.Round(stored[0].Amount)));
 
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Bin has no room for Wheat");
         sim.Machines.Teleport(t, new Vector2(26f, 48f), MathF.PI / 2f);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Bin belongs to another farm");
     }
 
@@ -136,7 +137,7 @@ public class PoiActionTests
 
         var (t, trailer) = TrailerAt(sim, press.Trigger("load")!.Area.Center, "wheat", 0f);
         sim.Player.Enter(t);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Run(sim, 2f);
         Assert.Equal(160f, trailer.Unit("main")!.Level, 1);
         Assert.Equal(0f, Stock(press).Level("wheat"), 1);
@@ -151,7 +152,7 @@ public class PoiActionTests
         var (t, trailer) = TrailerAt(sim, mill.Trigger("unload")!.Area.Center, "wheat", 16_000f);
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Run(sim, 45f);
         Assert.True(trailer.Unit("main")!.IsEmpty);
         Assert.Equal(16_000f, Stock(mill).Level("wheat"), 1);
@@ -166,7 +167,7 @@ public class PoiActionTests
 
         Stock(mill).Add("wheat", 60_000f);
         trailer.Unit("main")!.Add("wheat", 5000f);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Flour Mill has no room for Wheat");
     }
 
@@ -202,17 +203,17 @@ public class PoiActionTests
         Assert.Equal(["Refuel with diesel"], sim.Pois.Describe(gas.Trigger("fill")!));
         Assert.Equal(["Refuel"], sim.Pois.UseOptions(t));
 
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.Equal(180f, tank.Level);
         Assert.Equal(money - 100f * sim.Economy.Price("diesel", sim.Clock.Month), sim.Economy.Money, 1);
         Assert.Equal(0.5f, t.Dirt);
 
         sim.Machines.Teleport(t, gas.Trigger("wash")!.Area.Center, 0f);
         money = sim.Economy.Money;
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.Equal(0f, t.Dirt);
         Assert.Equal(money - 20f, sim.Economy.Money, 1);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Nothing to wash");
     }
 
@@ -229,12 +230,12 @@ public class PoiActionTests
         Assert.Equal([$"Repair (${cost:N0})", "Change options…"], sim.Pois.UseOptions(t));
 
         sim.Economy.Spend(sim.Economy.Money - 100f, MoneyCategory.Other);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Not enough money");
         Assert.Empty(repaired);
 
         sim.Economy.Earn(1000f, MoneyCategory.Other);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.Equal((1f, 1f), (t.Get<Wearable>()!.Condition, trailer.Get<Wearable>()!.Condition));
         Assert.Equal(1100f - cost, sim.Economy.Money, 1);
         Assert.Equal([t, trailer], repaired.Select(e => e.Machine));
@@ -284,7 +285,7 @@ public class PoiActionTests
         Assert.Equal(["wheat", "barley"], sim.Pois.LoadChoices(t));
         Assert.Equal(["Load…"], sim.Pois.UseOptions(t));
 
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.True(sim.Pois.IsLoading(t));
         Run(sim, 5f);
         var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
@@ -298,10 +299,10 @@ public class PoiActionTests
         Assert.Equal(("wheat", 5000f), (Assert.Single(events).FillType, MathF.Round(events[0].Amount)));
 
         // Barley doesn't mix with the wheat on board, and the neighbor's silo is not ours.
-        loaded.CommandUse();
+        loaded.Perform(InputActions.Use);
         Assert.Contains(loaded.Notifications.Items, n => n.Text == "Nothing stored here fits Tipper 16");
         loaded.Machines.Teleport(same.Parent!, loaded.World.PoiById("theirs")!.Trigger("load")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
-        loaded.CommandUse();
+        loaded.Perform(InputActions.Use);
         Assert.Contains(loaded.Notifications.Items, n => n.Text == "Silo belongs to another farm");
     }
 
@@ -313,9 +314,9 @@ public class PoiActionTests
         var (t, trailer) = TrailerAt(sim, sim.World.PoiById("ours")!.Trigger("load")!.Area.Center, "wheat", 0f);
         var loaded = Record<FillLoaded>(sim);
         sim.Player.Enter(t);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Run(sim, 2f);
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Assert.False(sim.Pois.IsLoading(t));
         Assert.InRange(Assert.Single(loaded).Amount, 900f, 1100f);
         Assert.Equal(loaded[0].Amount, trailer.Unit("main")!.Level);
@@ -348,7 +349,7 @@ public class PoiActionTests
         var stored = Record<FillStored>(sim);
         var money = sim.Economy.Money;
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Run(sim, 40f);
         Assert.Equal(9000f, Stock(silo).Level("barley"), 1);
         Assert.True(trailer.Unit("main")!.IsEmpty);
@@ -357,7 +358,7 @@ public class PoiActionTests
 
         sim.Machines.Teleport(t, silo.Trigger("load")!.Area.Center + new Vector2(6f, 0f), MathF.PI / 2f);
         Assert.Equal(["Load barley"], sim.Pois.UseOptions(t));
-        sim.CommandUse();
+        sim.Perform(InputActions.Use);
         Run(sim, 30f);
         Assert.Equal(9000f, trailer.Unit("main")!.Level, 1);
         Assert.Equal(0f, Stock(silo).Level("barley"), 1);
@@ -386,12 +387,12 @@ public class PoiActionTests
         var sim = TestContent.NewSim();
         var (t, trailer) = TrailerAt(sim, new Vector2(441f, 230f), "wheat", 400f);
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Assert.False(trailer.Get<Tipper>()!.Tipping);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator takes loads of 500 L or more");
 
         trailer.Unit("main")!.Add("wheat", 600f);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         Run(sim, 20f);
         Assert.True(trailer.Unit("main")!.IsEmpty);
     }

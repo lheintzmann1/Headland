@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Text.Json;
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Saves;
@@ -163,7 +164,7 @@ public class ComponentTests
         Assert.True(m.Get<Lights>()!.Switch("workRear", true));
         Assert.False(m.Get<Lights>()!.Switch("beacon", true));
         sim.Player.Enter(m);
-        sim.CommandTurnOn();
+        sim.Perform(InputActions.TurnOn);
         Assert.True(m.Get<Saw>()!.On);
         Run(sim, 1f);
 
@@ -193,12 +194,12 @@ public class ComponentTests
 
         sim.Player.Enter(t);
         // Folded, it stays up: it's unfolded with the fold key first.
-        sim.Machines.ToggleLower(t);
+        sim.Perform(InputActions.Lower);
         Assert.True(parts.Folded);
         Assert.False(lift.Lowered);
         Assert.Contains(sim.Notifications.Items, n => n.Text == $"Unfold the {c.Def.Name} first");
-        sim.Machines.ToggleFold(t);
-        sim.Machines.ToggleLower(t);
+        sim.Perform(InputActions.Fold);
+        sim.Perform(InputActions.Lower);
         Assert.False(parts.Folded);
         Assert.True(lift.Lowered);
         Run(sim, 1f);
@@ -213,7 +214,7 @@ public class ComponentTests
         Assert.True(cultivated > 12 * 40, $"cultivated cells: {cultivated}"); // 6 m wide
 
         // Folding raises it, and it stops working.
-        sim.Machines.ToggleFold(t);
+        sim.Perform(InputActions.Fold);
         Assert.False(lift.Lowered);
         Run(sim, 2f);
         var after = CountCells(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated && sim.World.Layers.FieldId[i] == 4);
@@ -241,7 +242,8 @@ public class ComponentTests
         var loader = sim.Machines.Spawn("test_loader", new Vector2(269f, 301.9f), 0f);
         var found = sim.Machines.FindAttachable(t);
         Assert.Equal(("frontLoader", loader), (found?.joint.Id, found?.child));
-        sim.Machines.ToggleAttach(t);
+        sim.Player.Enter(t);
+        sim.Perform(InputActions.Attach);
         Assert.Same(loader, t.Get<FrontLoaderBracket>()!.Arm);
         Assert.False(sim.Machines.Attach(sim.Machines.Spawn("tractor_125", new Vector2(250f, 300f), 0f), "rear", sim.Machines.Spawn("test_loader", new Vector2(250f, 297f), 0f)));
     }

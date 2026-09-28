@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Work;
 using Headland.Core.Machines.Components;
@@ -157,9 +158,10 @@ public class MachineTests
         var found = sim.Machines.FindAttachable(t);
         Assert.NotNull(found);
         Assert.Same(c, found.Value.child);
-        sim.Machines.ToggleAttach(t);
+        sim.Player.Enter(t);
+        sim.Perform(InputActions.Attach);
         Assert.Same(t, c.Parent);
-        sim.Machines.ToggleAttach(t);
+        sim.Perform(InputActions.Attach);
         Assert.Null(c.Parent);
     }
 
@@ -261,7 +263,7 @@ public class MachineTests
         var expected = PoiTests.SaleIncome(sim, "wheat", 10000f);
 
         sim.Player.Enter(t);
-        sim.CommandUnload();
+        sim.Perform(InputActions.Unload);
         var tipper = trailer.Get<Tipper>()!;
         Assert.True(tipper.Tipping);
         for (var s = 0f; s < 60f && (tipper.Tipping || tipper.Anim > 0f); s += Dt) sim.Tick(Dt);
@@ -276,10 +278,10 @@ public class MachineTests
         var sim = TestContent.NewSim();
         var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 300f), 0f);
         sim.Player.Position = t.LocalToWorld(2.2f, 1f);
-        sim.ToggleEnterExit();
+        sim.Perform(InputActions.Enter);
         Assert.Same(t, sim.Player.Vehicle);
         Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
-        sim.ToggleEnterExit();
+        sim.Perform(InputActions.Enter);
         Assert.Null(sim.Player.Vehicle);
         Assert.Null(t.Get<Drivable>()!.Controller);
         Assert.True(t.Footprint.Distance(sim.Player.Position) > PlayerCharacter.Radius);
@@ -609,7 +611,7 @@ public class MachineTests
         var t = sim.Machines.Spawn("tractor_125", field.Center, 0f);
         sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", field.Center - new Vector2(0f, 2f), 0f));
         sim.Player.Enter(t);
-        sim.CommandHelper();
+        sim.Perform(InputActions.Helper);
         Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Nothing left for the Tiller 300 to do on Field 4");
     }

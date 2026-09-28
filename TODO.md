@@ -252,7 +252,7 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 - [x] Input layer over Godot's `InputMap`: actions on keys with Ctrl/Shift/Alt, mouse buttons and axes, and
       gamepad; press, hold and double-tap; physical keys as today. Bindings saved in `settings.cfg`, rebinding
       with conflict checks per context (the settings screen in UI).
-- [ ] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;
+- [x] Contexts: on foot, in a vehicle, in a menu, and mouse modes. The same key does what the context needs;
       the HUD's key hints and the F1 help list the current context's actions, built from what the vehicle's
       components offer.
 - [ ] Activatables (FS `Activatable`): a component whose trigger the farmer or their vehicle is in offers the use

@@ -1,5 +1,6 @@
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Input;
 
 namespace Headland.Core.Machines.Components;
 
@@ -28,7 +29,7 @@ public sealed class TipperSave
     public float Anim { get; set; }
 }
 
-public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<TipperDef, TipperSave>(machine, def)
+public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<TipperDef, TipperSave>(machine, def), IActionSource
 {
     /// <summary>Up in about 3 s; the load starts to slide at 60%.</summary>
     private const float TipRate = 0.35f;
@@ -40,6 +41,30 @@ public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<Ti
     public bool Flowing { get; private set; }
 
     public FillUnit Load => Machine.Unit(Def.FillUnit)!;
+
+    /// <summary>
+    /// The unload key tips it, or stops it. Its hint shows in an unloading area, with what the load sells for there or
+    /// the contract it goes to.
+    /// </summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        var pit = sim.Pois.TriggerAt(Machine.Footprint.Center, "unload");
+        var label = "Tip";
+        if (pit != null)
+        {
+            var ft = Load.FillType;
+            var price = ft != null ? sim.Pois.SalePrice(Machine, pit, ft) : null;
+            var at = price is { } p ? $" at ${p:0.00}/{sim.Content.FillTypes[ft!].Unit}" : "";
+            if (ft != null && sim.Contracts.Taking(Machine.FarmId, pit.Poi, ft) is { } job) at = $" for the contract ({job.Owed:N0} {job.Goods!.Unit} to go)";
+            label = $"Tip into {pit.Poi.Name}{at}";
+        }
+        actions.Toggle(InputActions.Unload, Tipping, label, "Stop tipping", tip =>
+        {
+            if (!tip) Tipping = false;
+            else if (Start(sim) is { } why) sim.Notifications.Post(why, Load.IsEmpty ? Severity.Info : Severity.Warning);
+            return null;
+        }, hinted: pit != null || Tipping);
+    }
 
     /// <summary>Starts tipping, or says why it can't: empty, or not in an unloading area that takes its load.</summary>
     internal string? Start(Simulation sim)
