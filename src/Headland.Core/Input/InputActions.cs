@@ -16,6 +16,7 @@ public static class InputActions
     public const string NextVehicle = "next_vehicle";
     public const string PrevVehicle = "prev_vehicle";
     public const string Attach = "attach";
+    public const string SelectImplement = "select_implement";
     public const string Lower = "lower";
     public const string Fold = "fold";
     public const string TurnOn = "turn_on";
@@ -38,6 +39,10 @@ public static class InputActions
         new(Run, "Run", InputContext.OnFoot, "Shift", "Joy L3") { Analog = true },
         new(Brake, "Handbrake", Driving, "Space", "Joy LT") { Analog = true },
         new(Attach, "Attach / detach implement", Driving, "G", "Joy Down") { Unavailable = "Nothing to attach nearby: back up to an implement's hitch" },
+        new(SelectImplement, "Select the next implement: the tool keys act on it (the vehicle: on all)", Driving, "T", "Joy R3")
+        {
+            Unavailable = "Nothing attached to select",
+        },
         new(Lower, "Lower / raise implements", Driving, "V", "Joy A") { Unavailable = "No implement to lower" },
         new(Fold, "Fold / unfold implements", Driving, "N") { Unavailable = "Nothing to fold" },
         new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on" },

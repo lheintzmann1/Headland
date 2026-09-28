@@ -166,7 +166,10 @@ public partial class Hud : CanvasLayer
         if (v == null) return;
         var sb = new StringBuilder();
         var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract) : "";
-        sb.Append($"[b]{v.Def.Name}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
+        // What the tool keys act on is in the key color: the selected implement, or the vehicle for the whole chain.
+        var selected = v.Get<Drivable>()?.Selected;
+        string Named(Machine m) => m == selected || m == v && selected == null && v.Attached.Count > 0 ? Widgets.Colored(m.Def.Name, Palette.Key) : m.Def.Name;
+        sb.Append($"[b]{Named(v)}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
         if (v.Get<Motor>() is { Running: true } motor) sb.Append(Widgets.Colored($"   {motor.FuelPerHour:0.0} L/h", Palette.Dim));
         if (v.Get<RunningGear>() is { Slip: > 0.05f } gear) sb.Append("   " + Widgets.Colored($"slip {gear.Slip * 100f:0}%", gear.Slip > 0.15f ? Palette.Warning : Palette.Dim));
         if (v.Get<Thresher>() is { } thresher) sb.Append("   " + (thresher.On ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
@@ -175,7 +178,7 @@ public partial class Hud : CanvasLayer
             sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
         foreach (var m in v.Chain())
         {
-            if (m != v) sb.Append($"  {m.Def.Name}");
+            if (m != v) sb.Append(m == selected ? $"  [b]{Named(m)}[/b]" : $"  {Named(m)}");
             var bits = new List<string>();
             if (m.Get<AnimatedParts>() is { CanFold: true } parts && !parts.Unfolded) bits.Add(parts.Folded ? "folded" : "unfolding");
             if (m != v && m.Get<Attachable>() is { Def.Lowerable: true } hitch) bits.Add(hitch.Lowered ? Widgets.Colored("lowered", Palette.Good) : "raised");

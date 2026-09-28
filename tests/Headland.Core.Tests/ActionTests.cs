@@ -114,4 +114,53 @@ public class ActionTests
         sim.Perform(InputActions.Lower);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "No implement to lower");
     }
+
+    [Fact]
+    public void TheToolKeysActOnTheSelectedImplement()
+    {
+        var (sim, t) = Tractor();
+        var cultivator = sim.Machines.Spawn("cultivator_3", new Vector2(269f, 298f), 0f);
+        var mower = sim.Machines.Spawn("mower_3", new Vector2(269f, 304f), 0f);
+        var trailer = sim.Machines.Spawn("trailer_16", new Vector2(269f, 290f), 0f);
+        Assert.True(sim.Machines.Attach(t, "rear", cultivator));
+        Assert.True(sim.Machines.Attach(t, "front", mower));
+        Assert.True(sim.Machines.Attach(t, "drawbar", trailer));
+        trailer.Unit("main")!.Add("wheat", 1000f);
+        sim.Player.Enter(t);
+        var seat = t.Get<Drivable>()!;
+        bool Lowered(Machine m) => m.Get<Attachable>()!.Lowered;
+
+        Assert.Null(seat.Selected);
+        Assert.Equal($"Select {cultivator.Def.Name}", Hints(sim)[InputActions.SelectImplement]);
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Same(cultivator, seat.Selected);
+        sim.Perform(InputActions.Lower);
+        Assert.Equal((true, false), (Lowered(cultivator), Lowered(mower)));
+        // The mower's switch and the trailer's tipping are not the cultivator's.
+        Assert.Null(sim.Offers().Of(InputActions.TurnOn));
+        Assert.Null(sim.Offers().Of(InputActions.Unload));
+
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Same(mower, seat.Selected);
+        sim.Perform(InputActions.Lower);
+        sim.Perform(InputActions.TurnOn);
+        Assert.Equal((true, true, true), (Lowered(cultivator), Lowered(mower), mower.Get<WorkAreas>()!.On));
+
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Same(trailer, seat.Selected);
+        Assert.NotNull(sim.Offers().Of(InputActions.Unload));
+        Assert.Equal("Select all", Hints(sim)[InputActions.SelectImplement]);
+
+        // The vehicle itself: the keys act on the whole chain again.
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Null(seat.Selected);
+        sim.Perform(InputActions.Lower);
+        Assert.Equal((false, false), (Lowered(cultivator), Lowered(mower)));
+
+        // An implement leaving the chain is no longer selected.
+        seat.Selected = mower;
+        sim.Machines.Detach(mower);
+        Assert.Null(seat.Selected);
+        Assert.Equal("Lower", Hints(sim)[InputActions.Lower]);
+    }
 }

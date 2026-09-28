@@ -94,6 +94,7 @@ can be changed in the settings file (see below).
 | F | Enter or leave a vehicle |
 | Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
+| T | Select the next implement: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
 | V | Lower or raise implements |
 | N | Fold or unfold implements (a sprayer's boom) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |

@@ -211,8 +211,9 @@ public sealed class Simulation
 
     /// <summary>
     /// What each key does now for the player (FS: the action events registered for them): on foot, getting into the
-    /// vehicle nearby; driving, getting out, hitching, what the components of the chain offer (lowering, folding,
-    /// turning on, unloading…) and the helper; and the use key where something is offered to it
+    /// vehicle nearby; driving, getting out, hitching, selecting an implement, what the components of the selected
+    /// implement and of the vehicle offer (lowering, folding, turning on, unloading…; the whole chain's with the vehicle
+    /// itself selected) and the helper; and the use key where something is offered to it
     /// (<see cref="Activations"/>). The HUD hints them and the help lists them.
     /// </summary>
     public ActionList Offers()
@@ -231,7 +232,13 @@ public sealed class Simulation
             actions.Add(InputActions.Attach, $"Attach {child.Def.Name}", () => Machines.Attach(parent, joint.Id, child));
         else if (v.Chain().Skip(1).LastOrDefault() is { } leaf)
             actions.Add(InputActions.Attach, $"Detach {leaf.Def.Name}", () => Machines.Detach(leaf));
-        foreach (var m in v.Chain())
+        if (v.Get<Drivable>() is { } seat && v.Attached.Count > 0)
+        {
+            var implements = v.Chain().Skip(1).ToList();
+            var next = seat.Selected is { } selected ? implements.ElementAtOrDefault(implements.IndexOf(selected) + 1) : implements[0];
+            actions.Add(InputActions.SelectImplement, next != null ? $"Select {next.Def.Name}" : "Select all", seat.SelectNext);
+        }
+        foreach (var m in v.Get<Drivable>()?.ToolScope ?? v.Chain())
         foreach (var source in m.Components.OfType<IActionSource>())
             source.AddActions(actions, this);
         AddHelper(actions, v);

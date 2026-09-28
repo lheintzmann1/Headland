@@ -259,7 +259,7 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
       key an action, with its label, who may use it (farm, opening hours) and what it does. The HUD lists them
       and the use key runs the nearest, instead of `PoiSystem.Use` knowing each case; components register their
       actions only while they apply (FS `InputBinding.registerActionEvent`), and Lua components add their own.
-- [ ] Selected implement (FS): a key cycles through the vehicle's chain; lower, turn on, fold and tool keys
+- [x] Selected implement (FS): a key cycles through the vehicle's chain; lower, turn on, fold and tool keys
       act on the selection, or on the whole chain with the vehicle itself selected (as now). The HUD marks the
       selection.
 - [ ] Actions named and bound by the tool (FS): each component offers its actions in its own words, on the key
@@ -286,7 +286,7 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [ ] Winch: reel in and out, hook and unhook.
 - [ ] Saw: on and off with the turn-on key (done); cutting once trees are entities.
 - [ ] Front loader: hitch the arm to the bracket (and park it on its stands), tools on the arm.
-- [ ] Pipe, tipping and seed selection (U and X today) as actions of the selected implement.
+- [x] Pipe, tipping and seed selection (U and X today) as actions of the selected implement.
 
 ### In-game menu
 
