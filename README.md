@@ -51,19 +51,18 @@ Built with **Godot 4.7** and **C#**.
   hired.
 - **Difficulty.** Easy, normal and hard set the money and loan the farm starts with, and how much everything it
   buys costs, from seed to machines, land and wages; sale prices stay the same.
-- **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who
-  own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
-  ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors' fields it has
-  a contract on.
+- **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who own
+  them: the menu's farmland lists them with their price ($20,000 a hectare), and land sells back for what it cost,
+  except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
+  fields it has a contract on.
 - **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating or plowing
   stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing a meadow), and
-  buyers order goods for more than the market price. C opens the
-  board: take up to three at a time, each due within a few days. A field job is done once 95% of the field is; a
-  harvest's crop is the neighbor's, and 90% of it must be tipped at the buyer named on the contract, who takes it
-  without paying. Giving a contract back, or finishing late, costs 10% of its reward. A field job can also be taken
-  with leased machines, for a fee taken from the reward: they wait on the machinery dealer's lot, implements hitched,
-  and go back when the contract ends. Fields under contract show it on their sign and get an outline. The jobs are
-  JSON too (`contracts.json`).
+  buyers order goods for more than the market price. The menu's contracts are the board: take up to three at a time,
+  each due within a few days. A field job is done once 95% of the field is; a harvest's crop is the neighbor's, and
+  90% of it must be tipped at the buyer named on the contract, who takes it without paying. Giving a contract back, or
+  finishing late, costs 10% of its reward. A field job can also be taken with leased machines, for a fee taken from
+  the reward: they wait on the machinery dealer's lot, implements hitched, and go back when the contract ends. Fields
+  under contract show it on their sign and get an outline. The jobs are JSON too (`contracts.json`).
 - **Field helpers.** Press H and a helper works the field one lane after the other, leaving out what's done already,
   so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland it
   backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it
