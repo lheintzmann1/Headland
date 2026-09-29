@@ -9,6 +9,8 @@ public sealed class ThresherDef : MachineComponentDef
 {
     public string FillUnit { get; set; } = "tank";
 
+    public override IEnumerable<string> Toggles => [InputActions.TurnOn];
+
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (!HasUnit(machine, FillUnit)) yield return $"fill unit '{FillUnit}' missing";

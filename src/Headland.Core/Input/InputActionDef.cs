@@ -42,6 +42,11 @@ public sealed class InputActionDef(string id, string help, InputContext contexts
     public bool Analog { get; init; }
     /// <summary>What the player is told when it does nothing now ("No implement to lower").</summary>
     public string? Unavailable { get; init; }
+    /// <summary>
+    /// What its hint says when tools with words of their own switch together on it ("Lower all", "Raise all"): to do it
+    /// and to undo it.
+    /// </summary>
+    public (string Do, string Undo)? Several { get; init; }
 
     public override string ToString() => Id;
 }

@@ -1,14 +1,15 @@
 [
   // The shop's categories, in the order it lists them. A machine's "category" names one; a machine without one isn't
-  // sold. Categories with nothing in them are left out.
-  { "id": "tractor", "name": "Tractors" },
-  { "id": "combine", "name": "Combines" },
-  { "id": "header", "name": "Headers" },
-  { "id": "trailer", "name": "Trailers" },
-  { "id": "cultivator", "name": "Cultivators" },
-  { "id": "plow", "name": "Plows" },
-  { "id": "seeder", "name": "Seeders" },
-  { "id": "spreader", "name": "Fertilizer spreaders" },
-  { "id": "sprayer", "name": "Sprayers" },
-  { "id": "mower", "name": "Mowers" }
+  // sold. Categories with nothing in them are left out. "noun" is what one of its machines is, in a word: what the key
+  // hints call it, "Lower cultivator" (FS: typeDesc), unless the machine gives its own.
+  { "id": "tractor", "name": "Tractors", "noun": "tractor" },
+  { "id": "combine", "name": "Combines", "noun": "combine" },
+  { "id": "header", "name": "Headers", "noun": "header" },
+  { "id": "trailer", "name": "Trailers", "noun": "trailer" },
+  { "id": "cultivator", "name": "Cultivators", "noun": "cultivator" },
+  { "id": "plow", "name": "Plows", "noun": "plow" },
+  { "id": "seeder", "name": "Seeders", "noun": "seeder" },
+  { "id": "spreader", "name": "Fertilizer spreaders", "noun": "fertilizer spreader" },
+  { "id": "sprayer", "name": "Sprayers", "noun": "sprayer" },
+  { "id": "mower", "name": "Mowers", "noun": "mower" }
 ]

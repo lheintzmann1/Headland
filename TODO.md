@@ -266,13 +266,13 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
 - [x] Selected implement (FS): a key cycles through the vehicle's chain; lower, turn on, fold and tool keys
       act on the selection, or on the whole chain with the vehicle itself selected (as now). The HUD marks the
       selection.
-- [ ] Actions named and bound by the tool (FS): each component offers its actions in its own words, on the key
-      that fits: a cultivator lowers and raises, a boom folds and unfolds, a plow turns over, a cover opens. A
-      machine may have several on separate keys (a sprayer's boom unfolds on the fold key and goes down on the
-      lower key), or share one motion between them (FS `foldMiddleAnimTime`: the fold key unfolds to a middle
-      pose, and the lower key moves between it and the working one); its JSON says which. The HUD's key hints and
-      the F1 help show those words instead of the fixed "Lower" and "Fold". With the contexts and the selected
-      implement.
+- [x] Actions named and bound by the tool (FS): each component offers its actions in its own words, naming its
+      machine as FS does with its type ("Lower cultivator", "Unfold boom", "Pipe out"), on the key that fits: a
+      part's JSON says which key moves it (a plow rotates on the turn-on key). A machine may have several on
+      separate keys (a sprayer's boom unfolds on the fold key and goes down on the lower key), or share one motion
+      between them (FS `foldMiddleAnimTime`: the fold key unfolds to a middle pose, and the lower key moves between
+      it and the working one); its JSON says which. The HUD's key hints and the F1 help show those words instead of
+      the fixed "Lower" and "Fold". With the contexts and the selected implement.
 - [ ] Mouse control (FS): hold the right button to move the selected tool's joints with the mouse (crane slew
       and boom, loader lift and tilt), with Ctrl or Shift choosing which pair of joints the axes move; left
       click for its action (grab, release, cut). The camera stops following the mouse meanwhile.

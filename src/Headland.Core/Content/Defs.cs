@@ -168,6 +168,8 @@ public sealed class ShopCategoryDef
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
+    /// <summary>What one of its machines is, in a word ("cultivator"): what the key hints call it (FS: typeDesc).</summary>
+    public string Noun { get; set; } = "";
 }
 
 /// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>
@@ -322,6 +324,11 @@ public sealed class MachineDef : EntityDef
     public string Category { get; set; } = "";
     /// <summary>Who makes it (a brands.json id); none for a machine without a brand.</summary>
     public string Brand { get; set; } = "";
+    /// <summary>
+    /// What it is, in a word ("cultivator"): what its key hints call it, "Lower cultivator" (FS: typeDesc). Its shop
+    /// category's by default; none, the hints say only the verb.
+    /// </summary>
+    public string Noun { get; set; } = "";
     /// <summary>With the chosen options' prices and masses added.</summary>
     public float Price { get; set; }
     public float Mass { get; set; } = 3000f;
@@ -332,6 +339,15 @@ public sealed class MachineDef : EntityDef
     /// <summary>The option chosen in each of its configurations, by configuration id.</summary>
     [JsonIgnore]
     public IReadOnlyDictionary<string, string> Choices { get; private set; } = new Dictionary<string, string>();
+
+    /// <summary>A key hint doing <paramref name="verb"/> to it: "Lower cultivator", or the verb alone without a <see cref="Noun"/>.</summary>
+    public string Named(string verb) => Noun.Length > 0 ? $"{verb} {Noun}" : verb;
+
+    internal override void Link(ContentDatabase content)
+    {
+        base.Link(content);
+        if (Noun.Length == 0 && content.ShopCategories.GetValueOrDefault(Category) is { } category) Noun = category.Noun;
+    }
 
     /// <summary>Model nodes its options are made of: each is visible with the options it's in.</summary>
     [JsonIgnore]

@@ -90,7 +90,8 @@ Built with **Godot 4.7** and **C#**.
 ## Controls
 
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
-that do something where you are, and F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
+that do something where you are, in the words of the tool they work ("Lower cultivator", "Unfold boom", "Pipe out"), and
+F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
 (contracts, finances, farmland, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
 file (see below).
@@ -102,9 +103,9 @@ file (see below).
 | Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
 | T | Select the next implement: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
-| V | Lower or raise implements |
+| V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
-| Shift+N | Move the parts that don't fold: covers, markers |
+| Shift+N | Move a tool's other parts: covers, markers |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |

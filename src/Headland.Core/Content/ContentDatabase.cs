@@ -487,7 +487,7 @@ public sealed class ContentDatabase
         foreach (var kind in d.Components.GroupBy(c => c.GetType()).Where(g => g.Count() > 1))
             yield return $": more than one {kind.First().Kind}";
         foreach (var c in d.Components)
-        foreach (var error in c.Errors(d, this))
+        foreach (var error in c.Errors(d, this).Concat(c.WordErrors()))
             yield return $" {c.Kind}: {error}";
         var roles = d.Roles.ToHashSet();
         foreach (var role in (d.Visual.Nodes?.Keys ?? Enumerable.Empty<string>()).Where(r => !roles.Contains(r)))

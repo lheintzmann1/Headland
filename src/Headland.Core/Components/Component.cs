@@ -21,6 +21,34 @@ public abstract class ComponentDef
     [JsonIgnore]
     public virtual IEnumerable<string> Roles => [];
 
+    /// <summary>
+    /// What the key hints say for the toggles it offers, in its own words (FS: an action's texts), by the key's action:
+    /// <c>{ "lower": ["Lower boom", "Lift boom"] }</c>, to do it and to undo it.
+    /// </summary>
+    public Dictionary<string, string[]> Words { get; set; } = new();
+
+    /// <summary>The keys it offers a toggle on (<see cref="Input.ActionList.Toggle"/>): those its <see cref="Words"/> can name.</summary>
+    [JsonIgnore]
+    public virtual IEnumerable<string> Toggles => [];
+
+    /// <summary>What <paramref name="action"/>'s hint says to do it and to undo it: its JSON's words, else these.</summary>
+    public (string Do, string Undo) WordsFor(string action, string @do, string undo) =>
+        Words.GetValueOrDefault(action) is [var d, var u] ? (d, u) : (@do, undo);
+
+    /// <summary>What's wrong with its <see cref="Words"/>.</summary>
+    internal IEnumerable<string> WordErrors()
+    {
+        var toggles = Toggles.ToList();
+        foreach (var (action, words) in Words)
+        {
+            if (!toggles.Contains(action))
+                yield return toggles.Count == 0 ? $"words: it offers no key to name ('{action}')"
+                    : $"words: '{action}' is not one of its keys ({string.Join(", ", toggles)})";
+            else if (words is not [var d, var u] || string.IsNullOrWhiteSpace(d) || string.IsNullOrWhiteSpace(u))
+                yield return $"words: '{action}' needs two texts, to do it and to undo it";
+        }
+    }
+
     /// <summary>What's wrong with it, checked against the rest of what it's on (and whether it goes on that at all).</summary>
     internal virtual IEnumerable<string> Errors(EntityDef owner, ContentDatabase content) => [];
 

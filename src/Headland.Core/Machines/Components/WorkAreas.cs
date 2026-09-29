@@ -43,6 +43,9 @@ public sealed class WorkAreasDef : MachineComponentDef, ISpecSource
     public override IEnumerable<string> Roles =>
         Areas.Select(a => WorkTypes.Find(a.Type)).OfType<WorkType>().SelectMany(w => w.Roles).Distinct();
 
+    /// <summary>The turn-on key, when an area works only turned on.</summary>
+    public override IEnumerable<string> Toggles => Areas.Any(a => a.RequiresOn) ? [InputActions.TurnOn] : [];
+
     /// <summary>The width its areas cover side by side, how fast they work, the power they take, and the crops they cut.</summary>
     public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content)
     {
@@ -157,12 +160,12 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     public float MinWidth => Def.Areas.Min(a => a.Width);
 
     /// <summary>
-    /// True if the work area does its work now: the implement unfolded and lowered (when it folds or lowers), and
-    /// turned on (a harvester: the thresher it hangs on) when it needs to be.
+    /// True if the work area does its work now: the implement unfolded and lowered (when it folds or lowers, its parts
+    /// down too), and turned on (a harvester: the thresher it hangs on) when it needs to be.
     /// </summary>
     public bool Working(WorkAreaDef area)
     {
-        if (Machine.Get<AnimatedParts>() is { Unfolded: false }) return false;
+        if (Machine.Get<AnimatedParts>() is { InWorkingPose: false }) return false;
         if (Machine.Get<Attachable>() is { Def.Lowerable: true, Lowered: false }) return false;
         return area.Work.Working(this, area);
     }

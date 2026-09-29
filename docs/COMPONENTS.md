@@ -56,6 +56,10 @@ price level), with its `description`. What else the shop says about it comes fro
 and top speed, the hitches, the tanks and what they take, the working width and speed and the power needed, the crops a
 header cuts, the rates of a pipe or a tipper, and its `mass`.
 
+Its `noun` is what it is, in a word: the key hints name it by it, "Lower cultivator", "Turn on sprayer" (FS: its type
+description, see [Key hints](#key-hints)). Without one it takes its category's `noun`; without either, the hints say
+only the verb.
+
 ## POIs
 
 A POI is a building or site: a farmhouse, a silo, a shop, a grain elevator. Maps place them (see
@@ -111,7 +115,7 @@ optionally a `name` in place of the type's.
 | `frontLoaderBracket` | machines | Consoles for a front loader arm, with its joint. |
 | `attachable` | machines | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
 | `fillUnits` | anything | Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins. |
-| `animatedParts` | anything | Parts that move between two poses: folding for transport, a door opening as someone comes by. |
+| `animatedParts` | anything | Parts that move between two poses: folding for transport, a boom going down, a door opening as someone comes by. |
 | `workAreas` | machines | Where it works the ground: tilling, sowing, fertilizing, spraying, cutting a crop, mowing. |
 | `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
 | `pipe` | machines | An unloading pipe. |
@@ -132,6 +136,22 @@ optionally a `name` in place of the type's.
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
 chain; the lower key lowers every lowerable `attachable`.
+
+### Key hints
+
+What a component switches on a key (FS: its action events), the key hints and the F1 help say in its words, naming its
+machine by its [`noun`](#machines), as Farming Simulator does: "Lower cultivator" and "Lift cultivator" on the lower key,
+"Fold sprayer" and "Unfold sprayer" on the fold key, "Turn on seeder" and "Turn off seeder", "Pipe out" and "Pipe in".
+A component's `words` give its own, by key: two texts, to do it and to undo it.
+
+```jsonc
+"attachable": { "type": "drawbar", "mode": "trailed", "lowerable": true, "words": { "lower": ["Lower boom", "Lift boom"] } }
+```
+
+A component's keys are those it switches something on: `lower` (a lowerable `attachable`), `fold` and the keys its parts
+move on (`animatedParts`), `turn_on` (a `workAreas` with an area that `requiresOn`, a `thresher`, a `saw`) and `unload`
+(a `pipe`). Where tools with words of their own switch together on a key (the vehicle itself selected), the key says it
+for all of them: "Lower all", "Lift all".
 
 Some components react to who is around, as FS triggers do: a lamp coming on, a door opening. Their `trigger` is an
 area in the entity's space, centered on `x`, `z` (0, 0), `w` along x and `d` along z (10 × 10), and `by` says who it
@@ -286,16 +306,25 @@ trailers and sell at the elevator. Stations and silos take categories the same w
 
 | Setting | Default | |
 |---|---|---|
-| `parts` | none | Each has an `id` (the model node role it moves), a `name` for the key hints (its id), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and `fold`, a `trigger` or `support`. |
+| `parts` | none | Each has an `id` (the model node role it moves), its moved pose from its rest pose, `rotationDeg` [x, y, z] and `offset` [x, y, z], the `seconds` it takes, and what moves it (below). |
 | `startFolded` | false | Comes folded. |
 
-Parts with `fold: true` (on machines only) move together when the machine folds for transport; their rest pose is the
-working one. The fold key folds and unfolds them, raising the machine as it folds. A folded machine (or one still
-unfolding) doesn't work and doesn't go down: it's unfolded first, and a helper unfolds it by itself. A part with a
-`trigger` moves while someone is in it and back once they left, such as a shed's door (FS: animated objects). A part
-with `support: true` (on machines that hitch) is a support leg: moved while the machine stands unhitched, back once
-it's hitched. The other parts of a machine, such as covers and markers, move with the driver's key for parts that
-don't fold ("Move the marker"), for the selected implement or, with the vehicle selected, the whole chain.
+What moves a part: the `key` it moves on (on machines), a `trigger` or `support`.
+
+| | |
+|---|---|
+| `key: "fold"` | Folding for transport. The fold key folds and unfolds the machine's folding parts together, lifting the machine as it folds; their rest pose is the working one. A folded machine (or one still unfolding) doesn't work and doesn't go down: it's unfolded first, and a helper unfolds it by itself. |
+| `key: "lower"` | Lowering, on a machine that lowers (a lowerable `attachable`). Moved while the machine is raised or folded, and back to its rest pose, the working one, as it's lowered once unfolded; the machine works once it's down: a sprayer's boom going down on its mast. |
+| `key: "move_parts"` (the default), `"turn_on"` | A switch of its own on that key, for the selected implement or, with the vehicle selected, the whole chain: covers, markers ("Move marker", after its `name`, else its `id`). The turn-on key only on a machine that doesn't turn on: a plow rotates on it (FS). |
+| `trigger` | Moves while someone is in it and back once they left, such as a shed's door (FS: animated objects). A POI's parts move this way only. |
+| `support: true` | A support leg, on a machine that hitches: moved while the machine stands unhitched, back once it's hitched. |
+
+A folding part of a machine that lowers can also have a `middle` (0 … 1; FS: `foldMiddleAnimTime`): unfolded, it stands
+there while the machine is raised, and the lower key moves it between there and its working pose, so that the fold and
+lower keys share its motion (a cultivator's wings unfolding to an angle for the headland turns, and going flat to
+work). Without one, a folding part stands in its working pose once unfolded, and the parts that lower go down on the
+lower key: so a sprayer's wings unfold on the fold key, and its boom goes down on the lower key. Helpers lower an
+implement ahead of the field by the time it takes to go down, its linkage's or its parts'.
 
 ### workAreas
 

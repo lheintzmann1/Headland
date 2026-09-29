@@ -285,18 +285,21 @@ public class SharedComponentTests
                    { "id": "d", "hours": [18, 6] },
                    { "id": "e", "switch": "trigger", "trigger": { "w": 0, "by": "cows" } } ] },
                  "animatedParts": { "parts": [
-                   { "id": "wing", "fold": true },
+                   { "id": "wing", "key": "fold" },
+                   { "id": "hatch" },
                    { "id": "gate", "trigger": { "w": 4 } } ] },
-                 "hotspots": { "spots": [ { "x": 1 } ] } } }]
+                 "hotspots": { "spots": [ { "x": 1 } ], "words": { "use": ["Look", "Look away"] } } } }]
             """)).Message;
         Assert.Contains("poi 'test_bad' lights: lamp 'a': unknown switch 'sometimes'", e);
         Assert.Contains("lamp 'b': the hours switch needs hours", e);
         Assert.Contains("lamp 'c': the trigger switch needs a trigger", e);
         Assert.Contains("lamp 'd': hours go with the hours switch", e);
         Assert.Contains("lamp 'e' trigger: needs w and d > 0", e);
-        Assert.Contains("poi 'test_bad' animatedParts: part 'wing': only machines fold", e);
+        Assert.Contains("poi 'test_bad' animatedParts: part 'wing': only a machine's parts move on keys; give it a trigger", e);
+        Assert.Contains("part 'hatch': only a machine's parts move on keys", e);
         Assert.DoesNotContain("part 'gate'", e);
         Assert.Contains("poi 'test_bad' hotspots: each spot needs an icon", e);
+        Assert.Contains("poi 'test_bad' hotspots: words: it offers no key to name ('use')", e);
 
         var by = Assert.Throws<ContentException>(() => TestContent.WithPois("""
             [{ "id": "test_bad", "name": "Bad", "components": {

@@ -78,7 +78,7 @@ root                              origin on the ground, at the center of the rea
 ```
 
 - **Where a node sits** only matters for what moves together: a moving part carries whatever is under it (a dual's
-  outer tire, a front frame's wheels, a crane's next joint, the load in a tipper's bed). The game looks for each name
+  outer tire, a front frame's wheels, a crane's next joint, the load in a tipper's bed, a boom's folding wings). The game looks for each name
   anywhere under `root`, so the groups that only sort things (`body`, `runningGear`, `options` and a group per
   configuration in it) are a suggestion, not a requirement.
 - **Every name is unique** in the file. Blender insists on it, and Godot renames the second of two nodes with the
@@ -105,7 +105,7 @@ components (see [`COMPONENTS.md`](COMPONENTS.md)) decide which roles it has:
 | `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
 | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
 | `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
-| a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold) |
+| a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold or lower) |
 | a joint's `id` | `craneArm` | the joint's pivot | at the joint's value 0; `extend` joints slide along their own Z |
 | `hook` | `winch` | the hook's eye | anywhere: it is moved to the end of the rope |
 | `saw` | `saw` | the blade's center | spins about its own Y axis while turned on |

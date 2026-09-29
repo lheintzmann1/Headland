@@ -45,9 +45,19 @@ public class ComponentTests
           "components": {
             "attachable": { "type": "threePoint", "mode": "mounted", "lowerable": true },
             "animatedParts": { "startFolded": true, "parts": [
-              { "id": "wing_left", "rotationDeg": [0, 0, 90], "seconds": 1.5, "fold": true },
-              { "id": "wing_right", "rotationDeg": [0, 0, -90], "seconds": 1.5, "fold": true },
+              { "id": "wing_left", "rotationDeg": [0, 0, 90], "seconds": 1.5, "key": "fold" },
+              { "id": "wing_right", "rotationDeg": [0, 0, -90], "seconds": 1.5, "key": "fold" },
               { "id": "marker", "rotationDeg": [0, 0, 45], "seconds": 1 } ] },
+            "workAreas": { "areas": [ { "type": "cultivator", "width": 6, "length": 1, "z": -1.05, "maxWorkSpeedKmh": 12, "requiredPowerHp": 110 } ] }
+          }
+        },
+        {
+          "id": "test_middle_cultivator", "name": "Headland Tiller", "noun": "tiller", "size": { "length": 2, "width": 6, "height": 1.4, "centerZ": -1 },
+          "components": {
+            "attachable": { "type": "threePoint", "mode": "mounted", "lowerable": true },
+            "animatedParts": { "startFolded": true, "words": { "fold": ["Fold up", "Fold down"] }, "parts": [
+              { "id": "wing_left", "rotationDeg": [0, 0, 90], "seconds": 2, "key": "fold", "middle": 0.25 },
+              { "id": "wing_right", "rotationDeg": [0, 0, -90], "seconds": 2, "key": "fold", "middle": 0.25 } ] },
             "workAreas": { "areas": [ { "type": "cultivator", "width": 6, "length": 1, "z": -1.05, "maxWorkSpeedKmh": 12, "requiredPowerHp": 110 } ] }
           }
         },
@@ -231,6 +241,110 @@ public class ComponentTests
     }
 
     [Fact]
+    public void WingsWithAMiddlePoseUnfoldOnTheFoldKeyAndGoDownOnTheLowerKey()
+    {
+        var sim = Sim(Content());
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
+        var c = sim.Machines.Spawn("test_middle_cultivator", new Vector2(269f, 278f), 0f);
+        Assert.True(sim.Machines.Attach(t, "rear", c));
+        var parts = c.Get<AnimatedParts>()!;
+        var wing = parts.Part("wing_left")!;
+        sim.Player.Enter(t);
+        string Label(string action) => sim.Offers().Of(action)!.Label;
+
+        // Its own words on the fold key, and the lower key naming what it is.
+        Assert.Equal(("Fold down", "Lower tiller"), (Label(InputActions.Fold), Label(InputActions.Lower)));
+        sim.Perform(InputActions.Fold);
+        Run(sim, 2f);
+        // Unfolded, the wings stand in their middle pose while it's raised: it doesn't work there.
+        Assert.Equal((0.25f, true, false), (wing.Position, parts.Unfolded, parts.InWorkingPose));
+        Assert.Equal("Fold up", Label(InputActions.Fold));
+
+        sim.Perform(InputActions.Lower);
+        Run(sim, 0.6f);
+        Assert.Equal((0f, true), (wing.Position, parts.InWorkingPose));
+        Assert.Equal("Lift tiller", Label(InputActions.Lower));
+        t.Get<Drivable>()!.Controller = new ManualController { Input = new VehicleInput { Throttle = 1f } };
+        Run(sim, 5f);
+        Assert.True(CountCells(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated && sim.World.Layers.FieldId[i] == 4) > 0);
+
+        // Raised, back to the middle pose; folded from there, all the way up.
+        sim.Perform(InputActions.Lower);
+        Run(sim, 0.6f);
+        Assert.Equal(0.25f, wing.Position);
+        sim.Perform(InputActions.Lower);
+        sim.Perform(InputActions.Fold);
+        Assert.False(c.Get<Attachable>()!.Lowered);
+        Run(sim, 2f);
+        Assert.Equal((1f, true), (wing.Position, parts.Folded));
+    }
+
+    [Fact]
+    public void APlowRotatesOnTheTurnOnKeyInItsOwnWords()
+    {
+        var content = Content(Machines.TrimEnd().TrimEnd(']') + """
+            ,
+            {
+              "id": "test_reversible_plow", "name": "Turnover 4", "category": "plow", "size": { "length": 4, "width": 2, "height": 1.4, "centerZ": -2 },
+              "components": {
+                "attachable": { "type": "threePoint", "mode": "mounted", "lowerable": true },
+                "animatedParts": { "words": { "turn_on": ["Rotate plow", "Rotate plow"] }, "parts": [
+                  { "id": "frame", "rotationDeg": [0, 0, 180], "seconds": 1.5, "key": "turn_on" } ] },
+                "workAreas": { "areas": [ { "type": "plow", "width": 1.6, "length": 1, "z": -2.2 } ] }
+              }
+            }
+            ]
+            """);
+        var sim = Sim(content);
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 280f), 0f);
+        var plow = sim.Machines.Spawn("test_reversible_plow", new Vector2(269f, 278f), 0f);
+        Assert.True(sim.Machines.Attach(t, "rear", plow));
+        sim.Player.Enter(t);
+        string Label(string action) => sim.Offers().Of(action)!.Label;
+
+        // The lower key names it after its shop category; rotating says the same both ways.
+        Assert.Equal(("Lower plow", "Rotate plow"), (Label(InputActions.Lower), Label(InputActions.TurnOn)));
+        sim.Perform(InputActions.TurnOn);
+        Run(sim, 1.6f);
+        Assert.Equal(1f, plow.Get<AnimatedParts>()!.Part("frame")!.Position);
+        Assert.Equal("Rotate plow", Label(InputActions.TurnOn));
+        sim.Perform(InputActions.TurnOn);
+        Run(sim, 1.6f);
+        Assert.Equal(0f, plow.Get<AnimatedParts>()!.Part("frame")!.Position);
+    }
+
+    [Fact]
+    public void PartsMoveOnTheKeysTheirJsonGivesInTheirWords()
+    {
+        var bad = Assert.Throws<ContentException>(() => Content("""
+            [{ "id": "x", "size": { "length": 2, "width": 3, "height": 1, "centerZ": 0 },
+               "components": {
+                 "attachable": { "words": { "lower": ["Lower", "Raise"] } },
+                 "animatedParts": { "words": { "fold": ["Fold"], "unload": ["Open", "Close"] }, "parts": [
+                   { "id": "a", "key": "unload" },
+                   { "id": "b", "key": "lower" },
+                   { "id": "c", "key": "fold", "middle": 0.5 },
+                   { "id": "d", "middle": 1 },
+                   { "id": "e", "key": "fold", "support": true },
+                   { "id": "f", "key": "turn_on" } ] },
+                 "workAreas": { "areas": [ { "type": "mower", "requiresOn": true, "harvestGroups": ["grass"] } ] } } }]
+            """)).Message;
+        Assert.Contains("machine 'x' attachable: words: it offers no key to name ('lower')", bad);
+        Assert.Contains("machine 'x' animatedParts: words: 'fold' needs two texts, to do it and to undo it", bad);
+        Assert.Contains("machine 'x' animatedParts: words: 'unload' is not one of its keys (fold", bad);
+        Assert.Contains("part 'a': key must be fold, lower, move_parts, turn_on", bad);
+        Assert.Contains("part 'b': only a machine that lowers (attachable lowerable) moves parts as it's lowered", bad);
+        Assert.Contains("part 'c': only a machine that lowers", bad);
+        Assert.Contains("part 'd': middle must be in [0, 1)", bad);
+        Assert.Contains("part 'e': a part moving on a key follows neither a trigger nor the hitch", bad);
+        Assert.Contains("part 'f': the turn-on key turns the machine on; put the part on another key", bad);
+        // Settings from before the keys are refused rather than ignored.
+        Assert.Throws<ContentException>(() => Content("""
+            [{ "id": "x", "components": { "animatedParts": { "parts": [ { "id": "a", "fold": true } ] } } }]
+            """));
+    }
+
+    [Fact]
     public void TheDriverMovesThePartsThatDontFoldAndSupportLegsFollowTheHitch()
     {
         var sim = Sim(Content());
@@ -241,12 +355,12 @@ public class ComponentTests
         sim.Player.Enter(t);
         string Label() => sim.Offers().Of(InputActions.MoveParts)!.Label;
 
-        Assert.Equal("Move the marker", Label());
+        Assert.Equal("Move marker", Label());
         sim.Perform(InputActions.MoveParts);
         Run(sim, 1.1f);
         // The marker moves, the folded wings stay as they are.
         Assert.Equal((1f, true), (parts.Part("marker")!.Position, parts.Folded));
-        Assert.Equal("Move the marker back", Label());
+        Assert.Equal("Move marker back", Label());
 
         // A support leg is down while its machine stands unhitched, and nobody's key moves it.
         var trailer = sim.Machines.Spawn("test_legged_trailer", new Vector2(269f, 270f), 0f);

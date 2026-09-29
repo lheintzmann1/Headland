@@ -15,7 +15,9 @@ public interface IActionSource
 /// <summary>
 /// The actions offered to the player now, one per action however many parts offer it. Commands offered by several
 /// parts all run (each seeder changes seed). Toggles (lowered or raised, on or off) switch together: all to the state
-/// none of them is in, so one key raises every lowered implement, or lowers them all when none is.
+/// none of them is in, so one key raises every lowered implement, or lowers them all when none is. Each part says it in
+/// its own words ("Lower cultivator"); parts saying it differently switching together, the key says it for all of them
+/// (<see cref="InputActionDef.Several"/>: "Lower all").
 /// </summary>
 public sealed class ActionList(Notifications notifications)
 {
@@ -63,8 +65,13 @@ public sealed class ActionList(Notifications notifications)
         var entries = group.ToList();
         var toggles = entries.Where(e => e.Set != null).ToList();
         var anyOn = toggles.Any(t => t.On);
-        var shown = entries.FirstOrDefault(e => e.Hinted) ?? entries[0];
-        var label = shown.Set != null && anyOn ? shown.OffLabel ?? shown.Label : shown.Label;
+        var labels = entries.Where(e => e.Hinted).DefaultIfEmpty(entries[0])
+            .Select(e => e.Set != null && anyOn ? e.OffLabel ?? e.Label : e.Label)
+            .Distinct()
+            .ToList();
+        var label = labels.Count > 1 && toggles.Count > 0 && InputActions.Def(group.Key)?.Several is { } several
+            ? anyOn ? several.Undo : several.Do
+            : labels[0];
         return new ActionOffer(group.Key, label, entries.Any(e => e.Hinted), () =>
         {
             string? why = null;

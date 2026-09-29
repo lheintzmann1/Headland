@@ -1,4 +1,5 @@
 using System.Numerics;
+using Headland.Core.Components;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
@@ -70,7 +71,7 @@ public class ActionTests
         sim.Player.Enter(t);
 
         var hints = Hints(sim);
-        Assert.Equal("Lower", hints[InputActions.Lower]);
+        Assert.Equal("Lower cultivator", hints[InputActions.Lower]);
         Assert.Equal($"Detach {cultivator.Def.Name}", hints[InputActions.Attach]);
         Assert.Equal("Exit", hints[InputActions.Enter]);
         Assert.False(hints.ContainsKey(InputActions.Fold));
@@ -78,22 +79,23 @@ public class ActionTests
 
         sim.Perform(InputActions.Lower);
         Assert.True(cultivator.Get<Attachable>()!.Lowered);
-        Assert.Equal("Raise", Hints(sim)[InputActions.Lower]);
+        Assert.Equal("Lift cultivator", Hints(sim)[InputActions.Lower]);
         sim.Perform(InputActions.Fold);
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Nothing to fold");
 
-        // A mower in front: one key raises both while one is down, and lowers both once none is.
+        // A mower in front: one key lifts both while one is down, and lowers both once none is, saying so for all.
         var mower = sim.Machines.Spawn("mower_3", new Vector2(269f, 304f), 0f);
         Assert.True(sim.Machines.Attach(t, "front", mower));
-        Assert.Equal("Raise", Hints(sim)[InputActions.Lower]);
-        Assert.Equal("Turn on", Hints(sim)[InputActions.TurnOn]);
+        Assert.Equal("Lift all", Hints(sim)[InputActions.Lower]);
+        Assert.Equal("Turn on mower", Hints(sim)[InputActions.TurnOn]);
         sim.Perform(InputActions.Lower);
         Assert.False(cultivator.Get<Attachable>()!.Lowered || mower.Get<Attachable>()!.Lowered);
+        Assert.Equal("Lower all", Hints(sim)[InputActions.Lower]);
         sim.Perform(InputActions.Lower);
         Assert.True(cultivator.Get<Attachable>()!.Lowered && mower.Get<Attachable>()!.Lowered);
         sim.Perform(InputActions.TurnOn);
         Assert.True(mower.Get<WorkAreas>()!.On);
-        Assert.Equal("Turn off", Hints(sim)[InputActions.TurnOn]);
+        Assert.Equal("Turn off mower", Hints(sim)[InputActions.TurnOn]);
     }
 
     [Fact]
@@ -161,6 +163,43 @@ public class ActionTests
         seat.Selected = mower;
         sim.Machines.Detach(mower);
         Assert.Null(seat.Selected);
-        Assert.Equal("Lower", Hints(sim)[InputActions.Lower]);
+        Assert.Equal("Lower cultivator", Hints(sim)[InputActions.Lower]);
+    }
+
+    [Fact]
+    public void EachToolSaysWhatItsKeysDoInItsOwnWords()
+    {
+        var (sim, t) = Tractor();
+        var sprayer = sim.Machines.Spawn("sprayer_12", new Vector2(269f, 294f), 0f);
+        Assert.True(sim.Machines.Attach(t, "drawbar", sprayer));
+        sim.Player.Enter(t);
+        var boom = sprayer.Get<AnimatedParts>()!;
+        var lift = boom.Part("boom")!;
+
+        // The sprayer names its boom: its wings unfold on the fold key, and it goes down on the lower key.
+        Assert.Equal(("Unfold boom", "Lower boom", "Turn on sprayer"),
+            (Hints(sim)[InputActions.Fold], Hints(sim)[InputActions.Lower], Hints(sim)[InputActions.TurnOn]));
+        sim.Perform(InputActions.Lower);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Unfold the {sprayer.Def.Name} first");
+        sim.Perform(InputActions.Fold);
+        sim.Perform(InputActions.Lower);
+        Assert.Equal(("Fold boom", "Lift boom"), (Hints(sim)[InputActions.Fold], Hints(sim)[InputActions.Lower]));
+        for (var s = 0f; s < 6.5f; s += 1f / 60f) sim.Tick(1f / 60f);
+        // Unfolded, then down on its mast.
+        Assert.Equal((0f, true), (lift.Position, boom.InWorkingPose));
+
+        // Folding lifts it first, and the boom goes back up.
+        sim.Perform(InputActions.Fold);
+        for (var s = 0f; s < 1.5f; s += 1f / 60f) sim.Tick(1f / 60f);
+        Assert.Equal((false, 1f), (sprayer.Get<Attachable>()!.Lowered, lift.Position));
+
+        // A combine's pipe and its header: the words FS uses.
+        var combine = sim.Machines.Spawn("combine_7", new Vector2(240f, 300f), 0f);
+        var header = sim.Machines.Spawn("header_grain_6", new Vector2(240f, 301.6f), 0f);
+        Assert.True(sim.Machines.Attach(combine, "header", header));
+        sim.Player.Exit(sim);
+        sim.Player.Enter(combine);
+        Assert.Equal(("Lower header", "Turn on combine", "Pipe out"),
+            (Hints(sim)[InputActions.Lower], Hints(sim)[InputActions.TurnOn], Hints(sim)[InputActions.Unload]));
     }
 }

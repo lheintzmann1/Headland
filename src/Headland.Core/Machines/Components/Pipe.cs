@@ -21,6 +21,8 @@ public sealed class PipeDef : MachineComponentDef, ISpecSource
 
     public override IEnumerable<string> Roles => ["pipe"];
 
+    public override IEnumerable<string> Toggles => [InputActions.Unload];
+
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (!HasUnit(machine, FillUnit)) yield return $"fill unit '{FillUnit}' missing";
@@ -52,12 +54,15 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
     public Vector2 Outlet => Machine.LocalToWorld(Def.X, Def.Z);
 
     /// <summary>The unload key swings it out and back.</summary>
-    public void AddActions(ActionList actions, Simulation sim) =>
-        actions.Toggle(InputActions.Unload, Out, "Unfold pipe", "Fold pipe", unfold =>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        var (pipeOut, pipeIn) = Def.WordsFor(InputActions.Unload, "Pipe out", "Pipe in");
+        actions.Toggle(InputActions.Unload, Out, pipeOut, pipeIn, @out =>
         {
-            Out = unfold;
+            Out = @out;
             return null;
         });
+    }
 
     internal override void Update(Simulation sim, float dt)
     {

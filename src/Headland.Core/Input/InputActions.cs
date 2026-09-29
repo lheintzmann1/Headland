@@ -49,10 +49,16 @@ public static class InputActions
         {
             Unavailable = "Nothing attached to select",
         },
-        new(Lower, "Lower / raise implements", Driving, "V", "Joy A") { Unavailable = "No implement to lower" },
-        new(Fold, "Fold / unfold implements", Driving, "N") { Unavailable = "Nothing to fold" },
-        new(MoveParts, "Move the parts that don't fold: covers, markers", Driving, "Shift+N") { Unavailable = "Nothing to move" },
-        new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on" },
+        new(Lower, "Lower / raise implements", Driving, "V", "Joy A")
+        {
+            Unavailable = "No implement to lower", Several = ("Lower all", "Lift all"),
+        },
+        new(Fold, "Fold / unfold implements", Driving, "N") { Unavailable = "Nothing to fold", Several = ("Fold all", "Unfold all") },
+        new(MoveParts, "Move a tool's other parts: covers, markers", Driving, "Shift+N")
+        {
+            Unavailable = "Nothing to move", Several = ("Move all", "Move all back"),
+        },
+        new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on", Several = ("Turn on all", "Turn off all") },
         new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },

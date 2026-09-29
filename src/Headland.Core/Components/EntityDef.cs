@@ -21,7 +21,7 @@ public abstract class EntityDef
     public VisualDef Visual { get; set; } = new();
 
     /// <summary>Links its components to the content they name (joint and lamp types…), once read.</summary>
-    internal void Link(ContentDatabase content)
+    internal virtual void Link(ContentDatabase content)
     {
         foreach (var c in Components) c.Link(content);
     }

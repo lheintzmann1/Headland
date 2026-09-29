@@ -44,11 +44,13 @@ public interface ISwitchable
 
 internal static class Switchables
 {
-    /// <summary>Offers the turn-on key for a part that runs only once turned on.</summary>
-    public static void AddSwitch(this ActionList actions, ISwitchable part)
+    /// <summary>Offers the turn-on key for a part that runs only once turned on: "Turn on seeder", or its own words.</summary>
+    public static void AddSwitch<T>(this ActionList actions, T part) where T : Component, ISwitchable
     {
         if (!part.CanTurnOn) return;
-        actions.Toggle(InputActions.TurnOn, part.On, "Turn on", "Turn off", on =>
+        var machine = (Machine)part.Owner;
+        var (turnOn, turnOff) = part.Definition.WordsFor(InputActions.TurnOn, machine.Def.Named("Turn on"), machine.Def.Named("Turn off"));
+        actions.Toggle(InputActions.TurnOn, part.On, turnOn, turnOff, on =>
         {
             part.On = on;
             return null;

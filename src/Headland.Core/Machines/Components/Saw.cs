@@ -21,6 +21,8 @@ public sealed class SawDef : MachineComponentDef
 
     public override IEnumerable<string> Roles => ["saw"];
 
+    public override IEnumerable<string> Toggles => [InputActions.TurnOn];
+
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (Diameter <= 0f || MaxCut <= 0f) yield return "diameter and maxCut must be > 0";

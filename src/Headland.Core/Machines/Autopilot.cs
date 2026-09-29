@@ -418,8 +418,8 @@ public static class FieldPlanner
 /// </summary>
 public sealed class FieldWorkController : IVehicleController
 {
-    /// <summary>Seconds of travel to lower in advance (implements take ~0.6 s to reach working depth).</summary>
-    private const float LowerLeadSeconds = 0.65f;
+    /// <summary>Seconds of travel to lower in advance, past the time an implement takes to go down to work (~0.6 s).</summary>
+    private const float LowerLeadSeconds = 0.05f;
     /// <summary>Meters of straight lane before a front work area reaches the field, to line up and lower it.</summary>
     private const float RunIn = 2.5f;
     private const float TurnSpeedKmh = 7f;
@@ -566,7 +566,8 @@ public sealed class FieldWorkController : IVehicleController
             var side = MathUtil.Left(t.Heading) * (width * 0.45f);
             // Lowered just before the work area's leading edge reaches the field, lifted as soon as the work area
             // leaves it (or the implement swings off the lane).
-            var ahead = center + fwd * (length * 0.5f + MathF.Max(0f, v.Speed) * LowerLeadSeconds);
+            var lead = (a?.LowerSeconds ?? 0f) + LowerLeadSeconds;
+            var ahead = center + fwd * (length * 0.5f + MathF.Max(0f, v.Speed) * lead);
             var down = switched ? areas.On : a!.Lowered;
             var want = down ? aligned && (Touches(center, side) || Touches(ahead, side)) : aligned && Touches(ahead, side);
             if (want == down) continue;

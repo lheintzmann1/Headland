@@ -339,7 +339,7 @@ public sealed class MachineSystem
         foreach (var m in root.Chain())
         {
             if (m.Get<WorkAreas>() is not { } w) continue;
-            var lowering = m.Get<Attachable>() is { Def.Lowerable: true, LowerAnim: < 0.9f };
+            var lowering = m.Get<Attachable>() is { Def.Lowerable: true, LowerAnim: < Attachable.WorkingDepth };
             var working = false;
             foreach (var area in w.Areas)
             {

@@ -18,6 +18,7 @@ public sealed class AttachableDef : MachineComponentDef, ISpecSource
     public float X { get; set; }
     public float Z { get; set; }
     public float MaxArticulationDeg { get; set; } = 80f;
+    /// <summary>Lowered and raised with the lower key.</summary>
     public bool Lowerable { get; set; }
     /// <summary>Mounted: how high the linkage lifts it off the ground when raised.</summary>
     public float Lift { get; set; } = 0.45f;
@@ -27,6 +28,8 @@ public sealed class AttachableDef : MachineComponentDef, ISpecSource
     /// <summary>What it hitches to, and how: "Drawbar, trailed".</summary>
     public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>
         [new("Hitch", $"{content.JointTypes.GetValueOrDefault(Type)?.Name ?? Type}, {Mode}")];
+
+    public override IEnumerable<string> Toggles => Lowerable ? [InputActions.Lower] : [];
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
@@ -57,6 +60,12 @@ public sealed class Attachable(Machine machine, AttachableDef def) : MachineComp
     /// <summary>0 raised … 1 lowered, smoothed.</summary>
     public float LowerAnim { get; set; }
 
+    /// <summary>How far down (<see cref="LowerAnim"/>) it works: most of the way.</summary>
+    internal const float WorkingDepth = 0.9f;
+
+    /// <summary>The seconds it takes to go down to work once lowered: the linkage's, or its parts' going down.</summary>
+    public float LowerSeconds => MathF.Max(WorkingDepth / LowerRate, Machine.Def.Get<AnimatedPartsDef>()?.LowerSeconds ?? 0f);
+
     internal override void Update(Simulation sim, float dt)
     {
         // A folded implement unfolds before it goes down.
@@ -64,11 +73,15 @@ public sealed class Attachable(Machine machine, AttachableDef def) : MachineComp
         LowerAnim = MathUtil.MoveToward(LowerAnim, down ? 1f : 0f, dt * LowerRate);
     }
 
-    /// <summary>The lower key, once hitched. A folded implement stays up: it's unfolded first, with the fold key.</summary>
+    /// <summary>
+    /// The lower key, once hitched: "Lower cultivator", "Lift cultivator", or its own words. A folded implement stays up:
+    /// it's unfolded first, with the fold key.
+    /// </summary>
     public void AddActions(ActionList actions, Simulation sim)
     {
         if (!Def.Lowerable || Machine.Parent == null) return;
-        actions.Toggle(InputActions.Lower, Lowered, "Lower", "Raise", lower =>
+        var (lowerIt, liftIt) = Def.WordsFor(InputActions.Lower, Machine.Def.Named("Lower"), Machine.Def.Named("Lift"));
+        actions.Toggle(InputActions.Lower, Lowered, lowerIt, liftIt, lower =>
         {
             if (lower && Machine.Get<AnimatedParts>() is { Folded: true }) return $"Unfold the {Machine.Def.Name} first";
             Lowered = lower;
