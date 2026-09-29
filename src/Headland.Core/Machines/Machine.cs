@@ -58,6 +58,9 @@ public sealed class Machine : Entity
     /// <summary>Hours it ran (FS: operating hours), in real time as a helper's: see <see cref="Operating"/>.</summary>
     public double OperatingHours { get; set; }
 
+    /// <summary>Months since it was new (FS: age), counted as each month starts.</summary>
+    public int AgeMonths { get; set; }
+
     /// <summary>It runs (FS: operating): its engine does, or that of the vehicle it hangs on.</summary>
     public bool Operating => Root.Get<Motor>()?.Running == true;
 

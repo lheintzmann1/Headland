@@ -168,6 +168,7 @@ public sealed class MachineSave
     /// <summary>Its lease, when leased at the shop.</summary>
     public LeaseSave? Leased { get; set; }
     public double OperatingHours { get; set; }
+    public int AgeMonths { get; set; }
     public float X { get; set; }
     public float Z { get; set; }
     public float Heading { get; set; }

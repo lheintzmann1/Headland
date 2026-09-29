@@ -14,5 +14,11 @@
   "contracts": { "maxOffers": 6, "offersPerDay": 2, "offerDays": 3, "maxActive": 3, "threshold": 0.95, "penalty": 0.1 },
   // Machines leased at the shop cost "upfront" of their price when leased, then "perHour" of it for each hour they run
   // (their engine on, or hitched to one that is), in real time as helpers' wages.
-  "leasing": { "upfront": 0.02, "perHour": 0.021 }
+  "leasing": { "upfront": 0.02, "perHour": 0.021 },
+  // What machines sell back for (FS): their price times 1 - hours / "lifetimeHours" (hours to the power 1.3 for those
+  // without an engine) and a share for their age (0.75 at a year old, less 0.1 each time their age in years grows
+  // e-fold, at most "newShare"), less what repairing and repainting them would cost; never under "minShare" of it.
+  "resale": { "lifetimeHours": 600, "newShare": 0.8, "minShare": 0.03 },
+  // Workshops repair, repaint and refit machines where they stand, from the garage, for this times their prices.
+  "remoteService": 1.2
 }

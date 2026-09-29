@@ -214,7 +214,7 @@ public partial class GameRoot : Node3D
         switch (Sim.Activations().FirstOrDefault(a => a.Usable)?.Menu)
         {
             case LoadMenu load: Screens.Push(new LoadScreen { Sim = Sim, Vehicle = load.Vehicle, Choices = load.Choices }); break;
-            case WorkshopMenu shop: Screens.Push(new WorkshopScreen { Sim = Sim, Vehicle = shop.Vehicle, Workshop = shop.Workshop }); break;
+            case WorkshopMenu shop: Screens.Push(new WorkshopScreen { Sim = Sim, Machines = shop.Vehicle.Chain().ToList() }); break;
             default: Sim.Perform(InputActions.Use); break;
         }
     }

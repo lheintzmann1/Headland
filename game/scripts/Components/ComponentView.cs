@@ -32,6 +32,7 @@ public partial class ComponentView : Node3D
         CraneArm a => new CraneArmView { Sim = sim, Rig = rig, Entity = c.Owner, Crane = a },
         Winch w => new WinchView { Sim = sim, Rig = rig, Entity = c.Owner, Winch = w },
         Saw s => new SawView { Sim = sim, Rig = rig, Entity = c.Owner, Saw = s },
+        Wearable w => new WearableView { Sim = sim, Rig = rig, Entity = c.Owner, Wearable = w },
         _ => null,
     };
 

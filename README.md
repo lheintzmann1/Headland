@@ -31,7 +31,10 @@ Built with **Godot 4.7** and **C#**.
   less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry. Machines wear
   as they drive and work, faster on a field and much faster working: a worn engine is weaker and thirstier, a worn
   implement slower and more wasteful of what it spreads, until the workshop repairs it (1% of its price for all its
-  wear).
+  wear). Their paint dulls as they drive, until the workshop repaints it. The menu's garage lists the farm's machines
+  with their condition, paint, fuel, operating hours, age, where they are and what they're worth (less as they age,
+  run and wear), to sell them back to the dealer, give a leased one back, or have them repaired, repainted or given
+  other options where they stand: a mechanic comes out for 20% more.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
   herbicide at the farm shop, refuel and wash at the gas station, get machines repaired or their options changed at the
@@ -89,7 +92,7 @@ Built with **Godot 4.7** and **C#**.
 
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
 that do something where you are, and F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
-(contracts, finances, farmland, the shop, every key, save and load), or closes the screen on top. A gamepad works too (left stick
+(contracts, finances, farmland, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
 file (see below).
 
@@ -112,7 +115,7 @@ file (see below).
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
 | H | Hire or dismiss a field helper |
-| Esc | The menu: contracts, finances and loans, farmland, the shop, controls, save, load and quit; Q / E switch its tabs |
+| Esc | The menu: contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

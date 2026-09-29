@@ -79,6 +79,8 @@ public sealed record MachineWorn(Machine Machine) : IGameEvent;
 
 public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGameEvent;
 
+public sealed record MachineRepainted(Machine Machine, Poi Poi, float Cost) : IGameEvent;
+
 /// <summary>A workshop changed a machine's options: <paramref name="From"/> is the def it had before.</summary>
 public sealed record MachineConfigured(Machine Machine, Poi Poi, Content.MachineDef From, float Cost) : IGameEvent;
 
@@ -90,6 +92,12 @@ public sealed record MachineBought(Machine Machine, Poi Poi, float Price) : IGam
 /// lot of <paramref name="Poi"/>.
 /// </summary>
 public sealed record MachineLeased(Machine Machine, Poi Poi, MachineLease Lease) : IGameEvent;
+
+/// <summary>A machine sold back to the dealer for <paramref name="Price"/>: it's gone from the map.</summary>
+public sealed record MachineSold(Machine Machine, float Price) : IGameEvent;
+
+/// <summary>A machine leased at the shop given back: it's gone from the map, and costs nothing more.</summary>
+public sealed record MachineReturned(Machine Machine, MachineLease Lease) : IGameEvent;
 
 // ---- Ownership
 

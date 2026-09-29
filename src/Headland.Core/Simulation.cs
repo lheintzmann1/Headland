@@ -48,6 +48,7 @@ public sealed class Simulation
         Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
         Shop = new Shop(this);
+        Garage = new Garage(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
         Statistics = new Statistics(Events);
         Notifications.Follow(Events, content);
@@ -74,6 +75,7 @@ public sealed class Simulation
     public ContractSystem Contracts { get; }
     public MachineSystem Machines { get; }
     public Shop Shop { get; }
+    public Garage Garage { get; }
     public PlayerCharacter Player { get; }
     public Statistics Statistics { get; }
     public Notifications Notifications { get; } = new();

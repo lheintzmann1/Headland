@@ -75,6 +75,10 @@ public sealed class Notifications
             if (e.Machine.FarmId == Ownership.Farm.PlayerId) Post($"{e.Machine.Def.Name} is worn: repair it at a workshop", Severity.Warning, 0);
         });
         events.Subscribe<MachineConfigured>(e => Post($"Refitted {e.Machine.Def.Name} ({Changes(e.From, e.Machine.Def)}) for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<MachineRepainted>(e => Post($"Repainted {e.Machine.Def.Name} for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<MachineSold>(e => Post($"Sold the {e.Machine.Def.Name} for ${e.Price:N0}", Severity.Good, 0));
+        events.Subscribe<MachineReturned>(e => Post(
+            $"Gave the leased {e.Machine.Def.Name} back: ${e.Lease.Fee + e.Lease.Paid:N0} for the lease in all", Severity.Info, 0));
         events.Subscribe<MachineWashed>(e => Post(e.Cost > 0.5f ? $"Washed {e.Machine.Def.Name} for ${e.Cost:N0}" : $"Washed {e.Machine.Def.Name}", Severity.Good));
         events.Subscribe<ImplementAttached>(e => Post($"Attached {e.Implement.Def.Name}", Severity.Good));
         events.Subscribe<ImplementDetached>(e => Post($"Detached {e.Implement.Def.Name}"));

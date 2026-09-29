@@ -58,6 +58,26 @@ public sealed class EconomyDef
     public ContractRulesDef Contracts { get; set; } = new();
     /// <summary>What machines leased at the shop cost.</summary>
     public LeasingDef Leasing { get; set; } = new();
+    /// <summary>What machines sell back for.</summary>
+    public ResaleDef Resale { get; set; } = new();
+    /// <summary>
+    /// What a workshop's repairs, repaints and new options cost where the machine stands (from the garage), next to
+    /// in its bay: 1.2 is 20% more.
+    /// </summary>
+    public float RemoteService { get; set; } = 1.2f;
+}
+
+/// <summary>
+/// What a machine sells back for (FS): its price times how much of its life is left, 1 − hours / <see cref="LifetimeHours"/>
+/// (hours to the power 1.3 for a machine without an engine), and a share for its age: 0.75 at a year old, less 0.1 for
+/// each time its age in years grows e-fold, and at most <see cref="NewShare"/>; less what repairing and repainting it would
+/// cost, and never under <see cref="MinShare"/> of its price.
+/// </summary>
+public sealed class ResaleDef
+{
+    public float LifetimeHours { get; set; } = 600f;
+    public float NewShare { get; set; } = 0.8f;
+    public float MinShare { get; set; } = 0.03f;
 }
 
 /// <summary>Leasing a machine at the shop (FS: 2% of its price up front, then 2.1% for each operating hour).</summary>

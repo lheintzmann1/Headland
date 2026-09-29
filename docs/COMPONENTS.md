@@ -409,7 +409,9 @@ and `blinking` (false: it flashes, as a turn signal):
 A machine's condition drops from 100% to 0% while it moves or works, never standing idle, and a
 [workshop](#workshop) brings it back. A worn machine does worse, the more so the more worn: at 0% its engine has
 `powerLoss` less power and burns `usageIncrease` more fuel for the power it delivers, and its work areas work at
-`speedLoss` less speed and use `usageIncrease` more seed, fertilizer or herbicide. Below 20% it says it's worn.
+`speedLoss` less speed and use `usageIncrease` more seed, fertilizer or herbicide. Below 20% it says it's worn. Its
+paint wears too as it drives, `fieldFactor` times faster on a field, until a workshop repaints it: worn paint only looks
+duller, but repairs and a repaint both come off what the machine sells for.
 
 | Setting | Default | |
 |---|---|---|
@@ -419,6 +421,7 @@ A machine's condition drops from 100% to 0% while it moves or works, never stand
 | `powerLoss` | 0.3 | At 0%: the share of its engine's power lost. |
 | `speedLoss` | 0.3 | At 0%: the share of its work areas' `maxWorkSpeedKmh` lost. |
 | `usageIncrease` | 0.3 | At 0%: how much more fuel, seed, fertilizer and herbicide it uses. |
+| `paintHours` | 60 | Hours of driving (real time, on a road) its paint lasts. |
 
 The defaults are Farming Simulator 19's. `"wearable": {}` gives a machine those.
 
@@ -495,10 +498,13 @@ A production short of inputs, or of room for its outputs, starts its cycle over.
 ### workshop
 
 Repairs the machine chain parked in its `trigger`, with the use key (driving in, or walking in beside the farm's
-machines): 1% of each machine's price for each 100% of wear,
-times `repairPriceFactor` (1). With `configure`, it also changes the options of the machines parked there (a screen
-with each machine's choices): each option fitted costs what it costs more than the one it replaces (a cheaper one
-gives nothing back) times `configure.priceFactor` (1), and `configure.price` (0) for the work.
+machines): 1% of each machine's price for each 100% of wear, times `repairPriceFactor` (1). Where it fits options
+(`configure`), the use key opens a screen instead, which also repaints them (2% of the price for paint worn through,
+times `repairPriceFactor`) and changes their options: each option fitted costs what it costs more than the one it
+replaces (a cheaper one gives nothing back) times `configure.priceFactor` (1), and `configure.price` (0) for the work.
+
+The menu's garage has the same done wherever a machine stands, by the nearest workshop (one that fits options, for
+them), while it's open: a mechanic comes out, for `remoteService` (economy.json, 1.2) times its prices.
 
 ### washingStation
 

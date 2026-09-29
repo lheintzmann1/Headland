@@ -198,20 +198,20 @@ FS19 reference values; tune in data.
 - [x] Effects at 0%: −30% power and +30% fuel for vehicles; ×0.7 max work speed for implements; +30%
       seed use for seeders (and fertilizer and herbicide for spreaders and sprayers).
 - [x] Repair at a workshop POI: price / 100 × (1 − condition).
-- [ ] Repair remotely from the garage menu, for 20% more (with the garage).
+- [x] Repair remotely from the garage menu, for 20% more (with the garage).
 - [x] Fuel: tank per motor, use from power actually delivered, refuel at a gas station, engine stops when
       empty.
 - [ ] Farm fuel tank: diesel bought in bulk into a tank on the farm, refueling there.
 - [ ] Dirt from fields and wet weather, washing (cosmetic, shader).
-- [ ] Paint wear and repaint, operating hours, age.
-- [ ] Resale value from price, age, hours and condition.
+- [x] Paint wear and repaint, operating hours, age.
+- [x] Resale value from price, age, hours and condition.
 
 ### Shop and garage
 
 - [x] Vehicle shop screen: categories, brands, specs (uses the unused `Price`, `Brand`, `Category`,
       `Description`), configuration picker with live price, 3D preview.
 - [x] Buy or lease (upfront fee + cost per hour); delivered at the dealer's delivery spot.
-- [ ] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,
+- [x] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,
       reconfigure.
 
 ### Helpers
@@ -301,7 +301,7 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [x] Esc opens a menu with tabs, switched with Q/E or the mouse, instead of a key per screen: map, prices,
       contracts, finances and loans, farmland, vehicles (garage), statistics, helpers, controls help,
       settings, save/load/quit. The existing screens become its pages; F2, L and C go. Esc still closes the
-      top screen first. The pages still to build (map, prices, garage, statistics, helpers, settings) become tabs
+      top screen first. The pages still to build (map, prices, statistics, helpers, settings) become tabs
       as they come.
 - [x] Remember the last tab.
 - [ ] A few direct shortcuts (M for the map) open the menu on their tab, with the map tab.

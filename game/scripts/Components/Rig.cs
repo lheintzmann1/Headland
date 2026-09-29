@@ -17,6 +17,7 @@ public sealed class Rig
     private static readonly Dictionary<(BaseMaterial3D, Color), BaseMaterial3D> Tints = new();
     private readonly Dictionary<string, RigPart> _parts = new();
     private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _fill = [];
+    private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _paint = [];
 
     public Node3D Root { get; } = new() { Name = "Visual" };
     /// <summary>Meters per unit of the parts' space (a model's scale), for moves given in meters.</summary>
@@ -30,6 +31,12 @@ public sealed class Rig
     public void SetFillColor(Color color)
     {
         foreach (var (mesh, surface, material) in _fill) mesh.SetSurfaceOverrideMaterial(surface, Tinted(material, color));
+    }
+
+    /// <summary>Gives a model's paint materials another color than the entity's (its paint faded), times their own.</summary>
+    public void SetPaint(Color color)
+    {
+        foreach (var (mesh, surface, material) in _paint) mesh.SetSurfaceOverrideMaterial(surface, Tinted(material, color));
     }
 
     /// <summary><paramref name="material"/> with its color multiplied by <paramref name="color"/>, shared by the machines that use it.</summary>
@@ -99,7 +106,11 @@ public sealed class Rig
         for (var i = 0; i < (mesh.Mesh?.GetSurfaceCount() ?? 0); i++)
         {
             var material = mesh.GetActiveMaterial(i);
-            if (IsKind(material, "paint")) mesh.SetSurfaceOverrideMaterial(i, Tinted((BaseMaterial3D)material, paint));
+            if (IsKind(material, "paint"))
+            {
+                mesh.SetSurfaceOverrideMaterial(i, Tinted((BaseMaterial3D)material, paint));
+                _paint.Add((mesh, i, (BaseMaterial3D)material!));
+            }
             else if (IsKind(material, "fill")) _fill.Add((mesh, i, (BaseMaterial3D)material));
         }
     }

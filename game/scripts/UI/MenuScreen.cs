@@ -5,8 +5,8 @@ namespace Headland.Game.UI;
 
 /// <summary>
 /// Esc: the in-game menu, one screen holding every page as a tab (the contracts, the finances, the farmland, the shop,
-/// the controls, the game), switched with the mouse or the tab keys (Q and E by default: the camera's keys outside it).
-/// It opens on the tab last shown.
+/// the garage, the controls, the game), switched with the mouse or the tab keys (Q and E by default: the camera's keys
+/// outside it). It opens on the tab last shown.
 /// </summary>
 public partial class MenuScreen : Screen
 {
@@ -28,6 +28,7 @@ public partial class MenuScreen : Screen
             ("Finances", () => new FinancesPage { Sim = Game.Sim }),
             ("Farmland", () => new FarmlandPage { Sim = Game.Sim }),
             ("Shop", () => new ShopPage { Sim = Game.Sim }),
+            ("Garage", () => new GaragePage { Game = Game }),
             ("Controls", () => new ControlsPage()),
             ("Game", () => new GamePage { Game = Game }),
         ];

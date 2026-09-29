@@ -48,7 +48,7 @@ public static class GameActions
         new(Quicksave, "Quicksave", World, "F5"),
         new(Quickload, "Quickload", World, "F8"),
         new(ToggleHelp, "Help: the keys for what you're doing", World, "F1", "Joy Back"),
-        new(Menu, "Menu: contracts, finances, farmland, the shop, controls, save and load; closes the screen on top", Screens, "Escape", "Joy Start"),
+        new(Menu, "Menu: contracts, finances, farmland, the shop, the garage, controls, save and load; closes the screen on top", Screens, "Escape", "Joy Start"),
         new(MenuPrevTab, "Previous tab", InputContext.Menu, "Q", "Joy LB"),
         new(MenuNextTab, "Next tab", InputContext.Menu, "E", "Joy RB"),
         new(ToggleDebug, "Debug overlay", Screens, "F3"),

@@ -81,12 +81,19 @@ public sealed class PoiSystem
     public float? SalePrice(Machine m, PoiTrigger trigger, string fillType) =>
         trigger.Station is SellingStation s && s.Def.FillTypes.Contains(fillType) && Closed(s.Poi, s.Def) == null ? Price(s, fillType) : null;
 
+    /// <summary>What repainting a machine whose paint is worn through costs, as a share of its price.</summary>
+    public const float RepaintShare = 0.02f;
+
     /// <summary>
-    /// What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear, times the workshop's factor
-    /// and the price level.
+    /// What repairing <paramref name="m"/> costs: 1% of its price for each 100% of wear, times the workshop's factor,
+    /// the price level and <paramref name="factor"/> (more where it stands than in the workshop's bay).
     /// </summary>
-    public float RepairPrice(Workshop workshop, Machine m) =>
-        workshop.Def.RepairPriceFactor * m.Def.Price / 100f * (m.Get<Wearable>()?.Wear ?? 0f) * Economy.PriceLevel;
+    public float RepairPrice(Workshop workshop, Machine m, float factor = 1f) =>
+        factor * workshop.Def.RepairPriceFactor * m.Def.Price / 100f * (m.Get<Wearable>()?.Wear ?? 0f) * Economy.PriceLevel;
+
+    /// <summary>What repainting <paramref name="m"/> costs: <see cref="RepaintShare"/> of its price for paint worn through, as repairs.</summary>
+    public float RepaintPrice(Workshop workshop, Machine m, float factor = 1f) =>
+        factor * workshop.Def.RepairPriceFactor * m.Def.Price * RepaintShare * (m.Get<Wearable>()?.PaintWear ?? 0f) * Economy.PriceLevel;
 
     public float WashPrice(WashingStation station, Machine m) => station.Def.Price * m.Dirt * Economy.PriceLevel;
 
@@ -472,23 +479,40 @@ public sealed class PoiSystem
         if (!served) Tell(why);
     }
 
-    /// <summary>Repairs every machine of <paramref name="chain"/> at <paramref name="workshop"/>; says why when none could be.</summary>
-    public void Repair(IEnumerable<Machine> chain, Workshop workshop)
-    {
-        var why = new List<string>();
-        var served = false;
-        foreach (var m in chain) served |= Repair(m, workshop, why);
-        if (!served) Tell(why);
-    }
+    /// <summary>
+    /// Repairs every machine of <paramref name="chain"/> for <paramref name="workshop"/>, at <paramref name="factor"/>
+    /// times its prices; says why when none could be.
+    /// </summary>
+    public void Repair(IEnumerable<Machine> chain, Workshop workshop, float factor = 1f) =>
+        Serve(chain, m => RepairBlocker(m, workshop, factor), m => RepairPrice(workshop, m, factor), (m, cost) =>
+        {
+            m.Get<Wearable>()!.Condition = 1f;
+            _sim.Events.Publish(new MachineRepaired(m, workshop.Poi, cost));
+        });
+
+    /// <summary>Repaints every machine of <paramref name="chain"/> for <paramref name="workshop"/>, as <see cref="Repair"/>.</summary>
+    public void Repaint(IEnumerable<Machine> chain, Workshop workshop, float factor = 1f) =>
+        Serve(chain, m => RepaintBlocker(m, workshop, factor), m => RepaintPrice(workshop, m, factor), (m, cost) =>
+        {
+            m.Get<Wearable>()!.Paint = 1f;
+            _sim.Events.Publish(new MachineRepainted(m, workshop.Poi, cost));
+        });
 
     /// <summary>Washes every machine of <paramref name="chain"/> at <paramref name="washer"/>; says why when none could be.</summary>
-    public void Wash(IEnumerable<Machine> chain, WashingStation washer)
-    {
-        var why = new List<string>();
-        var served = false;
-        foreach (var m in chain) served |= Wash(m, washer, why);
-        if (!served) Tell(why);
-    }
+    public void Wash(IEnumerable<Machine> chain, WashingStation washer) =>
+        Serve(chain, m => ServiceBlocker(m, washer.Poi, washer.Def, m.Dirt, WashPrice(washer, m), "Nothing to wash"), m => WashPrice(washer, m), (m, cost) =>
+        {
+            m.Dirt = 0f;
+            _sim.Events.Publish(new MachineWashed(m, washer.Poi, cost));
+        });
+
+    /// <summary>Why <paramref name="workshop"/> can't repair <paramref name="m"/> at <paramref name="factor"/> times its price, or null when it can.</summary>
+    public string? RepairBlocker(Machine m, Workshop workshop, float factor = 1f) =>
+        ServiceBlocker(m, workshop.Poi, workshop.Def, m.Get<Wearable>()?.Wear ?? 0f, RepairPrice(workshop, m, factor), "Nothing to repair");
+
+    /// <summary>Why <paramref name="workshop"/> can't repaint <paramref name="m"/> at <paramref name="factor"/> times its price, or null when it can.</summary>
+    public string? RepaintBlocker(Machine m, Workshop workshop, float factor = 1f) =>
+        ServiceBlocker(m, workshop.Poi, workshop.Def, m.Get<Wearable>()?.PaintWear ?? 0f, RepaintPrice(workshop, m, factor), "Nothing to repaint");
 
     private void Tell(List<string> why) =>
         _sim.Notifications.Post(why.Contains("Not enough money") ? "Not enough money" : why.FirstOrDefault() ?? "Nothing to do here");
@@ -528,41 +552,31 @@ public sealed class PoiSystem
         return done;
     }
 
-    private bool Repair(Machine m, Workshop workshop, List<string> why) =>
-        Service(m, workshop.Poi, workshop.Def, m.Get<Wearable>()?.Wear ?? 0f, RepairPrice(workshop, m), "Nothing to repair", why, cost =>
-        {
-            m.Get<Wearable>()!.Condition = 1f;
-            _sim.Events.Publish(new MachineRepaired(m, workshop.Poi, cost));
-        });
+    /// <summary>A service (repairs, washing) is refused when it's closed, there's nothing to do or the farm can't pay.</summary>
+    private string? ServiceBlocker(Machine m, Poi poi, IConditions station, float need, float cost, string nothing) =>
+        Closed(poi, station) ?? (need < 0.005f ? nothing : IsPlayers(m.FarmId) && cost > Economy.Money ? "Not enough money" : null);
 
-    private bool Wash(Machine m, WashingStation washer, List<string> why) =>
-        Service(m, washer.Poi, washer.Def, m.Dirt, WashPrice(washer, m), "Nothing to wash", why, cost =>
-        {
-            m.Dirt = 0f;
-            _sim.Events.Publish(new MachineWashed(m, washer.Poi, cost));
-        });
-
-    /// <summary>Repairs or washes <paramref name="m"/> when it's open, there's something to do and the farm can pay.</summary>
-    private bool Service(Machine m, Poi poi, IConditions station, float need, float cost, string nothing, List<string> why, Action<float> done)
+    /// <summary>
+    /// Serves each machine of <paramref name="chain"/> that nothing blocks: pays what it costs, then
+    /// <paramref name="serve"/> does it (given the cost); says why when none could be served.
+    /// </summary>
+    private void Serve(IEnumerable<Machine> chain, Func<Machine, string?> blocker, Func<Machine, float> cost, Action<Machine, float> serve)
     {
-        if (Closed(poi, station) is { } closed)
+        var why = new List<string>();
+        var served = false;
+        foreach (var m in chain)
         {
-            why.Add(closed);
-            return false;
+            if (blocker(m) is { } no)
+            {
+                why.Add(no);
+                continue;
+            }
+            var paid = cost(m);
+            Spend(m.FarmId, paid, MoneyCategory.Maintenance);
+            serve(m, paid);
+            served = true;
         }
-        if (need < 0.005f)
-        {
-            why.Add(nothing);
-            return false;
-        }
-        if (IsPlayers(m.FarmId) && cost > Economy.Money)
-        {
-            why.Add("Not enough money");
-            return false;
-        }
-        Spend(m.FarmId, cost, MoneyCategory.Maintenance);
-        done(cost);
-        return true;
+        if (!served) Tell(why);
     }
 
     // ------------------------------------------------------------------ Options
@@ -579,9 +593,9 @@ public sealed class PoiSystem
     /// <summary>
     /// What giving <paramref name="m"/> the options of <paramref name="def"/> costs: for each option changed, what it
     /// costs more than the one it replaces (a cheaper one gives nothing back) times the workshop's price factor, and
-    /// its price for the work; times the price level.
+    /// its price for the work; times the price level and <paramref name="factor"/>.
     /// </summary>
-    public float ConfigurePrice(Workshop workshop, Machine m, MachineDef def)
+    public float ConfigurePrice(Workshop workshop, Machine m, MachineDef def, float factor = 1f)
     {
         var configure = workshop.Def.Configure ?? new ConfigureDef();
         var cost = 0f;
@@ -591,11 +605,14 @@ public sealed class PoiSystem
             if (from == to || to == null) continue;
             cost += configure.PriceFactor * MathF.Max(0f, to.Price - (from?.Price ?? 0f)) + configure.Price;
         }
-        return cost * Economy.PriceLevel;
+        return cost * Economy.PriceLevel * factor;
     }
 
-    /// <summary>Why <paramref name="m"/> can't be given the options of <paramref name="def"/> at <paramref name="workshop"/>, or null when it can.</summary>
-    public string? ConfigureBlocker(Machine m, MachineDef def, Workshop workshop)
+    /// <summary>
+    /// Why <paramref name="m"/> can't be given the options of <paramref name="def"/> by <paramref name="workshop"/> (at
+    /// <paramref name="factor"/> times its prices), or null when it can.
+    /// </summary>
+    public string? ConfigureBlocker(Machine m, MachineDef def, Workshop workshop, float factor = 1f)
     {
         if (def == m.Def) return "Nothing to change";
         if (workshop.Def.Configure == null) return $"{workshop.Poi.Name} does not fit options";
@@ -605,7 +622,7 @@ public sealed class PoiSystem
         foreach (var u in m.FillUnits)
             if (u.Level > (def.Get<FillUnitsDef>()?.Units.FirstOrDefault(x => x.Id == u.Def.Id)?.Capacity ?? 0f) + 0.5f)
                 return $"Unload the {m.Def.Name} first: it holds more than it would take";
-        if (IsPlayers(m.FarmId) && ConfigurePrice(workshop, m, def) is var cost and > 0f && cost > Economy.Money) return "Not enough money";
+        if (IsPlayers(m.FarmId) && ConfigurePrice(workshop, m, def, factor) is var cost and > 0f && cost > Economy.Money) return "Not enough money";
         return null;
     }
 
@@ -621,12 +638,21 @@ public sealed class PoiSystem
             _sim.Notifications.Post("Park at a workshop first");
             return false;
         }
-        if (ConfigureBlocker(m, def, workshop) is { } why)
+        return Configure(m, def, workshop, 1f);
+    }
+
+    /// <summary>
+    /// Gives <paramref name="m"/> the options of <paramref name="def"/>, fitted by <paramref name="workshop"/> for
+    /// <paramref name="factor"/> times their price. False, with a notification, when it can't.
+    /// </summary>
+    internal bool Configure(Machine m, MachineDef def, Workshop workshop, float factor)
+    {
+        if (ConfigureBlocker(m, def, workshop, factor) is { } why)
         {
             _sim.Notifications.Post(why, Severity.Warning);
             return false;
         }
-        var cost = ConfigurePrice(workshop, m, def);
+        var cost = ConfigurePrice(workshop, m, def, factor);
         var from = m.Def;
         Spend(m.FarmId, cost, MoneyCategory.Machines);
         _sim.Machines.Reconfigure(m, def);

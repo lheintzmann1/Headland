@@ -207,8 +207,28 @@ public partial class ScenarioRunner : Node
             Log($"tab {menu.TabTitle}");
             if (menu.Page is UI.ShopPage shop) await ShopMachines(shop);
             else if (DisplayServer.GetName() != "headless") await Shot($"menu_{menu.TabTitle.ToLowerInvariant()}");
+            if (menu.Page is UI.GaragePage garage) await GarageMachine(garage);
         }
         menu.Close();
+    }
+
+    /// <summary>The first machine of the garage: its options where it stands, then sold.</summary>
+    private async Task GarageMachine(UI.GaragePage garage)
+    {
+        Button Named(string start) => garage.FindChildren("*", nameof(Button), true, false).OfType<Button>().First(b => b.Text.StartsWith(start));
+        Named("Options").EmitSignal(BaseButton.SignalName.Pressed);
+        await Frames(10);
+        Log($"garage: options of {Sim.Garage.Machines.First()} ({Game.Screens.Top?.GetType().Name})");
+        if (DisplayServer.GetName() != "headless") await Shot("garage_options");
+        Game.Screens.Top!.Close();
+        var count = Sim.Machines.All.Count;
+        var money = Sim.Economy.Money;
+        for (var press = 0; press < 2; press++)
+        {
+            Named("Sell").EmitSignal(BaseButton.SignalName.Pressed);
+            await Frames(5);
+        }
+        Log($"garage: sold {count - Sim.Machines.All.Count} for ${Sim.Economy.Money - money:N0}");
     }
 
     /// <summary>Each machine for sale in the shop, with each of its options picked in turn.</summary>

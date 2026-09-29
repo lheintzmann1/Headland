@@ -7,7 +7,8 @@ namespace Headland.Core.Machines.Components;
 /// <summary>
 /// Wear (FS: wearable): the machine's condition drops while it moves or works, faster on a field and much faster
 /// working, and a workshop brings it back. A worn machine does worse, the more so the more worn: an engine loses power and
-/// burns more, an implement works slower and uses more of what it spreads or sows.
+/// burns more, an implement works slower and uses more of what it spreads or sows. Its paint wears too as it drives,
+/// faster on a field, until a workshop repaints it: that only shows, and takes from what it sells for.
 /// </summary>
 public sealed class WearableDef : MachineComponentDef
 {
@@ -23,10 +24,13 @@ public sealed class WearableDef : MachineComponentDef
     public float SpeedLoss { get; set; } = 0.3f;
     /// <summary>At 0%: how much more fuel it burns, and seed, fertilizer or herbicide it uses (0.3 = 30% more).</summary>
     public float UsageIncrease { get; set; } = 0.3f;
+    /// <summary>Hours of driving (real time, on a road) its paint lasts; <see cref="FieldFactor"/> times faster on a field.</summary>
+    public float PaintHours { get; set; } = 60f;
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         if (Hours <= 0f || FieldFactor < 1f || WorkFactor < 1f) yield return "hours must be > 0, fieldFactor and workFactor >= 1";
+        if (PaintHours <= 0f) yield return "paintHours must be > 0";
         if (PowerLoss is < 0f or >= 1f || SpeedLoss is < 0f or >= 1f || UsageIncrease < 0f)
             yield return "powerLoss and speedLoss must be in [0, 1), usageIncrease >= 0";
     }
@@ -38,6 +42,7 @@ public sealed class WearableSave
 {
     /// <summary>Saved to the last digit, so a loaded game wears on exactly as the one saved.</summary>
     public double Condition { get; set; } = 1.0;
+    public double Paint { get; set; } = 1.0;
 }
 
 public sealed class Wearable(Machine machine, WearableDef def) : MachineComponent<WearableDef, WearableSave>(machine, def), IConditionSource
@@ -45,8 +50,8 @@ public sealed class Wearable(Machine machine, WearableDef def) : MachineComponen
     /// <summary>Below this condition the machine is worn: the farmer is told to have it repaired.</summary>
     public const float WornBelow = 0.2f;
 
-    /// <summary>Kept in a double: a tick's wear is too little for a float's precision near 100%.</summary>
-    private double _condition = 1.0;
+    /// <summary>Kept in doubles: a tick's wear is too little for a float's precision near 100%.</summary>
+    private double _condition = 1.0, _paint = 1.0;
 
     /// <summary>1 = like new, 0 = worn out.</summary>
     public float Condition
@@ -57,6 +62,16 @@ public sealed class Wearable(Machine machine, WearableDef def) : MachineComponen
 
     /// <summary>1 − <see cref="Condition"/>: what repairs make good.</summary>
     public float Wear => 1f - Condition;
+
+    /// <summary>1 = fresh paint, 0 = worn through.</summary>
+    public float Paint
+    {
+        get => (float)_paint;
+        set => _paint = Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>1 − <see cref="Paint"/>: what a repaint makes good.</summary>
+    public float PaintWear => 1f - Paint;
 
     /// <summary>The share of its engine's power it has.</summary>
     public float PowerFactor => 1f - Def.PowerLoss * Wear;
@@ -73,10 +88,10 @@ public sealed class Wearable(Machine machine, WearableDef def) : MachineComponen
         var moving = MathF.Abs(m.Root.Speed) > 0.05f;
         var working = Working(m, moving) || m.Get<Motor>() != null && m.Chain().Skip(1).Any(c => Working(c, moving));
         if (!moving && !working) return;
-        var factor = 1.0;
         var (cx, cz) = sim.World.WorldToCell(m.Position);
-        if (sim.World.InBounds(cx, cz) && sim.World.Layers.FieldId[sim.World.CellIndex(cx, cz)] > 0) factor *= Def.FieldFactor;
-        if (working) factor *= Def.WorkFactor;
+        var field = sim.World.InBounds(cx, cz) && sim.World.Layers.FieldId[sim.World.CellIndex(cx, cz)] > 0 ? Def.FieldFactor : 1.0;
+        if (moving) _paint = Math.Max(0.0, _paint - dt / (Def.PaintHours * 3600.0) * field);
+        var factor = working ? field * Def.WorkFactor : field;
         var before = Condition;
         _condition = Math.Max(0.0, _condition - dt / (Def.Hours * 3600.0) * factor);
         if (before >= WornBelow && Condition < WornBelow) sim.Events.Publish(new MachineWorn(m));
@@ -86,9 +101,13 @@ public sealed class Wearable(Machine machine, WearableDef def) : MachineComponen
     private static bool Working(Machine m, bool moving) =>
         m.Get<Thresher>() is { On: true } || moving && m.Get<WorkAreas>() is { } w && w.Def.Areas.Any(w.Working);
 
-    protected override WearableSave Capture(ContentDatabase content) => new() { Condition = _condition };
+    protected override WearableSave Capture(ContentDatabase content) => new() { Condition = _condition, Paint = _paint };
 
-    protected override void Restore(WearableSave save, SaveContext context) => _condition = Math.Clamp(save.Condition, 0.0, 1.0);
+    protected override void Restore(WearableSave save, SaveContext context)
+    {
+        _condition = Math.Clamp(save.Condition, 0.0, 1.0);
+        _paint = Math.Clamp(save.Paint, 0.0, 1.0);
+    }
 }
 
 /// <summary>Wear extends to what a machine does: how its engine pulls and its implements work.</summary>

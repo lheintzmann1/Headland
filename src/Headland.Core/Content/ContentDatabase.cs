@@ -262,6 +262,10 @@ public sealed class ContentDatabase
         if (rules.Threshold is <= 0 or > 1) e.Add("economy.contracts.threshold must be in (0, 1]");
         if (rules.Penalty is < 0 or > 1) e.Add("economy.contracts.penalty must be 0..1");
         if (Economy.Leasing.Upfront is < 0 or > 1 || Economy.Leasing.PerHour is < 0 or > 1) e.Add("economy.leasing: upfront and perHour must be 0..1");
+        var resale = Economy.Resale;
+        if (resale.LifetimeHours <= 0 || resale.NewShare is <= 0 or > 1 || resale.MinShare < 0 || resale.MinShare > resale.NewShare)
+            e.Add("economy.resale: lifetimeHours must be > 0, newShare in (0, 1] and minShare in [0, newShare]");
+        if (Economy.RemoteService < 1) e.Add("economy.remoteService must be >= 1");
         if (!Difficulties.ContainsKey(Game.Difficulty)) e.Add($"game.difficulty '{Game.Difficulty}' not found");
         foreach (var d in Difficulties.Values)
         {
