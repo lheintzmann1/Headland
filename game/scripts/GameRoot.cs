@@ -154,6 +154,7 @@ public partial class GameRoot : Node3D
             : Screens.BlocksInput ? InputContext.Menu
             : InputContext.World | (Sim.Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot);
         Camera.Dragging = InputLayer.MouseMode == MouseMode.Drag;
+        Hud.Visible = !Screens.CoversView;
         var p = Sim.Player;
         var focus = FocusOverride?.Invoke() ?? (p.Vehicle?.Footprint.Center ?? p.Position);
         Camera.Follow = Sim.World.OnGround(focus);

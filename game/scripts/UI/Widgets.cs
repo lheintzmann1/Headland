@@ -60,7 +60,7 @@ public static class Widgets
         return control;
     }
 
-    /// <summary>A centered screen panel with a title above its content.</summary>
+    /// <summary>A centered panel with a title above its content: a small choice, or an overlay (whole screens use <see cref="ScreenFrame"/>).</summary>
     public static Control Dialog(string title, Control content, string? subtitle = null)
     {
         var box = new VBoxContainer { ThemeTypeVariation = "DialogBox" };

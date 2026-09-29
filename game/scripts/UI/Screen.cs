@@ -3,8 +3,9 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// A page on the <see cref="ScreenStack"/> (help, and later menus, shop, map...). It fills the viewport; subclasses
-/// build their content in <see cref="Build"/>, usually with <see cref="Widgets.Dialog"/>.
+/// A page on the <see cref="ScreenStack"/>: the in-game menu, a workshop, the help. It fills the viewport; subclasses
+/// build their content in <see cref="Build"/>: a whole screen (FS) in a <see cref="ScreenFrame"/>, a small choice or an
+/// overlay in a <see cref="Widgets.Dialog"/>.
 /// </summary>
 public partial class Screen : Control
 {
@@ -16,9 +17,12 @@ public partial class Screen : Control
     /// </summary>
     public virtual bool Modal => true;
 
+    /// <summary>It covers the whole view (a <see cref="ScreenFrame"/>): the screens under it are hidden while it's open.</summary>
+    public virtual bool CoversView => false;
+
     public override void _Ready()
     {
-        SetAnchorsPreset(LayoutPreset.FullRect);
+        SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = Modal ? MouseFilterEnum.Stop : MouseFilterEnum.Ignore;
         Build();
     }

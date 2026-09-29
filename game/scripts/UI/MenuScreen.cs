@@ -4,21 +4,22 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Esc: the in-game menu, one screen holding every page as a tab (the contracts, the finances, the farmland, the shop,
-/// the garage, the controls, the game), switched with the mouse or the tab keys (Q and E by default: the camera's keys
-/// outside it). It opens on the tab last shown.
+/// Esc: the in-game menu, covering the whole view (FS), one screen holding every page as a tab (the contracts, the
+/// finances, the farmland, the shop, the garage, the controls, the game), switched with the mouse or the tab keys (Q and
+/// E by default: the camera's keys outside it). It opens on the tab last shown.
 /// </summary>
 public partial class MenuScreen : Screen
 {
     private static int _last;
     private readonly List<Button> _tabs = [];
     private (string title, Func<MenuPage> create)[] _pages = [];
-    private VBoxContainer _box = null!;
-    private Label _subtitle = null!;
+    private ScreenFrame _frame = null!;
     private MenuPage? _page;
     private int _current;
 
     public GameRoot Game { get; init; } = null!;
+
+    public override bool CoversView => true;
 
     protected override void Build()
     {
@@ -32,8 +33,12 @@ public partial class MenuScreen : Screen
             ("Controls", () => new ControlsPage()),
             ("Game", () => new GamePage { Game = Game }),
         ];
-        _box = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
-        var row = new HBoxContainer();
+        _frame = new ScreenFrame
+        {
+            Sim = Game.Sim,
+            Hints = [(GameActions.Menu, "Back to the game"), (GameActions.MenuPrevTab, "Previous tab"), (GameActions.MenuNextTab, "Next tab")],
+        };
+        var row = _frame.Header;
         row.AddChild(KeyHint(GameActions.MenuPrevTab));
         var group = new ButtonGroup();
         for (var i = 0; i < _pages.Length; i++)
@@ -44,14 +49,7 @@ public partial class MenuScreen : Screen
             row.AddChild(tab);
         }
         row.AddChild(KeyHint(GameActions.MenuNextTab));
-        _box.AddChild(row);
-        _subtitle = Widgets.Label(variation: "DimLabel");
-        _box.AddChild(_subtitle);
-
-        var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
-        center.SetAnchorsPreset(LayoutPreset.FullRect);
-        center.AddChild(Widgets.Panel(_box, "ScreenPanel"));
-        AddChild(center);
+        AddChild(_frame);
         Show(Math.Clamp(_last, 0, _pages.Length - 1));
     }
 
@@ -69,12 +67,13 @@ public partial class MenuScreen : Screen
         _tabs[index].ButtonPressed = true;
         if (_page != null)
         {
-            _box.RemoveChild(_page);
+            _frame.Body.RemoveChild(_page);
             _page.QueueFree();
         }
         _page = _pages[index].create();
-        _subtitle.Text = $"{_page.Subtitle} Esc closes.".TrimStart();
-        _box.AddChild(_page);
+        _page.SizeFlagsVertical = SizeFlags.ExpandFill;
+        _frame.Subtitle.Text = _page.Subtitle;
+        _frame.Body.AddChild(_page);
     }
 
     private static RichTextLabel KeyHint(string action)

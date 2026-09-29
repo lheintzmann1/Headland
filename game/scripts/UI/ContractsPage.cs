@@ -12,7 +12,6 @@ namespace Headland.Game.UI;
 public partial class ContractsPage : MenuPage
 {
     private readonly List<Action> _refreshers = [];
-    private Label _balance = null!;
     private Label _underWay = null!;
     private GridContainer _active = null!;
     private GridContainer _offers = null!;
@@ -28,12 +27,6 @@ public partial class ContractsPage : MenuPage
 
     protected override void Build()
     {
-        var account = new HBoxContainer();
-        account.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label();
-        account.AddChild(_balance);
-        AddChild(account);
-
         _underWay = Widgets.Label(variation: "StrongLabel");
         AddChild(_underWay);
         _active = new GridContainer { Columns = 6, ThemeTypeVariation = "TableGrid" };
@@ -127,7 +120,6 @@ public partial class ContractsPage : MenuPage
 
     private void Refresh()
     {
-        Widgets.Balance(_balance, Sim.Economy.Money);
         foreach (var refresh in _refreshers) refresh();
     }
 

@@ -4,7 +4,8 @@ namespace Headland.Game.UI;
 
 /// <summary>
 /// Screens above the HUD, last opened on top. The menu key (Esc) closes the top screen, or opens the in-game menu when
-/// none is open. A backdrop dims the world under the topmost modal screen.
+/// none is open. A backdrop dims the world under the topmost modal screen, and the screens under one covering the whole
+/// view are hidden.
 /// </summary>
 public partial class ScreenStack : CanvasLayer
 {
@@ -15,6 +16,9 @@ public partial class ScreenStack : CanvasLayer
 
     /// <summary>True while a modal screen is open: the game ignores its own input.</summary>
     public bool BlocksInput => _screens.Any(s => s.Modal);
+
+    /// <summary>True while a screen covers the whole view: the HUD is hidden under it.</summary>
+    public bool CoversView => _screens.Any(s => s.CoversView);
 
     public override void _Ready()
     {
@@ -29,7 +33,7 @@ public partial class ScreenStack : CanvasLayer
         screen.Stack = this;
         _screens.Add(screen);
         AddChild(screen);
-        UpdateBackdrop();
+        Update();
         return screen;
     }
 
@@ -37,7 +41,7 @@ public partial class ScreenStack : CanvasLayer
     {
         if (!_screens.Remove(screen)) return;
         screen.QueueFree();
-        UpdateBackdrop();
+        Update();
     }
 
     /// <summary>Opens a screen, or closes it if one of that type is on top (a key that toggles a screen).</summary>
@@ -45,6 +49,13 @@ public partial class ScreenStack : CanvasLayer
     {
         if (Top is T open) Close(open);
         else Push(create());
+    }
+
+    private void Update()
+    {
+        var cover = _screens.FindLastIndex(s => s.CoversView);
+        for (var i = 0; i < _screens.Count; i++) _screens[i].Visible = i >= cover;
+        UpdateBackdrop();
     }
 
     /// <summary>Puts the backdrop right under the topmost modal screen, so it dims what's below and not the screen.</summary>

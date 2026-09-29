@@ -14,7 +14,6 @@ namespace Headland.Game.UI;
 public partial class GaragePage : MenuPage
 {
     private readonly List<(Machine machine, Button pick, Action refresh)> _rows = [];
-    private Label _balance = null!;
     private GridContainer _table = null!;
     private Label _title = null!;
     private Button _sell = null!;
@@ -39,14 +38,9 @@ public partial class GaragePage : MenuPage
 
     protected override void Build()
     {
-        var account = new HBoxContainer();
-        account.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label();
-        account.AddChild(_balance);
-        AddChild(account);
-
         _table = new GridContainer { Columns = 8, ThemeTypeVariation = "TableGrid" };
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(1060, 440), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        // The table fills the page down to the actions, scrolling when the farm has more machines than fit.
+        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill, HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         scroll.AddChild(_table);
         AddChild(scroll);
 
@@ -163,7 +157,6 @@ public partial class GaragePage : MenuPage
 
     private void Refresh()
     {
-        Widgets.Balance(_balance, Sim.Economy.Money);
         if (string.Join(",", Garage.Machines.Select(m => m.Id)) != _listed)
         {
             Rebuild();

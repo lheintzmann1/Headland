@@ -1,3 +1,4 @@
+using Headland.Game.Controls;
 using Headland.Core;
 using Headland.Core.Machines;
 using Godot;
@@ -5,15 +6,14 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// A workshop's services for some of the farm's machines: repair and repaint them, and change their options (wheels,
-/// engine, hitches, color…) for what the new ones cost more and the work. The use key opens it in a workshop's bay for
-/// the chain parked there (driving, or walking in beside the farm's machines); the garage opens it for one machine
-/// anywhere, a mechanic coming out for more (<see cref="Garage.Service"/>).
+/// A workshop's services for some of the farm's machines, covering the whole view: repair and repaint them, and change
+/// their options (wheels, engine, hitches, color…) for what the new ones cost more and the work. The use key opens it in
+/// a workshop's bay for the chain parked there (driving, or walking in beside the farm's machines); the garage opens it
+/// for one machine anywhere, a mechanic coming out for more (<see cref="Garage.Service"/>).
 /// </summary>
 public partial class WorkshopScreen : Screen
 {
     private readonly List<Row> _rows = [];
-    private Label _balance = null!;
     private Button _repair = null!;
     private Button _repaint = null!;
     private Label _why = null!;
@@ -22,18 +22,15 @@ public partial class WorkshopScreen : Screen
     public Simulation Sim { get; init; } = null!;
     public IReadOnlyList<Machine> Machines { get; init; } = [];
 
+    public override bool CoversView => true;
+
     /// <summary>A machine, the options picked for it, and its fit button.</summary>
     private sealed record Row(Machine Machine, Dictionary<string, string> Picked, Button Fit, Label Why);
 
     protected override void Build()
     {
-        var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
-        var account = new HBoxContainer();
-        account.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label();
-        account.AddChild(_balance);
-        content.AddChild(account);
-
+        var frame = new ScreenFrame { Sim = Sim, Hints = [(GameActions.Menu, "Back")] };
+        AddChild(frame);
         var services = new HBoxContainer();
         _repair = Widgets.Button("", () => Serve(Sim.Garage.RepairBlocker, Sim.Garage.Repair));
         services.AddChild(_repair);
@@ -41,10 +38,17 @@ public partial class WorkshopScreen : Screen
         services.AddChild(_repaint);
         _why = Widgets.Label(variation: "DimLabel");
         services.AddChild(_why);
-        content.AddChild(services);
+        frame.Body.AddChild(services);
 
+        // A column of options per machine, side by side.
+        var machines = new HBoxContainer { ThemeTypeVariation = "DialogBox" };
+        var scroll = new ScrollContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        scroll.AddChild(machines);
+        frame.Body.AddChild(scroll);
         foreach (var m in Machines.Where(m => m.Def.Configurations.Count > 0))
         {
+            var content = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
+            machines.AddChild(content);
             content.AddChild(Widgets.Label(m.Def.Name, "StrongLabel"));
             var picked = new Dictionary<string, string>(m.Def.Choices);
             var table = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
@@ -77,7 +81,8 @@ public partial class WorkshopScreen : Screen
         var note = "New options cost what they cost more than the ones they replace, and the work.";
         if (service is var (w, factor) && factor > 1f)
             note = $"A mechanic from {w.Poi.Name} comes out, for {(factor - 1f) * 100f:0}% more than in its bay. {note}";
-        AddChild(Widgets.Dialog(service?.workshop.Poi.Name ?? "Workshop", content, $"{note} Esc closes."));
+        frame.Header.AddChild(Widgets.Label(service?.workshop.Poi.Name ?? "Workshop", "TitleLabel"));
+        frame.Subtitle.Text = note;
         Refresh();
     }
 
@@ -98,7 +103,6 @@ public partial class WorkshopScreen : Screen
 
     private void Refresh()
     {
-        Widgets.Balance(_balance, Sim.Economy.Money);
         var repair = Service("Repair", _repair, Sim.Garage.RepairPrice, Sim.Garage.RepairBlocker);
         var repaint = Service("Repaint", _repaint, Sim.Garage.RepaintPrice, Sim.Garage.RepaintBlocker);
         _why.Text = repair != null && repaint != null ? repair == repaint ? repair : $"{repair}; {repaint.ToLowerInvariant()}" : "";

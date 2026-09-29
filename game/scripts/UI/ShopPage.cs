@@ -13,13 +13,10 @@ namespace Headland.Game.UI;
 /// </summary>
 public partial class ShopPage : MenuPage
 {
-    private const float DetailWidth = 470f;
-
     private static string? _brand;
     private static string? _category;
     private static string? _machine;
 
-    private Label _balance = null!;
     private OptionButton _brands = null!;
     private VBoxContainer _categories = null!;
     private GridContainer _machines = null!;
@@ -30,6 +27,7 @@ public partial class ShopPage : MenuPage
     private Label _description = null!;
     private GridContainer _specs = null!;
     private GridContainer _options = null!;
+    private Control _optionsBox = null!;
     private Label _price = null!;
     private Label _leaseTerms = null!;
     private Button _buy = null!;
@@ -51,16 +49,10 @@ public partial class ShopPage : MenuPage
 
     protected override void Build()
     {
-        var account = new HBoxContainer();
-        account.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label();
-        account.AddChild(_balance);
-        AddChild(account);
-
-        var columns = new HBoxContainer { ThemeTypeVariation = "DialogBox" };
+        var columns = new HBoxContainer { ThemeTypeVariation = "DialogBox", SizeFlagsVertical = SizeFlags.ExpandFill };
         AddChild(columns);
 
-        var left = new VBoxContainer { CustomMinimumSize = new Vector2(200, 0) };
+        var left = new VBoxContainer { CustomMinimumSize = new Vector2(220, 0) };
         var brands = Sim.Shop.Brands.ToList();
         _brands = Widgets.Dropdown(brands.Select(b => b.Name).Prepend("All brands"), brands.FindIndex(b => b.Id == _brand) + 1, index =>
         {
@@ -73,39 +65,41 @@ public partial class ShopPage : MenuPage
         columns.AddChild(left);
 
         _machines = new GridContainer { Columns = 3, ThemeTypeVariation = "TableGrid" };
-        columns.AddChild(Scrolled(_machines, 330, 600));
+        columns.AddChild(Scrolled(_machines, 340));
 
         // What the machine is scrolls; its price and the buttons to get it stay in view below.
-        var info = new VBoxContainer { ThemeTypeVariation = "DialogBox", CustomMinimumSize = new Vector2(DetailWidth, 0) };
+        var info = new VBoxContainer { ThemeTypeVariation = "DialogBox" };
         _title = Widgets.Label(variation: "TitleLabel");
         info.AddChild(_title);
         _subtitle = Widgets.Label(variation: "DimLabel");
         info.AddChild(_subtitle);
-        _preview = new MachinePreview { CustomMinimumSize = new Vector2(DetailWidth, 230) };
-        info.AddChild(_preview);
+        // The machine turning beside what it is, its description, then its options two by two.
+        var look = new HBoxContainer { ThemeTypeVariation = "DialogBox" };
+        _preview = new MachinePreview { CustomMinimumSize = new Vector2(0, 300), SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.4f };
+        look.AddChild(_preview);
+        _specs = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
+        look.AddChild(Titled("Specifications", _specs));
+        info.AddChild(look);
         _description = Widgets.Label();
         _description.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        _description.CustomMinimumSize = new Vector2(DetailWidth, 0);
         info.AddChild(_description);
-        _specs = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
-        info.AddChild(_specs);
-        _options = new GridContainer { Columns = 2, ThemeTypeVariation = "TableGrid" };
-        info.AddChild(_options);
-        _detail = new VBoxContainer();
-        _detail.AddChild(Scrolled(info, DetailWidth + 20, 470));
-        var price = new HBoxContainer();
-        price.AddChild(Widgets.Label("Price", "StrongLabel"));
-        _price = Widgets.Label(variation: "MoneyLabel");
-        price.AddChild(_price);
-        _detail.AddChild(price);
-        _leaseTerms = Widgets.Label(variation: "DimLabel");
-        _detail.AddChild(_leaseTerms);
+        _options = new GridContainer { Columns = 4, ThemeTypeVariation = "TableGrid" };
+        _optionsBox = Titled("Options", _options);
+        info.AddChild(_optionsBox);
+        _detail = new VBoxContainer { ThemeTypeVariation = "DialogBox", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        _detail.AddChild(Scrolled(info));
         var deal = new HBoxContainer();
+        deal.AddChild(Widgets.Label("Price", "StrongLabel"));
+        _price = Widgets.Label(variation: "MoneyLabel");
+        _price.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        deal.AddChild(_price);
         _buy = Widgets.Button("Buy", () => Deal(Sim.Shop.Buy));
         deal.AddChild(_buy);
         _lease = Widgets.Button("Lease", () => Deal(Sim.Shop.Lease));
         deal.AddChild(_lease);
         _detail.AddChild(deal);
+        _leaseTerms = Widgets.Label(variation: "DimLabel");
+        _detail.AddChild(_leaseTerms);
         _why = Widgets.Label(variation: "DimLabel");
         _detail.AddChild(_why);
         _done = Widgets.Label(variation: "IncomeLabel");
@@ -132,11 +126,28 @@ public partial class ShopPage : MenuPage
         ShowCategories();
     }
 
-    private static ScrollContainer Scrolled(Control content, float width, float height)
+    /// <summary>A column filling the page's height (and its width without <paramref name="width"/>), scrolling when its content is taller.</summary>
+    private static ScrollContainer Scrolled(Control content, float width = 0f)
     {
-        var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(width, height), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
+        var scroll = new ScrollContainer
+        {
+            CustomMinimumSize = new Vector2(width, 0),
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+            SizeFlagsHorizontal = width > 0f ? SizeFlags.Fill : SizeFlags.ExpandFill,
+            HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
+        };
+        content.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         scroll.AddChild(content);
         return scroll;
+    }
+
+    /// <summary>A table under its title, taking its share of the row.</summary>
+    private static VBoxContainer Titled(string title, Control table)
+    {
+        var box = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        box.AddChild(Widgets.Label(title, "StrongLabel"));
+        box.AddChild(table);
+        return box;
     }
 
     private BrandDef? Brand => _brand != null ? Sim.Content.Brands.GetValueOrDefault(_brand) : null;
@@ -198,6 +209,7 @@ public partial class ShopPage : MenuPage
         _description.Text = def.Description;
         _description.Visible = def.Description != "";
         foreach (var child in _options.GetChildren()) child.Free();
+        _optionsBox.Visible = def.Configurations.Count > 0;
         foreach (var c in def.Configurations)
         {
             _options.AddChild(Widgets.Label(c.Name));
@@ -238,7 +250,6 @@ public partial class ShopPage : MenuPage
 
     private void Refresh()
     {
-        Widgets.Balance(_balance, Sim.Economy.Money);
         if (Configured is not { } def) return;
         var buy = Sim.Shop.BuyBlocker(def);
         var lease = Sim.Shop.LeaseBlocker(def);

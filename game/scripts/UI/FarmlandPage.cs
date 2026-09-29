@@ -8,7 +8,6 @@ namespace Headland.Game.UI;
 public partial class FarmlandPage : MenuPage
 {
     private readonly List<(Farmland land, Label owner, Button deal, Label why)> _rows = [];
-    private Label _balance = null!;
     private double _refresh;
 
     public Simulation Sim { get; init; } = null!;
@@ -17,12 +16,6 @@ public partial class FarmlandPage : MenuPage
 
     protected override void Build()
     {
-        var account = new HBoxContainer();
-        account.AddChild(Widgets.Label("Balance"));
-        _balance = Widgets.Label();
-        account.AddChild(_balance);
-        AddChild(account);
-
         var table = new GridContainer { Columns = 7, ThemeTypeVariation = "TableGrid" };
         foreach (var header in new[] { "Parcel", "Area", "Fields", "Owner", "Price", "", "" })
             table.AddChild(Widgets.Label(header, "DimLabel"));
@@ -62,7 +55,6 @@ public partial class FarmlandPage : MenuPage
 
     private void Refresh()
     {
-        Widgets.Balance(_balance, Sim.Economy.Money);
         foreach (var (land, owner, deal, why) in _rows)
         {
             var yours = land.FarmId == Sim.Farms.Player.Id;

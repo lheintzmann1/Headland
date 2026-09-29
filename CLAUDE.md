@@ -62,7 +62,9 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   overrides), BBCode colors from `UI/Palette`, icons as `Widgets.Icon` (Material Symbols SVGs in `assets/icons`,
   white so they can be tinted). Screens derive from `Screen` and go on the `ScreenStack` (Esc closes the top one, or
   opens the in-game menu); the menu's tabs are `MenuPage`s listed in `MenuScreen`, and a new screen of the game (map,
-  shop…) is one of them.
+  shop…) is one of them. Screens cover the whole view as in FS, in a `ScreenFrame` (title or tabs with the balance and
+  date on top, key hints and the latest notification below), and pages fill it; only small choices and overlays (the
+  silo's load picker, F1 help) are centered `Widgets.Dialog`s.
 - Machines and POIs are entities built from components (FS specializations), on one base in
   `src/Headland.Core/Components` (`Entity`, `EntityDef`, `Component`, `ComponentKinds`, where every kind is
   registered). A kind per file (its def, checked against what it's on, runtime state and save data): shared ones
