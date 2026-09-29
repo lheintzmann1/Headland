@@ -1,7 +1,7 @@
 [
   // Mounted implements: origin at the hitch point. Trailed ones: origin at their axle, drawbar eye ahead of it.
   {
-    "id": "cultivator_3", "name": "Tiller 300", "category": "cultivator", "price": 12500, "mass": 1150,
+    "id": "cultivator_3", "name": "Tiller 300", "category": "cultivator", "brand": "ridgeline", "price": 12500, "mass": 1150,
     "size": { "length": 1.9, "width": 3.0, "height": 1.2, "centerZ": -0.95 },
     "components": {
       "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
@@ -21,7 +21,7 @@
     ]
   },
   {
-    "id": "seeder_3", "name": "Drill 300", "category": "seeder", "price": 26000, "mass": 2400,
+    "id": "seeder_3", "name": "Drill 300", "category": "seeder", "brand": "ridgeline", "price": 26000, "mass": 2400,
     "size": { "length": 3.3, "width": 3.0, "height": 1.9, "centerZ": 0.35 },
     "components": {
       "runningGear": { "axles": [ { "z": 0, "track": 2.6, "wheels": { "radius": 0.45, "width": 0.3 } } ] },
@@ -52,7 +52,7 @@
     ]
   },
   {
-    "id": "trailer_16", "name": "Tipper 16", "category": "trailer", "price": 21000, "mass": 4600,
+    "id": "trailer_16", "name": "Tipper 16", "category": "trailer", "brand": "haulmark", "price": 21000, "mass": 4600,
     "size": { "length": 6.2, "width": 2.55, "height": 2.7, "centerZ": 0.6 },
     "components": {
       "runningGear": {
@@ -99,7 +99,7 @@
     ]
   },
   {
-    "id": "plow_5", "name": "Furrow 5", "category": "plow", "price": 19500, "mass": 1650,
+    "id": "plow_5", "name": "Furrow 5", "category": "plow", "brand": "ridgeline", "price": 19500, "mass": 1650,
     "size": { "length": 5.0, "width": 2.4, "height": 1.5, "centerZ": -2.4 },
     "components": {
       "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
@@ -112,7 +112,7 @@
     "description": "Five-furrow mounted plow. Turns the soil over, burying stubble, grass and every weed, where a cultivator only kills the small ones."
   },
   {
-    "id": "spreader_24", "name": "Spinner 1500", "category": "spreader", "price": 9800, "mass": 420,
+    "id": "spreader_24", "name": "Spinner 1500", "category": "spreader", "brand": "verdant", "price": 9800, "mass": 420,
     "size": { "length": 1.6, "width": 2.4, "height": 1.9, "centerZ": -0.75 },
     "components": {
       "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0 },
@@ -129,7 +129,7 @@
     "description": "Twin-disc fertilizer spreader. Turn it on (B) to spread 250 kg of fertilizer a hectare over 24 m: some 67 kg of nitrogen."
   },
   {
-    "id": "sprayer_12", "name": "Boom 2500", "category": "sprayer", "price": 31000, "mass": 2100,
+    "id": "sprayer_12", "name": "Boom 2500", "category": "sprayer", "brand": "verdant", "price": 31000, "mass": 2100,
     "size": { "length": 5.6, "width": 2.6, "height": 2.4, "centerZ": 1.3 },
     "components": {
       "runningGear": { "axles": [ { "z": 0, "track": 1.8, "wheels": { "radius": 0.62, "width": 0.32 } } ] },
@@ -151,7 +151,7 @@
     "description": "Trailed field sprayer with a 12 m boom. Unfold the boom (N), lower it (V) and turn it on (B): 100 L of herbicide mix a hectare kills the weeds and keeps new ones out until the next tillage or harvest."
   },
   {
-    "id": "mower_3", "name": "Mower 300", "category": "mower", "price": 13800, "mass": 780,
+    "id": "mower_3", "name": "Mower 300", "category": "mower", "brand": "verdant", "price": 13800, "mass": 780,
     "size": { "length": 1.7, "width": 3.1, "height": 1.1, "centerZ": -0.85 },
     "components": {
       "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },

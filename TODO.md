@@ -208,7 +208,7 @@ FS19 reference values; tune in data.
 
 ### Shop and garage
 
-- [ ] Vehicle shop screen: categories, brands, specs (uses the unused `Price`, `Brand`, `Category`,
+- [x] Vehicle shop screen: categories, brands, specs (uses the unused `Price`, `Brand`, `Category`,
       `Description`), configuration picker with live price, 3D preview.
 - [ ] Buy or lease (upfront fee + cost per hour); delivered at the dealer's delivery spot.
 - [ ] Sell vehicles; garage list with condition, fuel, hours, location, value; repair, repaint,

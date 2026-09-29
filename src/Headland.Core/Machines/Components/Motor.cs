@@ -5,7 +5,7 @@ using Headland.Core.World;
 namespace Headland.Core.Machines.Components;
 
 /// <summary>An engine: a machine with one drives itself (with a running gear that steers) rather than being pulled.</summary>
-public sealed class MotorDef : MachineComponentDef
+public sealed class MotorDef : MachineComponentDef, ISpecSource
 {
     public float PowerHp { get; set; } = 100f;
     public float MaxSpeedKmh { get; set; } = 40f;
@@ -19,6 +19,9 @@ public sealed class MotorDef : MachineComponentDef
     public float? FuelPerHour { get; set; }
 
     public float FullPowerFuelPerHour => FuelPerHour ?? PowerHp * 0.19f;
+
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>
+        [new("Power", $"{PowerHp:0} hp"), new("Top speed", $"{MaxSpeedKmh:0} km/h")];
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {

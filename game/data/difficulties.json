@@ -1,7 +1,7 @@
 [
   // Difficulty presets for a new game (game.json picks one). startMoney is the money in the account, startLoan what
   // the farm owes the bank (at most economy.json's creditLimit). priceLevel multiplies what the farm pays: supplies,
-  // fuel, repairs, washing, running costs, land and wages. Sale prices don't change.
+  // fuel, machines, repairs, washing, running costs, land and wages. Sale prices don't change.
   { "id": "easy", "name": "Easy", "startMoney": 300000, "startLoan": 0, "priceLevel": 0.8,
     "description": "Plenty of money, no debt, and everything you buy is cheaper." },
   { "id": "normal", "name": "Normal", "startMoney": 100000, "startLoan": 0, "priceLevel": 1.0,

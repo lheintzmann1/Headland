@@ -36,12 +36,25 @@ public sealed class WorkAreaDef
 /// throw. What each area does is its work type's (<see cref="WorkTypes"/>). A harvester cuts for the thresher of the
 /// machine it hangs on; its reel turns while that one threshes.
 /// </summary>
-public sealed class WorkAreasDef : MachineComponentDef
+public sealed class WorkAreasDef : MachineComponentDef, ISpecSource
 {
     public WorkAreaDef[] Areas { get; set; } = [];
 
     public override IEnumerable<string> Roles =>
         Areas.Select(a => WorkTypes.Find(a.Type)).OfType<WorkType>().SelectMany(w => w.Roles).Distinct();
+
+    /// <summary>The width its areas cover side by side, how fast they work, the power they take, and the crops they cut.</summary>
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content)
+    {
+        if (Areas.Length == 0) yield break;
+        var width = Areas.Max(a => a.X + a.Width * 0.5f) - Areas.Min(a => a.X - a.Width * 0.5f);
+        yield return new Spec("Working width", $"{width:0.#} m");
+        yield return new Spec("Working speed", $"{Areas.Min(a => a.MaxWorkSpeedKmh):0} km/h");
+        yield return new Spec("Power needed", $"{Areas.Sum(a => a.RequiredPowerHp):0} hp");
+        var groups = Areas.SelectMany(a => a.HarvestGroups).ToHashSet();
+        if (groups.Count > 0)
+            yield return new Spec("Crops", string.Join(", ", content.Crops.Where(c => groups.Contains(c.HarvestGroup)).Select(c => c.Name.ToLowerInvariant())));
+    }
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {

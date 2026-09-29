@@ -37,8 +37,8 @@ public sealed class DifficultyDef
     /// <summary>What the farm owes the bank at the start (up to the credit limit).</summary>
     public float StartLoan { get; set; }
     /// <summary>
-    /// Multiplies what the farm pays: supplies, fuel, repairs, washing, running costs, land and wages. Sale prices
-    /// and loan interest don't change.
+    /// Multiplies what the farm pays: supplies, fuel, machines, repairs, washing, running costs, land and wages. Sale
+    /// prices and loan interest don't change.
     /// </summary>
     public float PriceLevel { get; set; } = 1f;
 }
@@ -123,6 +123,20 @@ public sealed class LampTypeDef
     public bool Rotating { get; set; }
     /// <summary>It flashes (a turn signal).</summary>
     public bool Blinking { get; set; }
+}
+
+/// <summary>A maker of machines (brands.json): the shop shows it with them, and lists them by it.</summary>
+public sealed class BrandDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+}
+
+/// <summary>A category of the shop (shopcategories.json): tractors, trailers, plows… listed in the file's order.</summary>
+public sealed class ShopCategoryDef
+{
+    public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
 }
 
 /// <summary>A neighbor who owns the land no farm owns: sells it, and offers contracts on it.</summary>
@@ -273,7 +287,9 @@ public sealed class MachineDef : EntityDef
 {
     private Variants? _variants;
 
+    /// <summary>Where the shop lists it (a shopcategories.json id); none: it isn't sold.</summary>
     public string Category { get; set; } = "";
+    /// <summary>Who makes it (a brands.json id); none for a machine without a brand.</summary>
     public string Brand { get; set; } = "";
     /// <summary>With the chosen options' prices and masses added.</summary>
     public float Price { get; set; }

@@ -1,4 +1,5 @@
 using Headland.Game.Controls;
+using Headland.Core.Content;
 using Godot;
 
 namespace Headland.Game.UI;
@@ -114,6 +115,26 @@ public static class Widgets
         cell.HorizontalAlignment = HorizontalAlignment.Right;
         cell.CustomMinimumSize = new Vector2(width, 0);
         return cell;
+    }
+
+    /// <summary>A machine option with what it adds to the price at <paramref name="priceLevel"/>: "Dual   +$4,600".</summary>
+    public static string OptionLabel(ConfigurationOptionDef option, float priceLevel) => MathF.Round(option.Price * priceLevel) switch
+    {
+        >= 1f and var more => $"{option.Name}   +${more:N0}",
+        <= -1f and var less => $"{option.Name}   −${-less:N0}",
+        _ => option.Name,
+    };
+
+    /// <summary>
+    /// A drop-down list of a machine configuration's options (with their prices at <paramref name="priceLevel"/>),
+    /// showing <paramref name="def"/>'s; <paramref name="picked"/> gets the id of the one picked.
+    /// </summary>
+    public static OptionButton Options(ConfigurationDef configuration, MachineDef def, float priceLevel, Action<string> picked)
+    {
+        var dropdown = Dropdown(configuration.Options.Select(o => OptionLabel(o, priceLevel)), Array.IndexOf(configuration.Options, def.Chosen(configuration)),
+            index => picked(configuration.Options[index].Id));
+        dropdown.CustomMinimumSize = new Vector2(260, 0);
+        return dropdown;
     }
 
     /// <summary>BBCode for a key prompt: the action's key on the player's keyboard layout, highlighted.</summary>

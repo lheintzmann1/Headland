@@ -22,7 +22,9 @@ Built with **Godot 4.7** and **C#**.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator, a plow, a
   trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road and a mower, most with
   options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
-  a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color.
+  a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color. The menu's shop lists them by
+  category and brand, each turning in a preview with what it is (power, capacity, working width, the power it needs…)
+  and its options, the price following the options picked.
   Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch, and working speed
   depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and slip in wet fields,
   less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry. Machines wear
@@ -44,7 +46,7 @@ Built with **Godot 4.7** and **C#**.
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.
 - **Difficulty.** Easy, normal and hard set the money and loan the farm starts with, and how much everything it
-  buys costs, from seed to land and wages; sale prices stay the same.
+  buys costs, from seed to machines, land and wages; sale prices stay the same.
 - **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who
   own them: L lists them with their price ($20,000 a hectare), and land sells back for what it cost, except the
   ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors' fields it has
@@ -77,7 +79,7 @@ Built with **Godot 4.7** and **C#**.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money
-  rules and the kinds of hitches and lamps are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
+  rules, the kinds of hitches and lamps and the shop's brands and categories are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
   tanks, work areas, pipe, tipper, lights, crane arm…), so a new machine is a combination of them; POIs are built the
   same way, sharing the kinds that make sense on both (lamps lit at night or as someone comes by, moving parts,
   storage, map icons). [`docs/COMPONENTS.md`](docs/COMPONENTS.md) lists every setting of machines, POIs and components.
@@ -86,7 +88,7 @@ Built with **Godot 4.7** and **C#**.
 
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
 that do something where you are, and F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
-(contracts, finances, farmland, every key, save and load), or closes the screen on top. A gamepad works too (left stick
+(contracts, finances, farmland, the shop, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
 file (see below).
 
@@ -109,7 +111,7 @@ file (see below).
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
 | H | Hire or dismiss a field helper |
-| Esc | The menu: contracts, finances and loans, farmland, controls, save, load and quit; Q / E switch its tabs |
+| Esc | The menu: contracts, finances and loans, farmland, the shop, controls, save, load and quit; Q / E switch its tabs |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

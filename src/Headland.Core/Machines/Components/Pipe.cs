@@ -9,12 +9,15 @@ namespace Headland.Core.Machines.Components;
 /// An unloading pipe emptying a fill unit from its outlet at x, z: into a machine under it, else into a POI's unloading
 /// area. It rests folded backward and swings out to the left.
 /// </summary>
-public sealed class PipeDef : MachineComponentDef
+public sealed class PipeDef : MachineComponentDef, ISpecSource
 {
     public string FillUnit { get; set; } = "tank";
     public float X { get; set; } = 4f;
     public float Z { get; set; } = 1f;
     public float RatePerSecond { get; set; } = 150f;
+
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>
+        [new("Unloading", $"{RatePerSecond:N0} {Spec.UnitOf(owner.Get<FillUnitsDef>()?.Units.FirstOrDefault(u => u.Id == FillUnit), content)}/s")];
 
     public override IEnumerable<string> Roles => ["pipe"];
 

@@ -60,6 +60,9 @@ public sealed class ContentDatabase
     public Dictionary<string, LampTypeDef> LampTypes { get; } = new();
     public List<SoilDef> Soils { get; } = [];
     public Dictionary<string, NpcDef> Npcs { get; } = new();
+    public Dictionary<string, BrandDef> Brands { get; } = new();
+    /// <summary>In the order the shop lists them.</summary>
+    public Dictionary<string, ShopCategoryDef> ShopCategories { get; } = new();
     /// <summary>Crop index + 1 is stored in cells (0 = no crop).</summary>
     public List<CropDef> Crops { get; } = [];
     public Dictionary<string, MachineDef> Machines { get; } = new();
@@ -101,6 +104,8 @@ public sealed class ContentDatabase
         foreach (var l in ReadMany<LampTypeDef>(src, "lamptypes.json")) db.AddUnique(db.LampTypes, l.Id, l, "lamp type");
         db.Soils.AddRange(ReadMany<SoilDef>(src, "soils.json"));
         foreach (var n in ReadMany<NpcDef>(src, "npcs.json")) db.AddUnique(db.Npcs, n.Id, n, "npc");
+        foreach (var b in ReadMany<BrandDef>(src, "brands.json")) db.AddUnique(db.Brands, b.Id, b, "brand");
+        foreach (var c in ReadMany<ShopCategoryDef>(src, "shopcategories.json")) db.AddUnique(db.ShopCategories, c.Id, c, "shop category");
         foreach (var file in src.ListJson("crops")) db.Crops.AddRange(ReadMany<CropDef>(src, file));
         foreach (var file in src.ListJson("machines"))
         foreach (var m in ReadMachines(src, file, db))
@@ -264,9 +269,13 @@ public sealed class ContentDatabase
             if (d.PriceLevel <= 0) e.Add($"difficulty '{d.Id}': priceLevel must be > 0");
         }
 
-        foreach (var (kind, names) in new[] { ("joint", JointTypes.Values.Select(j => (j.Id, j.Name))), ("lamp", LampTypes.Values.Select(l => (l.Id, l.Name))) })
+        foreach (var (kind, names) in new[]
+                 {
+                     ("joint type", JointTypes.Values.Select(j => (j.Id, j.Name))), ("lamp type", LampTypes.Values.Select(l => (l.Id, l.Name))),
+                     ("brand", Brands.Values.Select(b => (b.Id, b.Name))), ("shop category", ShopCategories.Values.Select(c => (c.Id, c.Name))),
+                 })
             foreach (var (id, _) in names.Where(x => string.IsNullOrWhiteSpace(x.Name)))
-                e.Add($"{kind} type '{id}': needs a name");
+                e.Add($"{kind} '{id}': needs a name");
         foreach (var l in LampTypes.Values)
         {
             if (!LampTypeDef.Controls.Contains(l.Control)) e.Add($"lamp type '{l.Id}': unknown control '{l.Control}' ({string.Join(", ", LampTypeDef.Controls)})");
@@ -456,6 +465,9 @@ public sealed class ContentDatabase
     private IEnumerable<string> MachineErrors(MachineDef m)
     {
         if (m.Price < 0f || m.Mass <= 0f) yield return ": price must be >= 0 and mass > 0";
+        if (m.Category != "" && !ShopCategories.ContainsKey(m.Category))
+            yield return $": unknown category '{m.Category}' (shopcategories.json: {string.Join(", ", ShopCategories.Keys)})";
+        if (m.Brand != "" && !Brands.ContainsKey(m.Brand)) yield return $": unknown brand '{m.Brand}' (brands.json: {string.Join(", ", Brands.Keys)})";
         foreach (var error in EntityErrors(m)) yield return error;
         foreach (var id in m.Joints.GroupBy(j => j.Id).Where(g => g.Count() > 1).Select(g => g.Key))
             yield return $": joint '{id}' is defined more than once";

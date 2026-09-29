@@ -1,5 +1,4 @@
 using Headland.Core;
-using Headland.Core.Content;
 using Headland.Core.Machines;
 using Headland.Core.Pois.Components;
 using Godot;
@@ -53,14 +52,11 @@ public partial class WorkshopScreen : Screen
             foreach (var c in m.Def.Configurations)
             {
                 table.AddChild(Widgets.Label(c.Name));
-                var chosen = Array.IndexOf(c.Options, m.Def.Chosen(c));
-                var dropdown = Widgets.Dropdown(c.Options.Select(OptionLabel), chosen, index =>
+                table.AddChild(Widgets.Options(c, m.Def, Sim.Economy.PriceLevel, option =>
                 {
-                    picked[c.Id] = c.Options[index].Id;
+                    picked[c.Id] = option;
                     Refresh();
-                });
-                dropdown.CustomMinimumSize = new Vector2(260, 0);
-                table.AddChild(dropdown);
+                }));
             }
             content.AddChild(table);
             var fit = new HBoxContainer();
@@ -109,12 +105,4 @@ public partial class WorkshopScreen : Screen
             label.Text = why ?? "";
         }
     }
-
-    /// <summary>An option with what it adds to the machine's price: "Dual  +$4,600".</summary>
-    private static string OptionLabel(ConfigurationOptionDef o) => o.Price switch
-    {
-        > 0.5f => $"{o.Name}   +${o.Price:N0}",
-        < -0.5f => $"{o.Name}   −${-o.Price:N0}",
-        _ => o.Name,
-    };
 }

@@ -14,11 +14,25 @@ public sealed class FillUnitDef
 }
 
 /// <summary>Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins.</summary>
-public sealed class FillUnitsDef : ComponentDef
+public sealed class FillUnitsDef : ComponentDef, ISpecSource
 {
     public FillUnitDef[] Units { get; set; } = [];
 
     public override IEnumerable<string> Roles => ["load"];
+
+    /// <summary>Its fuel tank, and each other unit with what it takes: "16,000 L: wheat, barley".</summary>
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content)
+    {
+        var fuel = owner.Get<Machines.Components.MotorDef>()?.FuelUnit;
+        foreach (var u in Units)
+        {
+            var amount = $"{u.Capacity:N0} {Spec.UnitOf(u, content)}";
+            if (u.Id == fuel) yield return new Spec("Fuel tank", amount);
+            else
+                yield return new Spec("Capacity", $"{amount}: {string.Join(", ",
+                    u.FillTypes.Where(content.FillTypes.ContainsKey).Select(ft => content.FillTypes[ft].Name.ToLowerInvariant()))}");
+        }
+    }
 
     internal override void Link(ContentDatabase content)
     {

@@ -1,0 +1,14 @@
+[
+  // The shop's categories, in the order it lists them. A machine's "category" names one; a machine without one isn't
+  // sold. Categories with nothing in them are left out.
+  { "id": "tractor", "name": "Tractors" },
+  { "id": "combine", "name": "Combines" },
+  { "id": "header", "name": "Headers" },
+  { "id": "trailer", "name": "Trailers" },
+  { "id": "cultivator", "name": "Cultivators" },
+  { "id": "plow", "name": "Plows" },
+  { "id": "seeder", "name": "Seeders" },
+  { "id": "spreader", "name": "Fertilizer spreaders" },
+  { "id": "sprayer", "name": "Sprayers" },
+  { "id": "mower", "name": "Mowers" }
+]

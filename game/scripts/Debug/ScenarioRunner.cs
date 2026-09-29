@@ -37,6 +37,7 @@ public partial class ScenarioRunner : Node
             {
                 case "loop": await Loop(); break;
                 case "tour": await Tour(); break;
+                case "menus": await Menus(); break;
                 default: Log($"unknown scenario '{Scenario}'"); break;
             }
             ok = true;
@@ -192,6 +193,42 @@ public partial class ScenarioRunner : Node
         Game.Camera.RotateStep(1);
         await Frames(60);
         await Shot("rotated");
+    }
+
+    /// <summary>Every tab of the in-game menu, in turn (with --headless, only built and shown: nothing is drawn).</summary>
+    private async Task Menus()
+    {
+        await Frames(10);
+        var menu = Game.Screens.Push(new UI.MenuScreen { Game = Game });
+        for (var i = 0; i < menu.TabCount; i++)
+        {
+            if (i > 0) menu.Step(1);
+            await Frames(20);
+            Log($"tab {menu.TabTitle}");
+            if (menu.Page is UI.ShopPage shop) await ShopMachines(shop);
+            else if (DisplayServer.GetName() != "headless") await Shot($"menu_{menu.TabTitle.ToLowerInvariant()}");
+        }
+        menu.Close();
+    }
+
+    /// <summary>Each machine for sale in the shop, with each of its options picked in turn.</summary>
+    private async Task ShopMachines(UI.ShopPage shop)
+    {
+        foreach (var def in Sim.Shop.Categories().SelectMany(c => Sim.Shop.Machines(c)).ToList())
+        {
+            shop.Show(def);
+            await Frames(5);
+            if (DisplayServer.GetName() != "headless") await Shot($"shop_{def.Id}");
+            var options = shop.FindChildren("*", nameof(OptionButton), true, false).OfType<OptionButton>().Where(o => o.GetParent() is GridContainer).ToList();
+            foreach (var dropdown in options)
+                for (var i = 0; i < dropdown.ItemCount; i++)
+                {
+                    dropdown.Select(i);
+                    dropdown.EmitSignal(OptionButton.SignalName.ItemSelected, i);
+                    await Frames(1);
+                }
+            Log($"shop: {def.Id} with {options.Count} configurations");
+        }
     }
 
     // ------------------------------------------------------------------ Helpers

@@ -1,0 +1,9 @@
+[
+  // The makers of machines. A machine's "brand" names one; the shop shows it beside the machine and lists machines by
+  // it.
+  { "id": "fieldmaster", "name": "Fieldmaster" },
+  { "id": "harvestor", "name": "Harvestor" },
+  { "id": "ridgeline", "name": "Ridgeline" },
+  { "id": "haulmark", "name": "Haulmark" },
+  { "id": "verdant", "name": "Verdant" }
+]

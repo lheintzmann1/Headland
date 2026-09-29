@@ -26,7 +26,7 @@ Positions are in meters, in the entity's own space: **+z forward, +x left, +y up
 
 ```jsonc
 {
-  "id": "tractor_125", "name": "Fieldmaster 125", "category": "tractor", "brand": "Fieldmaster",
+  "id": "tractor_125", "name": "Fieldmaster 125", "category": "tractor", "brand": "fieldmaster",
   "price": 98000, "mass": 5600,
   // The box it takes up: what it bumps into, and where it can be driven through.
   "size": { "length": 4.7, "width": 2.45, "height": 3.0, "centerZ": 1.25 },
@@ -48,6 +48,13 @@ Positions are in meters, in the entity's own space: **+z forward, +x left, +y up
 `visual` names the machine's glTF `model`, whose parts the game finds by their names, and its paint `color`: see
 [`MODELING.md`](MODELING.md). A machine without a model that loads is left out of the game. Its options are its
 [configurations](#configurations).
+
+The shop sells it in its `category` (one of [`shopcategories.json`](../game/data/shopcategories.json), which also sets
+the order of the shop's categories; a machine without one isn't sold) under its `brand` (one of
+[`brands.json`](../game/data/brands.json), or none), for its `price` with the options picked (times the difficulty's
+price level), with its `description`. What else the shop says about it comes from its components: the engine's power
+and top speed, the hitches, the tanks and what they take, the working width and speed and the power needed, the crops a
+header cuts, the rates of a pipe or a tipper, and its `mass`.
 
 ## POIs
 

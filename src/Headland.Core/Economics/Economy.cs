@@ -20,7 +20,7 @@ public sealed class Economy(ContentDatabase content, Calendar calendar, EventBus
     /// <summary>What the farm owes the bank.</summary>
     public float Loan { get; private set; } = difficulty.StartLoan;
     public EconomyDef Terms => content.Economy;
-    /// <summary>The difficulty's multiplier on what the farm pays (goods, services, land, wages; not interest).</summary>
+    /// <summary>The difficulty's multiplier on what the farm pays (goods, machines, services, land, wages; not interest).</summary>
     public float PriceLevel => difficulty.PriceLevel;
     /// <summary>What the next <see cref="Borrow"/> lends: a step, or what's left under the credit limit.</summary>
     public float NextLoan => MathF.Max(0f, MathF.Min(Terms.LoanStep, Terms.CreditLimit - Loan));

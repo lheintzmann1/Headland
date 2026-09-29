@@ -9,7 +9,7 @@ namespace Headland.Core.Machines.Components;
 /// eye or kingpin at x, z, following the hitch, with a share of its weight on it). A lowerable one is lowered and
 /// raised with the lower key; its work areas only work lowered.
 /// </summary>
-public sealed class AttachableDef : MachineComponentDef
+public sealed class AttachableDef : MachineComponentDef, ISpecSource
 {
     /// <summary>The joint type (jointtypes.json) it hitches to.</summary>
     public string Type { get; set; } = "threePoint";
@@ -23,6 +23,10 @@ public sealed class AttachableDef : MachineComponentDef
     public float Lift { get; set; } = 0.45f;
     /// <summary>Trailed: the share of its weight (with its load) resting on the hitch, a semi-trailer's on the fifth wheel.</summary>
     public float HitchLoad { get; set; }
+
+    /// <summary>What it hitches to, and how: "Drawbar, trailed".</summary>
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>
+        [new("Hitch", $"{content.JointTypes.GetValueOrDefault(Type)?.Name ?? Type}, {Mode}")];
 
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {

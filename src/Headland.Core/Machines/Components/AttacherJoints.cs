@@ -23,11 +23,22 @@ public sealed class AttacherJointDef
 }
 
 /// <summary>Where implements hitch: three-point linkages, drawbars, fifth wheels, a combine's feeder house.</summary>
-public sealed class AttacherJointsDef : MachineComponentDef, IJointSource
+public sealed class AttacherJointsDef : MachineComponentDef, IJointSource, ISpecSource
 {
     public AttacherJointDef[] Joints { get; set; } = [];
 
     IReadOnlyList<AttacherJointDef> IJointSource.Joints => Joints;
+
+    /// <summary>What implements hitch to, where the joint's own name says more: "Three-point linkage (rear), Drawbar".</summary>
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content)
+    {
+        if (Joints.Length == 0) yield break;
+        yield return new Spec("Hitches", string.Join(", ", Joints.Select(j =>
+        {
+            var name = j.TypeDef?.Name ?? j.Type;
+            return string.Equals(j.Id, j.Type, StringComparison.OrdinalIgnoreCase) ? name : $"{name} ({j.Id})";
+        })));
+    }
 
     /// <summary>A linkage's lower links (rearLinkage…), lifted with the implement they carry.</summary>
     public override IEnumerable<string> Roles => Joints.Where(j => j.TypeDef?.Linkage == true).Select(LinkageRole);

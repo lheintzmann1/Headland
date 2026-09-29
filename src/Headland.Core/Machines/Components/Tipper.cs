@@ -5,12 +5,15 @@ using Headland.Core.Input;
 namespace Headland.Core.Machines.Components;
 
 /// <summary>A tipping bed: tips a fill unit into the POI unloading area the machine stands in, hinged at its rear.</summary>
-public sealed class TipperDef : MachineComponentDef
+public sealed class TipperDef : MachineComponentDef, ISpecSource
 {
     public string FillUnit { get; set; } = "main";
     public float RatePerSecond { get; set; } = 400f;
     /// <summary>How far the bed tilts up.</summary>
     public float AngleDeg { get; set; } = 42f;
+
+    public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>
+        [new("Tipping", $"{RatePerSecond:N0} {Spec.UnitOf(owner.Get<FillUnitsDef>()?.Units.FirstOrDefault(u => u.Id == FillUnit), content)}/s")];
 
     public override IEnumerable<string> Roles => ["tipper"];
 
