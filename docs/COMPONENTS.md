@@ -128,7 +128,7 @@ optionally a `name` in place of the type's.
 | `productionPoint` | POIs | Turns goods into others every hour. |
 | `workshop` | POIs | Repairs machines, and changes their options. |
 | `washingStation` | POIs | Washes machines. |
-| `deliverySpot` | POIs | Where new or leased machines appear. |
+| `deliverySpot` | POIs | Where machines bought or leased appear. |
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
 chain; the lower key lowers every lowerable `attachable`.
@@ -507,8 +507,9 @@ machines), for `price` (0) for a fully dirty machine.
 
 ### deliverySpot
 
-Where new machines appear, in its `trigger`, facing the POI's front. With `leases: true`, machines leased for
-contracts ([`contracts.json`](../game/data/contracts.json)) are delivered there.
+A lot where machines appear, in its `trigger`, facing the POI's front: with `sales: true`, those bought or leased at
+the shop (on the first open lot with room for them), with `leases: true`, those leased for contracts
+([`contracts.json`](../game/data/contracts.json)). It needs one or both.
 
 ## Configurations
 

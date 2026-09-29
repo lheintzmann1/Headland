@@ -123,6 +123,7 @@ public sealed class Simulation
         UpdateWeather();
 
         Machines.Update(dt);
+        Shop.Update();
         Pois.Update(dt);
         foreach (var m in Machines.All)
         {

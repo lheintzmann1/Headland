@@ -179,6 +179,8 @@ public static class SaveGame
         {
             Id = m.Id, Def = m.Def.Id, Configuration = m.Def.Choices.Count > 0 ? new(m.Def.Choices) : null,
             Farm = m.FarmId, Lease = m.LeaseContract != 0 ? m.LeaseContract : null,
+            Leased = m.Lease is { } lease ? new LeaseSave { Fee = lease.Fee, PerHour = lease.PerHour, Paid = lease.Paid } : null,
+            OperatingHours = m.OperatingHours,
             X = m.Position.X, Z = m.Position.Y, Heading = m.Heading, Speed = m.Speed,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
             WorkedHa = m.WorkedHa,
@@ -354,7 +356,12 @@ public static class SaveGame
                 continue;
             }
             if (m.Configuration is { } chosen) def = Configure(def, chosen, warnings);
-            var machine = new Machine(m.Id, def, new Vector2(m.X, m.Z), m.Heading, m.Farm) { LeaseContract = m.Lease ?? 0 };
+            var machine = new Machine(m.Id, def, new Vector2(m.X, m.Z), m.Heading, m.Farm)
+            {
+                LeaseContract = m.Lease ?? 0,
+                Lease = m.Leased is { } l ? new MachineLease { Fee = l.Fee, PerHour = MathF.Max(0f, l.PerHour), Paid = l.Paid } : null,
+                OperatingHours = Math.Max(0.0, m.OperatingHours),
+            };
             ms.All.Add(machine);
             byId[m.Id] = machine;
         }

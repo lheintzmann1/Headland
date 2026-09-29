@@ -261,6 +261,7 @@ public sealed class ContentDatabase
             e.Add("economy.contracts: maxOffers and offersPerDay must be >= 0, offerDays and maxActive >= 1");
         if (rules.Threshold is <= 0 or > 1) e.Add("economy.contracts.threshold must be in (0, 1]");
         if (rules.Penalty is < 0 or > 1) e.Add("economy.contracts.penalty must be 0..1");
+        if (Economy.Leasing.Upfront is < 0 or > 1 || Economy.Leasing.PerHour is < 0 or > 1) e.Add("economy.leasing: upfront and perHour must be 0..1");
         if (!Difficulties.ContainsKey(Game.Difficulty)) e.Add($"game.difficulty '{Game.Difficulty}' not found");
         foreach (var d in Difficulties.Values)
         {

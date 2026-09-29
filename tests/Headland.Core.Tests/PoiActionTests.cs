@@ -398,23 +398,6 @@ public class PoiActionTests
     }
 
     [Fact]
-    public void NewMachinesAreDeliveredToFreeSpots()
-    {
-        var sim = TestContent.NewSim();
-        var shed = sim.World.PoiById("shed")!;
-        var spot = shed.Trigger("delivery")!;
-        var delivered = new List<Machines.Machine>();
-        while (sim.Pois.Deliver("tractor_125", Farm.PlayerId, shed) is { } m) delivered.Add(m);
-
-        Assert.Equal(3, delivered.Count);
-        Assert.All(delivered, m => Assert.True(spot.Contains(m.Footprint.Center) && m.Heading == shed.Heading));
-        for (var i = 0; i < delivered.Count; i++)
-        for (var j = i + 1; j < delivered.Count; j++)
-            Assert.False(Machines.Geometry.Overlaps(delivered[i].Footprint, delivered[j].Footprint));
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Fieldmaster 125 delivered at Machine shed");
-    }
-
-    [Fact]
     public void TheFarmSiloStoresTheFarmsGrainAndLoadsItBack()
     {
         var sim = TestContent.NewSim();

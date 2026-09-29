@@ -24,7 +24,7 @@ internal sealed record Loading(Silo Silo, string FillType, float Amount);
 /// What POIs do, through their components. Loads tipped or piped into a selling station's trigger are sold, into a
 /// silo's pit stored; the owner's trailers fill up at a silo's spout; machines parked at a buying station buy supplies
 /// and fuel, at a workshop get repaired (or their options changed), at a washing station washed; production points
-/// turn stored goods into others every hour; new machines appear at delivery spots. Machines move the goods (tipping,
+/// turn stored goods into others every hour; machines from the shop appear on a dealer's lot. Machines move the goods (tipping,
 /// piping); the POI's components decide what happens to them, and offer the use key what it does in their triggers
 /// (<see cref="IActivatable"/>).
 /// </summary>
@@ -112,7 +112,9 @@ public sealed class PoiSystem
             ? [With(w.Poi, w.Def, "Repair machines"), With(w.Poi, w.Def, "Change machines' options")]
             : [With(w.Poi, w.Def, "Repair machines")],
         WashingStation w => [With(w.Poi, w.Def, "Wash machines")],
-        DeliverySpot d => [d.Def.Leases ? "Machines leased for contracts wait here" : "New machines are delivered here"],
+        DeliverySpot d => new[] { (d.Def.Sales, "Machines bought or leased at the shop wait here"), (d.Def.Leases, "Machines leased for contracts wait here") }
+            .Where(x => x.Item1)
+            .Select(x => With(d.Poi, d.Def, x.Item2)),
         _ => [],
     };
 
@@ -348,21 +350,36 @@ public sealed class PoiSystem
 
     // ------------------------------------------------------------------ Deliveries
 
-    /// <summary>
-    /// Puts a new machine of <paramref name="farmId"/> in a free spot of a delivery spot (<paramref name="at"/>'s, else
-    /// the first POI's with room), facing the POI's front. Null when every spot is taken.
-    /// </summary>
-    public Machine? Deliver(string machineDefId, int farmId, Poi? at = null)
+    /// <summary>The delivery spots machines from the shop are delivered at: the dealers'.</summary>
+    private IEnumerable<DeliverySpot> Dealers => All.Select(p => p.Get<DeliverySpot>()).OfType<DeliverySpot>().Where(d => d.Def.Sales);
+
+    /// <summary>Where a new <paramref name="def"/> would be delivered: a free spot on the lot of the first open dealer with one.</summary>
+    private (DeliverySpot dealer, Vector2 center)? SalesLot(MachineDef def) => Dealers
+        .Where(d => Closed(d.Poi, d.Def) == null)
+        .Select(d => (dealer: d, center: FreeSpot(d.Lot.Area, def)))
+        .FirstOrDefault(x => x.center != null) is ({ } dealer, { } center) ? (dealer, center) : null;
+
+    /// <summary>Why a new <paramref name="def"/> can't be delivered now, or null when it can: no dealer, closed, or no room.</summary>
+    public string? DeliveryBlocker(MachineDef def)
     {
-        var def = Content.Machines[machineDefId];
-        foreach (var t in (at != null ? [at] : All).SelectMany(p => p.Triggers).Where(t => t.Type == "delivery"))
-        {
-            if (FreeSpot(t.Area, def) is not { } center) continue;
-            var m = _sim.Machines.Spawn(machineDefId, center - MathUtil.Forward(t.Area.Heading) * def.Size.CenterZ, t.Area.Heading, farmId);
-            _sim.Events.Publish(new MachineDelivered(m, t.Poi));
-            return m;
-        }
-        return null;
+        if (SalesLot(def) != null) return null;
+        var dealers = Dealers.ToList();
+        if (dealers.Count == 0) return "No dealer delivers machines on this map";
+        return dealers.FirstOrDefault(d => Closed(d.Poi, d.Def) == null) is { } open
+            ? $"No room on the lot of {open.Poi.Name}: clear it first"
+            : Closed(dealers[0].Poi, dealers[0].Def);
+    }
+
+    /// <summary>
+    /// Puts a new machine of <paramref name="farmId"/>, with <paramref name="def"/>'s options, in a free spot of the first
+    /// open dealer's lot with one, facing the POI's front. Null when there is none.
+    /// </summary>
+    public (Machine machine, Poi poi)? Deliver(MachineDef def, int farmId)
+    {
+        if (SalesLot(def) is not var (dealer, center)) return null;
+        var heading = dealer.Lot.Area.Heading;
+        var m = _sim.Machines.Spawn(def.Id, center - MathUtil.Forward(heading) * def.Size.CenterZ, heading, farmId, def.Choices);
+        return (m, dealer.Poi);
     }
 
     /// <summary>
@@ -583,7 +600,7 @@ public sealed class PoiSystem
         if (def == m.Def) return "Nothing to change";
         if (workshop.Def.Configure == null) return $"{workshop.Poi.Name} does not fit options";
         if (Closed(workshop.Poi, workshop.Def) is { } closed) return closed;
-        if (m.LeaseContract != 0) return "A leased machine goes back as it came";
+        if (m.LeaseContract != 0 || m.Lease != null) return "A leased machine goes back as it came";
         if (m.Root.Get<Drivable>()?.Controller is FieldWorkController) return "The helper is working: dismiss them first";
         foreach (var u in m.FillUnits)
             if (u.Level > (def.Get<FillUnitsDef>()?.Units.FirstOrDefault(x => x.Id == u.Def.Id)?.Capacity ?? 0f) + 0.5f)

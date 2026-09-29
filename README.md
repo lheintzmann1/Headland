@@ -24,7 +24,8 @@ Built with **Godot 4.7** and **C#**.
   options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
   a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color. The menu's shop lists them by
   category and brand, each turning in a preview with what it is (power, capacity, working width, the power it needs…)
-  and its options, the price following the options picked.
+  and its options, the price following the options picked. Bought, or leased for 2% of the price and 2.1% for each
+  hour it runs (its engine on, or hitched to one that is), a machine waits on the machinery dealer's lot.
   Steering is kinematic, trailers articulate, mounted implements lift on the three-point hitch, and working speed
   depends on the implement, the engine's power, the load, the slope and the ground: wheels sink and slip in wet fields,
   less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry. Machines wear
@@ -34,14 +35,14 @@ Built with **Godot 4.7** and **C#**.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
   herbicide at the farm shop, refuel and wash at the gas station, get machines repaired or their options changed at the
-  workshop (new options cost what they cost more than the old ones, and the work), and lease them for contracts at the
-  machinery dealer.
+  workshop (new options cost what they cost more than the old ones, and the work), and pick up the machines bought or
+  leased at the shop, or leased for contracts, at the machinery dealer.
   Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
   few days. Each place is a point of interest defined in JSON and built from components, as Farming Simulator builds
   its placeables: selling and buying stations, silos, production points that run by the hour, workshops, washing
   stations and delivery spots, each with the area where machines use it and its opening hours.
 - **Finances.** Every sale and purchase goes into the farm's books under its category: sales, purchases, fuel,
-  maintenance, machines, production costs, wages, land, loan interest, contracts. The menu's finances show them day
+  maintenance, machines, production costs, wages, leasing, land, loan interest, contracts. The menu's finances show them day
   by day or month by month, and are where the farm borrows from the bank: $5,000 at a time up to $500,000, at 5% a year charged every day. Interest, wages and
   running costs can overdraw the account; until the balance is back above zero, nothing can be bought and no helper
   hired.

@@ -56,6 +56,17 @@ public sealed class EconomyDef
     public float HelperWagePerHour { get; set; } = 150f;
     /// <summary>How the neighbors offer contracts (the jobs themselves are in contracts.json).</summary>
     public ContractRulesDef Contracts { get; set; } = new();
+    /// <summary>What machines leased at the shop cost.</summary>
+    public LeasingDef Leasing { get; set; } = new();
+}
+
+/// <summary>Leasing a machine at the shop (FS: 2% of its price up front, then 2.1% for each operating hour).</summary>
+public sealed class LeasingDef
+{
+    /// <summary>Share of the machine's price paid when it's leased.</summary>
+    public float Upfront { get; set; } = 0.02f;
+    /// <summary>Share of the machine's price paid for each hour it runs (real time, as a helper's wage).</summary>
+    public float PerHour { get; set; } = 0.021f;
 }
 
 public sealed class ContractRulesDef

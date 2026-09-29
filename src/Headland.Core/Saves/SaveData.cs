@@ -165,6 +165,9 @@ public sealed class MachineSave
     public int Farm { get; set; }
     /// <summary>The contract it's leased for.</summary>
     public int? Lease { get; set; }
+    /// <summary>Its lease, when leased at the shop.</summary>
+    public LeaseSave? Leased { get; set; }
+    public double OperatingHours { get; set; }
     public float X { get; set; }
     public float Z { get; set; }
     public float Heading { get; set; }
@@ -180,6 +183,14 @@ public sealed class MachineSave
     /// <summary>A load being taken from a silo, totalled so far.</summary>
     public LoadingSave? Loading { get; set; }
     public HelperSave? Helper { get; set; }
+}
+
+/// <summary>A machine's lease at the shop: its fee, what an hour of running costs, and what its hours cost so far.</summary>
+public sealed class LeaseSave
+{
+    public float Fee { get; set; }
+    public float PerHour { get; set; }
+    public float Paid { get; set; }
 }
 
 public sealed class DeliverySave

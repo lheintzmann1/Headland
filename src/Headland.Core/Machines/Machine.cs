@@ -52,6 +52,15 @@ public sealed class Machine : Entity
     /// <summary>The contract the machine is leased for (0: the farm's own); it goes back when the contract ends.</summary>
     public int LeaseContract { get; set; }
 
+    /// <summary>Leased at the shop (null: the farm's own, or leased for a contract): it costs its hours as it runs.</summary>
+    public MachineLease? Lease { get; set; }
+
+    /// <summary>Hours it ran (FS: operating hours), in real time as a helper's: see <see cref="Operating"/>.</summary>
+    public double OperatingHours { get; set; }
+
+    /// <summary>It runs (FS: operating): its engine does, or that of the vehicle it hangs on.</summary>
+    public bool Operating => Root.Get<Motor>()?.Running == true;
+
     /// <summary>
     /// Gives the machine other options: <paramref name="def"/>, a def of its type. Its components are built anew, and
     /// each takes back what it kept, as from a save (fill levels, a lowered implement, who drives).

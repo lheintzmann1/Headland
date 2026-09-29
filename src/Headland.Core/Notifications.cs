@@ -41,7 +41,9 @@ public sealed class Notifications
         events.Subscribe<FillSold>(e => Post($"Sold {Amount(e.FillType, e.Amount)} for ${e.Income:N0}", Severity.Good, 0));
         events.Subscribe<FillStored>(e => Post($"Stored {Amount(e.FillType, e.Amount)} in {e.Poi.Name}", Severity.Good, 0));
         events.Subscribe<FillLoaded>(e => Post($"Loaded {Amount(e.FillType, e.Amount)} from {e.Poi.Name}", Severity.Good, 0));
-        events.Subscribe<MachineDelivered>(e => Post($"{e.Machine.Def.Name} delivered at {e.Poi.Name}", Severity.Good, 0));
+        events.Subscribe<MachineBought>(e => Post($"Bought the {e.Machine.Def.Name} for ${e.Price:N0}: it waits at {e.Poi.Name}", Severity.Good, 0));
+        events.Subscribe<MachineLeased>(e => Post(
+            $"Leased the {e.Machine.Def.Name} for ${e.Lease.Fee:N0} and ${e.Lease.PerHour:N0} an hour it runs: it waits at {e.Poi.Name}", Severity.Good, 0));
         events.Subscribe<HighDemandStarted>(e => Post(
             $"High demand for {content.FillTypes[e.FillType].Name.ToLowerInvariant()} at {e.Poi.Name}: +{(e.Factor - 1f) * 100f:0}% " +
             $"until {Time.Calendar.MonthNames[e.Until.Month - 1][..3]} {e.Until.Day}", Severity.Good, 0));

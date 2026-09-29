@@ -165,7 +165,8 @@ public partial class Hud : CanvasLayer
         _vehiclePanel.Visible = v != null;
         if (v == null) return;
         var sb = new StringBuilder();
-        var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract) : "";
+        var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract)
+            : v.Lease is { } lease ? Widgets.Colored($" leased, ${lease.PerHour:N0}/h", Palette.Contract) : "";
         // What the tool keys act on is in the key color: the selected implement, or the vehicle for the whole chain.
         var selected = v.Get<Drivable>()?.Selected;
         string Named(Machine m) => m == selected || m == v && selected == null && v.Attached.Count > 0 ? Widgets.Colored(m.Def.Name, Palette.Key) : m.Def.Name;

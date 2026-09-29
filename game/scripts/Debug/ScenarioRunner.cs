@@ -229,6 +229,16 @@ public partial class ScenarioRunner : Node
                 }
             Log($"shop: {def.Id} with {options.Count} configurations");
         }
+        // The last one shown, bought and leased: both wait on the dealer's lot.
+        foreach (var deal in new[] { "Buy", "Lease" })
+        {
+            var button = shop.FindChildren("*", nameof(Button), true, false).OfType<Button>().First(b => b.Text == deal);
+            var before = Ms.All.Count;
+            if (!button.Disabled) button.EmitSignal(BaseButton.SignalName.Pressed);
+            await Frames(5);
+            Log($"shop: {deal} {(Ms.All.Count > before ? $"delivered {Ms.All[^1]}" : "did nothing")}, money ${Sim.Economy.Money:N0}");
+            if (DisplayServer.GetName() != "headless") await Shot($"shop_{deal.ToLowerInvariant()}");
+        }
     }
 
     // ------------------------------------------------------------------ Helpers

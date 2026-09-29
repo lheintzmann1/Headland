@@ -12,8 +12,6 @@
       { "w": 26, "d": 14 }
     ],
     "components": {
-      // New machines appear in front of the shed.
-      "deliverySpot": { "trigger": { "x": 10, "z": 13, "w": 10, "d": 10 } },
       // A yard light over the door, lit by a light sensor.
       "lights": { "lamps": [
         { "type": "workFront", "switch": "dark", "y": 5.2, "z": 7.3, "pitchDeg": -40, "range": 20, "angleDeg": 50, "energy": 3 } ] },

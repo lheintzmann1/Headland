@@ -11,5 +11,8 @@
   // fewer than "maxOffers" are on the board, each for "offerDays" days. The farm takes up to "maxActive" at a time. A
   // field job is done once "threshold" of the field is. A contract canceled, or not done by its due day, costs
   // "penalty" of its reward.
-  "contracts": { "maxOffers": 6, "offersPerDay": 2, "offerDays": 3, "maxActive": 3, "threshold": 0.95, "penalty": 0.1 }
+  "contracts": { "maxOffers": 6, "offersPerDay": 2, "offerDays": 3, "maxActive": 3, "threshold": 0.95, "penalty": 0.1 },
+  // Machines leased at the shop cost "upfront" of their price when leased, then "perHour" of it for each hour they run
+  // (their engine on, or hitched to one that is), in real time as helpers' wages.
+  "leasing": { "upfront": 0.02, "perHour": 0.021 }
 }

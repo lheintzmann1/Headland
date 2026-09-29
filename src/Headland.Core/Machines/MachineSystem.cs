@@ -162,8 +162,11 @@ public sealed class MachineSystem
                 Drive(m, dt);
 
         foreach (var m in All)
-        foreach (var c in m.Components)
-            c.Update(_sim, dt);
+        {
+            if (m.Operating) m.OperatingHours += dt / 3600.0;
+            foreach (var c in m.Components)
+                c.Update(_sim, dt);
+        }
     }
 
     /// <summary>

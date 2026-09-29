@@ -82,8 +82,14 @@ public sealed record MachineWashed(Machine Machine, Poi Poi, float Cost) : IGame
 /// <summary>A workshop changed a machine's options: <paramref name="From"/> is the def it had before.</summary>
 public sealed record MachineConfigured(Machine Machine, Poi Poi, Content.MachineDef From, float Cost) : IGameEvent;
 
-/// <summary>A new machine put at a POI's delivery spot.</summary>
-public sealed record MachineDelivered(Machine Machine, Poi Poi) : IGameEvent;
+/// <summary>A machine bought at the shop for <paramref name="Price"/>, waiting on the lot of <paramref name="Poi"/>.</summary>
+public sealed record MachineBought(Machine Machine, Poi Poi, float Price) : IGameEvent;
+
+/// <summary>
+/// A machine leased at the shop (not for a contract: see <see cref="MachinesLeased"/>), its fee paid, waiting on the
+/// lot of <paramref name="Poi"/>.
+/// </summary>
+public sealed record MachineLeased(Machine Machine, Poi Poi, MachineLease Lease) : IGameEvent;
 
 // ---- Ownership
 
