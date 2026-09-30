@@ -4,8 +4,8 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Esc: the in-game menu, covering the whole view (FS), one screen holding every page as a tab (the map, the contracts,
-/// the finances, the farmland, the shop, the garage, the controls, the game), switched with the mouse or the tab keys (Q
+/// Esc: the in-game menu, covering the whole view (FS), one screen holding every page as a tab (the map, where the
+/// farmland is bought too, the contracts, the finances, the shop, the garage, the controls, the game), switched with the mouse or the tab keys (Q
 /// and E by default: the camera's keys outside it). It opens on the tab last shown, or the one a shortcut asks for (M
 /// for the map).
 /// </summary>
@@ -32,7 +32,6 @@ public partial class MenuScreen : Screen
             ("Map", () => new MapPage { Sim = Game.Sim }),
             ("Contracts", () => new ContractsPage { Sim = Game.Sim }),
             ("Finances", () => new FinancesPage { Sim = Game.Sim }),
-            ("Farmland", () => new FarmlandPage { Sim = Game.Sim }),
             ("Shop", () => new ShopPage { Sim = Game.Sim }),
             ("Garage", () => new GaragePage { Game = Game }),
             ("Controls", () => new ControlsPage()),

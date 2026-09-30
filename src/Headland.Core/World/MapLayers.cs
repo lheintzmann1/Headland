@@ -1,5 +1,6 @@
 using System.Globalization;
 using Headland.Core.Content;
+using Headland.Core.Ownership;
 
 namespace Headland.Core.World;
 
@@ -16,6 +17,8 @@ public enum MapLayer
     Soil,
     /// <summary>How wet the fields' soil is.</summary>
     Moisture,
+    /// <summary>The parcels of land, by who owns them: the farm, a neighbor selling it, another farm (FS: farmlands).</summary>
+    Farmland,
 }
 
 /// <summary>An entry of a map layer's legend: what a color (0xRRGGBB) stands for.</summary>
@@ -59,6 +62,13 @@ public static class MapLayers
         new("80% and over", 0x3f5f9e),
     ];
 
+    private static readonly MapLegendEntry[] FarmlandLegend =
+    [
+        new("Yours", 0xe0b84a),
+        new("For sale", 0xc8c4b4),
+        new("Another farm's", 0x7a9ac8),
+    ];
+
     /// <summary>What <paramref name="layer"/>'s colors stand for; the terrain has none.</summary>
     public static IReadOnlyList<MapLegendEntry> Legend(ContentDatabase content, MapLayer layer) => layer switch
     {
@@ -66,13 +76,30 @@ public static class MapLayers
         MapLayer.Growth => GrowthLegend,
         MapLayer.Soil => content.Soils.Select(s => new MapLegendEntry(s.Name, ParseRgb(s.MapColor) ?? 0)).ToList(),
         MapLayer.Moisture => MoistureLegend,
+        MapLayer.Farmland => FarmlandLegend,
         _ => [],
     };
 
-    /// <summary>The legend entry <paramref name="layer"/> shows at cell <paramref name="i"/>, or -1 where the ground shows (off the fields).</summary>
-    public static int EntryAt(WorldMap world, ContentDatabase content, MapLayer layer, int i)
+    /// <summary>
+    /// The legend entry <paramref name="layer"/> shows at cell <paramref name="i"/>, or -1 where the ground shows (off the
+    /// fields, or off the parcels for the farmland), for farm <paramref name="farmId"/>.
+    /// </summary>
+    public static int EntryAt(WorldMap world, ContentDatabase content, MapLayer layer, int i, int farmId = Farm.PlayerId) =>
+        EntryAt(world, content, layer, i, layer == MapLayer.Farmland ? ParcelEntries(world, farmId) : []);
+
+    /// <summary>The farmland legend's entry of each parcel for farm <paramref name="farmId"/>, by parcel number.</summary>
+    internal static int[] ParcelEntries(WorldMap world, int farmId)
+    {
+        var entries = new int[world.Farmlands.Select(f => f.Id).DefaultIfEmpty(0).Max() + 1];
+        foreach (var land in world.Farmlands)
+            entries[land.Id] = land.FarmId == farmId ? 0 : land.FarmId == Farm.None ? 1 : 2;
+        return entries;
+    }
+
+    private static int EntryAt(WorldMap world, ContentDatabase content, MapLayer layer, int i, int[] parcels)
     {
         var l = world.Layers;
+        if (layer == MapLayer.Farmland) return l.FarmlandId[i] is var id and > 0 && id < parcels.Length ? parcels[id] : -1;
         if (layer == MapLayer.Terrain || l.FieldId[i] == 0) return -1;
         return layer switch
         {
@@ -105,12 +132,20 @@ public static class MapLayers
     }
 
     /// <summary>The color <paramref name="layer"/> gives cell <paramref name="i"/> (0xRRGGBB): its legend's, or the ground's.</summary>
-    internal static uint ColorAt(WorldMap world, ContentDatabase content, MapLayer layer, IReadOnlyList<MapLegendEntry> legend, int i)
+    /// <paramref name="parcels"/>: <see cref="ParcelEntries"/>, for the farmland.
+    internal static uint ColorAt(WorldMap world, ContentDatabase content, MapLayer layer, IReadOnlyList<MapLegendEntry> legend, int i, int[] parcels)
     {
-        var entry = EntryAt(world, content, layer, i);
-        return entry >= 0 && entry < legend.Count
-            ? legend[entry].Rgb
-            : Dim(GroundColors[Math.Min(world.Layers.Ground[i], (byte)(GroundColors.Length - 1))], layer != MapLayer.Terrain);
+        var entry = EntryAt(world, content, layer, i, parcels);
+        var ground = GroundColors[Math.Min(world.Layers.Ground[i], (byte)(GroundColors.Length - 1))];
+        if (entry < 0 || entry >= legend.Count) return Dim(ground, layer != MapLayer.Terrain);
+        // The parcels are tinted, their ground showing through.
+        return layer == MapLayer.Farmland ? Mix(ground, legend[entry].Rgb, 0.5f) : legend[entry].Rgb;
+    }
+
+    private static uint Mix(uint a, uint b, float t)
+    {
+        uint Channel(int shift) => (uint)MathF.Round(((a >> shift) & 0xff) * (1f - t) + ((b >> shift) & 0xff) * t) << shift;
+        return Channel(16) | Channel(8) | Channel(0);
     }
 
     /// <summary>The ground under a layer shows darker, so the fields' colors stand out.</summary>

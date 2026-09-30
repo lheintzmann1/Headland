@@ -221,6 +221,15 @@ public partial class ScenarioRunner : Node
             map.ShowLayer(layer);
             await Frames(10);
             Log($"map: {layer}");
+            if (layer == MapLayer.Farmland && Sim.World.Farmlands.FirstOrDefault(l => Sim.Farms.BuyBlocker(l) == null) is { } land)
+            {
+                // Bought through the map, as the farmer would.
+                var money = Sim.Economy.Money;
+                map.Pick(land);
+                map.Deal();
+                await Frames(5);
+                Log($"map: bought {land.Label} for ${money - Sim.Economy.Money:N0} ({Sim.Farms.OwnerName(land)}'s now)");
+            }
             if (DisplayServer.GetName() != "headless") await Shot($"map_{layer.ToString().ToLowerInvariant()}");
         }
         map.ShowLayer(MapLayer.Terrain);

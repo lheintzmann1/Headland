@@ -315,6 +315,8 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [x] Remember the last tab.
 - [x] A few direct shortcuts (M for the map, O for the shop: P is the pause here) open the menu on their tab, with the
       map tab.
+- [x] Farmland bought and sold on the map (FS): its farmland layer colors the parcels by owner, and a click picks one to
+      see its area, fields and price and deal for it, instead of the farmland tab's list.
 
 ## Map and terrain
 

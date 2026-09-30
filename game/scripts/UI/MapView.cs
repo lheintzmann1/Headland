@@ -76,6 +76,18 @@ public partial class MapView : Control
     /// <summary>The ground point under the mouse, if it's over the map.</summary>
     public NVec2? Hover { get; private set; }
 
+    /// <summary>
+    /// Set, a click picks the parcel under the mouse (null off the parcels) instead of setting the waypoint: the farmland
+    /// layer, where parcels are bought and sold (FS).
+    /// </summary>
+    public Action<Farmland?>? Picked { get; set; }
+
+    /// <summary>The parcel picked, outlined in the key color.</summary>
+    public Farmland? Selected { get; set; }
+
+    /// <summary>Paints the picture again at once: the farmland changed hands.</summary>
+    public void Repaint() => _newLayer = true;
+
     public MapLayer Layer
     {
         get => _layer;
@@ -92,7 +104,7 @@ public partial class MapView : Control
         MouseFilter = Minimap ? MouseFilterEnum.Ignore : MouseFilterEnum.Stop;
         var w = Sim.World;
         // A pixel a cell on the map (up to 1024 across), fewer on the minimap.
-        _picture = new MapPicture(w, Sim.Content, w.CellsX / (Minimap ? 512 : 1024));
+        _picture = new MapPicture(w, Sim.Content, w.CellsX / (Minimap ? 512 : 1024), Sim.Player.FarmId);
         _center = new NVec2(w.Size * 0.5f);
         if (Minimap) _zoom = Zoom;
     }
@@ -188,9 +200,12 @@ public partial class MapView : Control
                 }
                 else
                 {
-                    // A click, not a drag: the waypoint goes there.
+                    // A click, not a drag: the waypoint goes there, or it picks the parcel there.
                     if (!_dragging && button.ButtonIndex == MouseButton.Left && OnMap(ToWorld(button.Position)) is { } spot)
-                        Sim.Player.Waypoint = spot;
+                    {
+                        if (Picked != null) Picked(Sim.World.FarmlandAt(spot));
+                        else Sim.Player.Waypoint = spot;
+                    }
                     _pressedAt = null;
                 }
                 AcceptEvent();
@@ -231,7 +246,8 @@ public partial class MapView : Control
         DrawTextureRect(_texture, new Rect2(Vector2.Zero, Vector2.One * Sim.World.Size), false);
         DrawSetTransform(Vector2.Zero);
 
-        if (!Off.Contains(MapFilter.Farmland)) DrawFarmland();
+        if (_layer == MapLayer.Farmland) DrawParcels();
+        else if (!Off.Contains(MapFilter.Farmland)) DrawFarmland();
         if (!Off.Contains(MapFilter.Fields)) DrawFields();
         if (!Off.Contains(MapFilter.Contracts)) DrawContracts();
         DrawPois();
@@ -257,6 +273,26 @@ public partial class MapView : Control
             if (own) DrawColoredPolygon(points, Own);
             DrawClosed(points, own ? OwnEdge : Parcel, own ? 1.5f : 1f);
         }
+    }
+
+    /// <summary>
+    /// The farmland layer: every parcel outlined with its number, the one under the mouse lighter, the one picked in the
+    /// key color (their owners' colors are in the picture).
+    /// </summary>
+    private void DrawParcels()
+    {
+        var font = GetThemeDefaultFont();
+        var size = GetThemeDefaultFontSize() + 2;
+        var hovered = Hover is { } p ? Sim.World.FarmlandAt(p) : null;
+        foreach (var land in Sim.World.Farmlands)
+        {
+            var points = Screen(land.Shape.Points);
+            if (land == hovered && land != Selected) DrawColoredPolygon(points, Colors.White with { A = 0.12f });
+            DrawClosed(points, Colors.White with { A = 0.6f }, 1.5f);
+        }
+        if (Selected != null) DrawClosed(Screen(Selected.Shape.Points), new Color(Palette.Key), 3f);
+        foreach (var land in Sim.World.Farmlands)
+            Text(font, ToScreen(land.Shape.Centroid) - new Vector2(0f, 18f), land.Id.ToString(), size, land == Selected ? new Color(Palette.Key) : Colors.White);
     }
 
     private void DrawFields()

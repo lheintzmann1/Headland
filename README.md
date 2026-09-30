@@ -54,8 +54,8 @@ Built with **Godot 4.7** and **C#**.
 - **Difficulty.** Easy, normal and hard set the money and loan the farm starts with, and how much everything it
   buys costs, from seed to machines, land and wages; sale prices stay the same.
 - **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who own
-  them: the menu's farmland lists them with their price ($20,000 a hectare), and land sells back for what it cost,
-  except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
+  them: on the map's farmland layer, click a parcel to see its area, fields, owner and price ($20,000 a hectare), and
+  buy it there; land sells back for what it cost, except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
   fields it has a contract on.
 - **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating or plowing
   stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing a meadow), and
@@ -84,7 +84,7 @@ Built with **Godot 4.7** and **C#**.
 - **Map.** The menu's map (M) shows the world from above with the numbered fields, the farmland (yours shaded), the
   contracts' fields, the places to sell, buy and get service, the machines (as dots) and you, each switched on and off; its
   layers color the fields by crop, growth (plowed, cultivated, sown, growing, ready, withered, harvested), soil and
-  moisture, and hovering it reads the ground as in the world. A click sets a waypoint, a flag on the map, until you get
+  moisture, and the parcels by owner (where land is bought), and hovering it reads the ground as in the world. A click sets a waypoint, a flag on the map, until you get
   there. The minimap in the corner (Shift+M: small, large or off) shows what's around you, turned as the camera looks,
   the waypoint held at its edge.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
@@ -100,7 +100,7 @@ Built with **Godot 4.7** and **C#**.
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
 that do something where you are, in the words of the tool they work ("Lower cultivator", "Unfold boom", "Pipe out"), and
 F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
-(the map, contracts, finances, farmland, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
+(the map and the farmland, contracts, finances, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
 file (see below).
 
@@ -129,7 +129,7 @@ file (see below).
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines; on foot at the farm's fuel tank, order diesel) |
 | H | Hire or dismiss a field helper |
-| Esc | The menu: the map, contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
+| Esc | The menu: the map and the farmland, contracts, finances and loans, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
 | M, O | The menu's map, its shop (again: close it) |
 | Shift+M | Minimap: small, large, off |
 | Q / E | Rotate the camera |

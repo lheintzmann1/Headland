@@ -72,6 +72,26 @@ public class MapTests
     }
 
     [Fact]
+    public void TheFarmlandLayerColorsTheParcelsByOwner()
+    {
+        var sim = TestContent.NewSim();
+        var w = sim.World;
+        var land = w.FarmlandById(5)!;
+        var (cx, cz) = w.WorldToCell(land.Shape.Centroid);
+        var i = w.CellIndex(cx, cz);
+        string Name() => MapLayers.Legend(sim.Content, MapLayer.Farmland)[MapLayers.EntryAt(w, sim.Content, MapLayer.Farmland, i)].Name;
+
+        Assert.Equal(5, w.Layers.FarmlandId[i]);
+        Assert.Equal("For sale", Name());
+        TestContent.OwnField4(sim);
+        Assert.Equal("Yours", Name());
+        Assert.Equal("Another farm's", MapLayers.Legend(sim.Content, MapLayer.Farmland)[MapLayers.EntryAt(w, sim.Content, MapLayer.Farmland, i, farmId: 2)].Name);
+        // Off the parcels (a road), the ground.
+        var road = Enumerable.Range(0, w.Layers.FarmlandId.Length).First(c => w.Layers.FarmlandId[c] == 0);
+        Assert.Equal(-1, MapLayers.EntryAt(w, sim.Content, MapLayer.Farmland, road));
+    }
+
+    [Fact]
     public void CropsAndSoilsNeedAMapColor()
     {
         Assert.Equal((0xcfa44fu, (uint?)null, (uint?)null), (MapLayers.ParseRgb("#cfa44f")!.Value, MapLayers.ParseRgb("cfa44f"), MapLayers.ParseRgb("#cfa44")));
