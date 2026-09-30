@@ -7,7 +7,8 @@ The models in the game today are simple bases made of boxes, generated from the 
 procedurally (the plow, spreader, sprayer and mower, which came later, in the same way), laid out and named as this
 guide says: machines in `game/assets/models/<category>/<machine id>.glb` (with every option in
 them), buildings in `buildings/<poi id>.glb`, the farmer in `characters/farmer.glb`. Each has a Blockbench project
-(`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of its parts.
+(`.bbmodel`) of the same model beside it. Start a real model from either one, keeping the names of its parts. New
+bases come from `tools/box_model.py`, which builds both from a JSON tree of named nodes and boxes.
 
 Headland's own models are made in [Blockbench](https://www.blockbench.net) (free, and easy to pick up). Mods (modding
 support is planned) can use any tool that exports glTF, such as Blender or 3ds Max, at any level of detail. The

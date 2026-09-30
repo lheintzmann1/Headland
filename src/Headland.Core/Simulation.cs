@@ -237,11 +237,13 @@ public sealed class Simulation
             actions.Add(InputActions.Attach, $"Attach {child.Def.Name}", () => Machines.Attach(parent, joint.Id, child));
         else if (v.Chain().Skip(1).LastOrDefault() is { } leaf)
             actions.Add(InputActions.Attach, $"Detach {leaf.Def.Name}", () => Machines.Detach(leaf));
-        if (v.Get<Drivable>() is { } seat && v.Attached.Count > 0)
+        if (v.Get<Drivable>() is { CanSelect: true } seat)
         {
-            var implements = v.Chain().Skip(1).ToList();
-            var next = seat.Selected is { } selected ? implements.ElementAtOrDefault(implements.IndexOf(selected) + 1) : implements[0];
-            actions.Add(InputActions.SelectImplement, next != null ? $"Select {next.Def.Name}" : "Select all", seat.SelectNext);
+            // An implement, or a control group of a crane (FS: subselections): "Select Loader: arm".
+            var (next, group) = seat.Next;
+            var what = next ?? v;
+            var name = Drivable.GroupsOf(what) > 1 ? $"{what.Def.Name}: {Drivable.GroupName(what, group)}" : what.Def.Name;
+            actions.Add(InputActions.SelectImplement, next == null && group == 1 && v.Attached.Count > 0 ? "Select all" : $"Select {name}", seat.SelectNext);
         }
         foreach (var m in v.Get<Drivable>()?.ToolScope ?? v.Chain())
         foreach (var source in m.Components.OfType<IActionSource>())

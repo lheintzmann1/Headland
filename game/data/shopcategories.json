@@ -11,5 +11,6 @@
   { "id": "seeder", "name": "Seeders", "noun": "seeder" },
   { "id": "spreader", "name": "Fertilizer spreaders", "noun": "fertilizer spreader" },
   { "id": "sprayer", "name": "Sprayers", "noun": "sprayer" },
-  { "id": "mower", "name": "Mowers", "noun": "mower" }
+  { "id": "mower", "name": "Mowers", "noun": "mower" },
+  { "id": "frontLoader", "name": "Front loaders", "noun": "front loader" }
 ]

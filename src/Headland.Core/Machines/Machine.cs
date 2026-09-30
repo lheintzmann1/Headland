@@ -14,6 +14,9 @@ public struct VehicleInput
     public float Steer;
     /// <summary>Brake to a stop without reversing.</summary>
     public bool Brake;
+    /// <summary>The tool keys, -1..1: up (+) and down, left (+) and right, for the selected tool's crane joints.</summary>
+    public float ToolY;
+    public float ToolX;
 }
 
 public interface IVehicleController

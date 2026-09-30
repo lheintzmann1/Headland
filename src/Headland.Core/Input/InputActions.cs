@@ -26,6 +26,11 @@ public static class InputActions
     public const string TipSide = "tip_side";
     public const string CycleSeed = "cycle_seed";
     public const string Steering = "steering";
+    public const string ToolUp = "tool_up";
+    public const string ToolDown = "tool_down";
+    public const string ToolLeft = "tool_left";
+    public const string ToolRight = "tool_right";
+    public const string ToolIk = "tool_ik";
     public const string Lights = "lights";
     public const string LightsBack = "lights_back";
     public const string RoadLights = "road_lights";
@@ -71,6 +76,11 @@ public static class InputActions
         new(TipSide, "Tip side: the side a trailer tips to", Driving, "Shift+U") { Unavailable = "Nothing here tips to another side now" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
+        new(ToolUp, "Tool up: a loader's arm, a crane's boom", Driving, "Up") { Analog = true },
+        new(ToolDown, "Tool down", Driving, "Down") { Analog = true },
+        new(ToolLeft, "Tool left: a loader's tool tilts back, a crane turns left", Driving, "Left") { Analog = true },
+        new(ToolRight, "Tool right", Driving, "Right") { Analog = true },
+        new(ToolIk, "Crane: move its tip, or each joint", Driving, "I") { Unavailable = "No crane to steer by its tip" },
         new(Lights, "Lights: off, headlights, work lights too", Driving, "L") { Unavailable = "No lights to switch" },
         new(LightsBack, "Lights back a step", Driving, "Alt+L") { Unavailable = "No lights to switch" },
         new(HighBeam, "High beams on / off", Driving, "Ctrl+Shift+L") { Unavailable = "No high beams" },

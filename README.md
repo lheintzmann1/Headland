@@ -102,7 +102,9 @@ file (see below).
 | F | Enter or leave a vehicle |
 | Tab / Shift+Tab | Switch to the next or previous vehicle |
 | G | Attach or detach an implement |
-| T | Select the next implement: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
+| T | Select the next implement, or a crane's next control group: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
+| Arrow keys | A front loader's arm up and down, its tool tilted back and forth; a crane's joints, a control group at a time |
+| I | A crane's tip control: the arrow keys move its tip up, down, in and out rather than each joint |
 | V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
 | Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |
@@ -169,7 +171,7 @@ allow it under System Settings → Privacy & Security → Open Anyway, or run `x
 | `src/Headland.Core` | The simulation in plain C#, with no Godot dependency: time, weather, world, crops, machines, economy. |
 | `tests/Headland.Core.Tests` | xUnit tests, including agronomy calibration and field-helper coverage. |
 | `game` | The Godot project: C# presentation scripts, shaders, JSON content and assets. |
-| `tools` | Python asset pipeline: isometric tile conversion, ground textures, procedural crop cards. |
+| `tools` | Python asset pipeline: isometric tile conversion, ground textures, procedural crop cards, generated base models. |
 | `.github/workflows` | CI (build and tests) and game exports. |
 
 The scripted scenario `godot --path game -- --scenario=loop --shots=<dir>` plays the whole loop with helpers and

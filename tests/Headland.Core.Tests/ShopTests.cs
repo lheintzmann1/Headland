@@ -28,7 +28,7 @@ public class ShopTests
     {
         var sim = TestContent.NewSim();
         var shop = sim.Shop;
-        Assert.Equal(["tractor", "combine", "header", "trailer", "cultivator", "plow", "seeder", "spreader", "sprayer", "mower"],
+        Assert.Equal(["tractor", "combine", "header", "trailer", "cultivator", "plow", "seeder", "spreader", "sprayer", "mower", "frontLoader"],
             shop.Categories().Select(c => c.Id));
         var content = sim.Content;
         // Cheapest first.
@@ -37,7 +37,7 @@ public class ShopTests
 
         Assert.Equal(["Fieldmaster", "Harvestor", "Haulmark", "Ridgeline", "Verdant"], shop.Brands.Select(b => b.Name));
         var ridgeline = content.Brands["ridgeline"];
-        Assert.Equal(["cultivator", "plow", "seeder"], shop.Categories(ridgeline).Select(c => c.Id));
+        Assert.Equal(["cultivator", "plow", "seeder", "frontLoader"], shop.Categories(ridgeline).Select(c => c.Id));
         Assert.Empty(shop.Machines(content.ShopCategories["tractor"], ridgeline));
         Assert.Equal("Fieldmaster", shop.BrandOf(content.Machines["tractor_125"])!.Name);
     }

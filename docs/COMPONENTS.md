@@ -477,6 +477,23 @@ The types are in `game/data/lamptypes.json` (`head`, `tail`, `workFront`, `workR
 | `offset` | [0, 0, 0] | Its pivot: in the machine's space for the first joint, else in the previous joint's. |
 | `min`, `max`, `rest` | -45, 45, 0 | Its travel, and where it starts: degrees, or meters for `extend`. |
 | `speed` | 30 | Per second. |
+| `control` | none | The tool keys that move it (FS: a moving tool's axis): `y`, up and down, or `x`, left and right, up and left moving it positive; none: only the machine moves it. |
+| `group` | 1 | Its control group (FS: control groups): the select key steps through a machine's groups, each moving its own joints on the same keys. Two joints of a group can't share keys. |
+| `invert` | false | Its keys move it the other way. |
+
+`groups` names the control groups, from the first ("arm", "grab"), for the select key's hint: "Select Loader 30: arm".
+With the vehicle itself selected, the tool keys move the first group of every crane in its chain.
+
+`ik` gives the crane a tip control (FS: easy arm control), which the tip key switches on and off: `joints`, two pitch
+joints with keys, in order, `tip` [x, y, z] in the second one's space, and `speed` (1 m/s). With it on, the first
+joint's keys move the tip up and down and the second one's in and out, the joints following within their travel,
+and slower where they can't turn that fast.
+
+```jsonc
+"craneArm": { "groups": ["arm"], "joints": [
+  { "id": "lift", "axis": "pitch", "offset": [0, 1.2, 0], "min": -8, "max": 55, "speed": 20, "control": "y" },
+  { "id": "tilt", "axis": "pitch", "offset": [0, -1.1, 2.7], "min": -45, "max": 40, "speed": 35, "control": "x" } ] }
+```
 
 ### winch
 

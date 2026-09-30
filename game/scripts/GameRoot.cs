@@ -139,7 +139,12 @@ public partial class GameRoot : Node3D
         if (p.Vehicle != null)
         {
             p.MoveInput = NVec2.Zero;
-            p.Controls.Input = new VehicleInput { Throttle = fwd, Steer = -right, Brake = InputLayer.Held(InputActions.Brake) };
+            p.Controls.Input = new VehicleInput
+            {
+                Throttle = fwd, Steer = -right, Brake = InputLayer.Held(InputActions.Brake),
+                ToolY = InputLayer.Strength(InputActions.ToolUp) - InputLayer.Strength(InputActions.ToolDown),
+                ToolX = InputLayer.Strength(InputActions.ToolLeft) - InputLayer.Strength(InputActions.ToolRight),
+            };
         }
         else
         {

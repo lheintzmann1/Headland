@@ -178,7 +178,9 @@ public sealed class MachineSystem
     {
         var motor = v.Get<Motor>()!;
         motor.Prepare(_sim);
-        var input = v.Get<Drivable>()?.Input(dt) ?? new VehicleInput { Brake = true };
+        var seat = v.Get<Drivable>();
+        var input = seat?.Input(dt) ?? new VehicleInput { Brake = true };
+        seat?.DriveTools(input, dt);
         var s = motor.Drive(_sim, input, dt);
         if (MathF.Abs(s) < 1e-4f) s = 0f;
         var gear = v.Get<RunningGear>()!;

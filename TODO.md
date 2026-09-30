@@ -295,8 +295,9 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [x] Tip sides (FS `Trailer` `tipSide`): a trailer tips to the back or to a side, each side with its own motion and
       where the load falls; a key steps through them ("Tip side (left)"), not while tipping, and the unloading area
       must be under the side it tips to.
-- [ ] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
-      lift and tilt the same way.
+- [x] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
+      lift and tilt the same way. The keys and the tip control (the mouse with its own item), control groups on the
+      select key, and a front loader arm for the tractors' loader consoles.
 - [ ] Winch: reel in and out, hook and unhook.
 - [ ] Saw: on and off with the turn-on key (done); cutting once trees are entities.
 - [ ] Front loader: hitch the arm to the bracket (and park it on its stands), tools on the arm.

@@ -26,10 +26,10 @@ public class ComponentTests
             "runningGear": { "axles": [ { "z": 0, "track": 2.2 }, { "z": 3, "track": 2.2, "steering": "front" } ] },
             "motor": { "powerHp": 170 },
             "drivable": {},
-            "craneArm": { "joints": [
-              { "id": "slew", "axis": "yaw", "offset": [0, 2, 1], "min": -120, "max": 120, "speed": 30 },
-              { "id": "boom", "axis": "pitch", "offset": [0, 0.5, 0], "min": -20, "max": 60, "speed": 20 },
-              { "id": "stick", "axis": "extend", "offset": [0, 0, 4], "min": 0, "max": 2, "speed": 0.5 } ] },
+            "craneArm": { "groups": ["crane", "stick"], "joints": [
+              { "id": "slew", "axis": "yaw", "offset": [0, 2, 1], "min": -120, "max": 120, "speed": 30, "control": "x" },
+              { "id": "boom", "axis": "pitch", "offset": [0, 0.5, 0], "min": -20, "max": 60, "speed": 20, "control": "y" },
+              { "id": "stick", "axis": "extend", "offset": [0, 0, 4], "min": 0, "max": 2, "speed": 0.5, "control": "y", "group": 2 } ] },
             "winch": { "joint": "stick", "offset": [0, 0, 3], "maxLength": 6, "speed": 2 },
             "saw": { "joint": "stick", "offset": [0, -0.5, 3] },
             "lights": { "lamps": [ { "type": "head", "x": 0.8, "z": 4.9 }, { "type": "workRear", "z": -2, "yawDeg": 180 } ] }
@@ -169,6 +169,116 @@ public class ComponentTests
         Assert.InRange(m.Get<Winch>()!.Length, 2.4f, 2.6f); // 0.5 m + 2 m/s
         Run(sim, 1f);
         AssertNear(m.Get<Winch>()!.Anchor - new Vector3(0f, 4f, 0f), m.Get<Winch>()!.Hook);
+    }
+
+    [Fact]
+    public void TheToolKeysMoveTheSelectedControlGroup()
+    {
+        var sim = Sim(Content());
+        var m = sim.Machines.Spawn("test_forwarder", new Vector2(269f, 300f), 0f);
+        var crane = m.Get<CraneArm>()!;
+        sim.Player.Enter(m);
+        string Hint() => sim.Offers().Of(InputActions.SelectImplement)!.Label;
+        void Hold(float y, float x, float seconds)
+        {
+            sim.Player.Controls.Input = new VehicleInput { ToolY = y, ToolX = x, Brake = true };
+            Run(sim, seconds);
+            sim.Player.Controls.Input = new VehicleInput { Brake = true };
+        }
+
+        // The first group: up lifts the boom, right turns the crane right (its yaw is positive to the left).
+        Assert.Equal("Select Forwarder: stick", Hint());
+        Hold(1f, -1f, 1f);
+        Assert.Equal((20f, -30f, 0f), (crane.Joint("boom")!.Value, crane.Joint("slew")!.Value, crane.Joint("stick")!.Value), new FloatTuple(0.6f));
+        // The second: up slides the stick out.
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Equal("Select Forwarder: crane", Hint());
+        Hold(1f, 0f, 1f);
+        Assert.InRange(crane.Joint("boom")!.Value, 19.5f, 20.5f);
+        Assert.InRange(crane.Joint("stick")!.Value, 0.48f, 0.52f);
+        sim.Perform(InputActions.SelectImplement);
+        Assert.Equal(1, m.Get<Drivable>()!.Group);
+    }
+
+    [Fact]
+    public void ALoaderArmLiftsAndTiltsOnTheToolKeys()
+    {
+        var sim = Sim(Content());
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(269f, 300f), 0f, configuration: new Dictionary<string, string> { ["frontLoader"] = "bracket" });
+        var arm = sim.Machines.Spawn("frontloader_arm", new Vector2(269f, 301.5f), 0f);
+        sim.Player.Enter(t);
+        sim.Perform(InputActions.Attach);
+        Assert.Same(arm, t.Get<FrontLoaderBracket>()!.Arm);
+        var loader = arm.Get<CraneArm>()!;
+
+        // With the vehicle selected, the tool keys move the arm on it: up lifts it, left tilts the tool back.
+        sim.Player.Controls.Input = new VehicleInput { ToolY = 1f, ToolX = 1f, Brake = true };
+        Run(sim, 1f);
+        Assert.Equal((20f, 35f), (loader.Joint("lift")!.Value, loader.Joint("tilt")!.Value), new FloatTuple(0.6f));
+        Run(sim, 4f);
+        Assert.Equal((55f, 40f), (loader.Joint("lift")!.Value, loader.Joint("tilt")!.Value));
+        // The arm hides the headlights in the hood: those on the roof shine instead.
+        Assert.True(Lights.TopLights(t));
+    }
+
+    [Fact]
+    public void TipControlMovesACranesTipUpAndOut()
+    {
+        var content = Content(Machines.TrimEnd().TrimEnd(']') + """
+            ,
+            {
+              "id": "test_knuckle", "name": "Knuckle crane", "size": { "length": 4, "width": 2.4, "height": 3, "centerZ": 1 },
+              "components": {
+                "runningGear": { "axles": [ { "z": 0, "track": 2 }, { "z": 3, "track": 2, "steering": "front" } ] },
+                "motor": {}, "drivable": {},
+                "craneArm": { "joints": [
+                  { "id": "boom", "axis": "pitch", "offset": [0, 2, 0], "min": -30, "max": 80, "rest": 20, "speed": 45, "control": "y" },
+                  { "id": "jib", "axis": "pitch", "offset": [0, 0, 4], "min": -150, "max": 0, "rest": -60, "speed": 45, "control": "x" } ],
+                  "ik": { "joints": ["boom", "jib"], "tip": [0, 0, 3], "speed": 1 } }
+              }
+            }
+            ]
+            """);
+        var sim = Sim(content);
+        var m = sim.Machines.Spawn("test_knuckle", new Vector2(269f, 300f), 0f);
+        var crane = m.Get<CraneArm>()!;
+        sim.Player.Enter(m);
+        var start = crane.Tip!.Value;
+
+        Assert.Equal("Crane: move its tip", sim.Offers().Of(InputActions.ToolIk)!.Label);
+        sim.Perform(InputActions.ToolIk);
+        Assert.True(crane.TipControl);
+        // The boom's keys raise the tip straight up, the jib's push it straight out, a meter a second.
+        sim.Player.Controls.Input = new VehicleInput { ToolY = 1f, Brake = true };
+        Run(sim, 1f);
+        var up = crane.Tip!.Value - start;
+        Assert.InRange(up.Y, 0.9f, 1.1f);
+        Assert.InRange(MathF.Abs(up.Z), 0f, 0.05f);
+        // Half a meter out: the arm, 7 m long, reaches no further than that from where it is.
+        sim.Player.Controls.Input = new VehicleInput { ToolX = 1f, Brake = true };
+        Run(sim, 0.5f);
+        var @out = crane.Tip!.Value - start - up;
+        Assert.InRange(@out.Z, 0.45f, 0.55f);
+        Assert.InRange(MathF.Abs(@out.Y), 0f, 0.05f);
+
+        var bad = Assert.Throws<ContentException>(() => Content("""
+            [{ "id": "x", "components": { "craneArm": { "joints": [
+                 { "id": "a", "control": "z" }, { "id": "b", "control": "y" }, { "id": "c", "control": "y" }, { "id": "d", "axis": "yaw", "control": "x" } ],
+               "ik": { "joints": ["b", "d"] } } } }]
+            """)).Message;
+        Assert.Contains("machine 'x' craneArm: joint 'a': control must be x or y", bad);
+        Assert.Contains("machine 'x' craneArm: joints 'b', 'c' share the y keys of group 1", bad);
+        Assert.Contains("machine 'x' craneArm: ik: its joints must pitch, with keys", bad);
+    }
+
+    /// <summary>Compares tuples of floats within a tolerance.</summary>
+    private sealed class FloatTuple(float tolerance) : IEqualityComparer<(float, float)>, IEqualityComparer<(float, float, float)>
+    {
+        public bool Equals((float, float) a, (float, float) b) => Near(a.Item1, b.Item1) && Near(a.Item2, b.Item2);
+        public bool Equals((float, float, float) a, (float, float, float) b) => Near(a.Item1, b.Item1) && Near(a.Item2, b.Item2) && Near(a.Item3, b.Item3);
+        public int GetHashCode((float, float) obj) => 0;
+        public int GetHashCode((float, float, float) obj) => 0;
+        private bool Near(float a, float b) => MathF.Abs(a - b) <= tolerance;
     }
 
     [Fact]

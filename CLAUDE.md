@@ -16,7 +16,8 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports, the macOS app re-signed
   and launch-tested on a macOS runner; tags `v*` publish a release).
 - `tools/`: asset pipeline (Python + PIL/numpy): `convert_tiles.py` (iso tiles → top-down atlases),
-  `fetch_textures.py` (CC0 ambientCG ground textures), `gen_crop_cards.py` (procedural crop atlas).
+  `fetch_textures.py` (CC0 ambientCG ground textures), `gen_crop_cards.py` (procedural crop atlas), `box_model.py`
+  (a generated base model of boxes, `.glb` and `.bbmodel`, from a JSON tree of named nodes).
 
 ## Commands
 
