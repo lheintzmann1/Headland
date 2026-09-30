@@ -12,6 +12,7 @@ public sealed class Statistics
         events.Subscribe<FillSold>(e => Add(Sold, e.FillType, e.Amount));
         events.Subscribe<ProductionSold>(e => Add(Sold, e.FillType, e.Amount));
         events.Subscribe<FillBought>(e => Add(Bought, e.FillType, e.Amount));
+        events.Subscribe<FillOrdered>(e => Add(Bought, e.FillType, e.Amount));
         events.Subscribe<HelperHired>(_ => HelpersHired++);
         events.Subscribe<ContractCompleted>(_ => ContractsCompleted++);
         events.Subscribe<DayStarted>(_ => DaysPlayed++);

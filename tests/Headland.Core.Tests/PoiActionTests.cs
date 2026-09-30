@@ -193,6 +193,53 @@ public class PoiActionTests
     }
 
     [Fact]
+    public void TheFarmsFuelTankTakesBulkOrdersAndFillsItsMachinesForNothing()
+    {
+        var sim = TestContent.NewSim();
+        var fuel = sim.World.PoiById("fuel")!;
+        var trigger = fuel.Trigger("fill")!;
+        var stored = Stock(fuel);
+        Assert.Equal(3000f, stored.Level("diesel"));
+        Assert.Equal(["Fill up with diesel from fuel tank", "Order diesel here, on foot"], sim.Pois.Describe(trigger));
+
+        // On foot at the pump: an order of 5,000 L, for less than the gas station asks.
+        sim.Player.Position = trigger.Area.Center;
+        var price = 5000f * sim.Economy.Price("diesel", sim.Clock.Month) * 0.85f * sim.Economy.PriceLevel;
+        Assert.Equal([$"Order 5,000 L of diesel (${price:N0})"], Labels(sim));
+        var money = sim.Economy.Money;
+        sim.Perform(InputActions.Use);
+        Assert.Equal((8000f, money - price), (stored.Level("diesel"), sim.Economy.Money));
+        // Only 2,000 L fit now.
+        sim.Perform(InputActions.Use);
+        Assert.Equal(10000f, stored.Level("diesel"));
+        sim.Perform(InputActions.Use);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Fuel tank is full");
+
+        // Parked at it, the farm's tractor fills up from it, paying nothing.
+        var t = sim.Machines.Spawn("tractor_95", trigger.Area.Center, 0f);
+        t.Unit("fuel")!.Remove(100f);
+        sim.Player.Enter(t);
+        Assert.Equal(["Refuel (10,000 L in fuel tank)"], Labels(sim));
+        money = sim.Economy.Money;
+        sim.Perform(InputActions.Use);
+        Assert.Equal((180f, 9900f, money), (t.Unit("fuel")!.Level, stored.Level("diesel"), sim.Economy.Money));
+
+        // Another farm's tractor gets nothing from it.
+        sim.Player.Exit(sim);
+        var other = sim.Machines.Spawn("tractor_95", trigger.Area.Center + new Vector2(2f, 0f), 0f, farmId: 0);
+        Assert.Contains("Fuel tank belongs to another farm", sim.Activations(other).Select(a => a.Blocked));
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithPois("""
+            [{ "id": "test_tank", "name": "Tank", "components": {
+                 "buyingStation": { "fillTypes": ["diesel"], "fromStorage": true },
+                 "sellingStation": { "fillTypes": ["wheat"] } } },
+             { "id": "test_shop", "name": "Shop", "components": { "buyingStation": { "fillTypes": ["diesel"], "orderAmount": 100 } } }]
+            """)).Message;
+        Assert.Contains("poi 'test_tank' buyingStation: serving from storage, it needs fill units keeping diesel", bad);
+        Assert.Contains("poi 'test_shop' buyingStation: orderAmount is for a station serving from storage, and >= 0", bad);
+    }
+
+    [Fact]
     public void TheGasStationRefuelsAndWashes()
     {
         var sim = TestContent.NewSim();

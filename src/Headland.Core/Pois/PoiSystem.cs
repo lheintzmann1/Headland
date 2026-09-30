@@ -108,6 +108,13 @@ public sealed class PoiSystem
         Silo s when trigger.Type == "load" => [With(s.Poi, s.Def, $"Load {Names(s.FillTypes)}")],
         Silo s => [With(s.Poi, s.Def, $"Store {Names(s.FillTypes)}", s.Def.MinAmount, s.FillTypes)],
         SellingStation s => [With(s.Poi, s.Def, $"Sell {Names(s.Def.FillTypes)}", s.Def.MinAmount, s.Def.FillTypes)],
+        BuyingStation { Def.FromStorage: true } b => new[]
+            {
+                $"Fill up with {Names(b.Def.FillTypes)} from {b.Poi.Name.ToLowerInvariant()}",
+                b.Def.OrderAmount > 0f ? $"Order {Names(b.Def.FillTypes)} here, on foot" : null,
+            }
+            .OfType<string>()
+            .Select(text => With(b.Poi, b.Def, text)),
         BuyingStation b => new[]
             {
                 (fillTypes: b.Def.FillTypes.Where(IsFuel).ToList(), what: "Refuel with"),
@@ -483,6 +490,56 @@ public sealed class PoiSystem
         if (tank != null && shop.Def.FillTypes.Any(tank.Accepts)) yield return "Refuel";
         if (shop.Def.FillTypes.Where(ft => m.FillUnits.Any(u => u != tank && u.Accepts(ft))).ToList() is { Count: > 0 } supplies)
             yield return $"Buy {Names(supplies)}";
+    }
+
+    /// <summary>What an order of <paramref name="fillType"/> into <paramref name="station"/>'s storage brings now, as much as fits, and costs.</summary>
+    public (float amount, float cost) OrderOf(BuyingStation station, string fillType)
+    {
+        var amount = MathF.Min(station.Def.OrderAmount, station.Storage.Free(fillType));
+        return (amount, amount * Price(station, fillType));
+    }
+
+    /// <summary>Orders <paramref name="fillType"/> in bulk into <paramref name="station"/>'s storage for its owner, as much as fits and it can pay for.</summary>
+    public void Order(BuyingStation station, string fillType)
+    {
+        var poi = station.Poi;
+        var price = Price(station, fillType);
+        var amount = Affordable(poi.FarmId, OrderOf(station, fillType).amount, price);
+        if (amount < 1f)
+        {
+            Tell([station.Storage.Free(fillType) < 1f ? $"{poi.Name} is full" : "Not enough money"]);
+            return;
+        }
+        amount = station.Storage.Add(fillType, amount);
+        Spend(poi.FarmId, amount * price, IsFuel(fillType) ? MoneyCategory.Fuel : MoneyCategory.Purchases);
+        _sim.Events.Publish(new FillOrdered(poi, fillType, amount, amount * price));
+    }
+
+    /// <summary>
+    /// Fills <paramref name="machines"/> from what <paramref name="station"/>'s POI keeps, for nothing: its motors' tanks
+    /// and whatever else takes it. Says why when nothing could be filled.
+    /// </summary>
+    public void FillFromStorage(IEnumerable<Machine> machines, BuyingStation station)
+    {
+        var poi = station.Poi;
+        var why = new List<string>();
+        var filled = false;
+        foreach (var m in machines.Where(m => Wants(m, station).Any()))
+        foreach (var unit in m.FillUnits)
+        foreach (var ft in station.Def.FillTypes)
+        {
+            if (!unit.CanAccept(ft)) continue;
+            if (m.ClosedOver(unit))
+            {
+                why.Add($"Open the cover of {m.Def.Name} first");
+                continue;
+            }
+            var amount = unit.Add(ft, station.Storage.Remove(ft, unit.Free));
+            if (amount < 0.01f) continue;
+            filled = true;
+            _sim.Events.Publish(new FillLoaded(m, poi, ft, amount));
+        }
+        if (!filled) Tell(why.Count > 0 ? why : [$"{poi.Name} is empty, or the machines are full"]);
     }
 
     /// <summary>Refuels <paramref name="machines"/> at <paramref name="shop"/> and buys what their other units take; says why when nothing could be bought.</summary>

@@ -68,6 +68,7 @@
     { "id": "farmhouse", "type": "farmhouse",      "x": 130, "z": 188, "farm": 1 },
     { "id": "shed",      "type": "machine_shed",   "x": 153, "z": 188, "farm": 1 },
     { "id": "silo",      "type": "farm_silo",      "x": 180, "z": 191, "farm": 1 },
+    { "id": "fuel",      "type": "farm_fuel_tank", "x": 186, "z": 212, "farm": 1 },
     { "id": "supplies",  "type": "farm_shop",      "x": 131, "z": 226 },
     { "id": "elevator",  "type": "grain_elevator", "x": 443, "z": 220 },
     { "id": "gas",       "type": "gas_station",    "x": 368, "z": 225 },

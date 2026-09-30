@@ -603,6 +603,17 @@ Sells its `fillTypes` and `fillTypeCategories` to the machines parked in its `tr
 fill unit that takes them (seed into a drill), and into a motor's fuel tank, which is refueling (booked as fuel).
 `minAmount` (0) is the smallest amount it sells.
 
+With `fromStorage` (false) it serves what the POI's `fillUnits` keep instead (a farm's fuel tank): only its owner's
+machines, for nothing, since what it keeps was paid for when ordered. Its owner orders `orderAmount` (0: no orders)
+of each of its fill types at a time, on foot in its trigger, as much as still fits, at its prices (booked as fuel for
+fuel, as purchases otherwise).
+
+```jsonc
+"fillUnits": { "units": [ { "id": "diesel", "capacity": 10000, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 3000 } ] },
+"buyingStation": { "fillTypes": ["diesel"], "fromStorage": true, "orderAmount": 5000, "priceFactor": 0.85,
+  "trigger": { "z": 3, "w": 10, "d": 8 } }
+```
+
 ### silo
 
 Stores its owner's goods in the POI's `fillUnits` (FS: silo): loads tipped or piped into its `unloadTrigger` go in,

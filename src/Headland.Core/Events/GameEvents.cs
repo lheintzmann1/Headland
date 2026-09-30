@@ -49,6 +49,9 @@ public sealed record FillLoaded(Machine Machine, Poi Poi, string FillType, float
 /// <summary>Supplies or fuel bought at a POI into a machine's fill unit.</summary>
 public sealed record FillBought(Machine Machine, Poi Poi, string FillType, float Amount, float Cost) : IGameEvent;
 
+/// <summary>A farm ordered goods in bulk into a POI's storage (its fuel tank).</summary>
+public sealed record FillOrdered(Poi Poi, string FillType, float Amount, float Cost) : IGameEvent;
+
 /// <summary>A POI pays <paramref name="Factor"/> times its price for a fill type, through the day <paramref name="Until"/>.</summary>
 public sealed record HighDemandStarted(Poi Poi, string FillType, float Factor, GameDate Until) : IGameEvent;
 

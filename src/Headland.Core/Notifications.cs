@@ -49,6 +49,7 @@ public sealed class Notifications
             $"until {Time.Calendar.MonthNames[e.Until.Month - 1][..3]} {e.Until.Day}", Severity.Good, 0));
         events.Subscribe<HighDemandEnded>(e => Post($"The high demand for {content.FillTypes[e.FillType].Name.ToLowerInvariant()} at {e.Poi.Name} is over"));
         events.Subscribe<FillBought>(e => Post($"Bought {Amount(e.FillType, e.Amount)} for ${e.Cost:N0}", Severity.Good));
+        events.Subscribe<FillOrdered>(e => Post($"Ordered {Amount(e.FillType, e.Amount)} into {e.Poi.Name.ToLowerInvariant()} for ${e.Cost:N0}", Severity.Good));
         events.Subscribe<FarmlandBought>(e => Post($"Bought {e.Farmland.Label} ({e.Farmland.AreaHa:0.00} ha) for ${e.Price:N0}", Severity.Good, 0));
         events.Subscribe<FarmlandSold>(e => Post($"Sold {e.Farmland.Label} for ${e.Price:N0}", Severity.Good, 0));
         string Penalty(float penalty) => penalty >= 0.5f ? $" (${penalty:N0} penalty)" : "";

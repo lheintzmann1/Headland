@@ -38,7 +38,8 @@ Built with **Godot 4.7** and **C#**.
   other options where they stand: a mechanic comes out for 20% more.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
-  herbicide at the farm shop, refuel and wash at the gas station, get machines repaired or their options changed at the
+  herbicide at the farm shop, refuel and wash at the gas station, or at the farm's own fuel tank, filled by ordering
+  diesel in bulk (5,000 L at a time, for less, on foot at its pump), get machines repaired or their options changed at the
   workshop (new options cost what they cost more than the old ones, and the work), and pick up the machines bought or
   leased at the shop, or leased for contracts, at the machinery dealer.
   Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
@@ -120,7 +121,7 @@ file (see below).
 | Ctrl+Shift+L | High beams (the headlights alone and each set of work lights have keys too, unbound: `road_lights`, `work_lights_front`, `work_lights_rear` in the settings file) |
 | Shift+L, Ctrl+L | Beacons (where fitted), hazard lights |
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
-| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |
+| R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines; on foot at the farm's fuel tank, order diesel) |
 | H | Hire or dismiss a field helper |
 | Esc | The menu: contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
 | Q / E | Rotate the camera |

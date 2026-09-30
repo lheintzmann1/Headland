@@ -1,0 +1,13 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+// The farm's own diesel, bought in bulk for less: order it on foot at the pump, and fill the farm's machines up there
+// for nothing.
+{ "id": "farm_fuel_tank", "name": "Fuel tank", "w": 10, "d": 14,
+  "visual": { "color": "#6f7a62", "model": "res://assets/models/buildings/farm_fuel_tank.glb" },
+  "colliders": [
+    { "x": 0.4, "z": -4, "w": 6.6, "d": 2.4 }
+  ],
+  "components": {
+    "fillUnits": { "units": [ { "id": "diesel", "capacity": 10000, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 3000 } ] },
+    "buyingStation": { "trigger": { "z": 3, "w": 10, "d": 8 }, "fillTypes": ["diesel"], "fromStorage": true, "orderAmount": 5000, "priceFactor": 0.85 },
+    "hotspots": { "spots": [ { "icon": "local_gas_station" } ] }
+  } }
