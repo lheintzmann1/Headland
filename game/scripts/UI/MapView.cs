@@ -271,23 +271,18 @@ public partial class MapView : Control
         : poi.Has<SellingStation>() || poi.Has<ProductionPoint>() ? MapFilter.Selling
         : MapFilter.Services;
 
-    /// <summary>Every machine to scale, the one driven and what it pulls in the key color; a dot where it's too small.</summary>
+    /// <summary>
+    /// The machines as dots (FS: their map icons): a vehicle with what it pulls as one, an implement left standing as a
+    /// smaller one; other farms' greyer. The one the farmer drives is under their arrow.
+    /// </summary>
     private void DrawMachines()
     {
-        var driven = Sim.Player.Vehicle?.Chain().ToHashSet() ?? [];
+        var driven = Sim.Player.Vehicle;
         foreach (var m in Sim.Machines.All)
         {
-            var color = driven.Contains(m) ? new Color(Palette.Key) : m.FarmId == Sim.Player.FarmId ? Machines : Others;
-            var box = m.Footprint;
-            if (box.HalfExtents.Y * 2f * _zoom < 5f)
-            {
-                if (m.Has<Drivable>() || driven.Contains(m)) DrawCircle(ToScreen(box.Center), 3f, color);
-                continue;
-            }
-            var (x, y) = (box.AxisX * box.HalfExtents.X, box.AxisY * box.HalfExtents.Y);
-            Vector2[] corners = [ToScreen(box.Center + x + y), ToScreen(box.Center - x + y), ToScreen(box.Center - x - y), ToScreen(box.Center + x - y)];
-            DrawColoredPolygon(corners, color);
-            DrawClosed(corners, Outline, 1f);
+            if (m.Parent != null || m == driven) continue;
+            Glyph("fiber_manual_record", ToScreen(m.Footprint.Center), m.Has<Drivable>() ? 20f : 14f,
+                m.FarmId == Sim.Player.FarmId ? Machines : Others, 0f);
         }
     }
 
@@ -300,12 +295,10 @@ public partial class MapView : Control
         Glyph("navigation", ToScreen(p.Position), 22f, new Color(Palette.Key), MathF.PI - heading);
     }
 
+    /// <summary>The waypoint's flag, its pole's foot on the spot.</summary>
     private void DrawWaypoint()
     {
-        if (Sim.Player.Waypoint is not { } w) return;
-        var color = new Color(Palette.Waypoint);
-        DrawDashedLine(ToScreen(Sim.Player.Position), ToScreen(w), color with { A = 0.6f }, 1.5f, 8f);
-        Glyph("flag", ToScreen(w) - new Vector2(0f, 10f), 24f, color, 0f);
+        if (Sim.Player.Waypoint is { } w) Glyph("flag", ToScreen(w) - new Vector2(-3f, 10f), 24f, new Color(Palette.Waypoint), 0f);
     }
 
     /// <summary>A bar a round number of meters long, bottom left.</summary>

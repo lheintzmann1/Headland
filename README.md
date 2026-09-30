@@ -82,10 +82,10 @@ Built with **Godot 4.7** and **C#**.
 - **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, weeds, crop stage, vernalization progress
   and a harvest estimate.
 - **Map.** The menu's map (M) shows the world from above with the numbered fields, the farmland (yours shaded), the
-  contracts' fields, the places to sell, buy and get service, the machines and you, each switched on and off; its
+  contracts' fields, the places to sell, buy and get service, the machines (as dots) and you, each switched on and off; its
   layers color the fields by crop, growth (plowed, cultivated, sown, growing, ready, withered, harvested), soil and
-  moisture, and hovering it reads the ground as in the world. A click sets a waypoint: a flag on the map, a beam in the
-  world and its distance and direction in the HUD, until you get there.
+  moisture, and hovering it reads the ground as in the world. A click sets a waypoint, a flag on the map, until you get
+  there.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money

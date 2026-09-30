@@ -79,7 +79,6 @@ public partial class GameRoot : Node3D
         AddChild(new CropRenderer { Sim = Sim, Name = "Crops" });
         AddChild(new PropsRenderer { Sim = Sim, Name = "Props" });
         AddChild(new EntityRenderer { Sim = Sim, Name = "Entities" });
-        AddChild(new WaypointMarker { Sim = Sim, Name = "Waypoint" });
         AddChild(new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" });
         Camera = new IsoCamera { Name = "Camera" };
         AddChild(Camera);

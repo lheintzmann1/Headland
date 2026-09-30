@@ -24,8 +24,6 @@ public partial class Hud : CanvasLayer
     private RichTextLabel _clock = null!;
     private RichTextLabel _contracts = null!;
     private PanelContainer _contractsPanel = null!;
-    private RichTextLabel _waypoint = null!;
-    private PanelContainer _waypointPanel = null!;
     private Label _money = null!;
     private RichTextLabel _vehicle = null!;
     private PanelContainer _vehiclePanel = null!;
@@ -62,9 +60,6 @@ public partial class Hud : CanvasLayer
         _contracts = Widgets.Rich(360);
         _contractsPanel = Widgets.Panel(_contracts);
         topLeft.AddChild(_contractsPanel);
-        _waypoint = Widgets.Rich(360);
-        _waypointPanel = Widgets.Panel(_waypoint);
-        topLeft.AddChild(_waypointPanel);
 
         _money = Widgets.Label(variation: "MoneyLabel");
         _money.HorizontalAlignment = HorizontalAlignment.Right;
@@ -101,7 +96,6 @@ public partial class Hud : CanvasLayer
     {
         UpdateClock();
         UpdateContracts();
-        UpdateWaypoint();
         Widgets.Balance(_money, Sim.Economy.Money);
         UpdateVehicle();
         UpdatePrompt();
@@ -158,21 +152,6 @@ public partial class Hud : CanvasLayer
             sb.Append($"{Widgets.Colored(c.Label, Palette.Contract)}  {ContractsPage.Progress(Sim, c)}  {due}\n");
         }
         _contracts.Text = sb.ToString().TrimEnd('\n');
-    }
-
-    private static readonly string[] Compass = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
-
-    /// <summary>The waypoint set on the map: how far, and which way.</summary>
-    private void UpdateWaypoint()
-    {
-        _waypointPanel.Visible = Sim.Player.Waypoint != null;
-        if (Sim.Player.Waypoint is not { } w) return;
-        var d = w - Sim.Player.Position;
-        // Bearing from north (−z), clockwise.
-        var bearing = MathF.Atan2(d.X, -d.Y);
-        var point = ((int)MathF.Round(bearing / (MathF.PI / 4f)) + 8) % 8;
-        var distance = d.Length() >= 1000f ? $"{d.Length() / 1000f:0.0} km" : $"{d.Length():0} m";
-        _waypoint.Text = $"{Widgets.Icon("flag", Palette.Waypoint)} Waypoint {distance} {Compass[point]}";
     }
 
     /// <summary>The condition's icon (assets/icons is named after <see cref="WeatherCondition"/>).</summary>
