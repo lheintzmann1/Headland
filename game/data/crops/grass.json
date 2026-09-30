@@ -1,5 +1,5 @@
 {
-  "id": "grass", "name": "Grass", "fillType": "grass", "harvestGroup": "grass", "atlasRow": 4, "ground": "grass",
+  "id": "grass", "name": "Grass", "fillType": "grass", "harvestGroup": "grass", "atlasRow": 4, "mapColor": "#5e9c4c", "ground": "grass",
   "baseTempC": 5, "yieldPerHa": 20000, "seedKgPerHa": 30,
   "sowingMonths": [3, 4, 5], "harvestMonths": [5, 6, 7, 8, 9],
   "frostKillC": -25, "wiltingPoint": 0.2, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.85,

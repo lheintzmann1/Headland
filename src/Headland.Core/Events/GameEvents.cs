@@ -1,3 +1,4 @@
+using System.Numerics;
 using Headland.Core.Contracts;
 using Headland.Core.Machines;
 using Headland.Core.Pois;
@@ -160,6 +161,9 @@ public sealed record ImplementDetached(Machine Parent, string Joint, Machine Imp
 public sealed record VehicleEntered(Machine Vehicle) : IGameEvent;
 
 public sealed record VehicleExited(Machine Vehicle) : IGameEvent;
+
+/// <summary>The farmer got to the waypoint they had marked on the map, which is gone.</summary>
+public sealed record WaypointReached(Vector2 Position) : IGameEvent;
 
 public enum HelperEnd { Finished, Stopped, Dismissed }
 

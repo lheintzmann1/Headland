@@ -79,6 +79,7 @@ public partial class GameRoot : Node3D
         AddChild(new CropRenderer { Sim = Sim, Name = "Crops" });
         AddChild(new PropsRenderer { Sim = Sim, Name = "Props" });
         AddChild(new EntityRenderer { Sim = Sim, Name = "Entities" });
+        AddChild(new WaypointMarker { Sim = Sim, Name = "Waypoint" });
         AddChild(new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" });
         Camera = new IsoCamera { Name = "Camera" };
         AddChild(Camera);
@@ -230,6 +231,8 @@ public partial class GameRoot : Node3D
             case GameActions.Menu: Screens.Push(new MenuScreen { Game = this }); break;
             case GameActions.MenuPrevTab: (Screens.Top as MenuScreen)?.Step(-1); break;
             case GameActions.MenuNextTab: (Screens.Top as MenuScreen)?.Step(1); break;
+            case GameActions.Map: MenuTab("Map"); break;
+            case GameActions.Shop: MenuTab("Shop"); break;
             case GameActions.ToggleDebug: Hud.DebugVisible = !Hud.DebugVisible; break;
             case GameActions.Screenshot: SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png"); break;
             case InputActions.Use: Use(); break;
@@ -251,6 +254,20 @@ public partial class GameRoot : Node3D
                 else if (InputActions.Def(action) != null) Sim.Perform(action);
                 break;
         }
+    }
+
+    /// <summary>
+    /// A shortcut to a tab of the menu: it opens the menu on it, switches to it, or closes the menu showing it already.
+    /// Another screen on top keeps it.
+    /// </summary>
+    private void MenuTab(string tab)
+    {
+        if (Screens.Top is MenuScreen menu)
+        {
+            if (menu.TabTitle == tab) menu.Close();
+            else menu.ShowTab(tab);
+        }
+        else if (Screens.Top == null) Screens.Push(new MenuScreen { Game = this, Tab = tab });
     }
 
     /// <summary>The use key: the nearest activation's screen when it asks the player first, else what it does.</summary>

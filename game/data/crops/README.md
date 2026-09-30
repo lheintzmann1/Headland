@@ -8,6 +8,7 @@ One file per crop, named after its `id`. The game reads every `.json` here: the 
   `requiresVernalization` can start; until then it waits (tillering, rosette) through winter.
 - `card`: column in the crop atlas (0..6), so several stages can share a look.
 - `atlasRow`: the row in `assets/textures/crops/crop_atlas.png`.
+- `mapColor`: its color on the map's crop layer (`#rrggbb`).
 - `ground`: what its cells show once sown: `seeded` (the default) or `grass` (a meadow, where weeds don't come up).
 - `regrowStage`: a crop that grows back once mown starts over from this stage (grass); others are cleared.
 - `weedYieldLoss`: yield lost where weeds grew up among the crop (default 0.2; half of it where they're small).

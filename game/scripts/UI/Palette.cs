@@ -15,6 +15,8 @@ public static class Palette
     public const string Paused = "#e0a060";
     /// <summary>Contracts under way: their fields on the map, and their lines in the HUD.</summary>
     public const string Contract = "#b9a2dc";
+    /// <summary>The waypoint set on the map: its flag there, its line in the HUD, its beam in the world.</summary>
+    public const string Waypoint = "#e8707a";
 
     public static string Weather(WeatherCondition c) => c switch
     {

@@ -562,7 +562,8 @@ The defaults are Farming Simulator 22's. `"washable": {}` gives a machine those.
 
 `spots`: icons on the map (FS: hotspots), each with an `icon` (a Material Symbols icon in `game/assets/icons`, by file
 name, such as `storefront`), where it is on the entity (`x`, `z`) and optionally a `name` (the entity's by default). A
-POI's first icon also stands over its trigger areas.
+POI's first icon also stands over its trigger areas. The map sorts a POI's icons under its switches: the farm's own, the
+places that buy (a `sellingStation` or a `productionPoint`), and the shops and services (the rest).
 
 ## POI components
 

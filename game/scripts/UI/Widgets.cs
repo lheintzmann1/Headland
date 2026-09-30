@@ -145,4 +145,7 @@ public static class Widgets
         $"[img width={size} height={size} color={color}]res://assets/icons/{name}.svg[/img]";
 
     public static string Colored(string text, string color) => $"[color={color}]{text}[/color]";
+
+    /// <summary>BBCode for a warning: its icon and the text, in the warning color.</summary>
+    public static string Warning(string text) => $"{Icon("warning", Palette.Warning)} {Colored(text, Palette.Warning)}";
 }

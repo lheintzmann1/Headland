@@ -30,7 +30,23 @@ public sealed class PlayerCharacter(EventBus events)
     /// <summary>Manual controls for whatever vehicle the player drives.</summary>
     public ManualController Controls { get; } = new();
 
+    /// <summary>A spot marked on the map to head for (FS: a map tag), until the farmer gets there.</summary>
+    public Vector2? Waypoint { get; set; }
+
+    /// <summary>How near the waypoint the farmer (or their vehicle) is there.</summary>
+    public const float WaypointReach = 15f;
+
     public void Update(Simulation sim, float dt)
+    {
+        Move(sim, dt);
+        if (Waypoint is { } w && Vector2.Distance(Position, w) < WaypointReach)
+        {
+            Waypoint = null;
+            events.Publish(new WaypointReached(w));
+        }
+    }
+
+    private void Move(Simulation sim, float dt)
     {
         if (Vehicle != null)
         {

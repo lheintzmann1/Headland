@@ -1,5 +1,5 @@
 {
-  "id": "corn", "name": "Corn", "fillType": "corn", "harvestGroup": "corn", "atlasRow": 3,
+  "id": "corn", "name": "Corn", "fillType": "corn", "harvestGroup": "corn", "atlasRow": 3, "mapColor": "#d97f3a",
   "baseTempC": 8, "yieldPerHa": 9500, "seedKgPerHa": 25,
   "sowingMonths": [4, 5], "harvestMonths": [9, 10, 11],
   "frostKillC": -1, "wiltingPoint": 0.25, "optimalMoistureMin": 0.45, "optimalMoistureMax": 0.85,

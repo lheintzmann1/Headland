@@ -24,6 +24,8 @@ public partial class Hud : CanvasLayer
     private RichTextLabel _clock = null!;
     private RichTextLabel _contracts = null!;
     private PanelContainer _contractsPanel = null!;
+    private RichTextLabel _waypoint = null!;
+    private PanelContainer _waypointPanel = null!;
     private Label _money = null!;
     private RichTextLabel _vehicle = null!;
     private PanelContainer _vehiclePanel = null!;
@@ -60,6 +62,9 @@ public partial class Hud : CanvasLayer
         _contracts = Widgets.Rich(360);
         _contractsPanel = Widgets.Panel(_contracts);
         topLeft.AddChild(_contractsPanel);
+        _waypoint = Widgets.Rich(360);
+        _waypointPanel = Widgets.Panel(_waypoint);
+        topLeft.AddChild(_waypointPanel);
 
         _money = Widgets.Label(variation: "MoneyLabel");
         _money.HorizontalAlignment = HorizontalAlignment.Right;
@@ -96,6 +101,7 @@ public partial class Hud : CanvasLayer
     {
         UpdateClock();
         UpdateContracts();
+        UpdateWaypoint();
         Widgets.Balance(_money, Sim.Economy.Money);
         UpdateVehicle();
         UpdatePrompt();
@@ -154,10 +160,23 @@ public partial class Hud : CanvasLayer
         _contracts.Text = sb.ToString().TrimEnd('\n');
     }
 
+    private static readonly string[] Compass = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+
+    /// <summary>The waypoint set on the map: how far, and which way.</summary>
+    private void UpdateWaypoint()
+    {
+        _waypointPanel.Visible = Sim.Player.Waypoint != null;
+        if (Sim.Player.Waypoint is not { } w) return;
+        var d = w - Sim.Player.Position;
+        // Bearing from north (−z), clockwise.
+        var bearing = MathF.Atan2(d.X, -d.Y);
+        var point = ((int)MathF.Round(bearing / (MathF.PI / 4f)) + 8) % 8;
+        var distance = d.Length() >= 1000f ? $"{d.Length() / 1000f:0.0} km" : $"{d.Length():0} m";
+        _waypoint.Text = $"{Widgets.Icon("flag", Palette.Waypoint)} Waypoint {distance} {Compass[point]}";
+    }
+
     /// <summary>The condition's icon (assets/icons is named after <see cref="WeatherCondition"/>).</summary>
     private static string Icon(WeatherCondition c) => Widgets.Icon(c.ToString().ToLowerInvariant(), Palette.Weather(c));
-
-    private static string Warning(string text) => $"{Widgets.Icon("warning", Palette.Warning)} {Widgets.Colored(text, Palette.Warning)}";
 
     private void UpdateVehicle()
     {
@@ -217,7 +236,7 @@ public partial class Hud : CanvasLayer
             if (m.Get<Pipe>() is { Out: true }) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
             if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
             if (m != v || bits.Count > 0) sb.Append('\n');
-            foreach (var c in m.Conditions) sb.Append($"  {Warning(c.Text)}\n");
+            foreach (var c in m.Conditions) sb.Append($"  {Widgets.Warning(c.Text)}\n");
         }
         _vehicle.Text = sb.ToString().TrimEnd('\n');
     }
@@ -272,85 +291,8 @@ public partial class Hud : CanvasLayer
 
     private void UpdateInspect()
     {
-        if (Hover is not { } p)
-        {
-            _inspectPanel.Visible = false;
-            return;
-        }
-        var r = Sim.InspectCell(p);
-        if (!r.Valid)
-        {
-            _inspectPanel.Visible = false;
-            return;
-        }
-        _inspectPanel.Visible = true;
-        var sb = new StringBuilder();
-        var field = r.FieldId != 0 ? Sim.World.FieldById(r.FieldId) : null;
-        var farmland = r.FarmlandId != 0 ? Sim.World.FarmlandById(r.FarmlandId) : null;
-        sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
-        if (farmland != null)
-        {
-            var owner = farmland.FarmId == Sim.Player.FarmId ? "yours" : $"{Sim.Farms.OwnerName(farmland)}'s";
-            if (farmland.FarmId == Farm.None) owner += $", for sale at ${Sim.Farms.Price(farmland):N0}";
-            sb.Append($" · {farmland.Label}, {owner}");
-        }
-        sb.Append($"   {Widgets.Colored($"{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m", Palette.Dim)}\n");
-        if (field != null && Sim.Contracts.On(field) is { } contract)
-            sb.Append((contract.State == ContractState.Active
-                ? Widgets.Colored($"Contract: {contract.Job}, by {Sim.Contracts.DueDate(contract).Short}", Palette.Contract)
-                : Widgets.Colored($"Offer: {contract.Job} for {contract.Client}, ${contract.Reward:N0}", Palette.Dim)) + "\n");
-        sb.Append($"{GroundName(r.Ground)} on [b]{r.Soil?.Name}[/b]");
-        if (r.Crop != null)
-        {
-            var ripe = r.Crop.Stages.ElementAtOrDefault(r.Stage)?.Harvestable == true;
-            sb.Append($" · [b]{r.Crop.Name}[/b] — {r.StageName}{(ripe ? " " + Widgets.Colored("(ready to harvest)", Palette.Good) : "")}");
-        }
-        sb.Append('\n');
-        if (!WorldMap.IsSealed(r.Ground))
-        {
-            sb.Append($"Moisture [b]{r.Moisture * 100:0}%[/b]   Nitrogen [b]{r.Nitrogen:0}[/b] kg/ha");
-            if (r.Crop != null && r.StageName != "Dead") sb.Append($"   Health [b]{r.Health * 100:0}%[/b]");
-            sb.Append('\n');
-            var treated = new List<string>();
-            if (r.Weeds != WeedState.None) treated.Add(WeedName(r.Weeds));
-            if (r.Fertilized > 0) treated.Add(r.Fertilized == 1 ? "fertilized" : $"fertilized {r.Fertilized}×");
-            if (treated.Count > 0) sb.Append(Widgets.Colored(string.Join(" · ", treated), Palette.Dim) + "\n");
-        }
-        if (r.Crop is { VernalizationDays: > 0 } vc && r.StageName != "Dead" && r.Stage < Array.FindIndex(vc.Stages, s => s.RequiresVernalization))
-            sb.Append(r.Chill >= vc.VernalizationDays
-                ? Widgets.Colored("Vernalized: ready to shoot in spring", Palette.Info) + "\n"
-                : Widgets.Colored($"Vernalization {r.Chill:0}/{vc.VernalizationDays:0} cold days", Palette.Info) + "\n");
-        if (r.Crop != null && !float.IsNaN(r.DaysToHarvest) && r.DaysToHarvest > 0)
-        {
-            var days = float.IsInfinity(r.DaysToHarvest) ? "over 2 years" : $"~{r.DaysToHarvest:0} days";
-            sb.Append(Widgets.Colored($"Harvest in {days} · water factor {r.WaterFactor * 100:0}% · expected {r.ExpectedYieldPerHa:N0} L/ha", Palette.Dim) + "\n");
-        }
-        if (r.Crop == null && r.Soil != null && !WorldMap.IsSealed(r.Ground))
-            sb.Append(Widgets.Colored(r.Soil.Description, Palette.Dim) + "\n");
-        foreach (var warn in r.Warnings) sb.Append(Warning(warn) + "\n");
-        _inspect.Text = sb.ToString().TrimEnd('\n');
+        var text = Hover is { } p ? CellText.Describe(Sim, p) : null;
+        _inspectPanel.Visible = text != null;
+        if (text != null) _inspect.Text = text;
     }
-
-    private static string WeedName(byte weeds) => weeds switch
-    {
-        WeedState.Small => "Small weeds",
-        WeedState.Grown => "Weeds",
-        WeedState.Sprayed => "Sprayed against weeds",
-        _ => "",
-    };
-
-    private static string GroundName(GroundType g) => g switch
-    {
-        GroundType.Grass => "Grass",
-        GroundType.Cultivated => "Cultivated seedbed",
-        GroundType.Seeded => "Sown",
-        GroundType.Stubble => "Stubble",
-        GroundType.Plowed => "Plowed",
-        GroundType.Road => "Road",
-        GroundType.Yard => "Gravel yard",
-        GroundType.Dirt => "Dirt track",
-        GroundType.Forest => "Forest floor",
-        GroundType.Water => "Water",
-        _ => g.ToString(),
-    };
 }

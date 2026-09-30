@@ -1,5 +1,5 @@
 {
-  "id": "canola", "name": "Canola", "fillType": "canola", "harvestGroup": "grain", "atlasRow": 2,
+  "id": "canola", "name": "Canola", "fillType": "canola", "harvestGroup": "grain", "atlasRow": 2, "mapColor": "#e8d83a",
   "baseTempC": 3, "yieldPerHa": 4200, "seedKgPerHa": 5,
   "sowingMonths": [8, 9], "harvestMonths": [7],
   "frostKillC": -15, "wiltingPoint": 0.25, "optimalMoistureMin": 0.45, "optimalMoistureMax": 0.8,

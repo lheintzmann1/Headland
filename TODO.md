@@ -135,8 +135,8 @@ The triggers, storage and actions have since become POI components (see Componen
 - [x] Plow, fertilize, spray and mow jobs: entries in `contracts/`.
 - [ ] Bale jobs, once balers pick up the cut grass (mowing leaves it lying on the field).
 - [x] Field access: work only applies on the player's farmland or fields with an active contract, and only
-      the contract's work. Contract fields show in the world (sign, outline) and in the inspector; the map
-      screen shows them once it exists.
+      the contract's work. Contract fields show in the world (sign, outline), in the inspector and on the map
+      (outlined, the offers dashed).
 - [x] Equipment rental: a contract can offer a leased machine set, fee taken from the reward; machines
       appear at a delivery spot and leave when the contract ends.
 - [x] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
@@ -313,7 +313,8 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
       top screen first. The pages still to build (map, prices, statistics, helpers, settings) become tabs
       as they come.
 - [x] Remember the last tab.
-- [ ] A few direct shortcuts (M for the map) open the menu on their tab, with the map tab.
+- [x] A few direct shortcuts (M for the map, O for the shop: P is the pause here) open the menu on their tab, with the
+      map tab.
 
 ## Map and terrain
 
@@ -347,7 +348,7 @@ in-game menu (see Controls).
 - [ ] Pause: resume, save, load, settings, quit to menu, in the in-game menu.
 - [ ] Settings: graphics (resolution, window mode, vsync, render scale, shadows, view distance), audio
       volumes, controls (rebinding on physical keys, saved), gameplay (units, autosave), language.
-- [ ] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
+- [x] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
       layers for crop, growth stage, soil, moisture; click to set a waypoint.
 - [ ] Minimap in the HUD with POIs and vehicles.
 - [ ] HUD redesign on the theme: vehicle panel with speed, fuel, condition and fill levels.

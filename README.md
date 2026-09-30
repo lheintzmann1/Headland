@@ -81,6 +81,11 @@ Built with **Godot 4.7** and **C#**.
   drifting cloud shadows, and a sun that follows the time of day and the season.
 - **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, weeds, crop stage, vernalization progress
   and a harvest estimate.
+- **Map.** The menu's map (M) shows the world from above with the numbered fields, the farmland (yours shaded), the
+  contracts' fields, the places to sell, buy and get service, the machines and you, each switched on and off; its
+  layers color the fields by crop, growth (plowed, cultivated, sown, growing, ready, withered, harvested), soil and
+  moisture, and hovering it reads the ground as in the world. A click sets a waypoint: a flag on the map, a beam in the
+  world and its distance and direction in the HUD, until you get there.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money
@@ -94,7 +99,7 @@ Built with **Godot 4.7** and **C#**.
 Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
 that do something where you are, in the words of the tool they work ("Lower cultivator", "Unfold boom", "Pipe out"), and
 F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
-(contracts, finances, farmland, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
+(the map, contracts, finances, farmland, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
 file (see below).
 
@@ -123,7 +128,8 @@ file (see below).
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines; on foot at the farm's fuel tank, order diesel) |
 | H | Hire or dismiss a field helper |
-| Esc | The menu: contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
+| Esc | The menu: the map, contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
+| M, O | The menu's map, its shop (again: close it) |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |

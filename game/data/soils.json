@@ -1,12 +1,12 @@
 [
-  // Index order matters: cells store the soil index. Keep at most 16 soils.
-  { "id": "loam", "name": "Loam", "waterCapacityMm": 150, "infiltration": 0.9,  "fieldCapacity": 0.75, "drainageRate": 0.10,
+  // Index order matters: cells store the soil index. Keep at most 16 soils. mapColor: its color on the map's soil layer.
+  { "id": "loam", "name": "Loam", "mapColor": "#8a6a44", "waterCapacityMm": 150, "infiltration": 0.9,  "fieldCapacity": 0.75, "drainageRate": 0.10,
     "initialNitrogen": 110, "mineralizationPerMonth": 8.0, "initialMoisture": 0.55,
     "description": "Balanced soil: holds water well and drains well. The farmer's favorite." },
-  { "id": "clay", "name": "Clay", "waterCapacityMm": 185, "infiltration": 0.7,  "fieldCapacity": 0.82, "drainageRate": 0.03,
+  { "id": "clay", "name": "Clay", "mapColor": "#a0563c", "waterCapacityMm": 185, "infiltration": 0.7,  "fieldCapacity": 0.82, "drainageRate": 0.03,
     "initialNitrogen": 125, "mineralizationPerMonth": 9.0, "initialMoisture": 0.62,
     "description": "Heavy and fertile. Stores lots of water but drains slowly: waterlogs after long rain." },
-  { "id": "sand", "name": "Sand", "waterCapacityMm": 80,  "infiltration": 0.98, "fieldCapacity": 0.6,  "drainageRate": 0.30,
+  { "id": "sand", "name": "Sand", "mapColor": "#d2bf8a", "waterCapacityMm": 80,  "infiltration": 0.98, "fieldCapacity": 0.6,  "drainageRate": 0.30,
     "initialNitrogen": 70,  "mineralizationPerMonth": 5.0, "initialMoisture": 0.45,
     "description": "Light, warm and easy to work, but dries out fast and holds little nitrogen." }
 ]

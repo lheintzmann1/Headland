@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Headland.Core.Components;
 using Headland.Core.Machines.Components;
 using Headland.Core.Machines.Work;
+using Headland.Core.World;
 
 namespace Headland.Core.Content;
 
@@ -317,7 +318,10 @@ public sealed class ContentDatabase
             if (c.RegrowStage is { } regrow && (regrow < 0 || regrow >= c.HarvestableStage))
                 e.Add($"crop '{c.Id}': regrowStage must be a stage before the harvestable one");
             if (c.WeedYieldLoss is < 0f or > 1f) e.Add($"crop '{c.Id}': weedYieldLoss must be 0..1");
+            if (MapLayers.ParseRgb(c.MapColor) == null) e.Add($"crop '{c.Id}': mapColor must be a color (#rrggbb)");
         }
+        foreach (var s in Soils.Where(s => MapLayers.ParseRgb(s.MapColor) == null))
+            e.Add($"soil '{s.Id}': mapColor must be a color (#rrggbb)");
 
         foreach (var cl in Climates.Values)
         {

@@ -206,6 +206,8 @@ public sealed class SoilDef
     public float MineralizationPerMonth { get; set; } = 4f;
     public float InitialMoisture { get; set; } = 0.55f;
     public string Description { get; set; } = "";
+    /// <summary>Its color on the map's soil layer ("#rrggbb").</summary>
+    public string MapColor { get; set; } = "";
 }
 
 public sealed class CropStageDef
@@ -256,6 +258,8 @@ public sealed class CropDef
     public float WeedYieldLoss { get; set; } = 0.2f;
     public CropStageDef[] Stages { get; set; } = [];
     public string Description { get; set; } = "";
+    /// <summary>Its color on the map's crop layer ("#rrggbb").</summary>
+    public string MapColor { get; set; } = "";
 
     public int HarvestableStage
     {

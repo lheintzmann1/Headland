@@ -1,5 +1,5 @@
 {
-  "id": "barley", "name": "Barley", "fillType": "barley", "harvestGroup": "grain", "atlasRow": 1,
+  "id": "barley", "name": "Barley", "fillType": "barley", "harvestGroup": "grain", "atlasRow": 1, "mapColor": "#a9b865",
   "baseTempC": 0, "yieldPerHa": 7800, "seedKgPerHa": 150,
   "sowingMonths": [3, 4], "harvestMonths": [7, 8],
   "frostKillC": -8, "wiltingPoint": 0.24, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.8,

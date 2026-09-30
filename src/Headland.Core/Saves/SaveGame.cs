@@ -155,6 +155,7 @@ public static class SaveGame
             {
                 X = sim.Player.Position.X, Z = sim.Player.Position.Y, Heading = sim.Player.Heading,
                 Farm = sim.Player.FarmId, Vehicle = sim.Player.Vehicle?.Id,
+                Waypoint = sim.Player.Waypoint is { } w ? [w.X, w.Y] : null,
             },
         };
     }
@@ -273,6 +274,7 @@ public static class SaveGame
         sim.Player.Position = new Vector2(p.X, p.Z);
         sim.Player.Heading = p.Heading;
         sim.Player.FarmId = p.Farm;
+        sim.Player.Waypoint = p.Waypoint is [var wx, var wz] ? new Vector2(wx, wz) : null;
         sim.Player.Restore(p.Vehicle is { } id ? machines.GetValueOrDefault(id) : null);
         sim.RestoreTime(s.RealTime, s.PendingHourFrom, s.PendingHours);
     }

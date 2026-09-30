@@ -1,5 +1,5 @@
 {
-  "id": "wheat", "name": "Wheat", "fillType": "wheat", "harvestGroup": "grain", "atlasRow": 0,
+  "id": "wheat", "name": "Wheat", "fillType": "wheat", "harvestGroup": "grain", "atlasRow": 0, "mapColor": "#cfa44f",
   "baseTempC": 0, "yieldPerHa": 8600, "seedKgPerHa": 170,
   "sowingMonths": [9, 10, 11], "harvestMonths": [7, 8],
   "frostKillC": -18, "wiltingPoint": 0.22, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.8,

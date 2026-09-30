@@ -21,6 +21,8 @@ public static class GameActions
     public const string Menu = "menu";
     public const string MenuPrevTab = "menu_prev_tab";
     public const string MenuNextTab = "menu_next_tab";
+    public const string Map = "map";
+    public const string Shop = "shop";
     public const string ToggleDebug = "toggle_debug";
     public const string Screenshot = "screenshot";
 
@@ -48,9 +50,11 @@ public static class GameActions
         new(Quicksave, "Quicksave", World, "F5"),
         new(Quickload, "Quickload", World, "F8"),
         new(ToggleHelp, "Help: the keys for what you're doing", World, "F1", "Joy Back"),
-        new(Menu, "Menu: contracts, finances, farmland, the shop, the garage, controls, save and load; closes the screen on top", Screens, "Escape", "Joy Start"),
+        new(Menu, "Menu: the map, contracts, finances, farmland, the shop, the garage, controls, save and load; closes the screen on top", Screens, "Escape", "Joy Start"),
         new(MenuPrevTab, "Previous tab", InputContext.Menu, "Q", "Joy LB"),
         new(MenuNextTab, "Next tab", InputContext.Menu, "E", "Joy RB"),
+        new(Map, "Map: open the menu on it, or close it", Screens, "M"),
+        new(Shop, "Shop: open the menu on it, or close it", Screens, "O"),
         new(ToggleDebug, "Debug overlay", Screens, "F3"),
         new(Screenshot, "Screenshot", Screens, "F12"),
     ];

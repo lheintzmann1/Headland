@@ -249,4 +249,6 @@ public sealed class PlayerSave
     public float Heading { get; set; }
     public int Farm { get; set; }
     public int? Vehicle { get; set; }
+    /// <summary>The waypoint marked on the map, [x, z], if any.</summary>
+    public float[]? Waypoint { get; set; }
 }

@@ -206,10 +206,24 @@ public partial class ScenarioRunner : Node
             await Frames(20);
             Log($"tab {menu.TabTitle}");
             if (menu.Page is UI.ShopPage shop) await ShopMachines(shop);
+            else if (menu.Page is UI.MapPage map) await EachMapLayer(map);
             else if (DisplayServer.GetName() != "headless") await Shot($"menu_{menu.TabTitle.ToLowerInvariant()}");
             if (menu.Page is UI.GaragePage garage) await GarageMachine(garage);
         }
         menu.Close();
+    }
+
+    /// <summary>The map in each of its layers.</summary>
+    private async Task EachMapLayer(UI.MapPage map)
+    {
+        foreach (var layer in Enum.GetValues<MapLayer>())
+        {
+            map.ShowLayer(layer);
+            await Frames(10);
+            Log($"map: {layer}");
+            if (DisplayServer.GetName() != "headless") await Shot($"map_{layer.ToString().ToLowerInvariant()}");
+        }
+        map.ShowLayer(MapLayer.Terrain);
     }
 
     /// <summary>The first machine of the garage: its options where it stands, then sold.</summary>
