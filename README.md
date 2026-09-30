@@ -112,7 +112,8 @@ file (see below).
 | Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
-| L | Lights: headlights and tail lights, then work lights too, then off; they go off when you get out, and a helper switches them on at night. Brake and reverse lights work by themselves |
+| L, Alt+L | Lights: headlights and tail lights, then work lights too, then off, and back a step; they go off when you get out, and a helper switches them on at night. Brake and reverse lights work by themselves, and the cab lights at dusk. A front loader or front implement switches to the headlights on the roof |
+| Ctrl+Shift+L | High beams (the headlights alone and each set of work lights have keys too, unbound: `road_lights`, `work_lights_front`, `work_lights_rear` in the settings file) |
 | Shift+L, Ctrl+L | Beacons (where fitted), hazard lights |
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines) |

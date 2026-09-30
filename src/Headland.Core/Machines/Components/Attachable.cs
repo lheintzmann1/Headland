@@ -24,6 +24,8 @@ public sealed class AttachableDef : MachineComponentDef, ISpecSource
     public float Lift { get; set; } = 0.45f;
     /// <summary>Trailed: the share of its weight (with its load) resting on the hitch, a semi-trailer's on the fifth wheel.</summary>
     public float HitchLoad { get; set; }
+    /// <summary>On a joint that uses them, it switches the vehicle to its top lights (FS: useTopLights).</summary>
+    public bool UseTopLights { get; set; } = true;
 
     /// <summary>What it hitches to, and how: "Drawbar, trailed".</summary>
     public IEnumerable<Spec> Specs(EntityDef owner, ContentDatabase content) =>

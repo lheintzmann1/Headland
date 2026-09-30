@@ -12,6 +12,15 @@ public sealed class AttacherJointDef
     public float X { get; set; }
     public float Z { get; set; }
     public float Y { get; set; } = 0.6f;
+    /// <summary>
+    /// An implement on it switches the vehicle to its top lights (FS: useTopLights), as a front loader hides the
+    /// headlights in the hood; by default for a joint in front of the vehicle's origin.
+    /// </summary>
+    public bool? UseTopLights { get; set; }
+
+    /// <summary>Whether an implement on it switches the vehicle to its top lights (<see cref="UseTopLights"/>).</summary>
+    [JsonIgnore]
+    public bool TopLights => UseTopLights ?? Z > 0f;
 
     /// <summary>Its <see cref="Type"/>, once linked to the content.</summary>
     [JsonIgnore]

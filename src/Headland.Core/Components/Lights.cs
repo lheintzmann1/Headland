@@ -41,6 +41,14 @@ public sealed class LampDef
     public float AngleDeg { get; set; } = 32f;
     public float Energy { get; set; } = 4f;
     public string Color { get; set; } = "#fff0d1";
+    /// <summary>
+    /// A top light (FS: isTopLight), such as headlights on the cab's roof: it shines only while an implement on a front
+    /// joint switches the vehicle to its top lights; a bottom light, such as those in the hood, only while none does.
+    /// </summary>
+    public bool TopLight { get; set; }
+    public bool BottomLight { get; set; }
+    /// <summary>A beacon on whenever someone drives the vehicle, whatever the beacon key (FS: alwaysActive).</summary>
+    public bool AlwaysActive { get; set; }
 }
 
 /// <summary>
@@ -72,6 +80,8 @@ public sealed class LightsDef : ComponentDef
             else if (l.Trigger?.Error() is { } error) yield return $"{what} trigger: {error}";
             if (l.Hours != null && l.Switch != "hours" || l.Trigger != null && l.Switch != "trigger")
                 yield return $"{what}: hours go with the hours switch, a trigger with the trigger switch";
+            if (l.TopLight && l.BottomLight) yield return $"{what}: a top light or a bottom light, not both";
+            if (l.AlwaysActive && l.TypeDef is { Control: not "beacons" }) yield return $"{what}: alwaysActive is for beacons";
         }
     }
 
@@ -90,28 +100,55 @@ public enum TurnSignal
 public sealed class LightsSave
 {
     public int Step { get; set; }
+    /// <summary>The types of lights on (null in saves from before: those of the step).</summary>
+    public List<string>? On { get; set; }
     public bool Beacons { get; set; }
     public TurnSignal Signal { get; set; }
 }
 
 /// <summary>
-/// The driver's light switches and which lamps shine. The driver switches the vehicle's: the light key steps through the
-/// lamp types' steps (off, headlights and tail lights, work lights too), with beacon, turn signal and hazard keys; the
-/// brake lights shine as it slows down and the reverse lights as it backs up. The implements hanging on it follow.
+/// The driver's light switches and which lamps shine (FS: Lights). The driver switches the vehicle's: the light key steps
+/// through the lamp types' steps (off, headlights and tail lights, work lights too) and back, and the types with a key
+/// of their own switch alone (high beams, the work lights); with beacon, turn signal and hazard keys. The brake lights
+/// shine as it slows down and the reverse lights as it backs up, the cab lights while someone drives, dimmed by day.
+/// An implement on a front joint switches it to its top lights. The implements hanging on it follow.
 /// </summary>
 public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
 {
     private readonly bool[] _lit;
+    private readonly float[] _level;
 
-    public Lights(Entity owner, LightsDef def) : base(owner, def) => _lit = new bool[def.Lamps.Length];
+    public Lights(Entity owner, LightsDef def) : base(owner, def)
+    {
+        _lit = new bool[def.Lamps.Length];
+        _level = new float[def.Lamps.Length];
+    }
 
     /// <summary>The light key's step: 0 off, then the lamps of each step on in turn (1 headlights, 2 work lights too…).</summary>
     public int Step { get; set; }
+    /// <summary>The types of lights on (FS: the lights types mask): those of the step, and those switched alone.</summary>
+    public HashSet<string> On { get; } = [];
     public bool Beacons { get; set; }
     public TurnSignal Signal { get; set; }
 
     /// <summary>Whether lamp <paramref name="index"/> (of the def's lamps) shines, as of the last tick.</summary>
     public bool Lit(int index) => _lit[index];
+
+    /// <summary>How bright lamp <paramref name="index"/> shines, 0 … 1 of its energy: cab lights dim by day.</summary>
+    public float Level(int index) => _lit[index] ? _level[index] : 0f;
+
+    /// <summary>
+    /// How bright cab lights are at <paramref name="hour"/> (FS: interior lights): off from 10 to 16, fading out from
+    /// 8 and in until 18.
+    /// </summary>
+    public static float CabBrightness(float hour) => Math.Clamp(hour < 10f ? 1f - (hour - 8f) / 2f : hour > 16f ? (hour - 16f) / 2f : 0f, 0f, 1f);
+
+    /// <summary>
+    /// Whether an implement on one of <paramref name="vehicle"/>'s joints switches it to its top lights (FS:
+    /// requiresTopLights): one that uses them, on a joint that does.
+    /// </summary>
+    public static bool TopLights(Machine vehicle) =>
+        vehicle.Def.Joints.Any(j => j.TopLights && vehicle.Attached.GetValueOrDefault(j.Id)?.Get<Attachable>()?.Def.UseTopLights == true);
 
     /// <summary>Its lamps the driver switches with <paramref name="control"/> (see <see cref="LampTypeDef.Controls"/>).</summary>
     public IEnumerable<LampDef> Driven(string control) => Def.Lamps.Where(l => l.Switch == "driver" && l.TypeDef?.Control == control);
@@ -126,12 +163,29 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
         var chain = vehicle.Chain().Select(m => m.Get<Lights>()).OfType<Lights>().ToList();
         bool Has(string control) => chain.Any(l => l.Driven(control).Any());
 
-        var types = chain.SelectMany(l => l.Driven("lights")).Select(l => l.TypeDef!).Distinct().ToList();
-        if (types.Count > 0)
+        var types = chain.SelectMany(l => l.Driven("lights")).Select(l => l.TypeDef!).Distinct().OrderBy(t => t.Step).ToList();
+        var steps = types.Select(t => t.Step).Where(s => s > 0).Distinct().Order().ToList();
+        string Names(Func<LampTypeDef, bool> which) => Activation.Join(types.Where(which).Select(t => t.Name).ToList());
+        if (steps.Count > 0)
         {
-            var next = types.Select(t => t.Step).Where(s => s > Step).DefaultIfEmpty(0).Min();
-            var names = types.Where(t => t.Step == next).Select(t => t.Name).ToList();
-            actions.Add(InputActions.Lights, next == 0 ? "Lights off" : $"{Activation.Join(names)} on", () => Step = next);
+            // FS: lights switched alone at step 0 go off with the light key.
+            var next = Step == 0 && On.Count > 0 ? 0 : steps.Where(s => s > Step).DefaultIfEmpty(0).Min();
+            actions.Add(InputActions.Lights, next == 0 ? "Lights off" : $"{Names(t => t.Step == next)} on", () => SetStep(next, types));
+            var back = Step == 0 ? steps[^1] : steps.Where(s => s < Step).DefaultIfEmpty(0).Max();
+            var label = back == 0 ? "Lights off" : back > Step ? $"{Names(t => t.Step >= 1 && t.Step <= back)} on" : $"{Names(t => t.Step > back && t.Step <= Step)} off";
+            actions.Add(InputActions.LightsBack, label, () => SetStep(back, types), hinted: false);
+        }
+        foreach (var key in types.Where(t => t.Key != null).GroupBy(t => t.Key!))
+        {
+            var ids = key.Select(t => t.Id).ToList();
+            var names = Activation.Join(key.Select(t => t.Name).ToList());
+            actions.Toggle(key.Key, ids.Any(On.Contains), $"{names} on", $"{names} off", on =>
+            {
+                foreach (var id in ids)
+                    if (on) On.Add(id);
+                    else On.Remove(id);
+                return null;
+            }, hinted: false);
         }
         if (Has("beacons")) actions.Add(InputActions.Beacons, Beacons ? "Beacons off" : "Beacons on", () => Beacons = !Beacons, hinted: false);
         if (Has("turnLeft")) actions.Add(InputActions.TurnLeft, Signal == TurnSignal.Left ? "Stop signalling" : "Signal left", () => Turn(TurnSignal.Left), hinted: false);
@@ -140,10 +194,19 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
             actions.Add(InputActions.Hazards, Signal == TurnSignal.Hazards ? "Hazard lights off" : "Hazard lights on", () => Turn(TurnSignal.Hazards), hinted: false);
     }
 
+    /// <summary>The light key's <paramref name="step"/>: the lights of its steps on, and only those (FS: a light state).</summary>
+    private void SetStep(int step, IEnumerable<LampTypeDef> types)
+    {
+        Step = step;
+        On.Clear();
+        foreach (var t in types.Where(t => t.Step >= 1 && t.Step <= step)) On.Add(t.Id);
+    }
+
     /// <summary>The driver got out (FS: lights off on leaving): the lights, beacons and turn signals go off, the hazards stay on.</summary>
     public void Leave()
     {
         Step = 0;
+        On.Clear();
         Beacons = false;
         if (Signal != TurnSignal.Hazards) Signal = TurnSignal.Off;
     }
@@ -155,24 +218,31 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
     {
         var weather = sim.Weather;
         var switches = Switches;
-        var step = Owner is Machine m && m.Root.Get<Drivable>()?.Controller is FieldWorkController && weather.Night ? int.MaxValue : switches.Step;
-        var motor = (Owner as Machine)?.Root.Get<Motor>();
+        var root = (Owner as Machine)?.Root;
+        var driven = root?.Get<Drivable>()?.Controller;
+        // A helper at night lights every step (FS: the AI's working lights), not the high beams.
+        var helperAtNight = driven is FieldWorkController && weather.Night;
+        var motor = root?.Get<Motor>();
         var (braking, reversing) = (motor?.Braking == true, motor?.Reversing == true);
         var left = switches.Signal is TurnSignal.Left or TurnSignal.Hazards;
         var right = switches.Signal is TurnSignal.Right or TurnSignal.Hazards;
+        var top = root != null && TopLights(root);
+        var cab = driven != null ? CabBrightness(sim.Clock.HourOfDay) : 0f;
         for (var i = 0; i < _lit.Length; i++)
         {
             var l = Def.Lamps[i];
-            _lit[i] = l.Switch switch
+            _level[i] = l.TypeDef?.Control == "cab" ? cab : 1f;
+            _lit[i] = (l.TopLight ? top : !l.BottomLight || !top) && l.Switch switch
             {
                 "driver" => l.TypeDef?.Control switch
                 {
-                    "lights" => step >= l.TypeDef.Step,
-                    "beacons" => switches.Beacons,
+                    "lights" => helperAtNight ? l.TypeDef.Step >= 1 : switches.On.Contains(l.TypeDef.Id),
+                    "beacons" => switches.Beacons || l.AlwaysActive && driven != null,
                     "turnLeft" => left,
                     "turnRight" => right,
                     "brake" => braking,
                     "reverse" => reversing,
+                    "cab" => cab > 0f,
                     _ => false,
                 },
                 "dark" => weather.Dim,
@@ -183,11 +253,16 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
         }
     }
 
-    protected override LightsSave Capture(ContentDatabase content) => new() { Step = Step, Beacons = Beacons, Signal = Signal };
+    protected override LightsSave Capture(ContentDatabase content) =>
+        new() { Step = Step, On = On.Order().ToList(), Beacons = Beacons, Signal = Signal };
 
     protected override void Restore(LightsSave save, SaveContext context)
     {
         Step = Math.Clamp(save.Step, 0, 99);
+        On.Clear();
+        // Saves from before the lights switched alone keep the step's.
+        foreach (var id in save.On ?? context.Content.LampTypes.Values.Where(t => t.Control == "lights" && t.Step >= 1 && t.Step <= Step).Select(t => t.Id))
+            On.Add(id);
         Beacons = save.Beacons;
         Signal = Enum.IsDefined(save.Signal) ? save.Signal : TurnSignal.Off;
     }

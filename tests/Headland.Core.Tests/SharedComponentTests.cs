@@ -95,9 +95,9 @@ public class SharedComponentTests
         Assert.False(lights.Lit(Lamp(lights, "evening")));
     }
 
-    /// <summary>Which of the lamp types (by lamptypes.json id) have a lamp shining.</summary>
+    /// <summary>Which of the lamp types (by lamptypes.json id) have a lamp shining, but the cab lights (see their own test).</summary>
     private static string[] Shining(Lights lights) =>
-        lights.Def.Lamps.Where((_, i) => lights.Lit(i)).Select(l => l.Type).Distinct().Order().ToArray();
+        lights.Def.Lamps.Where((l, i) => lights.Lit(i) && l.Type != "cab").Select(l => l.Type).Distinct().Order().ToArray();
 
     [Fact]
     public void TheDriverSwitchesTheLightsStepByStepAndSignals()
@@ -180,6 +180,119 @@ public class SharedComponentTests
         sim.Tick(Dt);
         sim.Tick(Dt);
         Assert.Equal(["reverse"], Shining(lights));
+    }
+
+    [Fact]
+    public void TheLightsStepBackAndTheirTypesSwitchAloneOnTheirKeys()
+    {
+        var sim = ShedSim();
+        var tractor = sim.Machines.Spawn("tractor_125", new Vector2(10f, 50f), 0f);
+        var lights = tractor.Get<Lights>()!;
+        sim.Player.Enter(tractor);
+        string Label(string action) => sim.Offers().Of(action)!.Label;
+        string[] After(string action)
+        {
+            sim.Perform(action);
+            sim.Tick(Dt);
+            return Shining(lights);
+        }
+
+        // Back from off, every step comes on; back again, the last step goes off (FS: "Toggle light (Reverse)").
+        Assert.Equal("Headlights, tail lights, front work lights, rear work lights on", Label(InputActions.LightsBack));
+        Assert.Equal(["head", "tail", "workFront", "workRear"], After(InputActions.LightsBack));
+        Assert.Equal("Front work lights, rear work lights off", Label(InputActions.LightsBack));
+        Assert.Equal(["head", "tail"], After(InputActions.LightsBack));
+
+        // High beams aren't in the cycle: their own key, and the light key's next step leaves them out again.
+        Assert.Equal("High beams on", Label(InputActions.HighBeam));
+        Assert.Equal(["head", "highBeam", "tail"], After(InputActions.HighBeam));
+        Assert.Equal(["head", "tail", "workFront", "workRear"], After(InputActions.Lights));
+
+        // The rear work lights alone; the light key then turns everything off (FS).
+        After(InputActions.Lights);
+        Assert.Equal(["workRear"], After(InputActions.WorkLightsRear));
+        Assert.Equal("Lights off", Label(InputActions.Lights));
+        Assert.Empty(After(InputActions.Lights));
+        Assert.Equal(["head", "tail"], After(InputActions.RoadLights));
+
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim.Machines.ById(tractor.Id)!.Get<Lights>()!;
+        Assert.Equal(["head", "tail"], loaded.On.Order());
+    }
+
+    [Fact]
+    public void AFrontImplementSwitchesToTheTopLights()
+    {
+        var sim = ShedSim();
+        var tractor = sim.Machines.Spawn("tractor_125", new Vector2(10f, 50f), 0f);
+        var lights = tractor.Get<Lights>()!;
+        sim.Player.Enter(tractor);
+        sim.Perform(InputActions.Lights);
+        sim.Tick(Dt);
+        // Which headlights shine: those in the hood, or those on the roof.
+        string Heads() => string.Join(", ", lights.Def.Lamps.Where((l, i) => l.Type == "head" && lights.Lit(i)).Select(l => l.TopLight ? "roof" : "hood"));
+        Assert.Equal("hood, hood", Heads());
+
+        // A mower on the front linkage hides the headlights in the hood: those on the roof shine instead.
+        var mower = sim.Machines.Spawn("mower_3", new Vector2(10f, 54f), 0f);
+        Assert.True(sim.Machines.Attach(tractor, "front", mower));
+        sim.Tick(Dt);
+        Assert.Equal("roof, roof", Heads());
+        sim.Machines.Detach(mower);
+        sim.Tick(Dt);
+        Assert.Equal("hood, hood", Heads());
+    }
+
+    [Fact]
+    public void CabLightsShineWhileSomeoneDrivesDimmedByDay()
+    {
+        var sim = ShedSim();
+        var tractor = sim.Machines.Spawn("tractor_125", new Vector2(10f, 50f), 0f);
+        var lights = tractor.Get<Lights>()!;
+        var cab = Array.FindIndex(lights.Def.Lamps, l => l.Type == "cab");
+        At(sim, 23);
+        Assert.False(lights.Lit(cab));
+        sim.Player.Enter(tractor);
+        sim.Tick(Dt);
+        Assert.Equal((true, 1f), (lights.Lit(cab), lights.Level(cab)));
+        At(sim, 12);
+        Assert.False(lights.Lit(cab));
+        At(sim, 17);
+        Assert.Equal(0.75f, lights.Level(cab), 2);
+        Assert.Equal((0f, 1f, 0.5f, 0f, 0.5f, 1f), (Lights.CabBrightness(13f), Lights.CabBrightness(7f), Lights.CabBrightness(9f),
+            Lights.CabBrightness(10f), Lights.CabBrightness(17f), Lights.CabBrightness(19f)));
+    }
+
+    [Fact]
+    public void BeaconsAlwaysActiveShineWhileSomeoneDrives()
+    {
+        var content = TestContent.WithMachines("""
+            [{ "id": "test_escort", "name": "Escort", "size": { "length": 4, "width": 2 },
+               "components": {
+                 "runningGear": { "axles": [ { "z": 0, "track": 1.6 }, { "z": 2.5, "track": 1.6, "steering": "front" } ] },
+                 "motor": {}, "drivable": {},
+                 "lights": { "lamps": [ { "type": "beacon", "y": 2, "alwaysActive": true }, { "type": "beacon", "y": 2, "x": 0.5 } ] } },
+               "visual": { "model": "res://escort.glb" } }]
+            """);
+        var sim = Simulation.Create(content);
+        var car = sim.Machines.Spawn("test_escort", new Vector2(60f, 60f), 0f);
+        var lights = car.Get<Lights>()!;
+        sim.Tick(Dt);
+        Assert.False(lights.Lit(0));
+        sim.Player.Enter(car);
+        sim.Tick(Dt);
+        Assert.Equal((true, false), (lights.Lit(0), lights.Lit(1)));
+        sim.Perform(InputActions.Beacons);
+        sim.Tick(Dt);
+        Assert.Equal((true, true), (lights.Lit(0), lights.Lit(1)));
+        sim.Player.Exit(sim);
+        sim.Tick(Dt);
+        Assert.Equal((false, false), (lights.Lit(0), lights.Lit(1)));
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [{ "id": "x", "components": { "lights": { "lamps": [ { "id": "a", "type": "head", "alwaysActive": true }, { "id": "b", "topLight": true, "bottomLight": true } ] } } }]
+            """)).Message;
+        Assert.Contains("lamp 'a': alwaysActive is for beacons", bad);
+        Assert.Contains("lamp 'b': a top light or a bottom light, not both", bad);
     }
 
     [Fact]

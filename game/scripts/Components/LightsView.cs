@@ -6,8 +6,9 @@ using Godot;
 namespace Headland.Game.Components;
 
 /// <summary>
-/// A spot light per lamp, lit while Core says it shines (see <see cref="Lights"/>). Beacons turn, turn signals blink
-/// (about 1.5 times a second, as the law has them), and lamps on an articulated machine's front frame swing with it.
+/// A spot light per lamp, lit while Core says it shines (see <see cref="Lights"/>), as bright as it says (cab lights dim
+/// by day). Beacons turn, turn signals blink (about 1.5 times a second, as the law has them), and lamps on an
+/// articulated machine's front frame swing with it.
 /// </summary>
 public partial class LightsView : ComponentView
 {
@@ -49,6 +50,7 @@ public partial class LightsView : ComponentView
             var (l, light) = _lamps[i];
             light.Visible = Lights.Lit(i) && (l.TypeDef?.Blinking != true || _blink < 0.5f);
             if (!light.Visible) continue;
+            light.LightEnergy = l.Energy * Lights.Level(i);
             var (x, z, swing) = _gear?.Swing(l.X, l.Z) ?? (l.X, l.Z, 0f);
             light.Position = new Vector3(x, l.Y, z);
             var spin = l.TypeDef?.Rotating == true ? _beacon : 0f;

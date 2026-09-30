@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Headland.Core.Components;
+using Headland.Core.Input;
 using Headland.Core.Machines.Components;
 
 namespace Headland.Core.Content;
@@ -138,18 +139,27 @@ public sealed class JointTypeDef
 public sealed class LampTypeDef
 {
     /// <summary>
-    /// The driver's controls lamps answer to: the light key's cycle ("lights", from its <see cref="Step"/>), the
-    /// beacon key, the turn signals (the hazards light both sides), the brakes (while the vehicle slows down) and the
-    /// reverse (while it backs up).
+    /// The driver's controls lamps answer to: the light keys ("lights": the light key's cycle, from its
+    /// <see cref="Step"/>, and its own <see cref="Key"/>), the beacon key, the turn signals (the hazards light both
+    /// sides), the brakes (while the vehicle slows down), the reverse (while it backs up) and the cab ("cab": while
+    /// someone drives, dimmed by the time of day).
     /// </summary>
-    public static readonly string[] Controls = ["lights", "beacons", "turnLeft", "turnRight", "brake", "reverse"];
+    public static readonly string[] Controls = ["lights", "beacons", "turnLeft", "turnRight", "brake", "reverse", "cab"];
+
+    /// <summary>The keys a type of lights can have of its own (FS: "Light front", "Work light front"…).</summary>
+    public static readonly string[] Keys = [InputActions.RoadLights, InputActions.WorkLightsFront, InputActions.WorkLightsRear, InputActions.HighBeam];
 
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     /// <summary>One of <see cref="Controls"/>.</summary>
     public string Control { get; set; } = "lights";
-    /// <summary>Lights: the step of the light key's cycle they're on from (1 headlights, 2 work lights too…).</summary>
+    /// <summary>
+    /// Lights: the step of the light key's cycle they're on from (1 headlights, 2 work lights too…); 0, they're not in
+    /// it, and only their own key switches them (high beams).
+    /// </summary>
     public int Step { get; set; } = 1;
+    /// <summary>Lights: the key switching the lamps of this type alone (one of <see cref="Keys"/>), if any.</summary>
+    public string? Key { get; set; }
     /// <summary>Its beam turns round (a beacon).</summary>
     public bool Rotating { get; set; }
     /// <summary>It flashes (a turn signal).</summary>

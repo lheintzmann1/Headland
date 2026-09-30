@@ -177,7 +177,7 @@ public partial class Hud : CanvasLayer
         if (v.Get<Lights>() is { } lights)
         {
             var lit = new List<string>();
-            if (lights.Step > 0) lit.Add("lights");
+            if (lights.On.Count > 0) lit.Add("lights");
             if (lights.Beacons) lit.Add("beacons");
             lit.Add(lights.Signal switch
             {

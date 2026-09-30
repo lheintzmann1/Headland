@@ -27,6 +27,9 @@
         "lamps": [
           { "type": "head", "x":  0.99, "y": 2.2, "z": 1.6 },
           { "type": "head", "x": -0.99, "y": 2.2, "z": 1.6 },
+          { "type": "highBeam", "x":  0.99, "y": 2.2, "z": 1.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5 },
+          { "type": "highBeam", "x": -0.99, "y": 2.2, "z": 1.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5 },
+          { "type": "cab", "x": 0, "y": 3.5, "z": 0.9, "pitchDeg": -90, "range": 2.5, "angleDeg": 75, "energy": 0.6, "color": "#ffd9a0" },
           { "type": "workFront", "x":  1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
           { "type": "workFront", "x": -1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
           { "type": "workRear", "x":  0.9, "y": 3.7, "z": -5.4, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },

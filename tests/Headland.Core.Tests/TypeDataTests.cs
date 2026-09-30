@@ -14,8 +14,9 @@ public class TypeDataTests
         var content = TestContent.Content;
         Assert.Equal(["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"], content.JointTypes.Keys.ToArray());
         Assert.Equal(["threePoint"], content.JointTypes.Values.Where(j => j.Linkage).Select(j => j.Id));
-        Assert.Equal(["head", "tail", "workFront", "workRear", "beacon", "turnLeft", "turnRight", "brake", "reverse"], content.LampTypes.Keys.ToArray());
-        Assert.Equal([("head", 1), ("tail", 1), ("workFront", 2), ("workRear", 2)], content.LampTypes.Values.Where(l => l.Control == "lights").Select(l => (l.Id, l.Step)));
+        Assert.Equal(["head", "tail", "workFront", "workRear", "highBeam", "beacon", "turnLeft", "turnRight", "brake", "reverse", "cab"], content.LampTypes.Keys.ToArray());
+        Assert.Equal([("head", 1), ("tail", 1), ("workFront", 2), ("workRear", 2), ("highBeam", 0)],
+            content.LampTypes.Values.Where(l => l.Control == "lights").Select(l => (l.Id, l.Step)));
         Assert.Equal(["beacon"], content.LampTypes.Values.Where(l => l.Rotating).Select(l => l.Id));
         Assert.Equal(["turnLeft", "turnRight"], content.LampTypes.Values.Where(l => l.Blinking).Select(l => l.Id));
 
@@ -57,12 +58,14 @@ public class TypeDataTests
         var truck = sim.Machines.Spawn("truck", new Vector2(60f, 248f), 0f);
         var container = sim.Machines.Spawn("container", new Vector2(60f, 240f), 0f);
         Assert.True(sim.Machines.Attach(truck, "hook", container));
-        // Marker lights come on at the light key's step the data gives them.
-        truck.Get<Lights>()!.Step = 2;
+        // Marker lights come on at the light key's step the data gives them: the truck's only one.
+        sim.Player.Enter(truck);
+        Assert.Equal("Marker lights on", sim.Offers().Of(Input.InputActions.Lights)!.Label);
         sim.Tick(1f / 60f);
         Assert.False(truck.Get<Lights>()!.Lit(0));
-        truck.Get<Lights>()!.Step = 3;
+        sim.Perform(Input.InputActions.Lights);
         sim.Tick(1f / 60f);
+        Assert.Equal(3, truck.Get<Lights>()!.Step);
         Assert.True(truck.Get<Lights>()!.Lit(0));
     }
 
@@ -80,6 +83,6 @@ public class TypeDataTests
         Assert.Contains($"machine 'x' attacherJoints: joint 'rear': unknown type 'hitchPin' {known}", bad.Message);
         Assert.Contains($"machine 'x' attachable: unknown type 'towBall' {known}", bad.Message);
         Assert.Contains($"machine 'x' frontLoaderBracket: unknown type 'loaderArm' {known}", bad.Message);
-        Assert.Contains("machine 'x' lights: unknown lamp type 'laser' (head, tail, workFront, workRear, beacon, turnLeft, turnRight, brake, reverse)", bad.Message);
+        Assert.Contains("machine 'x' lights: unknown lamp type 'laser' (head, tail, workFront, workRear, highBeam, beacon, turnLeft, turnRight, brake, reverse, cab)", bad.Message);
     }
 }

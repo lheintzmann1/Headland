@@ -179,10 +179,10 @@ components so new machine kinds, including mod machines, are built from blocks.
 
 - [x] Lights: headlights, tail, brake and reverse lights, front/rear work lights, beacons, lightbar, turn signals,
       hazards; player toggles instead of the automatic headlights in `Lights`.
-- [ ] More of FS's `Lights`: the light key stepping back (`TOGGLE_LIGHTS_BACK`), keys for the front lights and the
+- [x] More of FS's `Lights`: the light key stepping back (`TOGGLE_LIGHTS_BACK`), keys for the front lights and the
       front and rear work lights alone, high beams, the roof lights instead of the bumper ones behind a front loader
-      (top and bottom lights), cab lights by the time of day, beacons that come on with the driver (`alwaysActive`),
-      a switch sound (with the audio).
+      (top and bottom lights), cab lights by the time of day, beacons that come on with the driver (`alwaysActive`).
+      The switch sound comes with the audio.
 - [ ] Front loader and tools (bucket, bale fork, pallet fork); the bucket needs bulk heaps.
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).
@@ -358,7 +358,8 @@ Godot's built-in audio: 3D players, buses, effects, `AudioStreamInteractive`/`Au
 - [ ] Buses (Master, Music, Vehicles, Environment, UI) with volume settings.
 - [ ] Engine: RPM and load in Core's motor model; layered loops crossfaded and pitched by RPM; start and
       stop.
-- [ ] Machines: implement loops, hydraulics (lower, pipe, tipping), grain flow, reverse beeper, horn.
+- [ ] Machines: implement loops, hydraulics (lower, pipe, tipping), grain flow, reverse beeper, horn, the click of
+      the light switches and the turn signals (FS: `toggleLights`, `turnLight`).
 - [ ] Environment by weather, time and season (wind, rain, birds, insects), driven by
       `EnvironmentController`.
 - [ ] UI sounds; optional music.

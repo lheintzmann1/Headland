@@ -253,7 +253,9 @@ No settings. Needs a `motor`.
 
 ### attacherJoints
 
-`joints`: each has an `id`, a `type` and its position `x`, `z`, `y` (0.6). Joint ids are unique on the machine.
+`joints`: each has an `id`, a `type` and its position `x`, `z`, `y` (0.6). Joint ids are unique on the machine. An
+implement on a joint with `useTopLights` (by default a joint ahead of the machine's origin, `z` > 0) switches the
+vehicle to its top lights (see [lights](#lights)), unless its `attachable` has `useTopLights: false`.
 
 The types are in `game/data/jointtypes.json` (`threePoint`, `drawbar`, `fifthWheel`, `header`, `frontLoader`), each
 with an `id`, a `name` and `linkage` (false): a three-point linkage, whose lower links lift with the implement mounted
@@ -280,6 +282,7 @@ Adds a joint where a loader arm's pivots are.
 | `x`, `z` | 0, 0 | The hitch point (mounted), or the drawbar eye or kingpin (trailed, with z > 0). |
 | `maxArticulationDeg` | 80 | Trailed: how far it swings from the vehicle's heading. |
 | `hitchLoad` | 0 | Trailed: the share of its weight (with its load) resting on the hitch, below 1. |
+| `useTopLights` | true | On a joint that uses them, it switches the vehicle to its top lights (a front loader hides the headlights in the hood). |
 | `lowerable` | false | Lowered and raised with the lower key. Its work areas only work lowered. |
 | `lift` | 0.45 | Mounted: how high the linkage lifts it when raised. |
 
@@ -445,18 +448,23 @@ it (see below). Its `switch` says what turns it on:
 | `hours` | A timer: on between `hours: [from, to]` (game hours; past midnight when from > to). |
 | `trigger` | On while someone is in its `trigger` (see above): a workshop's bay light. |
 
-The types are in `game/data/lamptypes.json` (`head`, `tail`, `workFront`, `workRear`, `beacon`, `turnLeft`,
-`turnRight`, `brake`, `reverse`), each
-with an `id`, a `name`, the driver's `control` it answers to, `rotating` (false: the beam turns round, as a beacon's)
-and `blinking` (false: it flashes, as a turn signal):
+A lamp can also be a `topLight` or a `bottomLight` (FS: top and bottom lights): a top light (headlights on the cab's
+roof) shines only while an implement on a front joint switches the vehicle to its top lights (see
+[attacherJoints](#attacherjoints)), a bottom light (those in the hood) only while none does. A beacon with
+`alwaysActive` shines whenever someone drives the vehicle, whatever the beacon key.
+
+The types are in `game/data/lamptypes.json` (`head`, `tail`, `workFront`, `workRear`, `highBeam`, `beacon`, `turnLeft`,
+`turnRight`, `brake`, `reverse`, `cab`), each with an `id`, a `name`, the driver's `control` it answers to, `rotating`
+(false: the beam turns round, as a beacon's) and `blinking` (false: it flashes, as a turn signal):
 
 | `control` | |
 |---|---|
-| `lights` | The default: the light key steps through the types' `step`s (1): off, then the lamps of step 1 (headlights and tail lights), then those of step 2 too (work lights)… and off again. |
+| `lights` | The default: the light key steps through the types' `step`s (1): off, then the lamps of step 1 (headlights and tail lights), then those of step 2 too (work lights)… and off again; the light-back key steps the other way. A type with a `key` of its own (`road_lights`, `work_lights_front`, `work_lights_rear`, `high_beam`) also switches alone on it (FS: "Light front", "Work light front"…); with `step` 0 it's only on its key, out of the cycle (high beams). |
 | `beacons` | The beacon key. |
 | `turnLeft`, `turnRight` | The turn signal keys; the hazard key lights both sides. |
 | `brake` | While the vehicle slows down: its driver brakes, or pushes the throttle against the way it rolls. |
 | `reverse` | While the vehicle backs up, or its driver asks it to from a standstill. |
+| `cab` | While someone drives the vehicle (the farmer or a helper), as bright as the time of day asks: off from 10:00 to 16:00, fading out from 8:00 and in until 18:00 (FS: interior lights). |
 
 ### craneArm
 

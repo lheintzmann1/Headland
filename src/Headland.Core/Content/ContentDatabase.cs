@@ -284,7 +284,9 @@ public sealed class ContentDatabase
         foreach (var l in LampTypes.Values)
         {
             if (!LampTypeDef.Controls.Contains(l.Control)) e.Add($"lamp type '{l.Id}': unknown control '{l.Control}' ({string.Join(", ", LampTypeDef.Controls)})");
-            else if (l.Control == "lights" && l.Step < 1) e.Add($"lamp type '{l.Id}': step must be >= 1");
+            else if (l.Control == "lights" && (l.Step < 0 || l.Step == 0 && l.Key == null)) e.Add($"lamp type '{l.Id}': step must be >= 1, or 0 with a key");
+            if (l.Key != null && (l.Control != "lights" || !LampTypeDef.Keys.Contains(l.Key)))
+                e.Add($"lamp type '{l.Id}': key is for lights, one of {string.Join(", ", LampTypeDef.Keys)}");
         }
 
         foreach (var f in FillTypeList)

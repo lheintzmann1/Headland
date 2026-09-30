@@ -27,6 +27,11 @@ public static class InputActions
     public const string CycleSeed = "cycle_seed";
     public const string Steering = "steering";
     public const string Lights = "lights";
+    public const string LightsBack = "lights_back";
+    public const string RoadLights = "road_lights";
+    public const string WorkLightsFront = "work_lights_front";
+    public const string WorkLightsRear = "work_lights_rear";
+    public const string HighBeam = "high_beam";
     public const string Beacons = "beacons";
     public const string TurnLeft = "turn_left";
     public const string TurnRight = "turn_right";
@@ -67,6 +72,11 @@ public static class InputActions
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
         new(Lights, "Lights: off, headlights, work lights too", Driving, "L") { Unavailable = "No lights to switch" },
+        new(LightsBack, "Lights back a step", Driving, "Alt+L") { Unavailable = "No lights to switch" },
+        new(HighBeam, "High beams on / off", Driving, "Ctrl+Shift+L") { Unavailable = "No high beams" },
+        new(RoadLights, "Headlights and tail lights alone", Driving) { Unavailable = "No headlights" },
+        new(WorkLightsFront, "Front work lights alone", Driving) { Unavailable = "No front work lights" },
+        new(WorkLightsRear, "Rear work lights alone", Driving) { Unavailable = "No rear work lights" },
         new(Beacons, "Beacons on / off", Driving, "Shift+L") { Unavailable = "No beacons: a workshop fits them" },
         new(TurnLeft, "Turn signal left", Driving, "Ctrl+Q") { Unavailable = "No turn signals" },
         new(TurnRight, "Turn signal right", Driving, "Ctrl+E") { Unavailable = "No turn signals" },
