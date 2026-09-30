@@ -98,8 +98,15 @@ public sealed class Machine : Entity
     /// <summary>Hectares worked by this machine (statistics).</summary>
     public float WorkedHa { get; set; }
 
-    /// <summary>Dirt on the machine, 0 = clean, 1 = caked. Washed off at a wash POI.</summary>
-    public float Dirt { get; set; }
+    /// <summary>Dirt on the machine, 0 = clean, 1 = caked: its <see cref="Washable"/>'s (always clean without one). Washed off at a wash POI.</summary>
+    public float Dirt
+    {
+        get => Get<Washable>()?.Dirt ?? 0f;
+        set
+        {
+            if (Get<Washable>() is { } w) w.Dirt = value;
+        }
+    }
 
     public Machine Root => Parent?.Root ?? this;
     public Vector2 Forward => MathUtil.Forward(Heading);

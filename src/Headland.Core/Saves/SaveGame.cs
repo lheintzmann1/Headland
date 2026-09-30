@@ -184,7 +184,6 @@ public static class SaveGame
             X = m.Position.X, Z = m.Position.Y, Heading = m.Heading, Speed = m.Speed,
             Parent = m.Parent?.Id, Joint = m.ParentJoint,
             WorkedHa = m.WorkedHa,
-            Dirt = m.Dirt,
             Components = m.SaveComponents(sim.Content),
         };
         if (sim.Pois.Deliveries.TryGetValue(m, out var d))
@@ -384,7 +383,6 @@ public static class SaveGame
             machine.Heading = m.Heading;
             machine.Speed = m.Speed;
             machine.WorkedHa = m.WorkedHa;
-            machine.Dirt = Math.Clamp(m.Dirt, 0f, 1f);
             machine.LoadComponents(m.Components, context);
             if (m.Delivery is { } d && sim.Pois.ById(d.Poi) is { } poi && content.FillTypes.ContainsKey(d.FillType))
                 sim.Pois.Deliveries[machine] = new Delivery(poi, d.FillType, d.Amount, d.Income, d.Stored, d.Contract is { } id ? sim.Contracts.ById(id) : null);

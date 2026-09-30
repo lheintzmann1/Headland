@@ -202,7 +202,7 @@ FS19 reference values; tune in data.
 - [x] Fuel: tank per motor, use from power actually delivered, refuel at a gas station, engine stops when
       empty.
 - [ ] Farm fuel tank: diesel bought in bulk into a tank on the farm, refueling there.
-- [ ] Dirt from fields and wet weather, washing (cosmetic, shader).
+- [x] Dirt from fields and wet weather, washing (cosmetic, shader).
 - [x] Paint wear and repaint, operating hours, age.
 - [x] Resale value from price, age, hours and condition.
 

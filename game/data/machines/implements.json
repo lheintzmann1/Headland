@@ -8,7 +8,8 @@
       "workAreas": {
         "areas": [ { "type": "cultivator", "width": 3.0, "length": 1.0, "z": -1.05, "maxWorkSpeedKmh": 14, "requiredPowerHp": 90 } ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#3e5263", "model": "res://assets/models/cultivators/cultivator_3.glb" },
     "description": "Stubble cultivator. Turns stubble, grass or failed crops into a seedbed.",
@@ -42,7 +43,8 @@
           { "type": "seeder", "width": 3.0, "length": 0.8, "z": -0.9, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 80, "fillUnit": "seed" }
         ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#2f4f63", "model": "res://assets/models/seeders/seeder_3.glb" },
     "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil. Its ridge markers (Shift+N) draw the middle of the next pass; its lid opens by itself at the seed shop.",
@@ -90,7 +92,8 @@
           { "type": "brake", "x": -0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" }
         ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },
     "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U).",
@@ -122,7 +125,8 @@
       "workAreas": {
         "areas": [ { "type": "plow", "width": 2.0, "length": 1.0, "z": -2.7, "maxWorkSpeedKmh": 10, "requiredPowerHp": 110 } ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#5d2b24", "model": "res://assets/models/plows/plow_5.glb" },
     "description": "Five-furrow mounted plow. Turns the soil over, burying stubble, grass and every weed, where a cultivator only kills the small ones."
@@ -139,7 +143,8 @@
             "fillUnit": "hopper", "ratePerHa": 250 }
         ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#46603d", "model": "res://assets/models/spreaders/spreader_24.glb" },
     "description": "Twin-disc fertilizer spreader. Turn it on (B) to spread 250 kg of fertilizer a hectare over 24 m: some 67 kg of nitrogen."
@@ -165,7 +170,8 @@
             "fillUnit": "tank", "ratePerHa": 100 }
         ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#9c9585", "model": "res://assets/models/sprayers/sprayer_12.glb" },
     "description": "Trailed field sprayer with a 12 m boom. Unfold the boom (N), lower it (V) and turn it on (B): 100 L of herbicide mix a hectare kills the weeds and keeps new ones out until the next tillage or harvest."
@@ -181,7 +187,8 @@
             "harvestGroups": ["grass"] }
         ]
       },
-      "wearable": {}
+      "wearable": {},
+      "washable": {}
     },
     "visual": { "color": "#7a5a24", "model": "res://assets/models/mowers/mower_3.glb" },
     "description": "Rear-mounted disc mower. Lower it (V) and turn it on (B) to cut a meadow that's ready; the grass grows back for the next cut."

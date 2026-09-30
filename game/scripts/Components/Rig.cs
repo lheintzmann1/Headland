@@ -18,6 +18,7 @@ public sealed class Rig
     private readonly Dictionary<string, RigPart> _parts = new();
     private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _fill = [];
     private readonly List<(MeshInstance3D mesh, int surface, BaseMaterial3D material)> _paint = [];
+    private readonly List<MeshInstance3D> _meshes = [];
 
     public Node3D Root { get; } = new() { Name = "Visual" };
     /// <summary>Meters per unit of the parts' space (a model's scale), for moves given in meters.</summary>
@@ -26,6 +27,9 @@ public sealed class Rig
     public void Add(string role, Node3D node) => _parts[role] = new RigPart(node, node.Position, node.Rotation, node.Scale);
 
     public RigPart? Part(string role) => _parts.TryGetValue(role, out var p) ? p : null;
+
+    /// <summary>The model's meshes but the load (its fill materials): what gets dirty.</summary>
+    public IEnumerable<MeshInstance3D> Body => _meshes.Where(m => !_fill.Any(f => f.mesh == m));
 
     /// <summary>Gives a model's fill materials (the load) the color of what it holds, times their own.</summary>
     public void SetFillColor(Color color)
@@ -103,6 +107,7 @@ public sealed class Rig
     /// <summary>Paints a mesh's paint materials in the entity's color, and keeps its fill materials for the load's color.</summary>
     private void Collect(MeshInstance3D mesh, Color paint)
     {
+        _meshes.Add(mesh);
         for (var i = 0; i < (mesh.Mesh?.GetSurfaceCount() ?? 0); i++)
         {
             var material = mesh.GetActiveMaterial(i);

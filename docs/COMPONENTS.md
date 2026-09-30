@@ -127,6 +127,7 @@ optionally a `name` in place of the type's.
 | `winch` | machines | A rope with a hook. |
 | `saw` | machines | A saw blade. |
 | `wearable` | machines | Wear: its condition drops with use, and a worn machine does worse. |
+| `washable` | machines | Dirt: it gets dirty as it drives and works, rain rinses it, a wash bay cleans it. |
 | `hotspots` | anything | Icons on the map. |
 | `sellingStation` | POIs | Buys the loads tipped or piped into its trigger. |
 | `buyingStation` | POIs | Sells supplies and fuel to the machines parked in its trigger. |
@@ -538,6 +539,23 @@ duller, but repairs and a repaint both come off what the machine sells for.
 
 The defaults are Farming Simulator 19's. `"wearable": {}` gives a machine those.
 
+### washable
+
+A machine gets dirty as it drives (FS: washable), from clean to caked in `dirtMinutes` of driving on a road: never
+standing still (below 1 km/h), `fieldFactor` times faster on a field, times 1 + the ground's wetness, and faster again
+while its work areas work the ground or its thresher threshes (`workFactor` more, at its full work speed). Rain above
+freezing rinses a standing machine down to half dirty in `rainMinutes`; a [wash bay](#washingstation) cleans it. Dirt
+only shows, as mud splashed low on the machine and dust on what faces up.
+
+| Setting | Default | |
+|---|---|---|
+| `dirtMinutes` | 90 | Minutes of driving (real time, on a road) from clean to fully dirty. |
+| `fieldFactor` | 2 | How much faster on a field (times 1 + the ground's wetness). |
+| `workFactor` | 4 | Added while working. |
+| `rainMinutes` | 1 | Minutes of rain rinsing a standing machine to half dirty. |
+
+The defaults are Farming Simulator 22's. `"washable": {}` gives a machine those.
+
 ### hotspots
 
 `spots`: icons on the map (FS: hotspots), each with an `icon` (a Material Symbols icon in `game/assets/icons`, by file
@@ -692,4 +710,4 @@ A POI's storage units are best named after the fill type each holds (`wheat`, `f
 components (0.13 and older) kept goods by fill type, and hand them to the unit of that name.
 
 A machine's condition is its `wearable`'s: saves from before it (0.14 and older) hand it over, and a machine without
-a `wearable` loses it.
+a `wearable` loses it. Its dirt is its `washable`'s: saves from before it kept none, as nothing made machines dirty.

@@ -32,6 +32,7 @@ public static class ComponentKinds
         ("winch", typeof(WinchDef)),
         ("saw", typeof(SawDef)),
         ("wearable", typeof(WearableDef)),
+        ("washable", typeof(WashableDef)),
         ("hotspots", typeof(HotspotsDef)),
         ("sellingStation", typeof(SellingStationDef)),
         ("buyingStation", typeof(BuyingStationDef)),

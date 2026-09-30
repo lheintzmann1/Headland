@@ -38,6 +38,67 @@ public class WearTests
         return (WearOf(t), WearOf(c));
     }
 
+    /// <summary>How dirty a tractor (and its implement) get in <paramref name="seconds"/> of driving from <paramref name="at"/>.</summary>
+    private static (float tractor, float implement) Dirt(Vector2 at, float heading, bool working, float seconds = 20f)
+    {
+        var sim = TestContent.NewSim();
+        var t = sim.Machines.Spawn("tractor_125", at, heading);
+        var c = sim.Machines.Spawn("cultivator_3", at, heading);
+        Assert.True(sim.Machines.Attach(t, "rear", c));
+        c.Get<Attachable>()!.Lowered = working;
+        Drive(t, 0.3f);
+        Run(sim, seconds);
+        return (t.Dirt, c.Dirt);
+    }
+
+    [Fact]
+    public void MachinesGetDirtyFasterOnFieldsAndWorking()
+    {
+        Assert.All(TestContent.Content.Machines.Values, m => Assert.NotNull(m.Get<WashableDef>()));
+        var road = Dirt(new Vector2(60f, 248f), MathF.PI / 2f, working: false);
+        var field = Dirt(new Vector2(85f, 66f), 0f, working: false);
+        var work = Dirt(new Vector2(85f, 66f), 0f, working: true);
+        // Some 90 minutes of driving on a road from clean to caked: 20 s is a little.
+        Assert.InRange(road.tractor, 0.001f, 20f / (90f * 60f));
+        Assert.True(field.tractor > 1.8f * road.tractor, $"road {road.tractor}, field {field.tractor}");
+        // Working adds to what the field gives the implement (at the share of its work speed it goes), not to its tractor.
+        Assert.True(work.implement > 1.3f * field.implement, $"field {field.implement}, working {work.implement}");
+        Assert.Equal(field.tractor, work.tractor, 4);
+
+        var bad = Assert.Throws<ContentException>(() => TestContent.WithMachines("""
+            [{ "id": "x", "components": { "washable": { "dirtMinutes": 0, "fieldFactor": 0.5 } } }]
+            """)).Message;
+        Assert.Contains("machine 'x' washable: dirtMinutes and rainMinutes must be > 0", bad);
+        Assert.Contains("machine 'x' washable: fieldFactor must be >= 1, workFactor >= 0", bad);
+    }
+
+    [Fact]
+    public void AStandingMachineStaysAsItIsAndRainRinsesItToHalf()
+    {
+        var sim = TestContent.NewSim();
+        var t = sim.Machines.Spawn("tractor_125", new Vector2(60f, 248f), MathF.PI / 2f);
+        var dry = Enumerable.Range(sim.Clock.DayIndex + 1, 120).First(d => sim.Weather.GetDay(d).PrecipMm == 0f);
+        var drydate = sim.Calendar.DateOfDay(dry);
+        TestContent.SkipTo(sim, drydate.Month, drydate.Day, 12.5f);
+        t.Dirt = 0.9f;
+        Run(sim, 5f);
+        Assert.Equal(0.9f, t.Dirt, 4);
+
+        // A rainy hour above freezing: a minute rinses it down to half dirty, and no further.
+        var day = Enumerable.Range(sim.Clock.DayIndex + 1, 120).First(d => sim.Weather.GetDay(d) is { PrecipMm: > 1f, PrecipHours: > 1, TempMin: > 3f });
+        var date = sim.Calendar.DateOfDay(day);
+        TestContent.SkipTo(sim, date.Month, date.Day, sim.Weather.GetDay(day).PrecipStartHour + 0.5f);
+        sim.Tick(Dt);
+        Assert.Contains(sim.Weather.Condition, new[] { Weather.WeatherCondition.Rain, Weather.WeatherCondition.Storm });
+        Run(sim, 12f);
+        Assert.InRange(t.Dirt, 0.65f, 0.75f);
+        Run(sim, 30f);
+        Assert.Equal(0.5f, t.Dirt);
+
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim.Machines.ById(t.Id)!;
+        Assert.Equal(0.5f, loaded.Dirt);
+    }
+
     [Fact]
     public void EveryMachineWears()
     {

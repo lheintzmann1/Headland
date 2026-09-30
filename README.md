@@ -31,7 +31,8 @@ Built with **Godot 4.7** and **C#**.
   less on duals or tracks. Engines burn fuel by the power they deliver, and stop when the tank runs dry. Machines wear
   as they drive and work, faster on a field and much faster working: a worn engine is weaker and thirstier, a worn
   implement slower and more wasteful of what it spreads, until the workshop repairs it (1% of its price for all its
-  wear). Their paint dulls as they drive, until the workshop repaints it. The menu's garage lists the farm's machines
+  wear). Their paint dulls as they drive, until the workshop repaints it, and they get muddy, the more so on wet fields
+  and working, until the rain rinses them or a wash bay cleans them. The menu's garage lists the farm's machines
   with their condition, paint, fuel, operating hours, age, where they are and what they're worth (less as they age,
   run and wear), to sell them back to the dealer, give a leased one back, or have them repaired, repainted or given
   other options where they stand: a mechanic comes out for 20% more.
