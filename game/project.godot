@@ -9,7 +9,7 @@ config_version=5
 
 config/name="Headland"
 config/description="Top-down farming simulation: machines, soils, weather and crops."
-config/version="0.32.0"
+config/version="0.33.0"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
