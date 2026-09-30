@@ -14,9 +14,13 @@ public struct VehicleInput
     public float Steer;
     /// <summary>Brake to a stop without reversing.</summary>
     public bool Brake;
-    /// <summary>The tool keys, -1..1: up (+) and down, left (+) and right, for the selected tool's crane joints.</summary>
+    /// <summary>
+    /// The tool keys, -1..1 (the mouse's motion beyond): up (+) and down, left (+) and right, for the selected tool's
+    /// crane joints, in the selected control group or that many groups after it (the mouse with Ctrl or Shift).
+    /// </summary>
     public float ToolY;
     public float ToolX;
+    public int ToolGroupOffset;
 }
 
 public interface IVehicleController

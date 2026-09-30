@@ -30,6 +30,14 @@ public partial class GameRoot : Node3D
     /// <summary>Read once per run: loading a save reloads the scene, but not the settings.</summary>
     private static UserSettings? _settings;
 
+    /// <summary>The tool keys' travel for a pixel of the mouse's motion in a simulation tick, the mouse on the tool.</summary>
+    private const float MouseToolPerPixel = 0.3f;
+
+    /// <summary>Pixels the mouse moved on the tool since the last physics step.</summary>
+    private Vector2 _toolMouse;
+    /// <summary>Where the cursor was when the mouse took the tool: it comes back there.</summary>
+    private Vector2? _cursorAt;
+
     public UserSettings Settings { get; private set; } = null!;
     public InputLayer InputLayer { get; private set; } = null!;
     public Simulation Sim { get; private set; } = null!;
@@ -139,11 +147,16 @@ public partial class GameRoot : Node3D
         if (p.Vehicle != null)
         {
             p.MoveInput = NVec2.Zero;
+            // The mouse on the tool: forward lifts, right turns right; Ctrl and Shift take the next control groups.
+            var mouse = _toolMouse * (MouseToolPerPixel / SimSubsteps);
+            _toolMouse = Vector2.Zero;
+            var onTool = InputLayer.MouseMode == MouseMode.Tool;
             p.Controls.Input = new VehicleInput
             {
                 Throttle = fwd, Steer = -right, Brake = InputLayer.Held(InputActions.Brake),
-                ToolY = InputLayer.Strength(InputActions.ToolUp) - InputLayer.Strength(InputActions.ToolDown),
-                ToolX = InputLayer.Strength(InputActions.ToolLeft) - InputLayer.Strength(InputActions.ToolRight),
+                ToolY = InputLayer.Strength(InputActions.ToolUp) - InputLayer.Strength(InputActions.ToolDown) - mouse.Y,
+                ToolX = InputLayer.Strength(InputActions.ToolLeft) - InputLayer.Strength(InputActions.ToolRight) - mouse.X,
+                ToolGroupOffset = !onTool ? 0 : Input.IsKeyPressed(Key.Ctrl) ? 1 : Input.IsKeyPressed(Key.Shift) ? 2 : 0,
             };
         }
         else
@@ -153,11 +166,18 @@ public partial class GameRoot : Node3D
         }
     }
 
+    public override void _UnhandledInput(InputEvent e)
+    {
+        if (e is InputEventMouseMotion motion && InputLayer.MouseMode == MouseMode.Tool) _toolMouse += motion.Relative;
+    }
+
     public override void _Process(double delta)
     {
+        var onTool = PlayerInputEnabled && !Screens.BlocksInput && Sim.Player.Vehicle != null && InputLayer.MouseMode == MouseMode.Tool;
         InputLayer.Context = !PlayerInputEnabled ? InputContext.None
             : Screens.BlocksInput ? InputContext.Menu
-            : InputContext.World | (Sim.Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot);
+            : InputContext.World | (Sim.Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot) | (onTool ? InputContext.MouseTool : 0);
+        HoldCursor(onTool);
         Camera.Dragging = InputLayer.MouseMode == MouseMode.Drag;
         Hud.Visible = !Screens.CoversView;
         var p = Sim.Player;
@@ -167,8 +187,27 @@ public partial class GameRoot : Node3D
         UpdateHover();
     }
 
+    /// <summary>The mouse on the tool: the cursor hides where it is, so the mouse moves freely, and comes back after.</summary>
+    private void HoldCursor(bool onTool)
+    {
+        if (onTool && _cursorAt == null)
+        {
+            _cursorAt = GetViewport().GetMousePosition();
+            Input.MouseMode = Input.MouseModeEnum.Captured;
+        }
+        else if (!onTool && _cursorAt is { } at)
+        {
+            Input.MouseMode = Input.MouseModeEnum.Visible;
+            Input.WarpMouse(at);
+            _cursorAt = null;
+            _toolMouse = Vector2.Zero;
+        }
+    }
+
     private void UpdateHover()
     {
+        // The mouse on the tool isn't pointing at the ground: what it last showed stays.
+        if (_cursorAt != null) return;
         var vp = GetViewport();
         var mouse = vp.GetMousePosition();
         if (vp.GuiGetHoveredControl() != null || !vp.GetVisibleRect().HasPoint(mouse))

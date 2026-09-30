@@ -198,6 +198,18 @@ public class ComponentTests
         Assert.InRange(crane.Joint("stick")!.Value, 0.48f, 0.52f);
         sim.Perform(InputActions.SelectImplement);
         Assert.Equal(1, m.Get<Drivable>()!.Group);
+
+        // The mouse with Ctrl takes the next group: the stick, with the crane's group selected.
+        sim.Player.Controls.Input = new VehicleInput { ToolY = -1f, ToolGroupOffset = 1, Brake = true };
+        Run(sim, 1f);
+        Assert.InRange(crane.Joint("boom")!.Value, 19.5f, 20.5f);
+        Assert.InRange(crane.Joint("stick")!.Value, 0f, 0.02f);
+
+        // The mouse's hint and a saw's action on its left button, while it's on the tool.
+        Assert.Equal("Move", sim.Offers().Of(InputActions.ToolMouse)!.Label);
+        Assert.Equal("Start the saw", sim.Offers().Of(InputActions.ToolAction)!.Label);
+        sim.Perform(InputActions.ToolAction);
+        Assert.True(m.Get<Saw>()!.On);
     }
 
     [Fact]
@@ -219,6 +231,8 @@ public class ComponentTests
         Assert.Equal((55f, 40f), (loader.Joint("lift")!.Value, loader.Joint("tilt")!.Value));
         // The arm hides the headlights in the hood: those on the roof shine instead.
         Assert.True(Lights.TopLights(t));
+        // Its hint for the mouse, which the key hints show.
+        Assert.Equal(("Move front loader", true), (sim.Offers().Of(InputActions.ToolMouse)!.Label, sim.Offers().Of(InputActions.ToolMouse)!.Hinted));
     }
 
     [Fact]

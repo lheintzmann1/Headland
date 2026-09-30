@@ -2,7 +2,8 @@ namespace Headland.Core.Input;
 
 /// <summary>
 /// Where an action works. The player is in one situation at a time (<see cref="Situations"/>): walking about, driving,
-/// or in a menu; <see cref="World"/> actions (the camera, time) work both walking and driving.
+/// or in a menu; <see cref="World"/> actions (the camera, time) work both walking and driving, and
+/// <see cref="MouseTool"/> ones while the driver moves a tool with the mouse (FS: the mouse's crane control).
 /// </summary>
 [Flags]
 public enum InputContext
@@ -12,15 +13,19 @@ public enum InputContext
     OnFoot = 2,
     Vehicle = 4,
     Menu = 8,
+    MouseTool = 16,
 }
 
 public static class InputContexts
 {
-    /// <summary>The situations the player can be in: each is a set of contexts active together.</summary>
+    /// <summary>
+    /// The situations the player can be in: each is a set of contexts active together. Driving, the mouse's tool mode
+    /// may be on too, so its actions can't share an input with the vehicle's.
+    /// </summary>
     public static readonly InputContext[] Situations =
     [
         InputContext.World | InputContext.OnFoot,
-        InputContext.World | InputContext.Vehicle,
+        InputContext.World | InputContext.Vehicle | InputContext.MouseTool,
         InputContext.Menu,
     ];
 

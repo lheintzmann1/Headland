@@ -132,9 +132,13 @@ public sealed class CraneArm(Machine machine, CraneArmDef def) : MachineComponen
 
     public CraneJoint? Joint(string id) => Joints.FirstOrDefault(j => j.Def.Id == id);
 
-    /// <summary>The tip control key, on a crane with one (<see cref="CraneArmDef.Ik"/>).</summary>
+    /// <summary>
+    /// The mouse's hint on a crane the driver moves ("Move front loader": the right button held, the mouse moves it), and
+    /// the tip control key on a crane with one (<see cref="CraneArmDef.Ik"/>).
+    /// </summary>
     public void AddActions(ActionList actions, Simulation sim)
     {
+        if (Def.Joints.Any(j => j.Control != null)) actions.Add(InputActions.ToolMouse, Machine.Def.Named("Move"), () => { });
         if (Def.Ik == null) return;
         actions.Toggle(InputActions.ToolIk, TipControl, "Crane: move its tip", "Crane: move each joint", on =>
         {

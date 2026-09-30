@@ -43,7 +43,12 @@ public sealed class Saw(Machine machine, SawDef def) : MachineComponent<SawDef, 
     public bool CanTurnOn => true;
     public bool On { get; set; }
 
-    public void AddActions(ActionList actions, Simulation sim) => actions.AddSwitch(this);
+    /// <summary>The turn-on key, and the mouse's action while it moves the crane the saw is on (FS: the saw's cut).</summary>
+    public void AddActions(ActionList actions, Simulation sim)
+    {
+        actions.AddSwitch(this);
+        actions.Add(InputActions.ToolAction, On ? "Stop the saw" : "Start the saw", () => On = !On, hinted: false);
+    }
 
     /// <summary>The blade's center, in the machine's space (x left, y up, z forward).</summary>
     public Vector3 Blade

@@ -31,6 +31,8 @@ public static class InputActions
     public const string ToolLeft = "tool_left";
     public const string ToolRight = "tool_right";
     public const string ToolIk = "tool_ik";
+    public const string ToolMouse = "tool_mouse";
+    public const string ToolAction = "tool_action";
     public const string Lights = "lights";
     public const string LightsBack = "lights_back";
     public const string RoadLights = "road_lights";
@@ -81,6 +83,11 @@ public static class InputActions
         new(ToolLeft, "Tool left: a loader's tool tilts back, a crane turns left", Driving, "Left") { Analog = true },
         new(ToolRight, "Tool right", Driving, "Right") { Analog = true },
         new(ToolIk, "Crane: move its tip, or each joint", Driving, "I") { Unavailable = "No crane to steer by its tip" },
+        new(ToolMouse, "Hold to move the tool with the mouse (Ctrl, Shift: its next control groups)", Driving, "Mouse Right") { Analog = true },
+        new(ToolAction, "With the mouse on the tool: its action (a saw's cut)", InputContext.MouseTool, "Mouse Left")
+        {
+            Unavailable = "The tool has no action for the mouse",
+        },
         new(Lights, "Lights: off, headlights, work lights too", Driving, "L") { Unavailable = "No lights to switch" },
         new(LightsBack, "Lights back a step", Driving, "Alt+L") { Unavailable = "No lights to switch" },
         new(HighBeam, "High beams on / off", Driving, "Ctrl+Shift+L") { Unavailable = "No high beams" },

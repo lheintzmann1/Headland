@@ -105,6 +105,7 @@ file (see below).
 | T | Select the next implement, or a crane's next control group: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
 | Arrow keys | A front loader's arm up and down, its tool tilted back and forth; a crane's joints, a control group at a time |
 | I | A crane's tip control: the arrow keys move its tip up, down, in and out rather than each joint |
+| Right mouse (held) | Move the tool with the mouse as with the arrow keys; with Ctrl or Shift, its next control groups; left click for its action (a saw) |
 | V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
 | Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |

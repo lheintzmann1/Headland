@@ -3,11 +3,15 @@ using Godot;
 
 namespace Headland.Game.Controls;
 
-/// <summary>What the mouse does now: point (hover, click), or drive what holds it (the camera's pan).</summary>
+/// <summary>
+/// What the mouse does now: point (hover, click), or drive what holds it: the camera's pan, or the driver's tool (FS:
+/// the mouse's crane control, the right button held).
+/// </summary>
 public enum MouseMode
 {
     Cursor,
     Drag,
+    Tool,
 }
 
 /// <summary>
@@ -40,7 +44,8 @@ public partial class InputLayer : Node
         set => _router.Context = value;
     }
 
-    public MouseMode MouseMode => _router.Held(GameActions.Pan) ? MouseMode.Drag : MouseMode.Cursor;
+    public MouseMode MouseMode =>
+        _router.Held(GameActions.Pan) ? MouseMode.Drag : _router.Held(InputActions.ToolMouse) ? MouseMode.Tool : MouseMode.Cursor;
 
     private static double Now => Time.GetTicksMsec() / 1000.0;
 

@@ -482,7 +482,9 @@ The types are in `game/data/lamptypes.json` (`head`, `tail`, `workFront`, `workR
 | `invert` | false | Its keys move it the other way. |
 
 `groups` names the control groups, from the first ("arm", "grab"), for the select key's hint: "Select Loader 30: arm".
-With the vehicle itself selected, the tool keys move the first group of every crane in its chain.
+With the vehicle itself selected, the tool keys move the first group of every crane in its chain. The mouse moves the
+same joints while its right button is held (FS: the mouse's crane control): forward and back as the up and down keys,
+left and right as theirs; with Ctrl it moves the next group, with Shift the one after.
 
 `ik` gives the crane a tip control (FS: easy arm control), which the tip key switches on and off: `joints`, two pitch
 joints with keys, in order, `tip` [x, y, z] in the second one's space, and `speed` (1 m/s). With it on, the first
@@ -512,6 +514,8 @@ and slower where they can't turn that fast.
 | `offset` | [0, 0.5, 0] | The blade's center, in that joint's space. |
 | `diameter` | 0.75 | |
 | `maxCut` | 0.6 | The thickest trunk it cuts. |
+
+The turn-on key starts and stops it, and so does the mouse's left button while it moves the crane.
 
 ### wearable
 

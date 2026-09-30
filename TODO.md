@@ -273,9 +273,10 @@ crane arms, winches, saws, front loaders) have none, and each screen has its own
       between them (FS `foldMiddleAnimTime`: the fold key unfolds to a middle pose, and the lower key moves between
       it and the working one); its JSON says which. The HUD's key hints and the F1 help show those words instead of
       the fixed "Lower" and "Fold". With the contexts and the selected implement.
-- [ ] Mouse control (FS): hold the right button to move the selected tool's joints with the mouse (crane slew
+- [x] Mouse control (FS): hold the right button to move the selected tool's joints with the mouse (crane slew
       and boom, loader lift and tilt), with Ctrl or Shift choosing which pair of joints the axes move; left
-      click for its action (grab, release, cut). The camera stops following the mouse meanwhile.
+      click for its action (grab, release, cut). The camera stops following the mouse meanwhile. Grabbing and
+      cutting come with the grabs and the trees; the saw starts and stops on it for now.
 
 ### Wiring the components
 

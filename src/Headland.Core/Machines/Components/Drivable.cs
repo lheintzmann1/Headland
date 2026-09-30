@@ -78,12 +78,15 @@ public sealed class Drivable(Machine machine, DrivableDef def) : MachineComponen
     /// <summary>What the tool keys act on: the selected implement and the vehicle's own parts, or the whole chain.</summary>
     public IEnumerable<Machine> ToolScope => Selected is { } implement ? [Machine, implement] : Machine.Chain();
 
-    /// <summary>The tool keys held for <paramref name="dt"/> seconds: the cranes in the tool scope move, each its control group.</summary>
+    /// <summary>
+    /// The tool keys held for <paramref name="dt"/> seconds: the cranes in the tool scope move, each its control group,
+    /// or the one <see cref="VehicleInput.ToolGroupOffset"/> groups after it.
+    /// </summary>
     internal void DriveTools(VehicleInput input, float dt)
     {
         if (input.ToolY == 0f && input.ToolX == 0f) return;
         foreach (var m in ToolScope)
-            m.Get<CraneArm>()?.Drive(GroupOf(m), input.ToolY, input.ToolX, dt);
+            m.Get<CraneArm>()?.Drive((GroupOf(m) - 1 + input.ToolGroupOffset) % GroupsOf(m) + 1, input.ToolY, input.ToolX, dt);
     }
 
     /// <summary>What the driver asks for this tick.</summary>

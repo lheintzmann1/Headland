@@ -211,8 +211,12 @@ public sealed class Simulation
 
     // ---------------------------------------------------------------- Player actions
 
-    /// <summary>The player's situation for their keys: walking about or driving (the game adds its menus).</summary>
-    public InputContext Situation => InputContext.World | (Player.Vehicle != null ? InputContext.Vehicle : InputContext.OnFoot);
+    /// <summary>
+    /// The player's situation for their keys: walking about or driving, the mouse's tool mode with it (the game adds its
+    /// menus, and says when the mouse is on the tool).
+    /// </summary>
+    public InputContext Situation =>
+        InputContext.World | (Player.Vehicle != null ? InputContext.Vehicle | InputContext.MouseTool : InputContext.OnFoot);
 
     /// <summary>
     /// What each key does now for the player (FS: the action events registered for them): on foot, getting into the
