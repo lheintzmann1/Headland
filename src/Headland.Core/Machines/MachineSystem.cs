@@ -141,6 +141,29 @@ public sealed class MachineSystem
         return best;
     }
 
+    /// <summary>
+    /// Why <paramref name="vehicle"/>'s chain can't hitch the implement of its farm nearest to it, within a few meters,
+    /// when none of its joints is of the implement's type ("The Loader 30 hitches to front loader consoles…"); null
+    /// when there's no such implement.
+    /// </summary>
+    public string? AttachBlocker(Machine vehicle)
+    {
+        var at = vehicle.Footprint.Center;
+        var types = vehicle.Chain().SelectMany(m => m.Def.Joints.Where(j => !m.Attached.ContainsKey(j.Id))).Select(j => j.Type).ToHashSet();
+        var near = All
+            .Where(c => c.Parent == null && c.Root != vehicle.Root && c.FarmId == vehicle.FarmId && !c.Has<Motor>())
+            .Select(c => (c, type: c.Get<Attachable>()?.Def.Type))
+            .Where(x => x.type != null && !types.Contains(x.type) && Vector2.Distance(x.c.Footprint.Center, at) < 8f)
+            .OrderBy(x => Vector2.Distance(x.c.Footprint.Center, at))
+            .FirstOrDefault();
+        if (near.c is not { } child) return null;
+        var joint = Content.JointTypes.GetValueOrDefault(near.type!)?.Name.ToLowerInvariant() ?? near.type;
+        // An option of the vehicle that gives it such a joint: a workshop fits it.
+        var fits = vehicle.Def.Configurations.Any(c => c.Options.Any(o =>
+            vehicle.Def.Configure(new Dictionary<string, string>(vehicle.Def.Choices) { [c.Id] = o.Id }).Joints.Any(j => j.Type == near.type)));
+        return $"The {child.Def.Name} hitches to {joint}: the {vehicle.Def.Name} has none" + (fits ? ", a workshop fits them" : "");
+    }
+
     // ------------------------------------------------------------------ Names
 
     public static string SteeringName(SteeringMode mode) => mode switch

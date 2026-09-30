@@ -236,6 +236,30 @@ public class ComponentTests
     }
 
     [Fact]
+    public void ATractorDrivesInBetweenALoadersArmsToHitchIt()
+    {
+        var sim = Sim(Content());
+        var arm = sim.Machines.Spawn("frontloader_arm", new Vector2(269f, 300f), 0f);
+        // Without loader consoles, the attach key says what the arm needs.
+        var bare = sim.Machines.Spawn("tractor_95", new Vector2(269f, 296f), 0f, configuration: new Dictionary<string, string> { ["frontLoader"] = "none" });
+        sim.Player.Enter(bare);
+        sim.Perform(InputActions.Attach);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "The Loader 30 hitches to front loader consoles: the Fieldmaster 95 has none, a workshop fits them");
+        sim.Player.Exit(sim);
+        sim.Machines.All.Remove(bare);
+
+        // With them, it drives on until the consoles meet the arm's pivots, its hood in between the arms.
+        var t = sim.Machines.Spawn("tractor_95", new Vector2(269f, 294f), 0f, configuration: new Dictionary<string, string> { ["frontLoader"] = "bracket" });
+        sim.Player.Enter(t);
+        sim.Player.Controls.Input = new VehicleInput { Throttle = 0.3f };
+        for (var s = 0f; s < 10f && sim.Machines.FindAttachable(t) == null; s += Dt) sim.Tick(Dt);
+        sim.Player.Controls.Input = new VehicleInput { Brake = true };
+        Assert.Equal(arm, sim.Machines.FindAttachable(t)?.child);
+        sim.Perform(InputActions.Attach);
+        Assert.Same(arm, t.Get<FrontLoaderBracket>()!.Arm);
+    }
+
+    [Fact]
     public void TipControlMovesACranesTipUpAndOut()
     {
         var content = Content(Machines.TrimEnd().TrimEnd(']') + """

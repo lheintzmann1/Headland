@@ -294,6 +294,7 @@ public sealed class Simulation
         if (def != null && (def.Contexts & Situation) == 0)
             Notifications.Post(Player.Vehicle == null ? "Get into a vehicle first" : "Get out of the vehicle first");
         else if (Offers().Of(action) is { } offer) offer.Run();
+        else if (action == InputActions.Attach && Player.Vehicle is { } v && Machines.AttachBlocker(v) is { } blocked) Notifications.Post(blocked);
         else if (def?.Unavailable is { } why) Notifications.Post(why);
     }
 
