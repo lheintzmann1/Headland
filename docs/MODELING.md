@@ -78,9 +78,9 @@ root                              origin on the ground, at the center of the rea
 ```
 
 - **Where a node sits** only matters for what moves together: a moving part carries whatever is under it (a dual's
-  outer tire, a front frame's wheels, a crane's next joint, the load in a tipper's bed, a boom's folding wings). The game looks for each name
-  anywhere under `root`, so the groups that only sort things (`body`, `runningGear`, `options` and a group per
-  configuration in it) are a suggestion, not a requirement.
+  outer tire, a front frame's wheels, a crane's next joint, the load in a tipper's bed, a boom's folding wings). The
+  game looks for each name anywhere under `root`, so the groups that only sort things (`body`, `runningGear`, `options`
+  and a group per configuration in it) are a suggestion, not a requirement.
 - **Every name is unique** in the file. Blender insists on it, and Godot renames the second of two nodes with the
   same name when it imports the model (`hood2`), after which the game doesn't find it.
 - **Names use letters, digits and `_` only**, and case matters (`frontHitch`, not `fronthitch`). Godot turns `.` `:`
@@ -102,7 +102,7 @@ components (see [`COMPONENTS.md`](COMPONENTS.md)) decide which roles it has:
 | `steeringWheel` | `drivable` | hub, its Y axis up the column | turns 270° either way at full lock, left counterclockwise |
 | `rearLinkage`, … (a joint's `id` and `Linkage`) | `attacherJoints`, joints of a linkage type (`threePoint`) | anywhere | the linkage's lower links, lowered; they lift straight up with the implement they carry |
 | `pipe` | `pipe` | base hinge of the unloading pipe | folded backward; it swings 90° out to the left, and the game pours the grain where it unloads |
-| `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°) |
+| `tipper` | `tipper` | rear hinge of the bed | the bed; it tilts its front up by the tipper's `angleDeg` (42°), or as the side it tips to says, about that side's hinge |
 | `reel` | `workAreas` (harvester) | reel axle of a header | spins while the combine is threshing |
 | `load` | `fillUnits` | bottom of the load | the load at full height; it is scaled with the fill level |
 | a part's `id` | `animatedParts` | where it hinges | in its rest pose (the working pose for parts that fold or lower) |

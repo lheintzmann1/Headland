@@ -91,7 +91,7 @@ public class ShopTests
         Assert.Equal("Power: 125 hp; Top speed: 40 km/h; Hitches: Three-point linkage (rear), Drawbar, Three-point linkage (front); " +
                      "Fuel tank: 250 L; Mass: 5,600 kg", Specs("tractor_125"));
         Assert.StartsWith("Power: 145 hp;", Specs("tractor_125", ("engine", "145")));
-        Assert.Equal("Hitch: Drawbar, trailed; Capacity: 20,000 L: wheat, barley, canola, corn; Tipping: 450 L/s; Mass: 4,940 kg",
+        Assert.Equal("Hitch: Drawbar, trailed; Capacity: 20,000 L: wheat, barley, canola, corn; Tipping: 450 L/s; Tips to: back, left, right; Mass: 4,940 kg",
             Specs("trailer_16", ("capacity", "20000")));
         Assert.Equal("Hitch: Three-point linkage, mounted; Working width: 4 m; Working speed: 14 km/h; Power needed: 120 hp; Mass: 1,540 kg",
             Specs("cultivator_3", ("width", "4")));

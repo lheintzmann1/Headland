@@ -23,6 +23,7 @@ public static class InputActions
     public const string Cover = "cover";
     public const string TurnOn = "turn_on";
     public const string Unload = "unload";
+    public const string TipSide = "tip_side";
     public const string CycleSeed = "cycle_seed";
     public const string Steering = "steering";
     public const string Lights = "lights";
@@ -62,6 +63,7 @@ public static class InputActions
         new(Cover, "Open / close covers", Driving, "C") { Unavailable = "No cover to open" },
         new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on", Several = ("Turn on all", "Turn off all") },
         new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
+        new(TipSide, "Tip side: the side a trailer tips to", Driving, "Shift+U") { Unavailable = "Nothing here tips to another side now" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
         new(Lights, "Lights: off, headlights, work lights too", Driving, "L") { Unavailable = "No lights to switch" },

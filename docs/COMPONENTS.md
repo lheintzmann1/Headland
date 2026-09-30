@@ -417,6 +417,19 @@ leaves; one that isn't lowered but turned on, such as a spreader, it turns on an
 | `fillUnit` | `main` | The unit it tips. |
 | `ratePerSecond` | 400 | |
 | `angleDeg` | 42 | How far the bed tilts up. |
+| `sides` | none | The sides it tips to (below); none: to the back, into the unloading area the machine stands in. |
+
+A three-way tipper (FS: tip sides) tips to the back or over either side. Each of its `sides` has a `name` for the key
+hint ("left"), where its load falls, `x`, `z` (the unloading area must be under it), and how the bed tilts: turned by
+`rotationDeg` [x, y, z] (by default its front lifted by `angleDeg`) about `pivot` [x, y, z], from the bed's own pivot
+at its rear hinge (a side's hinge line along its edge). The tip side key steps to the next side while the bed is down,
+"Tip side (left)"; the side is saved.
+
+```jsonc
+"tipper": { "fillUnit": "main", "sides": [
+  { "name": "back", "x": 0, "z": -3.0 },
+  { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1] } ] }
+```
 
 ### lights
 

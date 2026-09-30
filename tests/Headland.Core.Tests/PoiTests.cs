@@ -164,6 +164,43 @@ public class PoiTests
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Grain Elevator does not buy Seeds");
     }
 
+    [Fact]
+    public void ATrailerTipsToTheSideItsKeySetsIntoThePitUnderThatSide()
+    {
+        var sim = TestContent.NewSim();
+        var pit = sim.World.PoiById("elevator")!.Trigger("unload")!.Area;
+        // Alongside the pit, outside it: only its left side reaches in.
+        var left = pit.Center - pit.AxisX * (pit.HalfExtents.X - 0.5f);
+        var center = left - MathUtil.LocalToWorld(Vector2.Zero, pit.Heading, new Vector2(1.9f, 0.6f));
+        var t = sim.Machines.Spawn("tractor_95", center + MathUtil.Forward(pit.Heading) * 6f, pit.Heading);
+        var trailer = sim.Machines.Spawn("trailer_16", center, pit.Heading);
+        Assert.True(sim.Machines.Attach(t, "drawbar", trailer));
+        trailer.Unit("main")!.Add("wheat", 2000f);
+        sim.Player.Enter(t);
+        var bed = trailer.Get<Tipper>()!;
+        string? Hint(string action) => sim.Offers().Of(action)?.Label;
+
+        // To the back, its load would fall outside the pit: the key says which side it tips to, and steps to the left.
+        Assert.Equal(("Tip side (back)", "Tip"), (Hint(InputActions.TipSide), Hint(InputActions.Unload)));
+        sim.Perform(InputActions.Unload);
+        Assert.False(bed.Tipping);
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Park with the trailer's back over an unloading area to tip");
+        sim.Perform(InputActions.TipSide);
+        Assert.Equal("Tip side (left)", Hint(InputActions.TipSide));
+        Assert.StartsWith("Tip into Grain Elevator", Hint(InputActions.Unload));
+        sim.Perform(InputActions.Unload);
+        Assert.True(bed.Tipping);
+
+        // Not while it tips.
+        sim.Tick(Dt);
+        Assert.Null(Hint(InputActions.TipSide));
+        for (var s = 0f; s < 30f && !bed.Load.IsEmpty; s += Dt) sim.Tick(Dt);
+        Assert.True(bed.Load.IsEmpty);
+
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim.Machines.ById(trailer.Id)!;
+        Assert.Equal("left", loaded.Get<Tipper>()!.Side?.Name);
+    }
+
     /// <summary>A tractor facing east with a loaded trailer whose center is at <paramref name="trailerCenter"/>.</summary>
     internal static (Machine tractor, Machine trailer) TrailerAt(Simulation sim, Vector2 trailerCenter, string fillType, float amount)
     {

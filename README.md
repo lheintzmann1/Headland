@@ -109,6 +109,7 @@ file (see below).
 | C | Open or close a cover (a seeder's lid opens by itself at the seed shop) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
+| Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
 | L | Lights: headlights and tail lights, then work lights too, then off; they go off when you get out, and a helper switches them on at night. Brake and reverse lights work by themselves |
