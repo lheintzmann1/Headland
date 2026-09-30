@@ -216,6 +216,7 @@ FS19 reference values; tune in data.
 
 ### Helpers
 
+- [x] Helpers numbered as in FS (the lowest free number when hired), on their vehicles on the map.
 - [ ] Helper jobs as chains of tasks (FS `AITask`: drive to the field, work it, unload at a station) with typed
       parameters (vehicle, field, station) checked before hiring, instead of one `FieldWorkController`; Lua adds
       task types.

@@ -238,6 +238,8 @@ public sealed class HelperSave
     public float[]? DriveStart { get; set; }
     /// <summary>Pay agreed when hired (missing in older saves: today's wage).</summary>
     public float? WagePerHour { get; set; }
+    /// <summary>The helper's number (missing in older saves: the lowest free one).</summary>
+    public int Number { get; set; }
     public double WorkedSeconds { get; set; }
     public float WagesPaid { get; set; }
 }

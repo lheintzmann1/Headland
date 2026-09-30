@@ -1,7 +1,9 @@
 using System.Numerics;
 using Headland.Core.Events;
 using Headland.Core.Input;
+using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
+using Headland.Core.Saves;
 using Headland.Core.Time;
 
 namespace Headland.Core.Tests;
@@ -141,6 +143,32 @@ public class GameEventTests
         var end = Assert.Single(dismissed);
         Assert.Equal((t, HelperEnd.Dismissed), (end.Vehicle, end.End));
         Assert.Same(sim.Player.Controls, t.Get<Drivable>()!.Controller);
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper dismissed");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper 1 dismissed");
+    }
+
+    [Fact]
+    public void HelpersTakeTheLowestFreeNumberAndKeepItInASave()
+    {
+        var sim = TestContent.NewSim();
+        TestContent.OwnField4(sim);
+        var field = sim.World.FieldById(4)!;
+        FieldWorkController Hire(float x)
+        {
+            var t = sim.Machines.Spawn("tractor_125", new Vector2(x, 280f), 0f);
+            sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", new Vector2(x, 278f), 0f));
+            return sim.HireHelper(t, field);
+        }
+
+        var (first, second) = (Hire(242f), Hire(250f));
+        Assert.Equal((1, 2), (first.Number, second.Number));
+        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Helper 2 started on Field 4"));
+        sim.Player.Enter(first.Vehicle);
+        sim.Perform(InputActions.Helper);
+        // The first's number is free again.
+        var third = Hire(258f);
+        Assert.Equal(1, third.Number);
+
+        var loaded = SaveGame.Load(sim.Content, SaveGame.Capture(sim, "test")).Sim;
+        Assert.Equal([1, 2], loaded.Helpers.Select(h => h.Number).Order());
     }
 }

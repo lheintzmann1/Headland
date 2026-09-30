@@ -84,15 +84,15 @@ public sealed class Notifications
         events.Subscribe<ImplementAttached>(e => Post($"Attached {e.Implement.Def.Name}", Severity.Good));
         events.Subscribe<ImplementDetached>(e => Post($"Detached {e.Implement.Def.Name}"));
         events.Subscribe<WaypointReached>(_ => Post("Waypoint reached"));
-        events.Subscribe<HelperHired>(e => Post($"Helper started on {e.Field.Label} ({e.Field.AreaHa:0.00} ha)", Severity.Good));
+        events.Subscribe<HelperHired>(e => Post($"Helper {e.Number} started on {e.Field.Label} ({e.Field.AreaHa:0.00} ha)", Severity.Good));
         events.Subscribe<HelperDismissed>(e =>
         {
             var wages = e.Wages >= 0.5f ? $" (${e.Wages:N0} in wages)" : "";
             switch (e.End)
             {
-                case HelperEnd.Finished: Post($"Helper finished {e.Field.Label}{wages}", Severity.Good); break;
-                case HelperEnd.Stopped: Post($"Helper stopped on {e.Field.Label}: {e.Reason?.Text}{wages}", Severity.Warning); break;
-                default: Post($"Helper dismissed{wages}"); break;
+                case HelperEnd.Finished: Post($"Helper {e.Number} finished {e.Field.Label}{wages}", Severity.Good); break;
+                case HelperEnd.Stopped: Post($"Helper {e.Number} stopped on {e.Field.Label}: {e.Reason?.Text}{wages}", Severity.Warning); break;
+                default: Post($"Helper {e.Number} dismissed{wages}"); break;
             }
         });
     }

@@ -346,16 +346,25 @@ public partial class MapView : Control
 
     /// <summary>
     /// The machines as dots (FS: their map icons): a vehicle with what it pulls as one, an implement left standing as a
-    /// smaller one; other farms' greyer. The one the farmer drives is under their arrow.
+    /// smaller one; other farms' greyer. A helper's vehicle is bigger, in the helpers' color with the helper's number (FS).
+    /// The one the farmer drives is under their arrow.
     /// </summary>
     private void DrawMachines()
     {
         var driven = Sim.Player.Vehicle;
+        var font = GetThemeDefaultFont();
+        var size = GetThemeDefaultFontSize() - 2;
         foreach (var m in Sim.Machines.All)
         {
             if (m.Parent != null || m == driven) continue;
-            Glyph("fiber_manual_record", ToScreen(m.Footprint.Center), m.Has<Drivable>() ? 20f : 14f,
-                m.FarmId == Sim.Player.FarmId ? Machines : Others, 0f);
+            var at = ToScreen(m.Footprint.Center);
+            if (m.Get<Drivable>()?.Controller is FieldWorkController helper)
+            {
+                Glyph("fiber_manual_record", at, 30f, new Color(Palette.Info), 0f);
+                Text(font, at, helper.Number.ToString(), size, Colors.White);
+                continue;
+            }
+            Glyph("fiber_manual_record", at, m.Has<Drivable>() ? 20f : 14f, m.FarmId == Sim.Player.FarmId ? Machines : Others, 0f);
         }
     }
 

@@ -223,7 +223,7 @@ public class FinanceTests
         var end = Assert.Single(dismissed);
         Assert.InRange(end.Wages, 3f, 3.01f);
         Assert.Equal(money - end.Wages, sim.Economy.Money, 2);
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper dismissed ($3 in wages)");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Helper 1 dismissed ($3 in wages)");
     }
 
     [Fact]

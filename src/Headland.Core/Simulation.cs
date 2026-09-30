@@ -367,12 +367,25 @@ public sealed class Simulation
     public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null) =>
         Hire(v, new FieldWorkController(this, v, field, maxLanes: maxLanes));
 
+    /// <summary>The helpers at work, in their vehicles.</summary>
+    public IEnumerable<FieldWorkController> Helpers => Machines.All.Select(m => m.Get<Drivable>()?.Controller).OfType<FieldWorkController>();
+
+    /// <summary>The lowest number no helper at work has (from 1).</summary>
+    internal int FreeHelperNumber()
+    {
+        var taken = Helpers.Select(h => h.Number).ToHashSet();
+        var n = 1;
+        while (taken.Contains(n)) n++;
+        return n;
+    }
+
     private FieldWorkController Hire(Machine v, FieldWorkController helper)
     {
         helper.WagePerHour = HelperWage;
+        helper.Number = FreeHelperNumber();
         helper.TakeOver();
         v.Get<Drivable>()!.Controller = helper;
-        Events.Publish(new HelperHired(v, helper.Field));
+        Events.Publish(new HelperHired(v, helper.Field, helper.Number));
         return helper;
     }
 
@@ -401,7 +414,7 @@ public sealed class Simulation
             if (FieldWorkController.SwitchedOnLanes(m, areas)) areas.On = false;
         }
         drivable.Controller = Player.Vehicle == v ? Player.Controls : null;
-        Events.Publish(new HelperDismissed(v, helper.Field, end, helper.StopReason, helper.Wages));
+        Events.Publish(new HelperDismissed(v, helper.Field, helper.Number, end, helper.StopReason, helper.Wages));
     }
 
     /// <summary>

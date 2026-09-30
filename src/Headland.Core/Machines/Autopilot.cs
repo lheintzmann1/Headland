@@ -495,6 +495,12 @@ public sealed class FieldWorkController : IVehicleController
     public MachineCondition? StopReason { get; private set; }
     public bool Finished => Driver.Finished || Stopped;
 
+    /// <summary>
+    /// The helper's number (FS: each hired helper has one), the lowest no other helper at work has when hired: "Helper 2"
+    /// in the HUD, and on its vehicle on the map.
+    /// </summary>
+    public int Number { get; internal set; }
+
     /// <summary>Pay per hour of work, agreed when hired. Helpers drive in real time, so the clock speed doesn't change it.</summary>
     public float WagePerHour { get; internal set; }
     /// <summary>Real seconds worked on this job.</summary>

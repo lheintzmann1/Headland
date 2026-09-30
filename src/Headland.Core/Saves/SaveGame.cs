@@ -207,6 +207,7 @@ public static class SaveGame
                 Waypoint = h.Driver.Index,
                 DriveStart = h.Driver.Start is { } s ? [s.X, s.Y] : null,
                 WagePerHour = h.WagePerHour,
+                Number = h.Number,
                 WorkedSeconds = h.WorkedSeconds,
                 WagesPaid = h.WagesPaid,
             };
@@ -417,6 +418,7 @@ public static class SaveGame
             helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
             helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
             helper.WagesPaid = Math.Max(0f, h.WagesPaid);
+            helper.Number = h.Number > 0 && sim.Helpers.All(o => o.Number != h.Number) ? h.Number : sim.FreeHelperNumber();
             seat.Controller = helper;
         }
         return byId;

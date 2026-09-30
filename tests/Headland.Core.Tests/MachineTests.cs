@@ -528,7 +528,7 @@ public class MachineTests
         Assert.Equal(outOfSeed, dismissed[0].Reason);
         Assert.True(seed.IsEmpty);
         Assert.Equal([outOfSeed], seeder.Conditions);
-        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Helper stopped on Field 4: Out of seeds: buy more at a shop"));
+        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Helper 1 stopped on Field 4: Out of seeds: buy more at a shop"));
 
         seed.Add("seeds", 500f);
         Assert.Empty(seeder.Conditions);

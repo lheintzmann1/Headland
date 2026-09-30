@@ -216,7 +216,7 @@ public partial class Hud : CanvasLayer
         }
         sb.Append('\n');
         if (v.Get<Drivable>()?.Controller is FieldWorkController w)
-            sb.Append($"  {Widgets.Colored($"Helper working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
+            sb.Append($"  {Widgets.Colored($"Helper {w.Number} working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
         foreach (var m in v.Chain())
         {
             if (m != v) sb.Append(m == selected ? $"  [b]{Named(m)}[/b]" : $"  {Named(m)}");

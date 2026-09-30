@@ -9,6 +9,7 @@ public static class Palette
     public const string Dim = "#a8aba4";
     public const string Good = "#9fd67f";
     public const string Warning = "#e89a60";
+    /// <summary>What's worth knowing, and the helpers: their lines in the HUD, their vehicles on the map.</summary>
     public const string Info = "#8fc0e8";
     /// <summary>Something running for a while: tipping, pipe out.</summary>
     public const string Busy = "#e8c060";

@@ -167,10 +167,11 @@ public sealed record WaypointReached(Vector2 Position) : IGameEvent;
 
 public enum HelperEnd { Finished, Stopped, Dismissed }
 
-public sealed record HelperHired(Machine Vehicle, FieldInfo Field) : IGameEvent;
+/// <summary>A helper took over a vehicle to work a field; <paramref name="Number"/> is the helper's (Helper 2).</summary>
+public sealed record HelperHired(Machine Vehicle, FieldInfo Field, int Number) : IGameEvent;
 
 /// <summary>
 /// A helper left its vehicle; <paramref name="Reason"/> says why it stopped early (out of seed, tank full), and
 /// <paramref name="Wages"/> what it earned on the job.
 /// </summary>
-public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, HelperEnd End, MachineCondition? Reason, float Wages) : IGameEvent;
+public sealed record HelperDismissed(Machine Vehicle, FieldInfo Field, int Number, HelperEnd End, MachineCondition? Reason, float Wages) : IGameEvent;

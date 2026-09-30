@@ -68,7 +68,8 @@ Built with **Godot 4.7** and **C#**.
 - **Field helpers.** Press H and a helper works the field one lane after the other, leaving out what's done already,
   so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland it
   backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it
-  lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed.
+  lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed. Each
+  has a number, the lowest free when hired, on its vehicle on the map and the minimap.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health, weeds, and
   whether it was fertilized. Crops grow by growing degree-days; winter wheat and canola need a winter (vernalization)
   before they shoot; drought, waterlogging, frost and nitrogen shortage cost health and yield. Weeds come up on tilled
