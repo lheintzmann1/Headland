@@ -691,6 +691,8 @@ public sealed class FarmlandDef : ShapeDef
     public int Farm { get; set; }
     /// <summary>Multiplies the map's price per hectare (better or worse land).</summary>
     public float PriceFactor { get; set; } = 1f;
+    /// <summary>What a parcel without a field is called (the farmyard); one with fields goes by them.</summary>
+    public string? Name { get; set; }
 }
 
 public sealed class FieldDef : ShapeDef

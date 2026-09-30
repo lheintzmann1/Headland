@@ -38,8 +38,6 @@ public partial class MapView : Control
     private static readonly Color FieldEdge = new(1f, 1f, 1f, 0.55f);
     private static readonly Color Own = new(Palette.Key) { A = 0.18f };
     private static readonly Color OwnEdge = new(Palette.Key) { A = 0.7f };
-    private static readonly Color Machines = new("#dcdcd2");
-    private static readonly Color Others = new("#98a0a8");
 
     private readonly Dictionary<string, Texture2D?> _icons = new();
     private MapPicture _picture = null!;
@@ -276,13 +274,14 @@ public partial class MapView : Control
     }
 
     /// <summary>
-    /// The farmland layer: every parcel outlined with its number, the one under the mouse lighter, the one picked in the
-    /// key color (their owners' colors are in the picture).
+    /// The farmland layer: every parcel outlined, the one under the mouse lighter, the one picked in the key color (their
+    /// owners' colors are in the picture). They go by their fields' numbers (FS numbers only fields), the land without a
+    /// field by its name.
     /// </summary>
     private void DrawParcels()
     {
         var font = GetThemeDefaultFont();
-        var size = GetThemeDefaultFontSize() + 2;
+        var size = GetThemeDefaultFontSize();
         var hovered = Hover is { } p ? Sim.World.FarmlandAt(p) : null;
         foreach (var land in Sim.World.Farmlands)
         {
@@ -291,8 +290,8 @@ public partial class MapView : Control
             DrawClosed(points, Colors.White with { A = 0.6f }, 1.5f);
         }
         if (Selected != null) DrawClosed(Screen(Selected.Shape.Points), new Color(Palette.Key), 3f);
-        foreach (var land in Sim.World.Farmlands)
-            Text(font, ToScreen(land.Shape.Centroid) - new Vector2(0f, 18f), land.Id.ToString(), size, land == Selected ? new Color(Palette.Key) : Colors.White);
+        foreach (var land in Sim.World.Farmlands.Where(l => l.Fields.Count == 0))
+            Text(font, ToScreen(land.Shape.Centroid), land.Label, size, land == Selected ? new Color(Palette.Key) : Colors.White);
     }
 
     private void DrawFields()
@@ -345,9 +344,9 @@ public partial class MapView : Control
         : MapFilter.Services;
 
     /// <summary>
-    /// The machines as dots (FS: their map icons): a vehicle with what it pulls as one, an implement left standing as a
-    /// smaller one; other farms' greyer. A helper's vehicle is bigger, in the helpers' color with the helper's number (FS).
-    /// The one the farmer drives is under their arrow.
+    /// The machines as white dots (FS: their map icons): a vehicle with what it pulls as one, an implement left standing
+    /// as a smaller one. A helper's vehicle is a bigger dot in the helpers' color with the helper's number (FS). The one
+    /// the farmer drives is under their arrow.
     /// </summary>
     private void DrawMachines()
     {
@@ -364,7 +363,7 @@ public partial class MapView : Control
                 Text(font, at, helper.Number.ToString(), size, Colors.White);
                 continue;
             }
-            Glyph("fiber_manual_record", at, m.Has<Drivable>() ? 20f : 14f, m.FarmId == Sim.Player.FarmId ? Machines : Others, 0f);
+            Glyph("fiber_manual_record", at, m.Has<Drivable>() ? 20f : 14f, Colors.White, 0f);
         }
     }
 

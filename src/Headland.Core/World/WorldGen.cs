@@ -263,7 +263,7 @@ public static class WorldGen
             var shape = def.Shape();
             var farmland = new Farmland
             {
-                Id = def.Id, Shape = shape, Npc = content.Npcs[def.Npc], FarmId = def.Farm,
+                Id = def.Id, Shape = shape, Npc = content.Npcs[def.Npc], FarmId = def.Farm, Name = def.Name,
                 Price = MathF.Round(shape.Area / 10000f * map.FarmlandPricePerHa * def.PriceFactor),
             };
             world.Farmlands.Add(farmland);

@@ -371,7 +371,7 @@ public class ContractTests
         Assert.Null(sim.Farms.FieldBlocker(Farm.PlayerId, sim.World.FieldById(1)!, "harvester", null));
         int Cell(float x, float z) => sim.World.CellIndex((int)(x / WorldMap.CellSize), (int)(z / WorldMap.CellSize));
         Assert.True(sim.Farms.MayWork(Farm.PlayerId, Cell(60f, 100f), "cultivator", null));
-        Assert.Equal("Farmland 2 belongs to Ada Morrow", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(70f, 100f), "cultivator", null));
+        Assert.Equal("Field 2 land belongs to Ada Morrow", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(70f, 100f), "cultivator", null));
         Assert.Equal("Only farmland can be worked", sim.Farms.WorkBlocker(Farm.PlayerId, Cell(30f, 160f), "cultivator", null));
     }
 

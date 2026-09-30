@@ -7,7 +7,7 @@ using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game.UI;
 
-/// <summary>What a spot on the ground is, DF-style, as BBCode: the HUD's inspector under the mouse, and the map's.</summary>
+/// <summary>What a spot on the ground is, DF-style, as BBCode: the HUD's inspector under the mouse.</summary>
 public static class CellText
 {
     /// <summary>Its field and farmland, contract, ground, soil, crop and how it's doing; null off the map.</summary>
@@ -21,9 +21,10 @@ public static class CellText
         sb.Append(field != null ? $"[b]{field.Label}[/b] ({field.AreaHa:0.00} ha)" : "[b]Open ground[/b]");
         if (farmland != null)
         {
-            var owner = farmland.FarmId == sim.Player.FarmId ? "yours" : $"{sim.Farms.OwnerName(farmland)}'s";
+            // A field's land goes by the field: only land outside the fields is named.
+            var owner = farmland.FarmId == sim.Player.FarmId ? "your land" : $"{sim.Farms.OwnerName(farmland)}'s land";
             if (farmland.FarmId == Farm.None) owner += $", for sale at ${sim.Farms.Price(farmland):N0}";
-            sb.Append($" · {farmland.Label}, {owner}");
+            sb.Append(field != null && farmland.Fields.Contains(field) ? $" · {owner}" : $" · {farmland.Label}, {owner}");
         }
         sb.Append($"   {Widgets.Colored($"{r.Position.X:0}, {r.Position.Y:0} · {r.Height:0.0} m", Palette.Dim)}\n");
         if (field != null && sim.Contracts.On(field) is { } contract)

@@ -59,9 +59,9 @@ public class OwnershipTests
         Assert.Equal((Farm.PlayerId, money - 28_728f), (land.FarmId, sim.Economy.Money));
         Assert.Equal(-28_728f, sim.Economy.Ledger.Today[MoneyCategory.Land]);
         Assert.Equal([new FarmlandBought(land, Farm.PlayerId, 28_728f)], bought);
-        Assert.Contains(sim.Notifications.Items, n => n.Text == "Bought Farmland 5 (1.44 ha) for $28,728");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == "Bought Field 4 land (1.44 ha) for $28,728");
         Assert.False(sim.Farms.Buy(land));
-        Assert.Equal("Farmland 5 is yours already", sim.Farms.BuyBlocker(land));
+        Assert.Equal("Field 4 land is yours already", sim.Farms.BuyBlocker(land));
 
         Assert.True(sim.Farms.Sell(land));
         Assert.Equal((Farm.None, money), (land.FarmId, sim.Economy.Money));
@@ -76,9 +76,11 @@ public class OwnershipTests
         sim.Economy.Spend(sim.Economy.Money - 1000f, MoneyCategory.Other);
         Assert.Equal("Not enough money", sim.Farms.BuyBlocker(neighbor));
         Assert.False(sim.Farms.Buy(neighbor));
-        Assert.Equal("Farmland 7 is not yours", sim.Farms.SellBlocker(neighbor));
+        Assert.Equal("Field 6 land is not yours", sim.Farms.SellBlocker(neighbor));
+        // Parcels go by their fields (FS numbers only fields), the land without one by its name.
+        Assert.Equal(("Fields 3 and 7 land", "Farmyard"), (sim.World.FarmlandById(4)!.Label, sim.World.FarmlandById(1)!.Label));
 
-        Assert.Equal("Farmhouse stands on Farmland 1", sim.Farms.SellBlocker(sim.World.FarmlandById(1)!));
+        Assert.Equal("Farmhouse stands on Farmyard", sim.Farms.SellBlocker(sim.World.FarmlandById(1)!));
         Assert.False(sim.Farms.Sell(sim.World.FarmlandById(1)!));
         Assert.Null(sim.Farms.SellBlocker(sim.World.FarmlandById(2)!));
     }

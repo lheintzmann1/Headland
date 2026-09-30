@@ -5,8 +5,8 @@ using Godot;
 namespace Headland.Game.UI;
 
 /// <summary>
-/// The menu's map (FS: the map page): the <see cref="MapView"/>, and beside it the layer it shows with its legend, what's
-/// switched on, and what's under the mouse. On the farmland layer, a click picks a parcel, which the side shows with its
+/// The menu's map (FS: the map page): the <see cref="MapView"/>, and beside it the layer it shows with its legend and
+/// what's switched on. On the farmland layer, a click picks a parcel, which the side shows with its
 /// area, fields and price, to buy from its neighbor or sell back (FS). The layer and the switches stay as they were left.
 /// </summary>
 public partial class MapPage : MenuPage
@@ -34,8 +34,7 @@ public partial class MapPage : MenuPage
     private RichTextLabel _parcelText = null!;
     private Button _deal = null!;
     private Label _why = null!;
-    private RichTextLabel _here = null!;
-    private double _hereTimer;
+    private double _refresh;
     private Farmland? _picked;
 
     public Simulation Sim { get; init; } = null!;
@@ -86,9 +85,6 @@ public partial class MapPage : MenuPage
             side.AddChild(box);
         }
 
-        _here = Widgets.Rich(300);
-        _here.AutowrapMode = TextServer.AutowrapMode.WordSmart;
-        side.AddChild(_here);
         row.AddChild(side);
         AddChild(row);
         ShowLayer(_layer);
@@ -167,11 +163,9 @@ public partial class MapPage : MenuPage
 
     public override void _Process(double delta)
     {
-        _hereTimer -= delta;
-        if (_hereTimer > 0) return;
-        _hereTimer = 0.12;
-        _here.Text = _map.Hover is { } p ? CellText.Describe(Sim, p) ?? "" : "";
         // The money changes as the game runs on: the deal follows.
-        if (_picked != null) ShowParcel();
+        if ((_refresh -= delta) > 0 || _picked == null) return;
+        _refresh = 0.25;
+        ShowParcel();
     }
 }

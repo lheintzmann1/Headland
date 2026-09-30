@@ -190,7 +190,18 @@ public sealed class Farmland : IOwnable
     public float Price { get; init; }
     public float AreaHa => Shape.Area / 10000f;
     public List<FieldInfo> Fields { get; } = [];
-    public string Label => $"Farmland {Id}";
+    /// <summary>What the map calls it (the farmyard), else nothing: it goes by its fields.</summary>
+    public string? Name { get; init; }
+
+    /// <summary>
+    /// What it's called: by its fields, as FS numbers only the fields ("Field 4 land", "Fields 3 and 7 land"), or by its
+    /// name; its number only for a parcel with neither.
+    /// </summary>
+    public string Label => Name ?? (Fields.Count == 0
+        ? $"Parcel {Id}"
+        : Fields.Count == 1
+            ? $"Field {Fields[0].Id} land"
+            : $"Fields {string.Join(", ", Fields.OrderBy(f => f.Id).SkipLast(1).Select(f => f.Id))} and {Fields.Max(f => f.Id)} land");
 }
 
 public sealed class FieldInfo

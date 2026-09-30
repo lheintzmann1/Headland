@@ -55,7 +55,7 @@ Built with **Godot 4.7** and **C#**.
   buys costs, from seed to machines, land and wages; sale prices stay the same.
 - **Farmland.** The map is cut into parcels that are bought whole, with the fields in them, from the neighbors who own
   them: on the map's farmland layer, click a parcel to see its area, fields, owner and price ($20,000 a hectare), and
-  buy it there; land sells back for what it cost, except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
+  buy it there. Parcels go by the fields in them ("Field 4 land"), as fields alone have numbers; land sells back for what it cost, except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
   fields it has a contract on.
 - **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating or plowing
   stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing a meadow), and
@@ -83,9 +83,10 @@ Built with **Godot 4.7** and **C#**.
 - **Inspect anything.** Hover the ground to read its soil, moisture, nitrogen, weeds, crop stage, vernalization progress
   and a harvest estimate.
 - **Map.** The menu's map (M) shows the world from above with the numbered fields, the farmland (yours shaded), the
-  contracts' fields, the places to sell, buy and get service, the machines (as dots) and you, each switched on and off; its
+  contracts' fields, the places to sell, buy and get service, the machines (white dots, the helpers' blue ones with
+  their numbers) and you, each switched on and off; its
   layers color the fields by crop, growth (plowed, cultivated, sown, growing, ready, withered, harvested), soil and
-  moisture, and the parcels by owner (where land is bought), and hovering it reads the ground as in the world. A click sets a waypoint, a flag on the map, until you get
+  moisture, and the parcels by owner (where land is bought). A click sets a waypoint, a flag on the map, until you get
   there. The minimap in the corner (Shift+M: small, large or off) shows what's around you, turned as the camera looks,
   the waypoint held at its edge.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's

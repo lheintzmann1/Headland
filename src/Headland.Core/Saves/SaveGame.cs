@@ -263,8 +263,8 @@ public static class SaveGame
             if (sim.Farms.ById(f.Id) is { } farm) farm.Name = f.Name;
         foreach (var l in s.Farmlands)
         {
-            if (sim.World.FarmlandById(l.Id) is not { } land) warnings.Add($"Farmland {l.Id} no longer exists on this map");
-            else if (l.Farm != Ownership.Farm.None && sim.Farms.ById(l.Farm) == null) warnings.Add($"Farmland {l.Id} belonged to an unknown farm");
+            if (sim.World.FarmlandById(l.Id) is not { } land) warnings.Add($"Parcel {l.Id} no longer exists on this map");
+            else if (l.Farm != Ownership.Farm.None && sim.Farms.ById(l.Farm) == null) warnings.Add($"Parcel {l.Id} belonged to an unknown farm");
             else land.FarmId = l.Farm;
         }
         RestorePois(sim, s, warnings);
