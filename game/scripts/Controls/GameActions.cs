@@ -23,6 +23,7 @@ public static class GameActions
     public const string MenuNextTab = "menu_next_tab";
     public const string Map = "map";
     public const string Shop = "shop";
+    public const string Minimap = "minimap";
     public const string ToggleDebug = "toggle_debug";
     public const string Screenshot = "screenshot";
 
@@ -55,6 +56,7 @@ public static class GameActions
         new(MenuNextTab, "Next tab", InputContext.Menu, "E", "Joy RB"),
         new(Map, "Map: open the menu on it, or close it", Screens, "M"),
         new(Shop, "Shop: open the menu on it, or close it", Screens, "O"),
+        new(Minimap, "Minimap: small, large or off", World, "Shift+M"),
         new(ToggleDebug, "Debug overlay", Screens, "F3"),
         new(Screenshot, "Screenshot", Screens, "F12"),
     ];

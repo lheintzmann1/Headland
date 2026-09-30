@@ -29,6 +29,9 @@ public partial class Hud : CanvasLayer
     private PanelContainer _vehiclePanel = null!;
     private RichTextLabel _inspect = null!;
     private PanelContainer _inspectPanel = null!;
+    private MapView _minimap = null!;
+    private PanelContainer _minimapPanel = null!;
+    private string _minimapSize = "small";
     private RichTextLabel _prompt = null!;
     private VBoxContainer _notes = null!;
     private Label _debug = null!;
@@ -38,6 +41,9 @@ public partial class Hud : CanvasLayer
 
     /// <summary>Ground point under the mouse (set by the game), or null.</summary>
     public NVec2? Hover { get; set; }
+
+    /// <summary>How far the camera is turned (set by the game): the minimap turns with it.</summary>
+    public float CameraYaw { get; set; }
 
     public bool DebugVisible
     {
@@ -78,6 +84,12 @@ public partial class Hud : CanvasLayer
         promptPanel.Name = "Prompt";
         root.AddChild(promptPanel);
 
+        // The minimap (FS: the in-game map), bottom left: the farmer in the middle, up the way the camera looks.
+        _minimap = new MapView { Sim = Sim, Minimap = true, Off = [MapFilter.Farmland], Name = "Minimap" };
+        _minimapPanel = Widgets.Anchor(Widgets.Panel(_minimap), Control.LayoutPreset.BottomLeft, new Vector2(12, -12));
+        root.AddChild(_minimapPanel);
+        MinimapSize = MinimapSize;
+
         _notes = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
         _notes.SetAnchorsPreset(Control.LayoutPreset.CenterTop);
         _notes.GrowHorizontal = Control.GrowDirection.Both;
@@ -90,12 +102,28 @@ public partial class Hud : CanvasLayer
         topLeft.AddChild(_debug);
     }
 
+    /// <summary>The minimap's size: small, large or off (<see cref="Game.Common.UserSettings.MinimapSizes"/>).</summary>
+    public string MinimapSize
+    {
+        get => _minimapSize;
+        set
+        {
+            _minimapSize = value;
+            if (_minimap == null) return;
+            _minimapPanel.Visible = value != "off";
+            _minimap.CustomMinimumSize = Vector2.One * (value == "large" ? 340 : 210);
+            // Back in its corner at its new size.
+            _minimapPanel.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomLeft, Control.LayoutPresetMode.Minsize, 12);
+        }
+    }
+
     // ------------------------------------------------------------------ Update
 
     public override void _Process(double delta)
     {
         UpdateClock();
         UpdateContracts();
+        _minimap.Angle = CameraYaw;
         Widgets.Balance(_money, Sim.Economy.Money);
         UpdateVehicle();
         UpdatePrompt();

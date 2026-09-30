@@ -350,7 +350,7 @@ in-game menu (see Controls).
       volumes, controls (rebinding on physical keys, saved), gameplay (units, autosave), language.
 - [x] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
       layers for crop, growth stage, soil, moisture; click to set a waypoint.
-- [ ] Minimap in the HUD with POIs and vehicles.
+- [x] Minimap in the HUD with POIs and vehicles: small, large or off (FS `TOGGLE_MAP_SIZE`), turned with the camera.
 - [ ] HUD redesign on the theme: vehicle panel with speed, fuel, condition and fill levels.
 - [ ] Prices tab (where each crop sells best), field and farm statistics, helper list.
 - [ ] Translatable strings (Godot `tr()`), English and French.

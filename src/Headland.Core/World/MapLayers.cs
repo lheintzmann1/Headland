@@ -21,10 +21,7 @@ public enum MapLayer
 /// <summary>An entry of a map layer's legend: what a color (0xRRGGBB) stands for.</summary>
 public readonly record struct MapLegendEntry(string Name, uint Rgb);
 
-/// <summary>
-/// The map's picture of the world, a pixel per cell or per few cells: the ground in its colors, lit from the
-/// north-west by its slopes, and a layer's colors over the fields.
-/// </summary>
+/// <summary>The colors of the map's layers (<see cref="MapPicture"/>), and what they stand for.</summary>
 public static class MapLayers
 {
     /// <summary>Each <see cref="GroundType"/>'s color, by value.</summary>
@@ -107,44 +104,14 @@ public static class MapLayers
         };
     }
 
-    /// <summary>
-    /// Fills <paramref name="rgba"/> with the picture: (CellsX / <paramref name="step"/>)² pixels, RGBA8, rows from north
-    /// to south; each pixel shows the cell at its north-west corner.
-    /// </summary>
-    public static void Fill(WorldMap world, ContentDatabase content, MapLayer layer, int step, Span<byte> rgba)
+    /// <summary>The color <paramref name="layer"/> gives cell <paramref name="i"/> (0xRRGGBB): its legend's, or the ground's.</summary>
+    internal static uint ColorAt(WorldMap world, ContentDatabase content, MapLayer layer, IReadOnlyList<MapLegendEntry> legend, int i)
     {
-        var w = world.CellsX / step;
-        var h = world.CellsZ / step;
-        if (rgba.Length < w * h * 4) throw new ArgumentException($"needs {w * h * 4} bytes", nameof(rgba));
-        var legend = Legend(content, layer);
-        for (var z = 0; z < h; z++)
-        for (var x = 0; x < w; x++)
-        {
-            var cx = x * step;
-            var cz = z * step;
-            var i = world.CellIndex(cx, cz);
-            var entry = EntryAt(world, content, layer, i);
-            var rgb = entry >= 0 && entry < legend.Count
-                ? legend[entry].Rgb
-                : Dim(GroundColors[Math.Min(world.Layers.Ground[i], (byte)(GroundColors.Length - 1))], layer != MapLayer.Terrain);
-            var shade = Shade(world, cx, cz);
-            var o = (z * w + x) * 4;
-            rgba[o] = Lit(rgb >> 16, shade);
-            rgba[o + 1] = Lit(rgb >> 8, shade);
-            rgba[o + 2] = Lit(rgb, shade);
-            rgba[o + 3] = 255;
-        }
+        var entry = EntryAt(world, content, layer, i);
+        return entry >= 0 && entry < legend.Count
+            ? legend[entry].Rgb
+            : Dim(GroundColors[Math.Min(world.Layers.Ground[i], (byte)(GroundColors.Length - 1))], layer != MapLayer.Terrain);
     }
-
-    /// <summary>Light on the ground at a cell, from the north-west: above 1 on slopes facing it, below on the others.</summary>
-    private static float Shade(WorldMap world, int cx, int cz)
-    {
-        var p = world.CellCenter(cx, cz);
-        var n = world.Height.Normal(p.X, p.Y);
-        return Math.Clamp(1f + (-n.X - n.Z) * 1.6f, 0.75f, 1.25f);
-    }
-
-    private static byte Lit(uint channel, float shade) => (byte)Math.Clamp((int)((channel & 0xff) * shade), 0, 255);
 
     /// <summary>The ground under a layer shows darker, so the fields' colors stand out.</summary>
     private static uint Dim(uint rgb, bool dim)

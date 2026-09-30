@@ -37,6 +37,12 @@ public partial class IsoCamera : Camera3D
 
     private float TargetYaw => Mathf.DegToRad(45f + 90f * _yawIndex);
 
+    /// <summary>
+    /// How far the view is turned from looking north (radians, counterclockwise from above: π/4 looks north-west). The
+    /// minimap turns as much the other way, so that up on it is up on the screen.
+    /// </summary>
+    public float Yaw => _yaw;
+
     /// <summary>Screen-up direction on the ground plane (Core coordinates).</summary>
     public NVec2 GroundForward => new(-Mathf.Sin(_yaw), -Mathf.Cos(_yaw));
     /// <summary>Screen-right direction on the ground plane (Core coordinates).</summary>

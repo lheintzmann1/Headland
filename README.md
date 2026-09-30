@@ -85,7 +85,8 @@ Built with **Godot 4.7** and **C#**.
   contracts' fields, the places to sell, buy and get service, the machines (as dots) and you, each switched on and off; its
   layers color the fields by crop, growth (plowed, cultivated, sown, growing, ready, withered, harvested), soil and
   moisture, and hovering it reads the ground as in the world. A click sets a waypoint, a flag on the map, until you get
-  there.
+  there. The minimap in the corner (Shift+M: small, large or off) shows what's around you, turned as the camera looks,
+  the waypoint held at its edge.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money
@@ -130,6 +131,7 @@ file (see below).
 | H | Hire or dismiss a field helper |
 | Esc | The menu: the map, contracts, finances and loans, farmland, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
 | M, O | The menu's map, its shop (again: close it) |
+| Shift+M | Minimap: small, large, off |
 | Q / E | Rotate the camera |
 | Mouse wheel, middle drag | Zoom, pan |
 | 1 to 6, P | Time speed (×1 to ×240), pause |
@@ -148,6 +150,7 @@ startup; a missing or invalid value falls back to its default.
 | `[audio]` | `master`, `music`, `vehicles`, `environment`, `ui`: volumes from 0 to 1 |
 | `[controls]` | A list of bindings per action (`["W", "Joy LY-"]`): keys named as on a US QWERTY keyboard, since the position counts and not the letter, with `Ctrl+`, `Shift+` or `Alt+` (`"Shift+Tab"`); mouse buttons (`"Mouse Middle"`, `"Mouse Wheel Up"`); gamepad buttons and axes (`"Joy A"`, `"Joy LX-"`, `"Joy LT"`). `"Hold V"` fires after a long press and `"Double V"` on a double tap. Two actions sharing a binding where both work are reported at startup |
 | `[gameplay]` | `autosave_minutes` (0 = off) |
+| `[hud]` | `minimap` (small, large, off; Shift+M steps through them) |
 
 ## Running from source
 

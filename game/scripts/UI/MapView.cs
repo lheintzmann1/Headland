@@ -16,15 +16,17 @@ namespace Headland.Game.UI;
 public enum MapFilter { Fields, Farmland, Contracts, Farm, Selling, Services, Vehicles }
 
 /// <summary>
-/// The map (FS: the in-game map): the world from above in a layer's colors (<see cref="MapLayers"/>), with the fields and
+/// The map (FS: the in-game map): the world from above in a layer's colors (<see cref="MapPicture"/>), with the fields and
 /// their numbers, the farmland (the farm's own shaded), the contracts' fields, the POIs' icons, the machines, the farmer
 /// and the waypoint. The wheel zooms at the mouse, dragging moves the map, a click sets the waypoint and a right click
-/// takes it away.
+/// takes it away. As the HUD's <see cref="Minimap"/>, it follows the farmer instead, turned as the camera looks.
 /// </summary>
 public partial class MapView : Control
 {
-    /// <summary>Seconds between redrawing the picture: crops grow and machines work the fields while it's open.</summary>
+    /// <summary>Seconds between repainting the picture: crops grow and machines work the fields.</summary>
     private const double RefreshSeconds = 2.0;
+    /// <summary>Rows of the picture painted a frame while it's repainted, so no frame stalls.</summary>
+    private const int BandRows = 64;
     /// <summary>Most pixels per meter, zoomed in.</summary>
     private const float MaxZoom = 12f;
     /// <summary>Pixels the mouse moves, a button down, before it drags the map rather than clicks.</summary>
@@ -40,12 +42,14 @@ public partial class MapView : Control
     private static readonly Color Others = new("#98a0a8");
 
     private readonly Dictionary<string, Texture2D?> _icons = new();
+    private MapPicture _picture = null!;
     private Image? _image;
-    private ImageTexture? _picture;
-    private byte[] _buffer = [];
-    private int _step = 1;
+    private ImageTexture? _texture;
     private double _refresh;
+    /// <summary>The next row to repaint, or -1 between repaints.</summary>
+    private int _row = -1;
     private MapLayer _layer;
+    private bool _newLayer = true;
     /// <summary>Pixels per meter; 0 until it's first drawn, when the whole map fits.</summary>
     private float _zoom;
     private NVec2 _center;
@@ -57,6 +61,18 @@ public partial class MapView : Control
     /// <summary>What's switched off.</summary>
     public HashSet<MapFilter> Off { get; init; } = [];
 
+    /// <summary>
+    /// The HUD's minimap: it follows the farmer at <see cref="Zoom"/>, turned by <see cref="Angle"/>, without the POIs'
+    /// names or the scale, the waypoint held at its edge, and takes no mouse.
+    /// </summary>
+    public bool Minimap { get; init; }
+
+    /// <summary>Pixels per meter the minimap shows.</summary>
+    public float Zoom { get; init; } = 1.5f;
+
+    /// <summary>The minimap's turn (radians, clockwise): the camera's, so that up on it is up on the screen.</summary>
+    public float Angle { get; set; }
+
     /// <summary>The ground point under the mouse, if it's over the map.</summary>
     public NVec2? Hover { get; private set; }
 
@@ -66,57 +82,76 @@ public partial class MapView : Control
         set
         {
             _layer = value;
-            _refresh = 0;
+            _newLayer = true;
         }
     }
 
     public override void _Ready()
     {
         ClipContents = true;
-        MouseFilter = MouseFilterEnum.Stop;
+        MouseFilter = Minimap ? MouseFilterEnum.Ignore : MouseFilterEnum.Stop;
         var w = Sim.World;
-        _step = Math.Max(1, w.CellsX / 1024);
-        _buffer = new byte[w.CellsX / _step * (w.CellsZ / _step) * 4];
+        // A pixel a cell on the map (up to 1024 across), fewer on the minimap.
+        _picture = new MapPicture(w, Sim.Content, w.CellsX / (Minimap ? 512 : 1024));
         _center = new NVec2(w.Size * 0.5f);
+        if (Minimap) _zoom = Zoom;
     }
 
     public override void _Process(double delta)
     {
-        _refresh -= delta;
-        if (_refresh <= 0)
+        if (!IsVisibleInTree()) return;
+        if (_newLayer)
         {
+            // A layer picked shows at once.
+            _newLayer = false;
+            _picture.Paint(_layer);
+            _row = -1;
             _refresh = RefreshSeconds;
-            Paint();
+            Upload();
         }
+        else if (_row >= 0)
+        {
+            _picture.Paint(_layer, _row, _row + BandRows);
+            _row += BandRows;
+            if (_row >= _picture.Height)
+            {
+                _row = -1;
+                _refresh = RefreshSeconds;
+                Upload();
+            }
+        }
+        else if ((_refresh -= delta) <= 0) _row = 0;
+        if (Minimap) _center = Sim.Player.Position;
         QueueRedraw();
     }
 
-    /// <summary>The picture, in the layer's colors as the world is now.</summary>
-    private void Paint()
+    /// <summary>The picture as painted, to the texture drawn.</summary>
+    private void Upload()
     {
-        var w = Sim.World;
-        MapLayers.Fill(w, Sim.Content, _layer, _step, _buffer);
-        int width = w.CellsX / _step, height = w.CellsZ / _step;
         if (_image == null)
         {
-            _image = Image.CreateFromData(width, height, false, Image.Format.Rgba8, _buffer);
-            _picture = ImageTexture.CreateFromImage(_image);
+            _image = Image.CreateFromData(_picture.Width, _picture.Height, false, Image.Format.Rgba8, _picture.Rgba);
+            _texture = ImageTexture.CreateFromImage(_image);
         }
         else
         {
-            _image.SetData(width, height, false, Image.Format.Rgba8, _buffer);
-            _picture!.Update(_image);
+            _image.SetData(_picture.Width, _picture.Height, false, Image.Format.Rgba8, _picture.Rgba);
+            _texture!.Update(_image);
         }
     }
 
     // ------------------------------------------------------------------ View
 
-    private Vector2 ToScreen(NVec2 p) => new Vector2(p.X - _center.X, p.Y - _center.Y) * _zoom + Size * 0.5f;
+    /// <summary>Meters on the ground to pixels on the view: from its center, scaled, turned, to the middle of the view.</summary>
+    private Transform2D View => Transform2D.Identity.Translated(new Vector2(-_center.X, -_center.Y)).Scaled(Vector2.One * _zoom).Rotated(Angle)
+        .Translated(Size * 0.5f);
+
+    private Vector2 ToScreen(NVec2 p) => View * new Vector2(p.X, p.Y);
 
     private NVec2 ToWorld(Vector2 s)
     {
-        var d = (s - Size * 0.5f) / _zoom;
-        return new NVec2(_center.X + d.X, _center.Y + d.Y);
+        var p = View.AffineInverse() * s;
+        return new NVec2(p.X, p.Y);
     }
 
     private float FitZoom => MathF.Min(Size.X, Size.Y) / Sim.World.Size;
@@ -189,10 +224,12 @@ public partial class MapView : Control
     {
         if (_zoom <= 0f && Size.X > 0f) _zoom = FitZoom;
         DrawRect(new Rect2(Vector2.Zero, Size), Backdrop);
-        if (_picture == null || _zoom <= 0f) return;
+        if (_texture == null || _zoom <= 0f) return;
         // Cells stay sharp zoomed in, the picture smooth zoomed out.
-        TextureFilter = _zoom * WorldMap.CellSize * _step > 1.5f ? TextureFilterEnum.Nearest : TextureFilterEnum.Linear;
-        DrawTextureRect(_picture, new Rect2(ToScreen(NVec2.Zero), Vector2.One * (Sim.World.Size * _zoom)), false);
+        TextureFilter = _zoom * WorldMap.CellSize * _picture.Step > 1.5f ? TextureFilterEnum.Nearest : TextureFilterEnum.Linear;
+        DrawSetTransformMatrix(View);
+        DrawTextureRect(_texture, new Rect2(Vector2.Zero, Vector2.One * Sim.World.Size), false);
+        DrawSetTransform(Vector2.Zero);
 
         if (!Off.Contains(MapFilter.Farmland)) DrawFarmland();
         if (!Off.Contains(MapFilter.Fields)) DrawFields();
@@ -201,7 +238,7 @@ public partial class MapView : Control
         if (!Off.Contains(MapFilter.Vehicles)) DrawMachines();
         DrawWaypoint();
         DrawFarmer();
-        DrawScale();
+        if (!Minimap) DrawScale();
     }
 
     private Vector2[] Screen(IReadOnlyList<NVec2> points) => points.Select(ToScreen).ToArray();
@@ -260,7 +297,7 @@ public partial class MapView : Control
                 var at = ToScreen(spot.Position);
                 DrawCircle(at, 13f, Outline);
                 if (Icon(spot.Icon) is { } icon) DrawTextureRect(icon, new Rect2(at - new Vector2(9f, 9f), new Vector2(18f, 18f)), false);
-                Text(font, at + new Vector2(0f, 26f), spot.Name, size, new Color(Palette.Dim).Lightened(0.3f));
+                if (!Minimap) Text(font, at + new Vector2(0f, 26f), spot.Name, size, new Color(Palette.Dim).Lightened(0.3f));
             }
         }
     }
@@ -292,13 +329,26 @@ public partial class MapView : Control
         var p = Sim.Player;
         var heading = p.Vehicle?.Heading ?? p.Heading;
         // The arrow points up (north); heading θ faces (sin θ, cos θ), south being down.
-        Glyph("navigation", ToScreen(p.Position), 22f, new Color(Palette.Key), MathF.PI - heading);
+        Glyph("navigation", ToScreen(p.Position), 22f, new Color(Palette.Key), MathF.PI - heading + Angle);
     }
 
     /// <summary>The waypoint's flag, its pole's foot on the spot.</summary>
     private void DrawWaypoint()
     {
-        if (Sim.Player.Waypoint is { } w) Glyph("flag", ToScreen(w) - new Vector2(-3f, 10f), 24f, new Color(Palette.Waypoint), 0f);
+        if (Sim.Player.Waypoint is not { } w) return;
+        var at = ToScreen(w);
+        // The minimap holds it at its edge, the way to it (FS).
+        if (Minimap) at = Pinned(at, 14f);
+        Glyph("flag", at - new Vector2(-3f, 10f), 24f, new Color(Palette.Waypoint), 0f);
+    }
+
+    /// <summary><paramref name="at"/>, or where the line to it from the middle leaves the view less <paramref name="inset"/> pixels.</summary>
+    private Vector2 Pinned(Vector2 at, float inset)
+    {
+        var half = Size * 0.5f - Vector2.One * inset;
+        var d = at - Size * 0.5f;
+        var over = MathF.Max(MathF.Abs(d.X) / half.X, MathF.Abs(d.Y) / half.Y);
+        return over > 1f ? Size * 0.5f + d / over : at;
     }
 
     /// <summary>A bar a round number of meters long, bottom left.</summary>

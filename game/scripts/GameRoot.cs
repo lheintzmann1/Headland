@@ -83,7 +83,7 @@ public partial class GameRoot : Node3D
         Camera = new IsoCamera { Name = "Camera" };
         AddChild(Camera);
         Camera.SnapTo(Sim.World.OnGround(Sim.Player.Position));
-        Hud = new Hud { Sim = Sim, Name = "Hud" };
+        Hud = new Hud { Sim = Sim, MinimapSize = Settings.Minimap, Name = "Hud" };
         AddChild(Hud);
         Screens = new ScreenStack { Name = "Screens" };
         AddChild(Screens);
@@ -180,6 +180,7 @@ public partial class GameRoot : Node3D
         HoldCursor(onTool);
         Camera.Dragging = InputLayer.MouseMode == MouseMode.Drag;
         Hud.Visible = !Screens.CoversView;
+        Hud.CameraYaw = Camera.Yaw;
         var p = Sim.Player;
         var focus = FocusOverride?.Invoke() ?? (p.Vehicle?.Footprint.Center ?? p.Position);
         Camera.Follow = Sim.World.OnGround(focus);
@@ -232,6 +233,7 @@ public partial class GameRoot : Node3D
             case GameActions.MenuNextTab: (Screens.Top as MenuScreen)?.Step(1); break;
             case GameActions.Map: MenuTab("Map"); break;
             case GameActions.Shop: MenuTab("Shop"); break;
+            case GameActions.Minimap: StepMinimap(); break;
             case GameActions.ToggleDebug: Hud.DebugVisible = !Hud.DebugVisible; break;
             case GameActions.Screenshot: SaveScreenshot($"user://shots/shot_{Time.GetUnixTimeFromSystem():0}.png"); break;
             case InputActions.Use: Use(); break;
@@ -267,6 +269,15 @@ public partial class GameRoot : Node3D
             else menu.ShowTab(tab);
         }
         else if (Screens.Top == null) Screens.Push(new MenuScreen { Game = this, Tab = tab });
+    }
+
+    /// <summary>The minimap's next size (small, large, off), kept in the settings.</summary>
+    private void StepMinimap()
+    {
+        var sizes = UserSettings.MinimapSizes;
+        Settings.Minimap = sizes[(Array.IndexOf(sizes, Settings.Minimap) + 1) % sizes.Length];
+        Hud.MinimapSize = Settings.Minimap;
+        Settings.Save();
     }
 
     /// <summary>The use key: the nearest activation's screen when it asks the player first, else what it does.</summary>

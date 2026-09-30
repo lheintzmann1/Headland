@@ -16,6 +16,8 @@ public sealed class UserSettings
     public static readonly string[] WindowModes = ["windowed", "maximized", "fullscreen", "exclusive_fullscreen"];
     public static readonly string[] AntialiasingModes = ["off", "fxaa", "msaa2", "msaa4"];
     public static readonly string[] ShadowLevels = ["off", "low", "medium", "high"];
+    /// <summary>The minimap's sizes, in the order its key steps through them.</summary>
+    public static readonly string[] MinimapSizes = ["small", "large", "off"];
     /// <summary>Audio buses by setting name (only Master exists until the audio work adds the others).</summary>
     public static readonly (string setting, string bus)[] Buses =
         [("master", "Master"), ("music", "Music"), ("vehicles", "Vehicles"), ("environment", "Environment"), ("ui", "UI")];
@@ -44,6 +46,10 @@ public sealed class UserSettings
     // [gameplay]
     /// <summary>Real minutes between autosaves; 0 turns autosave off.</summary>
     public float AutosaveMinutes { get; set; } = 10f;
+
+    // [hud]
+    /// <summary>The minimap: small, large or off (<see cref="MinimapSizes"/>).</summary>
+    public string Minimap { get; set; } = "small";
 
     public static UserSettings Load(string path = DefaultPath)
     {
@@ -80,6 +86,7 @@ public sealed class UserSettings
             GD.PushWarning($"{path}: {c.Binding} is bound to both {c.Action} and {c.Other}");
 
         s.AutosaveMinutes = Math.Clamp(cfg.GetValue("gameplay", "autosave_minutes", s.AutosaveMinutes).AsSingle(), 0f, 240f);
+        s.Minimap = OneOf(cfg.GetValue("hud", "minimap", s.Minimap).AsString(), MinimapSizes, s.Minimap);
         return s;
     }
 
@@ -132,6 +139,7 @@ public sealed class UserSettings
         foreach (var action in Controls.Actions)
             cfg.SetValue("controls", action.Id, new Godot.Collections.Array(Controls.Of(action.Id).Select(b => Variant.From(b.ToString()))));
         cfg.SetValue("gameplay", "autosave_minutes", AutosaveMinutes);
+        cfg.SetValue("hud", "minimap", Minimap);
         var err = cfg.Save(path);
         if (err != Error.Ok) GD.PushWarning($"{path}: cannot write ({err})");
     }

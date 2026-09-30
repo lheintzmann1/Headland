@@ -52,15 +52,18 @@ public class MapTests
         Assert.All(Enum.GetValues<MapLayer>(), layer => Assert.Equal(-1, MapLayers.EntryAt(w, content, layer, w.CellIndex(ox, oz))));
 
         // The picture: the field's cell in its crop's map color, the ground elsewhere.
-        var step = 2;
-        var width = w.CellsX / step;
-        var rgba = new byte[width * (w.CellsZ / step) * 4];
-        var (px, pz) = (cx / step, cz / step);
-        var at = w.CellIndex(px * step, pz * step);
+        var picture = new MapPicture(w, content, 2);
+        Assert.Equal((w.CellsX / 2, w.CellsZ / 2), (picture.Width, picture.Height));
+        var (px, pz) = (cx / 2, cz / 2);
+        var at = w.CellIndex(px * 2, pz * 2);
         l.Crop[at] = (byte)(wheat + 1);
         l.Stage[at] = 3;
-        MapLayers.Fill(w, content, MapLayer.Crops, step, rgba);
-        var o = (pz * width + px) * 4;
+        // A band of rows at a time: those outside it stay as they were.
+        picture.Paint(MapLayer.Crops, pz + 1, picture.Height);
+        var rgba = picture.Rgba;
+        var o = (pz * picture.Width + px) * 4;
+        Assert.Equal(0, rgba[o + 3]);
+        picture.Paint(MapLayer.Crops, pz, pz + 1);
         var color = MapLayers.ParseRgb(content.Crops[wheat].MapColor)!.Value;
         // Lit by the slope, at most a quarter lighter or darker.
         Assert.InRange(rgba[o] / (float)(color >> 16), 0.74f, 1.26f);
