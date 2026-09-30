@@ -1,0 +1,19 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "spreader_24", "name": "Spinner 1500", "category": "spreader", "brand": "verdant", "price": 9800, "mass": 420,
+  "size": { "length": 1.6, "width": 2.4, "height": 1.9, "centerZ": -0.75 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0 },
+    "fillUnits": { "units": [ { "id": "hopper", "capacity": 1500, "fillTypeCategories": ["fertilizer"], "startFillType": "fertilizer", "startLevel": 1000 } ] },
+    "workAreas": {
+      "areas": [
+        { "type": "spreader", "width": 24, "length": 1.0, "z": -3.0, "requiresOn": true, "maxWorkSpeedKmh": 16, "requiredPowerHp": 25,
+          "fillUnit": "hopper", "ratePerHa": 250 }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#46603d", "model": "res://assets/models/spreaders/spreader_24.glb" },
+  "description": "Twin-disc fertilizer spreader. Turn it on (B) to spread 250 kg of fertilizer a hectare over 24 m: some 67 kg of nitrogen."
+}

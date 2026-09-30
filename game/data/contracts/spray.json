@@ -1,0 +1,6 @@
+{ "id": "spray", "name": "Spray", "work": "sprayer", "months": [4, 5, 6, 9, 10],
+  "offer": { "weeds": ["small", "grown"] },
+  "done": { "weeds": ["none", "sprayed"] },
+  "rewardPerHa": 300, "days": [2, 4],
+  "leases": [ { "machines": ["tractor_95", "sprayer_12"], "feePerHa": 80 } ],
+  "description": "Spray the weeds before they cost the crop its yield: with your own herbicide, or what's in a leased sprayer." }

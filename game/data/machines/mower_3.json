@@ -1,0 +1,18 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "mower_3", "name": "Mower 300", "category": "mower", "brand": "verdant", "price": 13800, "mass": 780,
+  "size": { "length": 1.7, "width": 3.1, "height": 1.1, "centerZ": -0.85 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
+    "workAreas": {
+      "areas": [
+        { "type": "mower", "width": 3.0, "length": 0.6, "z": -1.25, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 55,
+          "harvestGroups": ["grass"] }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#7a5a24", "model": "res://assets/models/mowers/mower_3.glb" },
+  "description": "Rear-mounted disc mower. Lower it (V) and turn it on (B) to cut a meadow that's ready; the grass grows back for the next cut."
+}

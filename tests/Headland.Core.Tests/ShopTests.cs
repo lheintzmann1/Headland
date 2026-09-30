@@ -96,7 +96,7 @@ public class ShopTests
         Assert.Equal("Hitch: Three-point linkage, mounted; Working width: 4 m; Working speed: 14 km/h; Power needed: 120 hp; Mass: 1,540 kg",
             Specs("cultivator_3", ("width", "4")));
         Assert.Contains("Crops: corn", Specs("header_corn_6"));
-        Assert.Contains("Crops: wheat, barley, canola", Specs("header_grain_6"));
+        Assert.Contains("Crops: barley, canola, wheat", Specs("header_grain_6"));
         Assert.Contains(new Spec("Unloading", "140 L/s"), shop.Specs(content.Machines["combine_7"]));
     }
 

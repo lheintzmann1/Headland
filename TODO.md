@@ -132,7 +132,7 @@ The triggers, storage and actions have since become POI components (see Componen
 
 - [x] Generation: NPC fields offer jobs by crop state and season (cultivate, sow, harvest), buyers ask for
       goods (deliver to a POI). Reward from area and type, time limit, cap on open contracts.
-- [x] Plow, fertilize, spray and mow jobs: entries in `contracts.json`.
+- [x] Plow, fertilize, spray and mow jobs: entries in `contracts/`.
 - [ ] Bale jobs, once balers pick up the cut grass (mowing leaves it lying on the field).
 - [x] Field access: work only applies on the player's farmland or fields with an active contract, and only
       the contract's work. Contract fields show in the world (sign, outline) and in the inspector; the map
@@ -142,7 +142,7 @@ The triggers, storage and actions have since become POI components (see Componen
 - [x] Completion from field-layer progress with a threshold (FS: 95%); harvest contracts require
       delivering a share to a given POI.
 - [x] Cancel penalty, contract board screen, notifications.
-- [x] Contract types in data (`data/contracts.json`). New types in Lua come with the Lua extension points.
+- [x] Contract types in data (`data/contracts/`). New types in Lua come with the Lua extension points.
 
 ## Vehicles
 

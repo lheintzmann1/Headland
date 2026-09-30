@@ -1,0 +1,10 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+{ "id": "farm_shop", "name": "Farm Supplies", "w": 20, "d": 26,
+  "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
+  "colliders": [
+    { "x": -3, "z": -9, "w": 8, "d": 6 }
+  ],
+  "components": {
+    "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypeCategories": ["seed", "fertilizer", "herbicide"], "openHours": [7, 19] },
+    "hotspots": { "spots": [ { "icon": "storefront" } ] }
+  } }

@@ -1,0 +1,6 @@
+{ "id": "sow", "name": "Sow", "work": "seeder",
+  "offer": { "ground": ["cultivated", "plowed"], "crop": ["none"] },
+  "done": { "crop": ["sown"] },
+  "rewardPerHa": 650, "days": [2, 4],
+  "leases": [ { "machines": ["tractor_125", "seeder_3"], "feePerHa": 200 } ],
+  "description": "Sow the crop asked for: with your own seed, or the seed in a leased drill." }

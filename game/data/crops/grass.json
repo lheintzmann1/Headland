@@ -1,0 +1,14 @@
+{
+  "id": "grass", "name": "Grass", "fillType": "grass", "harvestGroup": "grass", "atlasRow": 4, "ground": "grass",
+  "baseTempC": 5, "yieldPerHa": 20000, "seedKgPerHa": 30,
+  "sowingMonths": [3, 4, 5], "harvestMonths": [5, 6, 7, 8, 9],
+  "frostKillC": -25, "wiltingPoint": 0.2, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.85,
+  "nitrogenDemandKgPerHa": 90, "regrowStage": 1,
+  "description": "Meadow grass. Sown in spring, mown when it's ready, and it grows back for the next cut; fertilize it after each one. The cut grass is left lying for now.",
+  "stages": [
+    { "name": "Sown",         "gdd": 120, "height": 0.0 },
+    { "name": "Sward",        "gdd": 180, "height": 0.08 },
+    { "name": "Growing",      "gdd": 220, "height": 0.25 },
+    { "name": "Ready to mow", "gdd": 0,   "height": 0.45, "harvestable": true }
+  ]
+}

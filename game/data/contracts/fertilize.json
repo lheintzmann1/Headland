@@ -1,0 +1,6 @@
+{ "id": "fertilize", "name": "Fertilize", "work": "spreader", "months": [3, 4, 5, 6],
+  "offer": { "crop": ["growing"], "fertilized": false },
+  "done": { "fertilized": true },
+  "rewardPerHa": 400, "days": [2, 4],
+  "leases": [ { "machines": ["tractor_95", "spreader_24"], "feePerHa": 60 } ],
+  "description": "Spread fertilizer on the growing crop: your own, or what's in a leased spreader." }

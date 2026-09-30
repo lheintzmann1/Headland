@@ -1,0 +1,15 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "plow_5", "name": "Furrow 5", "category": "plow", "brand": "ridgeline", "price": 19500, "mass": 1650,
+  "size": { "length": 5.0, "width": 2.4, "height": 1.5, "centerZ": -2.4 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
+    "workAreas": {
+      "areas": [ { "type": "plow", "width": 2.0, "length": 1.0, "z": -2.7, "maxWorkSpeedKmh": 10, "requiredPowerHp": 110 } ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#5d2b24", "model": "res://assets/models/plows/plow_5.glb" },
+  "description": "Five-furrow mounted plow. Turns the soil over, burying stubble, grass and every weed, where a cultivator only kills the small ones."
+}

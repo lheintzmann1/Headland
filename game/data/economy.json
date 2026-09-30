@@ -7,7 +7,7 @@
   // Per hour of work. Helpers drive in real time, so this doesn't depend on the clock speed: at ×5 an hour of
   // work is five game hours, $30 each.
   "helperWagePerHour": 150,
-  // Contracts (the jobs are in contracts.json). Every midnight the neighbors post "offersPerDay" new offers while
+  // Contracts (the jobs are in contracts/). Every midnight the neighbors post "offersPerDay" new offers while
   // fewer than "maxOffers" are on the board, each for "offerDays" days. The farm takes up to "maxActive" at a time. A
   // field job is done once "threshold" of the field is. A contract canceled, or not done by its due day, costs
   // "penalty" of its reward.

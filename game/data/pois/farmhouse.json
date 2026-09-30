@@ -1,0 +1,7 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+{ "id": "farmhouse", "name": "Farmhouse", "w": 14, "d": 12,
+  "visual": { "model": "res://assets/models/buildings/farmhouse.glb" },
+  "colliders": [
+    { "w": 12, "d": 10 }
+  ],
+  "components": { "hotspots": { "spots": [ { "icon": "home" } ] } } }

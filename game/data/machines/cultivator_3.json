@@ -1,0 +1,22 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "cultivator_3", "name": "Tiller 300", "category": "cultivator", "brand": "ridgeline", "price": 12500, "mass": 1150,
+  "size": { "length": 1.9, "width": 3.0, "height": 1.2, "centerZ": -0.95 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true },
+    "workAreas": {
+      "areas": [ { "type": "cultivator", "width": 3.0, "length": 1.0, "z": -1.05, "maxWorkSpeedKmh": 14, "requiredPowerHp": 90 } ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#3e5263", "model": "res://assets/models/cultivators/cultivator_3.glb" },
+  "description": "Stubble cultivator. Turns stubble, grass or failed crops into a seedbed.",
+  "configurations": [
+    { "id": "width", "name": "Working width", "options": [
+      { "id": "3", "name": "3 m" },
+      { "id": "4", "name": "4 m", "price": 4800, "mass": 390,
+        "changes": { "size": { "width": 4.0 }, "components": { "workAreas": { "areas": [ { "width": 4.0, "requiredPowerHp": 120 } ] } } } }
+    ] }
+  ]
+}

@@ -38,7 +38,7 @@ public static class WeedState
     /// <summary>Sprayed with herbicide: the weeds died, and none come up until the ground is tilled or harvested.</summary>
     public const byte Sprayed = 3;
 
-    /// <summary>Names in contracts.json field states, by value.</summary>
+    /// <summary>Names in the contract types' field states (contracts/), by value.</summary>
     public static readonly string[] Names = ["none", "small", "grown", "sprayed"];
 
     public static bool Living(byte weeds) => weeds is Small or Grown;

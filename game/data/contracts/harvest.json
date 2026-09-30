@@ -1,0 +1,10 @@
+{ "id": "harvest", "name": "Harvest", "work": "harvester",
+  "offer": { "crop": ["harvestable"] },
+  "done": { "crop": ["none"] },
+  "deliver": { "share": 0.9 },
+  "rewardPerHa": 900, "days": [3, 5],
+  "leases": [
+    { "machines": ["combine_7", "header_grain_6", "tractor_95", "trailer_16"], "feePerHa": 350 },
+    { "machines": ["combine_7", "header_corn_6", "tractor_95", "trailer_16"], "feePerHa": 350 }
+  ],
+  "description": "Harvest the field and tip the crop at the buyer. It is the neighbor's: the buyer pays you nothing for it." }

@@ -128,7 +128,7 @@ public sealed class PoiSave
     public Dictionary<string, JsonElement> Components { get; set; } = new();
 }
 
-/// <summary>A contract, with its parts by id: the job (contracts.json), field, crop, buyer and goods.</summary>
+/// <summary>A contract, with its parts by id: the job (contracts/), field, crop, buyer and goods.</summary>
 public sealed class ContractSave
 {
     public int Id { get; set; }

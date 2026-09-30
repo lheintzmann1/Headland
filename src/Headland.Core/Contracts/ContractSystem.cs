@@ -12,7 +12,7 @@ using Headland.Core.World;
 namespace Headland.Core.Contracts;
 
 /// <summary>
-/// The contract board. Every midnight the neighbors post jobs their fields need in that season (contracts.json), and
+/// The contract board. Every midnight the neighbors post jobs their fields need in that season (contracts/), and
 /// buyers ask for goods; offers nobody takes come down after a few days. The farm takes a few at a time, each due
 /// within its days, with its own machines or leased ones delivered at a dealer's lot. A field job is done once enough
 /// of the field is in its done state; goods count once tipped at the buyer, who takes them for the contract instead of

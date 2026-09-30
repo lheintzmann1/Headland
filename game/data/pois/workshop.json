@@ -1,0 +1,14 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+{ "id": "workshop", "name": "Workshop", "w": 24, "d": 32,
+  "visual": { "model": "res://assets/models/buildings/workshop.glb" },
+  "colliders": [
+    { "z": -9, "w": 18, "d": 12 }
+  ],
+  "components": {
+    "workshop": { "trigger": { "z": 7, "w": 18, "d": 16 }, "openHours": [7, 20], "configure": { "price": 250 } },
+    // Over the door: comes on while someone is in the bay.
+    "lights": { "lamps": [
+      { "type": "workFront", "switch": "trigger", "trigger": { "z": 7, "w": 18, "d": 16 },
+        "y": 4.6, "z": -2.7, "pitchDeg": -35, "range": 22, "angleDeg": 55, "energy": 3 } ] },
+    "hotspots": { "spots": [ { "icon": "build" } ] }
+  } }

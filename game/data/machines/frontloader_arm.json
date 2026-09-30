@@ -1,0 +1,17 @@
+// Hitches to a tractor's loader consoles (its "frontLoader" option); origin on the ground under its pivots.
+{
+  "id": "frontloader_arm", "name": "Loader 30", "category": "frontLoader", "brand": "ridgeline", "price": 9800, "mass": 620,
+  // What it bumps into is its tool carrier only: the tractor drives in between its arms to hitch it.
+  "size": { "length": 0.8, "width": 1.5, "height": 1.5, "centerZ": 2.6 },
+  "components": {
+    "attachable": { "type": "frontLoader", "mode": "mounted" },
+    // Lifted on the up and down keys, its tool tilted back and forth on the left and right keys.
+    "craneArm": { "groups": ["arm"], "joints": [
+      { "id": "lift", "axis": "pitch", "offset": [0, 1.2, 0], "min": -8, "max": 55, "rest": 0, "speed": 20, "control": "y" },
+      { "id": "tilt", "axis": "pitch", "offset": [0, -1.1, 2.7], "min": -45, "max": 40, "rest": 0, "speed": 35, "control": "x" } ] },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#4d5c38", "model": "res://assets/models/frontloaders/frontloader_arm.glb" },
+  "description": "Front loader arm for a tractor with loader consoles (a workshop fits them). Hitch it (G), lift it with the up and down keys and tilt its tool with the left and right keys."
+}

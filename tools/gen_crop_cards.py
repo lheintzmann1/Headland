@@ -206,12 +206,15 @@ def dead(card):
 def main():
     root = Path(__file__).resolve().parent.parent
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data", default=str(root / "game/data/crops/field_crops.json"))
+    ap.add_argument("--data", default=str(root / "game/data/crops"), help="the crops' folder (a file per crop)")
     ap.add_argument("--out", default=str(root / "game/assets/textures/crops/crop_atlas.png"))
     args = ap.parse_args()
 
-    text = "\n".join(l for l in Path(args.data).read_text().splitlines() if not l.strip().startswith("//"))
-    crops = json.loads(text)
+    crops = []
+    for path in sorted(Path(args.data).glob("*.json")):
+        text = "\n".join(l for l in path.read_text().splitlines() if not l.strip().startswith("//"))
+        crop = json.loads(text)
+        crops += crop if isinstance(crop, list) else [crop]
     atlas = Image.new("RGBA", (CELL_W * COLS, CELL_H * ROWS), (0, 0, 0, 0))
     for crop in crops:
         row = crop["atlasRow"]

@@ -1,0 +1,17 @@
+{
+  "id": "barley", "name": "Barley", "fillType": "barley", "harvestGroup": "grain", "atlasRow": 1,
+  "baseTempC": 0, "yieldPerHa": 7800, "seedKgPerHa": 150,
+  "sowingMonths": [3, 4], "harvestMonths": [7, 8],
+  "frostKillC": -8, "wiltingPoint": 0.24, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.8,
+  "nitrogenDemandKgPerHa": 130,
+  "description": "Spring barley. Quick to grow, tolerates light soils, frost-sensitive when young.",
+  "stages": [
+    { "name": "Sown",           "gdd": 100, "height": 0.0 },
+    { "name": "Emerged",        "gdd": 220, "height": 0.08 },
+    { "name": "Tillering",      "gdd": 330, "height": 0.2 },
+    { "name": "Stem extension", "gdd": 280, "height": 0.45 },
+    { "name": "Heading",        "gdd": 230, "height": 0.7 },
+    { "name": "Ripening",       "gdd": 240, "height": 0.75 },
+    { "name": "Ripe",           "gdd": 0,   "height": 0.75, "harvestable": true }
+  ]
+}

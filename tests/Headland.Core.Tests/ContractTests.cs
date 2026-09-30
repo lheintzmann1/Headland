@@ -90,7 +90,7 @@ public class ContractTests
     public void ContractTypesComeFromTheData()
     {
         var types = TestContent.Content.ContractTypes;
-        Assert.Equal(["cultivate", "plow", "sow", "fertilize", "spray", "harvest", "mow", "deliver"], types.Keys.ToArray());
+        Assert.Equal(["cultivate", "deliver", "fertilize", "harvest", "mow", "plow", "sow", "spray"], types.Keys.ToArray());
         var harvest = types["harvest"];
         Assert.Equal(("harvester", 0.9f), (harvest.Work, harvest.Deliver!.Share));
         Assert.Equal(["harvestable"], harvest.Offer.Crop);

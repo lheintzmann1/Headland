@@ -1,0 +1,6 @@
+{ "id": "mow", "name": "Mow", "work": "mower", "months": [5, 6, 7, 8, 9],
+  "offer": { "crop": ["harvestable"] },
+  "done": { "crop": ["growing"] },
+  "rewardPerHa": 280, "days": [2, 4],
+  "leases": [ { "machines": ["tractor_95", "mower_3"], "feePerHa": 70 } ],
+  "description": "Mow the meadow while the grass is ready. The grass is the neighbor's, and stays lying on the field." }

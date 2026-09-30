@@ -1,0 +1,13 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+// Machines bought or leased at the shop, and those leased for contracts, wait on its lot. Its front, the lot, faces
+// the road.
+{ "id": "machinery_dealer", "name": "Machinery Dealer", "w": 38, "d": 76,
+  "visual": { "model": "res://assets/models/buildings/machinery_dealer.glb" },
+  "colliders": [
+    { "x": 9, "z": -30, "w": 16, "d": 10 },
+    { "x": -8, "z": -29, "w": 18, "d": 14 }
+  ],
+  "components": {
+    "deliverySpot": { "trigger": { "z": 8, "w": 34, "d": 44 }, "sales": true, "leases": true },
+    "hotspots": { "spots": [ { "icon": "agriculture" } ] }
+  } }

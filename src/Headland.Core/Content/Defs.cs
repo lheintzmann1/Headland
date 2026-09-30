@@ -55,7 +55,7 @@ public sealed class EconomyDef
     public float LoanInterest { get; set; } = 0.05f;
     /// <summary>What a field helper earns per hour of work (real time: machines don't follow the clock speed).</summary>
     public float HelperWagePerHour { get; set; } = 150f;
-    /// <summary>How the neighbors offer contracts (the jobs themselves are in contracts.json).</summary>
+    /// <summary>How the neighbors offer contracts (the jobs themselves are in contracts/).</summary>
     public ContractRulesDef Contracts { get; set; } = new();
     /// <summary>What machines leased at the shop cost.</summary>
     public LeasingDef Leasing { get; set; } = new();
@@ -519,7 +519,7 @@ public sealed class ConfigurationOptionDef
     public IEnumerable<string> Nodes(ConfigurationDef configuration) => Show.Prepend($"{configuration.Id}_{Id}");
 }
 
-// ---- Contracts (contracts.json)
+// ---- Contracts (contracts/)
 
 /// <summary>
 /// A kind of job the neighbors offer. A field job is done on one of their fields with a work area of type

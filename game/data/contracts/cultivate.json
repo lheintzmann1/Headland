@@ -1,0 +1,6 @@
+{ "id": "cultivate", "name": "Cultivate", "work": "cultivator", "months": [3, 4, 7, 8, 9, 10, 11],
+  "offer": { "ground": ["stubble", "grass", "seeded"], "crop": ["none", "dead"] },
+  "done": { "ground": ["cultivated"] },
+  "rewardPerHa": 500, "days": [3, 5],
+  "leases": [ { "machines": ["tractor_125", "cultivator_3"], "feePerHa": 150 } ],
+  "description": "Turn the stubble, grass or failed crop into a seedbed." }

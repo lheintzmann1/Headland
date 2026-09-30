@@ -13,7 +13,7 @@ public class ContentTests
     {
         var db = TestContent.Content;
         Assert.Empty(db.Validate());
-        Assert.Equal(["wheat", "barley", "canola", "corn", "grass"], db.Crops.Select(c => c.Id));
+        Assert.Equal(["barley", "canola", "corn", "grass", "wheat"], db.Crops.Select(c => c.Id));
         Assert.Contains("combine_7", db.Machines.Keys);
         Assert.Contains("grain_elevator", db.Pois.Keys);
         Assert.Equal(3, db.Soils.Count);

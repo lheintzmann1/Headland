@@ -1,0 +1,17 @@
+// Origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "header_corn_6", "name": "Corn Header 6-row", "category": "header", "brand": "harvestor", "price": 45000, "mass": 2600,
+  "size": { "length": 2.4, "width": 4.7, "height": 1.3, "centerZ": 1.2 },
+  "components": {
+    "attachable": { "type": "header", "mode": "mounted", "x": 0, "z": 0, "lowerable": true, "lift": 0.6 },
+    "workAreas": {
+      "areas": [
+        { "type": "harvester", "width": 4.5, "length": 1.4, "z": 1.5, "maxWorkSpeedKmh": 8, "requiredPowerHp": 190, "harvestGroups": ["corn"] }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#b58a2e", "model": "res://assets/models/headers/header_corn_6.glb" },
+  "description": "Snapping rolls for grain corn. Six rows at 75 cm."
+}

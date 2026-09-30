@@ -1,0 +1,20 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+// The farm's own grain store: tip or pipe grain into the pit, load it back into a trailer at the spout. Its bins
+// are named after the grain each keeps.
+{ "id": "farm_silo", "name": "Farm silo", "w": 22, "d": 20,
+  "visual": { "model": "res://assets/models/buildings/farm_silo.glb" },
+  "colliders": [
+    { "x": -5, "z": -6, "w": 8, "d": 8, "round": true },
+    { "x": 5, "z": -6, "w": 8, "d": 8, "round": true }
+  ],
+  "components": {
+    "fillUnits": { "units": [
+      { "id": "wheat", "capacity": 100000, "fillTypes": ["wheat"] },
+      { "id": "barley", "capacity": 100000, "fillTypes": ["barley"] },
+      { "id": "canola", "capacity": 100000, "fillTypes": ["canola"] },
+      { "id": "corn", "capacity": 100000, "fillTypes": ["corn"] } ] },
+    "silo": {
+      "unloadTrigger": { "x": -5, "z": 4, "w": 10, "d": 9 },
+      "loadTrigger": { "x": 6, "z": 4, "w": 9, "d": 9 } },
+    "hotspots": { "spots": [ { "icon": "warehouse" } ] }
+  } }

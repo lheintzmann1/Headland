@@ -1,0 +1,17 @@
+{
+  "id": "canola", "name": "Canola", "fillType": "canola", "harvestGroup": "grain", "atlasRow": 2,
+  "baseTempC": 3, "yieldPerHa": 4200, "seedKgPerHa": 5,
+  "sowingMonths": [8, 9], "harvestMonths": [7],
+  "frostKillC": -15, "wiltingPoint": 0.25, "optimalMoistureMin": 0.45, "optimalMoistureMax": 0.8,
+  "nitrogenDemandKgPerHa": 200, "vernalizationDays": 55,
+  "description": "Winter rapeseed. Tiny seeds, hungry for nitrogen; needs a winter before flowering bright yellow in spring.",
+  "stages": [
+    { "name": "Sown",           "gdd": 100, "height": 0.0,  "card": 0 },
+    { "name": "Emerged",        "gdd": 150, "height": 0.1,  "card": 1 },
+    { "name": "Rosette",        "gdd": 400, "height": 0.3,  "card": 2 },
+    { "name": "Stem",           "gdd": 350, "height": 0.8,  "card": 3, "requiresVernalization": true },
+    { "name": "Flowering",      "gdd": 300, "height": 1.3,  "card": 4 },
+    { "name": "Pods",           "gdd": 500, "height": 1.4,  "card": 5 },
+    { "name": "Ripe",           "gdd": 0,   "height": 1.35, "card": 6, "harvestable": true }
+  ]
+}

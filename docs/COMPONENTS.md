@@ -646,7 +646,7 @@ machines), for `price` (0) for a fully dirty machine.
 
 A lot where machines appear, in its `trigger`, facing the POI's front: with `sales: true`, those bought or leased at
 the shop (on the first open lot with room for them), with `leases: true`, those leased for contracts
-([`contracts.json`](../game/data/contracts.json)). It needs one or both.
+([`contracts/`](../game/data/contracts/README.md)). It needs one or both.
 
 ## Configurations
 

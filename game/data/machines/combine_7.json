@@ -1,0 +1,81 @@
+// Steers with its rear axle; origin at the front (fixed) axle. See docs/COMPONENTS.md.
+{
+  "id": "combine_7", "name": "Harvestor 7", "category": "combine", "brand": "harvestor",
+  "price": 285000, "mass": 15500,
+  "size": { "length": 7.4, "width": 3.3, "height": 3.9, "centerZ": -2.1 },
+  "components": {
+    "runningGear": {
+      "maxSteerDeg": 32, "steerRateDeg": 50,
+      "axles": [
+        { "z": 0,    "track": 2.64, "wheels": { "radius": 0.85, "width": 0.7 } },
+        { "z": -3.6, "track": 2.36, "steering": "rear", "wheels": { "radius": 0.55, "width": 0.45 } }
+      ]
+    },
+    "motor": { "powerHp": 360, "maxSpeedKmh": 25, "maxReverseKmh": 10, "acceleration": 1.3, "braking": 4, "fuelUnit": "fuel" },
+    "drivable": {},
+    "attacherJoints": { "joints": [ { "id": "header", "type": "header", "x": 0, "z": 1.6, "y": 1.0 } ] },
+    "fillUnits": {
+      "units": [
+        { "id": "tank", "capacity": 9000, "fillTypeCategories": ["grain"] },
+        { "id": "fuel", "capacity": 600, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 600 }
+      ]
+    },
+    "thresher": { "fillUnit": "tank" },
+    "pipe": { "fillUnit": "tank", "x": 5.6, "z": -1.4, "ratePerSecond": 140 },
+    "lights": {
+      "lamps": [
+        { "type": "head", "x":  0.99, "y": 2.2, "z": 1.6 },
+        { "type": "head", "x": -0.99, "y": 2.2, "z": 1.6 },
+        { "type": "highBeam", "x":  0.99, "y": 2.2, "z": 1.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5 },
+        { "type": "highBeam", "x": -0.99, "y": 2.2, "z": 1.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5 },
+        { "type": "cab", "x": 0, "y": 3.5, "z": 0.9, "pitchDeg": -90, "range": 2.5, "angleDeg": 75, "energy": 0.6, "color": "#ffd9a0" },
+        { "type": "workFront", "x":  1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+        { "type": "workFront", "x": -1.0, "y": 3.85, "z": 1.3, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+        { "type": "workRear", "x":  0.9, "y": 3.7, "z": -5.4, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+        { "type": "workRear", "x": -0.9, "y": 3.7, "z": -5.4, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+        { "type": "turnLeft",  "x":  1.55, "y": 2.2, "z": 1.5, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -1.55, "y": 2.2, "z": 1.5, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnLeft",  "x":  1.5, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -1.5, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "tail",  "x":  1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "tail",  "x": -1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "brake", "x":  1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "brake", "x": -1.3, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "reverse", "x":  1.1, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 },
+        { "type": "reverse", "x": -1.1, "y": 1.6, "z": -5.7, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#56703f", "model": "res://assets/models/combines/combine_7.glb" },
+  "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer.",
+  "configurations": [
+    { "id": "wheels", "name": "Front wheels", "options": [
+      { "id": "single", "name": "Standard" },
+      { "id": "flotation", "name": "Flotation", "price": 8400, "mass": 420,
+        "changes": { "size": { "width": 3.55 },
+          "components": { "runningGear": { "axles": [ { "wheels": { "type": "flotation", "radius": 0.85, "width": 0.9 } } ] } } } },
+      { "id": "tracks", "name": "Tracks", "price": 64000, "mass": 3400,
+        "changes": { "size": { "width": 3.45 },
+          "components": { "runningGear": { "axles": [ { "wheels": { "type": "tracks", "radius": 0.5, "width": 0.76, "length": 1.8 } } ] } } } }
+    ] },
+    { "id": "engine", "name": "Engine", "options": [
+      { "id": "360", "name": "360 hp" },
+      { "id": "420", "name": "420 hp", "price": 26000, "mass": 180,
+        "changes": { "components": { "motor": { "powerHp": 420 } } } }
+    ] },
+    { "id": "tank", "name": "Grain tank", "options": [
+      { "id": "9000", "name": "9,000 L" },
+      { "id": "11000", "name": "11,000 L", "price": 9500, "mass": 300,
+        "changes": { "components": { "fillUnits": { "units": [ { "id": "tank", "capacity": 11000 } ] } } } }
+    ] },
+    { "id": "beacons", "name": "Beacons", "options": [
+      { "id": "none", "name": "None" },
+      { "id": "both", "name": "Both sides", "price": 720, "mass": 8,
+        "changes": { "components": { "lights": { "lamps": [
+          { "id": "beaconL", "type": "beacon", "x": 0.85, "y": 4.42, "z": 0.9, "pitchDeg": -8, "range": 16, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" },
+          { "id": "beaconR", "type": "beacon", "x": -0.85, "y": 4.42, "z": 0.9, "pitchDeg": -8, "range": 16, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } }
+    ] }
+  ]
+}

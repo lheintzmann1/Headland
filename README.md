@@ -63,7 +63,7 @@ Built with **Godot 4.7** and **C#**.
   90% of it must be tipped at the buyer named on the contract, who takes it without paying. Giving a contract back, or
   finishing late, costs 10% of its reward. A field job can also be taken with leased machines, for a fee taken from
   the reward: they wait on the machinery dealer's lot, implements hitched, and go back when the contract ends. Fields
-  under contract show it on their sign and get an outline. The jobs are JSON too (`contracts.json`).
+  under contract show it on their sign and get an outline. The jobs are JSON too (`game/data/contracts/`).
 - **Field helpers.** Press H and a helper works the field one lane after the other, leaving out what's done already,
   so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland it
   backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it

@@ -1,0 +1,17 @@
+{
+  "id": "corn", "name": "Corn", "fillType": "corn", "harvestGroup": "corn", "atlasRow": 3,
+  "baseTempC": 8, "yieldPerHa": 9500, "seedKgPerHa": 25,
+  "sowingMonths": [4, 5], "harvestMonths": [9, 10, 11],
+  "frostKillC": -1, "wiltingPoint": 0.25, "optimalMoistureMin": 0.45, "optimalMoistureMax": 0.85,
+  "nitrogenDemandKgPerHa": 200, "weedYieldLoss": 0.3,
+  "description": "Grain maize. Needs warmth (base 8 °C), a corn header, and hates frost.",
+  "stages": [
+    { "name": "Sown",       "gdd": 70,  "height": 0.0 },
+    { "name": "Emerged",    "gdd": 130, "height": 0.15 },
+    { "name": "V6",         "gdd": 230, "height": 0.6 },
+    { "name": "V12",        "gdd": 230, "height": 1.5 },
+    { "name": "Tasseling",  "gdd": 200, "height": 2.4 },
+    { "name": "Dough",      "gdd": 150, "height": 2.5 },
+    { "name": "Ripe",       "gdd": 0,   "height": 2.4, "harvestable": true }
+  ]
+}

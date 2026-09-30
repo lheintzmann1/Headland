@@ -1,0 +1,3 @@
+{ "id": "deliver", "name": "Deliver", "days": [6, 10], "weight": 0.6,
+  "deliver": { "amount": [4000, 12000], "priceFactor": 1.3 },
+  "description": "Bring goods to a buyer, who pays more than the market price for them." }

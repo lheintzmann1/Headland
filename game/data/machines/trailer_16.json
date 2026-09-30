@@ -1,0 +1,53 @@
+// Trailed: origin in the middle of its fixed axles, the drawbar eye ahead of it. See docs/COMPONENTS.md.
+{
+  "id": "trailer_16", "name": "Tipper 16", "category": "trailer", "brand": "haulmark", "price": 21000, "mass": 4600,
+  "size": { "length": 6.2, "width": 2.55, "height": 2.7, "centerZ": 0.6 },
+  "components": {
+    "runningGear": {
+      "axles": [
+        { "z":  0.65, "track": 2.04, "wheels": { "radius": 0.52, "width": 0.4 } },
+        { "z": -0.65, "track": 2.04, "wheels": { "radius": 0.52, "width": 0.4 } }
+      ]
+    },
+    "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 4.4, "maxArticulationDeg": 80 },
+    "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypeCategories": ["grain"] } ] },
+    // A three-way tipper: to the back, or rolled over either side of the bed (their hinge lines at its edges).
+    "tipper": { "fillUnit": "main", "ratePerSecond": 450, "sides": [
+      { "name": "back", "x": 0, "z": -3.0 },
+      { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1] },
+      { "name": "right", "x": -1.9, "z": 0.6, "rotationDeg": [0, 0, 40], "pivot": [-1.275, 0, 3.1] } ] },
+    "lights": {
+      "lamps": [
+        { "type": "turnLeft",  "x":  1.1, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -1.1, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "tail",  "x":  0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "tail",  "x": -0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "brake", "x":  0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "brake", "x": -0.95, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },
+  "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U).",
+  "configurations": [
+    { "id": "capacity", "name": "Capacity", "options": [
+      { "id": "16000", "name": "16,000 L" },
+      { "id": "20000", "name": "20,000 L, extension boards", "price": 2100, "mass": 340,
+        "changes": { "size": { "height": 3.15 }, "components": { "fillUnits": { "units": [ { "id": "main", "capacity": 20000 } ] } } } }
+    ] },
+    { "id": "tires", "name": "Tires", "options": [
+      { "id": "standard", "name": "Standard" },
+      { "id": "flotation", "name": "Flotation", "price": 3600, "mass": 260,
+        "changes": { "size": { "width": 2.65 }, "components": { "runningGear": { "axles": [
+          { "wheels": { "type": "flotation", "radius": 0.6, "width": 0.6 } },
+          { "wheels": { "type": "flotation", "radius": 0.6, "width": 0.6 } } ] } } } }
+    ] },
+    { "id": "color", "name": "Color", "options": [
+      { "id": "grey", "name": "Grey" },
+      { "id": "red", "name": "Red", "changes": { "visual": { "color": "#7b2f25" } } },
+      { "id": "green", "name": "Green", "changes": { "visual": { "color": "#4d5c38" } } }
+    ] }
+  ]
+}

@@ -116,7 +116,8 @@ public sealed class ContentDatabase
             p.Link(db);
             db.AddUnique(db.Pois, p.Id, p, "poi");
         }
-        foreach (var c in ReadMany<ContractTypeDef>(src, "contracts.json"))
+        foreach (var file in src.ListJson("contracts"))
+        foreach (var c in ReadMany<ContractTypeDef>(src, file))
         {
             if (c.Deliver is { } d) d.FillTypes = db.WithCategories(d.FillTypes, d.FillTypeCategories);
             db.AddUnique(db.ContractTypes, c.Id, c, "contract type");

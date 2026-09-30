@@ -22,7 +22,7 @@ public enum ContractState
 }
 
 /// <summary>
-/// A job from contracts.json, offered by a neighbor for one of their fields (<see cref="Field"/>) or by a buyer for
+/// A job from contracts/, offered by a neighbor for one of their fields (<see cref="Field"/>) or by a buyer for
 /// goods (<see cref="Poi"/>). It stays on the board for a few days; once a farm takes it, it's due within its days.
 /// </summary>
 public sealed class Contract

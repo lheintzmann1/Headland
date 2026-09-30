@@ -5,7 +5,7 @@ namespace Headland.Core.Pois.Components;
 
 /// <summary>
 /// A lot where machines appear, facing the POI's front: those bought or leased at the shop when it <see cref="Sales"/>,
-/// those leased for contracts (contracts.json) when it <see cref="Leases"/>.
+/// those leased for contracts (contracts/) when it <see cref="Leases"/>.
 /// </summary>
 public sealed class DeliverySpotDef : StationDef
 {

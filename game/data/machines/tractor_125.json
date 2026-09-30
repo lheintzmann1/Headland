@@ -1,0 +1,108 @@
+// Local space: +z forward, +x left, origin at the rear (fixed) axle. See docs/COMPONENTS.md.
+{
+  "id": "tractor_125", "name": "Fieldmaster 125", "category": "tractor", "brand": "fieldmaster",
+  "price": 98000, "mass": 5600,
+  "size": { "length": 4.7, "width": 2.45, "height": 3.0, "centerZ": 1.25 },
+  "components": {
+    "runningGear": {
+      "maxSteerDeg": 40, "steerRateDeg": 80,
+      "axles": [
+        { "z": 0,    "track": 1.84, "wheels": { "radius": 0.8,  "width": 0.55 } },
+        { "z": 2.65, "track": 1.76, "steering": "front", "wheels": { "radius": 0.55, "width": 0.42 } }
+      ]
+    },
+    "motor": { "powerHp": 125, "maxSpeedKmh": 40, "maxReverseKmh": 16, "acceleration": 2.2, "braking": 6, "fuelUnit": "fuel" },
+    "drivable": {},
+    "attacherJoints": {
+      "joints": [
+        { "id": "rear",    "type": "threePoint", "x": 0, "z": -1.2, "y": 0.55 },
+        { "id": "drawbar", "type": "drawbar",    "x": 0, "z": -1.45, "y": 0.45 }
+      ]
+    },
+    "fillUnits": { "units": [ { "id": "fuel", "capacity": 250, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 250 } ] },
+    "lights": {
+      "lamps": [
+        // Headlights in the hood, and on the cab's roof for when a front loader or a front implement hides them.
+        { "type": "head", "x":  0.735, "y": 2.2, "z": 3.6, "bottomLight": true },
+        { "type": "head", "x": -0.735, "y": 2.2, "z": 3.6, "bottomLight": true },
+        { "type": "head", "x":  0.35, "y": 2.95, "z": 1.5, "pitchDeg": -12, "topLight": true },
+        { "type": "head", "x": -0.35, "y": 2.95, "z": 1.5, "pitchDeg": -12, "topLight": true },
+        { "type": "highBeam", "x":  0.735, "y": 2.2, "z": 3.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5, "bottomLight": true },
+        { "type": "highBeam", "x": -0.735, "y": 2.2, "z": 3.62, "pitchDeg": -5, "range": 60, "angleDeg": 22, "energy": 5, "bottomLight": true },
+        { "type": "cab", "x": 0, "y": 2.7, "z": 0.65, "pitchDeg": -90, "range": 2.5, "angleDeg": 75, "energy": 0.6, "color": "#ffd9a0" },
+        { "type": "workFront", "x":  0.55, "y": 2.95, "z": 1.45, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+        { "type": "workFront", "x": -0.55, "y": 2.95, "z": 1.45, "pitchDeg": -35, "range": 24, "angleDeg": 50, "energy": 3 },
+        { "type": "workRear", "x":  0.55, "y": 2.95, "z": -0.15, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+        { "type": "workRear", "x": -0.55, "y": 2.95, "z": -0.15, "yawDeg": 180, "pitchDeg": -40, "range": 20, "angleDeg": 55, "energy": 3 },
+        { "type": "turnLeft",  "x":  0.95, "y": 2.2, "z": 3.55, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -0.95, "y": 2.2, "z": 3.55, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnLeft",  "x":  1.0, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -1.0, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "tail",  "x":  0.85, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "tail",  "x": -0.85, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "brake", "x":  0.85, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "brake", "x": -0.85, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "reverse", "x":  0.7, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 },
+        { "type": "reverse", "x": -0.7, "y": 1.5, "z": -0.75, "yawDeg": 180, "pitchDeg": -20, "range": 10, "angleDeg": 55, "energy": 1.5 }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#7b2f25", "model": "res://assets/models/tractors/tractor_125.glb" },
+  "description": "Mid-size utility tractor. Enough power for a 3 m cultivator or a loaded 16 t trailer.",
+  "configurations": [
+    { "id": "wheels", "name": "Wheels", "options": [
+      { "id": "single", "name": "Single" },
+      { "id": "dual", "name": "Dual", "price": 5800, "mass": 620,
+        "changes": { "size": { "width": 3.6 },
+          "components": { "runningGear": { "axles": [ { "wheels": { "type": "dual" } }, { "wheels": { "type": "dual" } } ] } } } },
+      { "id": "tracks", "name": "Rear tracks", "price": 38000, "mass": 1900,
+        "changes": { "components": { "runningGear": { "axles": [
+          { "wheels": { "type": "tracks", "radius": 0.6, "width": 0.6, "length": 1.4 } } ] } } } }
+    ] },
+    { "id": "frontLoader", "name": "Front loader", "options": [
+      { "id": "none", "name": "Without" },
+      { "id": "bracket", "name": "Loader consoles", "price": 4200, "mass": 310,
+        "changes": { "components": { "frontLoaderBracket": { "z": 1.5, "y": 1.2, "width": 1.15 } } } }
+    ] },
+    { "id": "frontHitch", "name": "Front hitch", "options": [
+      { "id": "threePoint", "name": "Front linkage",
+        "changes": { "components": { "attacherJoints": { "joints": [ { "id": "front", "type": "threePoint", "x": 0, "z": 3.75, "y": 0.55 } ] } } } },
+      { "id": "weight", "name": "Front weight", "price": -1800, "mass": 650 },
+      { "id": "none", "name": "None", "price": -3400, "mass": -220 }
+    ] },
+    { "id": "beacons", "name": "Beacons", "options": [
+      { "id": "none", "name": "None" },
+      { "id": "left", "name": "Left", "price": 380, "mass": 4,
+        "changes": { "components": { "lights": { "lamps": [
+          { "id": "beaconL", "type": "beacon", "x": 0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+      { "id": "right", "name": "Right", "price": 380, "mass": 4,
+        "changes": { "components": { "lights": { "lamps": [
+          { "id": "beaconR", "type": "beacon", "x": -0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+      { "id": "both", "name": "Both sides", "price": 720, "mass": 8,
+        "changes": { "components": { "lights": { "lamps": [
+          { "id": "beaconL", "type": "beacon", "x": 0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" },
+          { "id": "beaconR", "type": "beacon", "x": -0.7, "y": 3.08, "z": 0.7, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2.5, "color": "#ffa630" } ] } } } },
+      { "id": "lightbar", "name": "Light bar", "price": 1250, "mass": 14,
+        "changes": { "components": { "lights": { "lamps": [
+          { "id": "bar1", "type": "beacon", "x": 0.45,  "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+          { "id": "bar2", "type": "beacon", "x": 0.15,  "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+          { "id": "bar3", "type": "beacon", "x": -0.15, "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" },
+          { "id": "bar4", "type": "beacon", "x": -0.45, "y": 3.08, "z": 0.75, "pitchDeg": -8, "range": 14, "angleDeg": 50, "energy": 2, "color": "#ffa630" } ] } } } }
+    ] },
+    { "id": "engine", "name": "Engine", "options": [
+      { "id": "110", "name": "110 hp", "price": -7000, "mass": -60,
+        "changes": { "components": { "motor": { "powerHp": 110 } } } },
+      { "id": "125", "name": "125 hp", "default": true },
+      { "id": "145", "name": "145 hp", "price": 12500, "mass": 90,
+        "changes": { "components": { "motor": { "powerHp": 145, "acceleration": 2.4 } } } }
+    ] },
+    { "id": "color", "name": "Color", "options": [
+      { "id": "red", "name": "Fieldmaster red" },
+      { "id": "green", "name": "Moss green", "changes": { "visual": { "color": "#4d5c38" } } },
+      { "id": "blue", "name": "Slate blue", "changes": { "visual": { "color": "#3a4d5e" } } },
+      { "id": "graphite", "name": "Graphite", "changes": { "visual": { "color": "#48494a" } } }
+    ] }
+  ]
+}

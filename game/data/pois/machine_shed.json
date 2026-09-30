@@ -1,0 +1,12 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+{ "id": "machine_shed", "name": "Machine shed", "w": 28, "d": 16,
+  "visual": { "model": "res://assets/models/buildings/machine_shed.glb" },
+  "colliders": [
+    { "w": 26, "d": 14 }
+  ],
+  "components": {
+    // A yard light over the door, lit by a light sensor.
+    "lights": { "lamps": [
+      { "type": "workFront", "switch": "dark", "y": 5.2, "z": 7.3, "pitchDeg": -40, "range": 20, "angleDeg": 50, "energy": 3 } ] },
+    "hotspots": { "spots": [ { "icon": "agriculture" } ] }
+  } }

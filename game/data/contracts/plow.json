@@ -1,0 +1,6 @@
+{ "id": "plow", "name": "Plow", "work": "plow", "months": [3, 9, 10, 11],
+  "offer": { "ground": ["stubble", "grass", "seeded"], "crop": ["none", "dead"] },
+  "done": { "ground": ["plowed"] },
+  "rewardPerHa": 800, "days": [3, 6],
+  "leases": [ { "machines": ["tractor_125", "plow_5"], "feePerHa": 250 } ],
+  "description": "Plow the stubble, grass or failed crop under, weeds and all." }
