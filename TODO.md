@@ -421,6 +421,7 @@ A mod is an add-on the game loads, never a fork.
 
 ## Links
 
+- <https://github.com/freedom-farmer-fs22/FS22_decompile>
 - FS vehicle types and specializations: <https://codeberg.org/Farming-Simulator/KNOWLEDGE-BASE/src/branch/main/Vehicle-Types/vehicle-types.md>
 - FS22 scripting, Specializations (the vehicles' and the `Placeable…` ones, with source), e.g.
   `PlaceableAnimatedObjects`: <https://gdn.giants-software.com/documentation_scripting_fs22.php?version=script&category=48&class=482>
