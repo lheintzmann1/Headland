@@ -291,8 +291,9 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
       nothing fills it closed; ridge markers (FS `RidgeMarker`) step left, right and up, work only lowered, go up when
       the implement folds, and helpers leave them up. With the actions named by the tool. The seeder has both: its
       hopper's lid, and markers drawing the middle of the next pass.
-- [ ] A tarp on the grain trailer, as a cover option: it sits on the tipping bed, which the capacity option replaces,
-      and an option's pieces can't depend on two options yet (`docs/MODELING.md`).
+- [x] A tarp on the grain trailer, as a cover option (FS `coverConfigurations`): its halves sit on the tipping bed,
+      which the capacity option replaces, as that option's own versions of them (`docs/MODELING.md`). A pipe over it
+      closed says so.
 - [x] Tip sides (FS `Trailer` `tipSide`): a trailer tips to the back or to a side, each side with its own motion and
       where the load falls; a key steps through them ("Tip side (left)"), not while tipping, and the unloading area
       must be under the side it tips to.

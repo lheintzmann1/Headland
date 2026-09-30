@@ -30,12 +30,23 @@
     "washable": {}
   },
   "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },
-  "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U).",
+  "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U). Its tarp, as an option, opens by itself at a silo's spout and to tip; open it (C) under a combine's pipe.",
   "configurations": [
     { "id": "capacity", "name": "Capacity", "options": [
       { "id": "16000", "name": "16,000 L" },
       { "id": "20000", "name": "20,000 L, extension boards", "price": 2100, "mass": 340,
         "changes": { "size": { "height": 3.15 }, "components": { "fillUnits": { "units": [ { "id": "main", "capacity": 20000 } ] } } } }
+    ] },
+    // A tarp in two halves hinged along the tops of the side walls (FS: coverConfigurations), on the bed either
+    // capacity has: nothing fills the trailer while it's closed.
+    { "id": "cover", "name": "Cover", "options": [
+      { "id": "none", "name": "None" },
+      { "id": "tarp", "name": "Folding tarp", "price": 1900, "mass": 160,
+        "changes": { "components": {
+          "animatedParts": { "parts": [
+            { "id": "tarpL", "rotationDeg": [0, 0, -95], "seconds": 3 },
+            { "id": "tarpR", "rotationDeg": [0, 0, 95], "seconds": 3 } ] },
+          "cover": { "covers": [ { "parts": ["tarpL", "tarpR"], "fillUnits": ["main"] } ] } } } }
     ] },
     { "id": "tires", "name": "Tires", "options": [
       { "id": "standard", "name": "Standard" },

@@ -56,6 +56,12 @@ public sealed record TankHolds(FillTypeDef FillType) : MachineCondition
     public override string Text => $"Tank holds {FillType.Name}: empty it first";
 }
 
+/// <summary>The machine under the pipe would take the grain, but its cover is closed.</summary>
+public sealed record CoverClosed(string Machine) : MachineCondition
+{
+    public override string Text => $"{Machine} is covered: open its cover";
+}
+
 /// <summary>The header doesn't cut the ripe crop it passes over, which is left standing.</summary>
 public sealed record WrongHeader(CropDef Crop) : MachineCondition
 {

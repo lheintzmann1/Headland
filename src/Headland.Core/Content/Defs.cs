@@ -376,11 +376,22 @@ public sealed class MachineDef : EntityDef
     /// <summary>
     /// Whether the model node <paramref name="node"/> is hidden on this machine (see
     /// docs/MODELING.md): it's part of options it doesn't have and of none it has, or a moving part only other options
-    /// have (the rear wheels of a machine with rear tracks).
+    /// have (the rear wheels of a machine with rear tracks), or an option's own version of one (the tarp on the
+    /// bigger bed of a trailer without a tarp).
     /// </summary>
     public override bool Hides(string node) =>
         (OptionNodes.Any(n => IsPartOf(node, n)) && !_shownNodes.Any(n => IsPartOf(node, n)))
-        || (_variants?.MovedNodes.Contains(node) == true && !Roles.Any(r => NodeOf(r) == node));
+        || (_variants?.MovedNodes.Contains(node) == true && !Roles.Any(r => NodeOf(r) == node))
+        || (VersionOf(node) is { } role && !Roles.Contains(role));
+
+    /// <summary>The moving part <paramref name="node"/> is an option's own version of (configuration_option_role), if so.</summary>
+    private string? VersionOf(string node) =>
+        _variants == null
+            ? null
+            : Configurations.SelectMany(c => c.Options.Select(o => $"{c.Id}_{o.Id}_"))
+                .Where(prefix => node.StartsWith(prefix, StringComparison.Ordinal))
+                .Select(prefix => node[prefix.Length..])
+                .FirstOrDefault(_variants.Roles.Contains);
 
     /// <summary>
     /// The configuration a model node is named after (configuration_…) without being part of any of its options: a
@@ -427,13 +438,17 @@ public sealed class MachineDef : EntityDef
     {
         private readonly Dictionary<string, MachineDef> _built = new();
         private IReadOnlySet<string>? _moved;
+        private IReadOnlySet<string>? _roles;
 
         /// <summary>The model nodes it moves as it comes or with any one of its options.</summary>
-        public IReadOnlySet<string> MovedNodes => _moved ??= configurations
+        public IReadOnlySet<string> MovedNodes => _moved ??= WithEachOption().SelectMany(d => d.Roles.Select(d.NodeOf)).ToHashSet();
+
+        /// <summary>The moving parts it has as it comes or with any one of its options.</summary>
+        public IReadOnlySet<string> Roles => _roles ??= WithEachOption().SelectMany(d => d.Roles).ToHashSet();
+
+        private IEnumerable<MachineDef> WithEachOption() => configurations
             .SelectMany(c => c.Options.Select(o => Get(new Dictionary<string, string> { [c.Id] = o.Id })))
-            .Prepend(Get(new Dictionary<string, string>()))
-            .SelectMany(d => d.Roles.Select(d.NodeOf))
-            .ToHashSet();
+            .Prepend(Get(new Dictionary<string, string>()));
 
         /// <summary>The def with each configuration's chosen option, or its default.</summary>
         public MachineDef Get(IReadOnlyDictionary<string, string> choices)

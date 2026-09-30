@@ -38,7 +38,7 @@ public sealed class PipeSave
     public float Anim { get; set; }
 }
 
-public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def), IActionSource
+public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def), IActionSource, IConditionSource
 {
     /// <summary>Unfolded in 2.5 s.</summary>
     private const float FoldRate = 0.4f;
@@ -49,6 +49,10 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
     public float Anim { get; set; }
     /// <summary>Grain ran out of it on the last tick.</summary>
     public bool Flowing { get; private set; }
+    /// <summary>A machine under it with its cover closed over what would take the grain, on the last tick.</summary>
+    public Machine? Covered { get; private set; }
+
+    public IEnumerable<MachineCondition> Conditions => Covered is { } m ? [new CoverClosed(m.Def.Name)] : [];
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
     public Vector2 Outlet => Machine.LocalToWorld(Def.X, Def.Z);
@@ -68,6 +72,7 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
     {
         Anim = MathUtil.MoveToward(Anim, Out ? 1f : 0f, dt * FoldRate);
         Flowing = false;
+        Covered = null;
         var tank = Tank;
         if (!Out || Anim < 0.95f || tank.IsEmpty) return;
         var outlet = Outlet;
@@ -78,6 +83,7 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
         if (sim.Machines.FindReceiver(outlet, ft, Machine) is { } target) moved = tank.Remove(target.Add(ft, amount));
         else if (sim.Pois.TriggerAt(outlet, "unload") is { } pit && sim.Pois.UnloadBlocker(Machine, pit, ft, tank.Level) == null)
             moved = tank.Remove(sim.Pois.Unload(Machine, pit, ft, amount));
+        else Covered = sim.Machines.CoveredAt(outlet, ft, Machine);
         Flowing = moved > 0f;
     }
 

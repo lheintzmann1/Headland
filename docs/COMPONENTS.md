@@ -336,7 +336,9 @@ implement ahead of the field by the time it takes to go down, its linkage's or i
 ### cover
 
 Covers over fill units (FS: `Cover`): a hopper's lid, a trailer's tarp. Nothing fills a unit while its cover is closed:
-a pipe pours past it, a silo's spout and a station don't fill it.
+a pipe doesn't pour into it (its machine says so: "Tipper 16 is covered: open its cover"), a silo's spout and a station
+don't fill it. A cover that is an option (FS: `coverConfigurations`) comes with the option's `changes`: the tipper's
+tarp adds its halves to `animatedParts` and the `cover` over them.
 
 | Setting | Default | |
 |---|---|---|

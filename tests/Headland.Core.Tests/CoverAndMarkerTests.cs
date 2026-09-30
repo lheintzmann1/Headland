@@ -138,6 +138,51 @@ public class CoverAndMarkerTests
     }
 
     [Fact]
+    public void TheTrailersTarpOptionKeepsTheCombinesGrainOutUntilOpened()
+    {
+        var sim = Sim();
+        var combine = sim.Machines.Spawn("combine_7", new Vector2(269f, 300f), 0f);
+        combine.Unit("tank")!.Add("wheat", 5000f);
+        var pipe = combine.Get<Pipe>()!;
+        var def = sim.Content.Machines["trailer_16"];
+        Assert.Null(def.Get<CoverDef>());
+        var trailer = sim.Machines.Spawn("trailer_16", pipe.Outlet - MathUtil.Forward(0f) * def.Size.CenterZ, 0f,
+            configuration: new Dictionary<string, string> { ["capacity"] = "20000", ["cover"] = "tarp" });
+        var tarp = trailer.Get<Cover>()!;
+        Assert.Equal((0, 1900f + 2100f), (tarp.State, trailer.Def.Price - def.Price));
+
+        // Closed, the grain stays in the combine, which says why.
+        pipe.Out = true;
+        Run(sim, 5f);
+        Assert.Equal((5000f, 0f), (combine.Unit("tank")!.Level, trailer.Unit("main")!.Level));
+        Assert.Equal(new CoverClosed("Tipper 16"), Assert.Single(combine.Conditions));
+        Assert.Equal("Tipper 16 is covered: open its cover", combine.Conditions.Single().Text);
+
+        tarp.State = 1;
+        Run(sim, 40f);
+        Assert.Equal((0f, 5000f), (combine.Unit("tank")!.Level, trailer.Unit("main")!.Level));
+        Assert.Empty(combine.Conditions);
+        Assert.Equal((1f, 1f), (trailer.Get<AnimatedParts>()!.Part("tarpL")!.Position, trailer.Get<AnimatedParts>()!.Part("tarpR")!.Position));
+    }
+
+    [Fact]
+    public void TheTarpOnEitherBedShowsOnlyWithTheTarp()
+    {
+        var trailer = TestContent.Content.Machines["trailer_16"];
+        MachineDef With(params (string c, string o)[] options) => trailer.Configure(options.ToDictionary(x => x.c, x => x.o));
+
+        // Without the tarp, neither bed's halves show.
+        Assert.Equal((true, true), (trailer.Hides("tarpL"), trailer.Hides("capacity_20000_tarpL")));
+        Assert.Equal((true, true), (With(("capacity", "20000")).Hides("tarpL"), With(("capacity", "20000")).Hides("capacity_20000_tarpL")));
+        // With it, those of the bed the capacity has: the bigger bed's own version of each half moves instead.
+        var tarp = With(("cover", "tarp"));
+        var big = With(("cover", "tarp"), ("capacity", "20000"));
+        Assert.Equal((false, false), (tarp.Hides("tarpL"), big.Hides("capacity_20000_tarpR")));
+        Assert.True(tarp.Hides("capacity_20000_tarpL"));
+        Assert.Equal("capacity_20000_tarpL", big.NodesOf("tarpL").First());
+    }
+
+    [Fact]
     public void RidgeMarkersStepLeftRightAndUpAndDrawTheNextPassOnlyLowered()
     {
         var sim = Sim();

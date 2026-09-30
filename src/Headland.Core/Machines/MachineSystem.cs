@@ -456,4 +456,8 @@ public sealed class MachineSystem
         }
         return null;
     }
+
+    /// <summary>A machine at <paramref name="point"/> whose closed cover keeps the fill type out of a unit that would take it.</summary>
+    public Machine? CoveredAt(Vector2 point, string fillType, Machine exclude) =>
+        All.FirstOrDefault(m => m != exclude && m.Footprint.Contains(point, 0.4f) && m.FillUnits.Any(u => u.CanAccept(fillType) && m.ClosedOver(u)));
 }

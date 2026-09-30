@@ -111,7 +111,7 @@ file (see below).
 | V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
 | Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |
-| C | Open or close a cover (a seeder's lid opens by itself at the seed shop) |
+| C | Open or close a cover (a seeder's lid opens by itself at the seed shop; a trailer's tarp, an option, at a silo's spout and to tip, but open it yourself under a combine's pipe) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |

@@ -146,6 +146,10 @@ machine has that option; the rest of the model is always there.
   a dual's outer tire rolls with its wheel, so it is `wheels_dual_0L` under `wheel0L`. Any number of nodes can do
   that (`frontLoader_bracket_l`, `frontLoader_bracket_r`), and Blender's `.001` endings, which import as `_001`, count
   too.
+- A moving part that another option gives the machine can have an option's version as well, hidden without that part:
+  the tipper's tarp (the `cover` configuration's `tarp`) hinges on the top of the side walls, which the 20,000 L bed
+  raises, so the bigger bed (`capacity_20000_tipper`) holds its own halves, `capacity_20000_tarpL` and
+  `capacity_20000_tarpR`, shown with both options; the standard bed holds `tarpL` and `tarpR`.
 - Pieces that several options share are listed in `show`: both beacons are the left one and the right one, so
   `{ "id": "both", "name": "Both sides", "show": ["beacons_left", "beacons_right"] }`. A node is shown when any chosen
   option has it.
