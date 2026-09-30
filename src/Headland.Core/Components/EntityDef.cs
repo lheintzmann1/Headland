@@ -24,6 +24,12 @@ public abstract class EntityDef
     internal virtual void Link(ContentDatabase content)
     {
         foreach (var c in Components) c.Link(content);
+        // The parts other components move (a cover's lid, a marker's arm) move only with them.
+        if (Get<AnimatedPartsDef>() is not { } animated) return;
+        foreach (var c in Components)
+        foreach (var id in c.HeldParts)
+            if (animated.Parts.FirstOrDefault(p => p.Id == id) is { } part)
+                part.HeldBy ??= c.Kind;
     }
 
     /// <summary>Its component def of type <typeparamref name="T"/> (or implementing it), if it has one.</summary>

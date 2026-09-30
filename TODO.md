@@ -286,9 +286,15 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 - [x] Folding: a fold key; lowering a folded implement no longer unfolds it by itself.
 - [x] Parts that don't fold (covers, markers, support legs) move for the selected implement. Support legs move with
       the hitch, as FS's support animations.
-- [ ] Covers and markers as FS has them: a cover (FS `Cover`) opens by itself at a fill trigger and while tipping, and
+- [x] Covers and markers as FS has them: a cover (FS `Cover`) opens by itself at a fill trigger and while tipping, and
       nothing fills it closed; ridge markers (FS `RidgeMarker`) step left, right and up, work only lowered, go up when
-      the implement folds, and helpers leave them up. With the actions named by the tool.
+      the implement folds, and helpers leave them up. With the actions named by the tool. The seeder has both: its
+      hopper's lid, and markers drawing the middle of the next pass.
+- [ ] A tarp on the grain trailer, as a cover option: it sits on the tipping bed, which the capacity option replaces,
+      and an option's pieces can't depend on two options yet (`docs/MODELING.md`).
+- [ ] Tip sides (FS `Trailer` `tipSide`): a trailer tips to the back or to a side, each side with its own motion and
+      where the load falls; a key steps through them ("Tip side (left)"), not while tipping, and the unloading area
+      must be under the side it tips to.
 - [ ] Crane arms: joints driven from the mouse or keys, and a simple IK mode moving the tip; a front loader's
       lift and tilt the same way.
 - [ ] Winch: reel in and out, hook and unhook.

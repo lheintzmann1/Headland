@@ -105,7 +105,8 @@ file (see below).
 | T | Select the next implement: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
 | V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
-| Shift+N | Move a tool's other parts: covers, markers |
+| Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |
+| C | Open or close a cover (a seeder's lid opens by itself at the seed shop) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
 | U | Unfold the combine's pipe, or tip a trailer into an unloading area |
 | X | Change the seed |

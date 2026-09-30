@@ -116,6 +116,8 @@ optionally a `name` in place of the type's.
 | `attachable` | machines | Hitches to a joint of its type, mounted or trailed; lowered and raised. |
 | `fillUnits` | anything | Tanks and bins: fuel, seed, a grain tank, a trailer's bed, a silo's bins. |
 | `animatedParts` | anything | Parts that move between two poses: folding for transport, a boom going down, a door opening as someone comes by. |
+| `cover` | machines | Covers over fill units: a hopper's lid, a trailer's tarp. |
+| `ridgeMarker` | machines | Arms whose disc draws where the next pass goes. |
 | `workAreas` | machines | Where it works the ground: tilling, sowing, fertilizing, spraying, cutting a crop, mowing. |
 | `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
 | `pipe` | machines | An unloading pipe. |
@@ -141,16 +143,16 @@ chain; the lower key lowers every lowerable `attachable`.
 
 What a component switches on a key (FS: its action events), the key hints and the F1 help say in its words, naming its
 machine by its [`noun`](#machines), as Farming Simulator does: "Lower cultivator" and "Lift cultivator" on the lower key,
-"Fold sprayer" and "Unfold sprayer" on the fold key, "Turn on seeder" and "Turn off seeder", "Pipe out" and "Pipe in".
-A component's `words` give its own, by key: two texts, to do it and to undo it.
+"Fold sprayer" and "Unfold sprayer" on the fold key, "Turn on seeder" and "Turn off seeder", "Pipe out" and "Pipe in",
+"Open cover" and "Close cover". A component's `words` give its own, by key: two texts, to do it and to undo it.
 
 ```jsonc
 "attachable": { "type": "drawbar", "mode": "trailed", "lowerable": true, "words": { "lower": ["Lower boom", "Lift boom"] } }
 ```
 
 A component's keys are those it switches something on: `lower` (a lowerable `attachable`), `fold` and the keys its parts
-move on (`animatedParts`), `turn_on` (a `workAreas` with an area that `requiresOn`, a `thresher`, a `saw`) and `unload`
-(a `pipe`). Where tools with words of their own switch together on a key (the vehicle itself selected), the key says it
+move on (`animatedParts`), `turn_on` (a `workAreas` with an area that `requiresOn`, a `thresher`, a `saw`), `unload`
+(a `pipe`) and `cover` (a `cover` with one cover). Where tools with words of their own switch together on a key (the vehicle itself selected), the key says it
 for all of them: "Lower all", "Lift all".
 
 Some components react to who is around, as FS triggers do: a lamp coming on, a door opening. Their `trigger` is an
@@ -318,6 +320,7 @@ What moves a part: the `key` it moves on (on machines), a `trigger` or `support`
 | `key: "move_parts"` (the default), `"turn_on"` | A switch of its own on that key, for the selected implement or, with the vehicle selected, the whole chain: covers, markers ("Move marker", after its `name`, else its `id`). The turn-on key only on a machine that doesn't turn on: a plow rotates on it (FS). |
 | `trigger` | Moves while someone is in it and back once they left, such as a shed's door (FS: animated objects). A POI's parts move this way only. |
 | `support: true` | A support leg, on a machine that hitches: moved while the machine stands unhitched, back once it's hitched. |
+| named by a [`cover`](#cover) or a [`ridgeMarker`](#ridgemarker) | That component moves it: it has none of the above. |
 
 A folding part of a machine that lowers can also have a `middle` (0 … 1; FS: `foldMiddleAnimTime`): unfolded, it stands
 there while the machine is raised, and the lower key moves it between there and its working pose, so that the fold and
@@ -325,6 +328,45 @@ lower keys share its motion (a cultivator's wings unfolding to an angle for the 
 work). Without one, a folding part stands in its working pose once unfolded, and the parts that lower go down on the
 lower key: so a sprayer's wings unfold on the fold key, and its boom goes down on the lower key. Helpers lower an
 implement ahead of the field by the time it takes to go down, its linkage's or its parts'.
+
+### cover
+
+Covers over fill units (FS: `Cover`): a hopper's lid, a trailer's tarp. Nothing fills a unit while its cover is closed:
+a pipe pours past it, a silo's spout and a station don't fill it.
+
+| Setting | Default | |
+|---|---|---|
+| `covers` | none | Each has the `parts` of the machine's `animatedParts` it moves (open in their moved pose) and the `fillUnits` it covers. |
+| `startOpen` | false | On a cover: it comes open. |
+| `autoOpen` | true | On a cover: it opens by itself at a fill trigger (below). |
+
+The cover key opens and closes it, "Open cover" and "Close cover" (or its `words`). With several covers, one is open at
+a time: the key opens them one after the other ("Open next cover"), then closes them all. A cover opens by itself:
+
+- where the machine stands at a **fill trigger** that could fill what it covers: a `buyingStation` selling something
+  its units take, or its farm's `silo` spout. It closes again as the machine leaves, unless the driver opened it;
+- while the machine **tips** the unit it covers, staying open after.
+
+```jsonc
+"animatedParts": { "parts": [ { "id": "lid", "rotationDeg": [-100, 0, 0], "seconds": 1.5 } ] },
+"cover": { "covers": [ { "parts": ["lid"], "fillUnits": ["seed"] } ] }
+```
+
+### ridgeMarker
+
+Arms at the sides of a seeder or a cultivator (FS: `RidgeMarker`) whose disc draws a line where the next pass goes,
+for the driver to follow. Needs an `attachable` that lowers, and `workAreas`.
+
+| Setting | Default | |
+|---|---|---|
+| `markers` | none | Each has a `name` for the key hint ("left"), the `parts` of the machine's `animatedParts` it moves (down in their moved pose), and where its disc runs, `x`, `z`: the middle of the next pass. |
+| `lifted` | 1 | On a marker: its pose (0 up … 1 down) while it's down but the machine is raised, at the headland. |
+| `key` | `move_parts` | The key they step on: the parts key, or `turn_on` on a machine that doesn't turn on. |
+
+The key steps through the markers, one down at a time, then all up: "Ridge marker left", "Ridge marker right", "Ridge
+markers up". The marker down draws only with the machine lowered and its disc on the ground, on the fields its farm may
+work: a furrow on tilled ground or stubble, a tilled line on plowed ground (the next pass works over it). Folding puts
+the markers up, and they can't come down while the machine is folded; a helper leaves them up.
 
 ### workAreas
 

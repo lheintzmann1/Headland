@@ -99,6 +99,9 @@ public sealed class Machine : Entity
 
     public AttacherJointDef? Joint(string id) => Def.Joints.FirstOrDefault(j => j.Id == id);
 
+    /// <summary>Its <see cref="Cover"/> is closed over <paramref name="unit"/>: nothing fills it.</summary>
+    public bool ClosedOver(FillUnit unit) => Get<Cover>()?.Shuts(unit) == true;
+
     /// <summary>
     /// Where a point of the machine is, and which way the part it's on points: on an articulated machine, parts ahead
     /// of the hinge swing with the front frame.

@@ -53,6 +53,7 @@ public class FinanceTests
         sim.Pois.Unload(sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f), pit, "wheat", 10_000f);
         var seeder = sim.Machines.Spawn("seeder_3", sim.World.PoiById("supplies")!.Trigger("fill")!.Area.Center, 0f);
         seeder.Unit("seed")!.Remove(500f);
+        sim.Tick(1f / 60f); // its lid opens in the shop's fill area
         sim.Activate(seeder);
         var t = sim.Machines.Spawn("tractor_95", sim.World.PoiById("gas")!.Trigger("fill")!.Area.Center, MathF.PI / 2f);
         t.Unit("fuel")!.Remove(100f);

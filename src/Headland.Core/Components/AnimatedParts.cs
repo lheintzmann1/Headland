@@ -26,8 +26,8 @@ public sealed class AnimatedPartDef
     public float Seconds { get; set; } = 2f;
     /// <summary>
     /// The key it moves on, on a machine: <c>fold</c>, folding for transport; <c>lower</c>, raised and lowered with the
-    /// machine; <c>move_parts</c> (the default) or <c>turn_on</c>, on a switch of its own (a cover, a marker, a plow
-    /// rotating). For the first two its rest pose is the working one.
+    /// machine; <c>move_parts</c> (the default) or <c>turn_on</c>, on a switch of its own (a plow rotating). For the first
+    /// two its rest pose is the working one.
     /// </summary>
     public string? Key { get; set; }
     /// <summary>
@@ -41,9 +41,13 @@ public sealed class AnimatedPartDef
     /// <summary>A support leg (FS: support animations): moved while the machine stands unhitched, back once it's hitched.</summary>
     public bool Support { get; set; }
 
-    /// <summary>The key it moves on; none for a part following a trigger or the hitch.</summary>
+    /// <summary>The kind of the component that moves it itself, if one does (a cover's lid, a marker's arm).</summary>
     [JsonIgnore]
-    public string? MovesOn => Trigger != null || Support ? null : Key ?? InputActions.MoveParts;
+    public string? HeldBy { get; internal set; }
+
+    /// <summary>The key it moves on; none for a part following a trigger or the hitch, or held by another component.</summary>
+    [JsonIgnore]
+    public string? MovesOn => Trigger != null || Support || HeldBy != null ? null : Key ?? InputActions.MoveParts;
 
     [JsonIgnore]
     public bool Folds => MovesOn == InputActions.Fold;
@@ -51,7 +55,7 @@ public sealed class AnimatedPartDef
     [JsonIgnore]
     public bool Lowers => MovesOn == InputActions.Lower;
 
-    /// <summary>Moved by the driver on a switch of its own (a cover, a marker): it neither folds nor lowers.</summary>
+    /// <summary>Moved by the driver on a switch of its own (a plow rotating): it neither folds nor lowers.</summary>
     [JsonIgnore]
     public bool Commanded => MovesOn != null && !Folds && !Lowers;
 
@@ -66,9 +70,9 @@ public sealed class AnimatedPartDef
 
 /// <summary>
 /// Parts that move between two poses: the wings of an implement folding for transport, a boom going down as its
-/// machine is lowered, covers and markers the driver moves, support legs going down when the machine is unhitched, a
-/// shed's door opening as someone comes by (FS: Foldable, AnimatedVehicle, PlaceableAnimatedObjects). A folded
-/// machine (or one still unfolding) does not work and cannot go down.
+/// machine is lowered, parts the driver moves, support legs going down when the machine is unhitched, a shed's door
+/// opening as someone comes by (FS: Foldable, AnimatedVehicle, PlaceableAnimatedObjects), and the parts other components
+/// move (a cover's lid, a ridge marker's arm). A folded machine (or one still unfolding) does not work and cannot go down.
 /// </summary>
 public sealed class AnimatedPartsDef : ComponentDef
 {
@@ -99,6 +103,8 @@ public sealed class AnimatedPartsDef : ComponentDef
             if (p.RotationDeg.Length != 3 || p.Offset.Length != 3) yield return $"part '{p.Id}': rotationDeg and offset are [x, y, z]";
             if (p.Key != null && !AnimatedPartDef.Keys.Contains(p.Key)) yield return $"part '{p.Id}': key must be {string.Join(", ", AnimatedPartDef.Keys)}";
             if (p.Key != null && (p.Trigger != null || p.Support)) yield return $"part '{p.Id}': a part moving on a key follows neither a trigger nor the hitch";
+            if (p.HeldBy != null && (p.Key != null || p.Trigger != null || p.Support || p.Middle != 0f))
+                yield return $"part '{p.Id}': the {p.HeldBy} moves it; it has no key, middle, trigger or support of its own";
             if (p.Support && p.Trigger != null) yield return $"part '{p.Id}': a support leg moves with the hitch, not by a trigger";
             if (p.MovesOn != null && owner is not MachineDef) yield return $"part '{p.Id}': only a machine's parts move on keys; give it a trigger";
             if (p.Support && owner.Get<AttachableDef>() == null) yield return $"part '{p.Id}': only machines that hitch have support legs";
@@ -117,16 +123,19 @@ public sealed class AnimatedPartsDef : ComponentDef
 /// <summary>
 /// A part's pose: 0 at rest … 1 moved. <see cref="Target"/> is where it's headed: moved (true) or at rest, folded or
 /// not for a part that folds (unfolded, it stands at its middle pose while its machine is raised), raised or not for
-/// one that lowers.
+/// one that lowers. One held by another component heads where that one puts it (<see cref="AnimatedParts.Hold"/>).
 /// </summary>
 public sealed class AnimatedPart(AnimatedPartDef def)
 {
     public AnimatedPartDef Def { get; } = def;
     public bool Target { get; set; }
     public float Position { get; set; }
+    /// <summary>A held part: the pose it heads for.</summary>
+    internal float Held { get; set; }
 
     /// <summary>The pose it's headed for, its machine lowered to work (<paramref name="down"/>) or not.</summary>
-    internal float Goal(bool down) => Def.Folds && !Target ? (down ? 0f : Def.Middle) : Target ? 1f : 0f;
+    internal float Goal(bool down) =>
+        Def.HeldBy != null ? Held : Def.Folds && !Target ? (down ? 0f : Def.Middle) : Target ? 1f : 0f;
 }
 
 public sealed class AnimatedPartsSave
@@ -195,6 +204,18 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
                 return null;
             });
         }
+    }
+
+    /// <summary>
+    /// Sends a part another component holds (<see cref="AnimatedPartDef.HeldBy"/>) to <paramref name="pose"/> (0 at rest …
+    /// 1 moved), or puts it there at once.
+    /// </summary>
+    internal void Hold(string id, float pose, bool now = false)
+    {
+        if (Part(id) is not { Def.HeldBy: not null } p) return;
+        p.Held = pose;
+        p.Target = pose > 0f;
+        if (now) p.Position = pose;
     }
 
     /// <summary>Moves a part moved on a switch of its own (<see cref="AnimatedPartDef.Commanded"/>) to its moved pose (true) or back.</summary>

@@ -427,7 +427,7 @@ public sealed class MachineSystem
         {
             if (m == exclude || !m.Footprint.Contains(point, 0.4f)) continue;
             foreach (var u in m.FillUnits)
-                if (u.CanAccept(fillType)) return u;
+                if (u.CanAccept(fillType) && !m.ClosedOver(u)) return u;
         }
         return null;
     }

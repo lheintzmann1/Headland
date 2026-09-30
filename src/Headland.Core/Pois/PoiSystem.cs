@@ -278,6 +278,20 @@ public sealed class PoiSystem
     /// <summary>Fill units that take loads (not fuel tanks).</summary>
     private static IEnumerable<FillUnit> Cargo(Machine m) => m.FillUnits.Where(u => u != m.Get<Motor>()?.FuelTank);
 
+    /// <summary>The <see cref="Cargo"/> units a load can go into now: those no closed cover keeps it out of.</summary>
+    private static IEnumerable<FillUnit> Open(Machine m) => Cargo(m).Where(u => !m.ClosedOver(u));
+
+    /// <summary>
+    /// Whether <paramref name="m"/> stands at a fill trigger that could fill <paramref name="unit"/> (FS: fill triggers):
+    /// a station selling what it takes, or its farm's silo spout loading what it takes.
+    /// </summary>
+    public bool AtFillTrigger(Machine m, FillUnit unit)
+    {
+        var at = m.Footprint.Center;
+        if (TriggerAt(at, "fill")?.Station is BuyingStation shop && shop.Def.FillTypes.Any(unit.Accepts)) return true;
+        return TriggerAt(at, "load")?.Station is Silo silo && silo.Poi.FarmId == m.FarmId && silo.FillTypes.Any(unit.Accepts);
+    }
+
     /// <summary>What a silo holds that it loads, by fill type.</summary>
     private static IEnumerable<(string fillType, float stock)> Stock(Silo silo) =>
         silo.FillTypes.Select(ft => (ft, stock: silo.Storage.Level(ft))).Where(x => x.stock >= 1f);
@@ -290,8 +304,8 @@ public sealed class PoiSystem
         {
             if (m.FarmId != silo.Poi.FarmId || Closed(silo.Poi, silo.Def) != null) continue;
             foreach (var (ft, stock) in Stock(silo))
-                if (Cargo(m).Any(u => u.CanAccept(ft)))
-                    choices.Add((ft, stock, Cargo(m).Any(u => u.FillType == ft)));
+                if (Open(m).Any(u => u.CanAccept(ft)))
+                    choices.Add((ft, stock, Open(m).Any(u => u.FillType == ft)));
         }
         return choices.OrderByDescending(c => c.carried).ThenByDescending(c => c.stock).Select(c => c.fillType).Distinct().ToList();
     }
@@ -312,7 +326,7 @@ public sealed class PoiSystem
         foreach (var (m, silo) in AtSpouts(vehicle))
         {
             if (_loading.ContainsKey(m) || m.FarmId != silo.Poi.FarmId || !silo.FillTypes.Contains(fillType) || silo.Storage.Level(fillType) < 1f) continue;
-            if (Closed(silo.Poi, silo.Def) != null || !Cargo(m).Any(u => u.CanAccept(fillType))) continue;
+            if (Closed(silo.Poi, silo.Def) != null || !Open(m).Any(u => u.CanAccept(fillType))) continue;
             _loading[m] = new Loading(silo, fillType, 0f);
             started = true;
         }
@@ -330,7 +344,8 @@ public sealed class PoiSystem
         var (m, silo) = AtSpouts(vehicle).OrderByDescending(x => Cargo(x.m).Any()).First();
         if (m.FarmId != silo.Poi.FarmId) return $"{silo.Poi.Name} belongs to another farm";
         if (Closed(silo.Poi, silo.Def) is { } closed) return closed;
-        return Stock(silo).Any() ? $"Nothing stored here fits {m.Def.Name}" : $"{silo.Poi.Name} is empty";
+        if (!Stock(silo).Any()) return $"{silo.Poi.Name} is empty";
+        return Stock(silo).Any(s => Cargo(m).Any(u => u.CanAccept(s.fillType))) ? $"Open the cover of {m.Def.Name} first" : $"Nothing stored here fits {m.Def.Name}";
     }
 
     private void UpdateLoading(float dt)
@@ -338,7 +353,7 @@ public sealed class PoiSystem
         foreach (var (m, l) in _loading.ToList())
         {
             var storage = l.Silo.Storage;
-            var unit = Cargo(m).FirstOrDefault(u => u.CanAccept(l.FillType));
+            var unit = Open(m).FirstOrDefault(u => u.CanAccept(l.FillType));
             if (unit == null || l.Silo.Trigger("load")?.Contains(m.Footprint.Center) != true || storage.Level(l.FillType) < 0.001f)
             {
                 FinishLoading(m);
@@ -475,7 +490,7 @@ public sealed class PoiSystem
     {
         var why = new List<string>();
         var served = false;
-        foreach (var m in machines) served |= FillUp(m, shop, why);
+        foreach (var m in machines.Where(m => Wants(m, shop).Any())) served |= FillUp(m, shop, why);
         if (!served) Tell(why);
     }
 
@@ -532,6 +547,11 @@ public sealed class PoiSystem
         foreach (var ft in shop.Def.FillTypes)
         {
             if (!unit.CanAccept(ft)) continue;
+            if (m.ClosedOver(unit))
+            {
+                why.Add($"Open the cover of {m.Def.Name} first");
+                continue;
+            }
             if (unit.Free < shop.Def.MinAmount)
             {
                 why.Add($"{poi.Name} sells {shop.Def.MinAmount:N0} {Content.FillTypes[ft].Unit} or more");

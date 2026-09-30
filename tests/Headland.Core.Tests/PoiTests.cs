@@ -122,6 +122,9 @@ public class PoiTests
         Assert.Contains(sim.Notifications.Items, n => n.Text == "Park in a marked area first: a shop, silo, gas station, workshop or wash bay");
 
         sim.Machines.Teleport(seeder, yard.Area.Center, 0f);
+        sim.Tick(Dt);
+        // Parked in the fill area, its lid opened by itself.
+        Assert.Equal(1, seeder.Get<Cover>()!.State);
         sim.Activate(seeder);
         var cost = 1600f * sim.Economy.Price("seeds", sim.Clock.Month);
         Assert.Equal(1600f, tank.Level);

@@ -21,6 +21,8 @@ public static class ComponentKinds
         ("attachable", typeof(AttachableDef)),
         ("fillUnits", typeof(FillUnitsDef)),
         ("animatedParts", typeof(AnimatedPartsDef)),
+        ("cover", typeof(CoverDef)),
+        ("ridgeMarker", typeof(RidgeMarkerDef)),
         ("workAreas", typeof(WorkAreasDef)),
         ("thresher", typeof(ThresherDef)),
         ("pipe", typeof(PipeDef)),

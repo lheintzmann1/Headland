@@ -507,9 +507,9 @@ public sealed class FieldWorkController : IVehicleController
     public int LanesDone => Enumerable.Range(0, Math.Min(Driver.Index, Path.Points.Count)).Count(Path.EndsLane);
 
     /// <summary>
-    /// Takes over the vehicle, steering it normally, and its implements: unfolded, and what their work needs turned on
-    /// (seeders, the thresher a header hangs on). Each is lowered as it reaches the field; one that isn't lowered is
-    /// turned on then instead.
+    /// Takes over the vehicle, steering it normally, and its implements: unfolded with their ridge markers up (FS), and
+    /// what their work needs turned on (seeders, the thresher a header hangs on). Each is lowered as it reaches the field;
+    /// one that isn't lowered is turned on then instead.
     /// </summary>
     internal void TakeOver()
     {
@@ -517,6 +517,7 @@ public sealed class FieldWorkController : IVehicleController
         foreach (var (m, areas) in _tools)
         {
             if (m.Get<AnimatedParts>() is { } parts) parts.Folded = false;
+            if (m.Get<RidgeMarker>() is { } markers) markers.State = 0;
             if (!SwitchedOnLanes(m, areas))
                 foreach (var a in areas.Def.Areas)
                     a.Work.Start(areas);

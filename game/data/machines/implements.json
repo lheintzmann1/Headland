@@ -27,6 +27,16 @@
       "runningGear": { "axles": [ { "z": 0, "track": 2.6, "wheels": { "radius": 0.45, "width": 0.3 } } ] },
       "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 3.1, "maxArticulationDeg": 75, "lowerable": true },
       "fillUnits": { "units": [ { "id": "seed", "capacity": 1600, "fillTypeCategories": ["seed"], "startFillType": "seeds", "startLevel": 900 } ] },
+      // The hopper's lid, hinged at its rear edge, and the ridge markers standing up at the ends of the frame: their
+      // discs reach down to the middle of the next pass.
+      "animatedParts": { "parts": [
+        { "id": "lid", "rotationDeg": [-100, 0, 0], "seconds": 1.5 },
+        { "id": "markerL", "rotationDeg": [0, 0, -117.3], "seconds": 2.5 },
+        { "id": "markerR", "rotationDeg": [0, 0, 117.3], "seconds": 2.5 } ] },
+      "cover": { "covers": [ { "parts": ["lid"], "fillUnits": ["seed"] } ] },
+      "ridgeMarker": { "markers": [
+        { "name": "left", "parts": ["markerL"], "x": 3.0, "z": -0.4, "lifted": 0.6 },
+        { "name": "right", "parts": ["markerR"], "x": -3.0, "z": -0.4, "lifted": 0.6 } ] },
       "workAreas": {
         "areas": [
           { "type": "seeder", "width": 3.0, "length": 0.8, "z": -0.9, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 80, "fillUnit": "seed" }
@@ -35,13 +45,15 @@
       "wearable": {}
     },
     "visual": { "color": "#2f4f63", "model": "res://assets/models/seeders/seeder_3.glb" },
-    "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil.",
+    "description": "Trailed seed drill. Select the crop (X), lower (V) and turn on (B). Sows cultivated soil. Its ridge markers (Shift+N) draw the middle of the next pass; its lid opens by itself at the seed shop.",
     "configurations": [
       { "id": "width", "name": "Working width", "options": [
         { "id": "3", "name": "3 m" },
         { "id": "4", "name": "4 m", "price": 8200, "mass": 650,
           "changes": { "size": { "width": 4.0 }, "components": {
             "runningGear": { "axles": [ { "track": 3.4 } ] },
+            "animatedParts": { "parts": [ { "id": "markerL", "rotationDeg": [0, 0, -111] }, { "id": "markerR", "rotationDeg": [0, 0, 111] } ] },
+            "ridgeMarker": { "markers": [ { "x": 4.0 }, { "x": -4.0 } ] },
             "workAreas": { "areas": [ { "width": 4.0, "requiredPowerHp": 105 } ] } } } }
       ] },
       { "id": "hopper", "name": "Seed hopper", "options": [

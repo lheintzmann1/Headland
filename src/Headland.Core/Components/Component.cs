@@ -31,6 +31,10 @@ public abstract class ComponentDef
     [JsonIgnore]
     public virtual IEnumerable<string> Toggles => [];
 
+    /// <summary>The parts of the entity's <c>animatedParts</c> it moves itself (a cover's lid, a marker's arm), by id.</summary>
+    [JsonIgnore]
+    public virtual IEnumerable<string> HeldParts => [];
+
     /// <summary>What <paramref name="action"/>'s hint says to do it and to undo it: its JSON's words, else these.</summary>
     public (string Do, string Undo) WordsFor(string action, string @do, string undo) =>
         Words.GetValueOrDefault(action) is [var d, var u] ? (d, u) : (@do, undo);
