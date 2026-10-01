@@ -225,8 +225,9 @@ of the object's bottom. Export to `game/assets/models/bales/` or `pallets/`. Wha
 pallet's goods are its `load` node, modeled full with its pivot at their bottom, scaled with how full it is. A round
 bale lies on its side, its axis along X.
 
-A front loader's tools (a bale spike, a pallet fork) have their origin at their hitch point: the bottom of the frame
-that hooks onto the arm's tool carrier, their tines or spikes pointing forward (+Z).
+A front loader's tools (a bale spike, a pallet fork, a bucket) have their origin at their hitch point: the bottom of the
+frame that hooks onto the arm's tool carrier, their tines, spikes or bucket pointing forward (+Z). A bucket's load is its
+`load` node, modeled full with its pivot at the bucket's floor, scaled with how full it is.
 
 ## The farmer
 

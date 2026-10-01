@@ -43,6 +43,14 @@ public sealed record WindrowPickedUp(Machine Machine, string FillType, float Amo
 /// <summary>A baler dropped a bale.</summary>
 public sealed record BaleMade(Machine Baler, WorldObject Bale) : IGameEvent;
 
+// ---- Heaps
+
+/// <summary>A load tipped on the ground, by a trailer or a bucket (published when it stops tipping).</summary>
+public sealed record FillTippedOnGround(Machine Machine, string FillType, float Amount) : IGameEvent;
+
+/// <summary>A heap on the ground scooped up by a bucket (published when it stops taking it up).</summary>
+public sealed record HeapScooped(Machine Machine, string FillType, float Amount) : IGameEvent;
+
 // ---- Trade
 
 /// <summary>A whole load sold at a POI (published when the machine stops unloading).</summary>

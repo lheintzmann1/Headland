@@ -40,6 +40,7 @@ public sealed class Notifications
 
         events.Subscribe<FillSold>(e => Post($"Sold {Amount(e.FillType, e.Amount)} for ${e.Income:N0}", Severity.Good, 0));
         events.Subscribe<FillStored>(e => Post($"Stored {Amount(e.FillType, e.Amount)} in {e.Poi.Name}", Severity.Good, 0));
+        events.Subscribe<FillTippedOnGround>(e => Post($"Tipped {Amount(e.FillType, e.Amount)} on the ground", Severity.Info, 0));
         events.Subscribe<ObjectsSold>(e =>
         {
             if (e.Farm != Ownership.Farm.PlayerId) return;

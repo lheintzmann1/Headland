@@ -3,6 +3,7 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
+using Headland.Core.World;
 
 namespace Headland.Core.Machines;
 
@@ -167,6 +168,21 @@ public sealed class Machine : Entity
     {
         if (OnCrane(local) is { } onParent) return Parent!.HeightOf(onParent);
         return local.Y + (Get<Attachable>()?.Lift ?? 0f);
+    }
+
+    /// <summary>
+    /// How it sits on what's under it, the ground or a heap: the height under its origin, and the rise per meter ahead
+    /// (<paramref name="slope"/>) and to the left (<paramref name="tilt"/>) between four points around its footprint.
+    /// </summary>
+    public (float y, float slope, float tilt) GroundPose(WorldMap world)
+    {
+        var s = Def.Size;
+        var (halfL, halfW) = (s.Length * 0.4f, s.Width * 0.4f);
+        var front = world.SurfaceAt(LocalToWorld(0f, s.CenterZ + halfL));
+        var back = world.SurfaceAt(LocalToWorld(0f, s.CenterZ - halfL));
+        var left = world.SurfaceAt(LocalToWorld(halfW, s.CenterZ));
+        var right = world.SurfaceAt(LocalToWorld(-halfW, s.CenterZ));
+        return (world.SurfaceAt(Position), (front - back) / (halfL * 2f), (left - right) / (halfW * 2f));
     }
 
     /// <summary>Its <see cref="Cover"/> is closed over <paramref name="unit"/>: nothing fills it.</summary>

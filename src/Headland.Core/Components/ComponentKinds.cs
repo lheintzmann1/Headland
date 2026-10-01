@@ -31,6 +31,7 @@ public static class ComponentKinds
         ("baler", typeof(BalerDef)),
         ("baleLoader", typeof(BaleLoaderDef)),
         ("fork", typeof(ForkDef)),
+        ("shovel", typeof(ShovelDef)),
         ("lights", typeof(LightsDef)),
         ("craneArm", typeof(CraneArmDef)),
         ("winch", typeof(WinchDef)),

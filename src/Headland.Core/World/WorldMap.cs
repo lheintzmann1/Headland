@@ -105,6 +105,8 @@ public sealed class FieldLayers
         Fertilized = new byte[count];
         Windrow = new float[count];
         WindrowFill = new byte[count];
+        Heap = new float[count];
+        HeapFill = new byte[count];
     }
 
     public byte[] Ground { get; }
@@ -136,6 +138,10 @@ public sealed class FieldLayers
     public float[] Windrow { get; }
     /// <summary>What lies there: fill type index + 1 (<see cref="Content.ContentDatabase.FillTypeList"/>), 0 = nothing.</summary>
     public byte[] WindrowFill { get; }
+    /// <summary>How high a heap stands on the cell, in meters (grain tipped on the ground): see <see cref="Heaps"/>.</summary>
+    public float[] Heap { get; }
+    /// <summary>What the heap is of: fill type index + 1 (<see cref="Content.ContentDatabase.FillTypeList"/>), 0 = nothing.</summary>
+    public byte[] HeapFill { get; }
 }
 
 public enum ObstacleShape { Circle, Box }
@@ -245,9 +251,11 @@ public sealed class WorldMap
         GroundDirty = new bool[ChunksX * ChunksZ];
         CropDirty = new bool[ChunksX * ChunksZ];
         WindrowDirty = new bool[ChunksX * ChunksZ];
+        HeapDirty = new bool[ChunksX * ChunksZ];
         Array.Fill(GroundDirty, true);
         Array.Fill(CropDirty, true);
         Array.Fill(WindrowDirty, true);
+        Array.Fill(HeapDirty, true);
     }
 
     public int Size { get; }
@@ -273,6 +281,8 @@ public sealed class WorldMap
     public bool[] CropDirty { get; }
     /// <summary>Chunk needs its windrows rebuilt.</summary>
     public bool[] WindrowDirty { get; }
+    /// <summary>Chunk needs its heaps rebuilt.</summary>
+    public bool[] HeapDirty { get; }
 
     public int CellIndex(int cx, int cz) => cz * CellsX + cx;
 
@@ -311,6 +321,7 @@ public sealed class WorldMap
         Array.Fill(GroundDirty, true);
         if (crop) Array.Fill(CropDirty, true);
         Array.Fill(WindrowDirty, true);
+        Array.Fill(HeapDirty, true);
     }
 
     /// <summary>Marks the chunk of cell <paramref name="i"/> for its windrows to be drawn again.</summary>
@@ -320,7 +331,43 @@ public sealed class WorldMap
         WindrowDirty[ChunkIndex(cx / ChunkCells, cz / ChunkCells)] = true;
     }
 
+    /// <summary>
+    /// Marks the chunk of cell <paramref name="i"/> for its heaps to be drawn again, and the chunks next to it when the
+    /// cell is on their edge (a heap's surface between cells takes from both).
+    /// </summary>
+    public void MarkHeapDirty(int i)
+    {
+        var (cx, cz) = (i % CellsX, i / CellsX);
+        var (chx, chz) = (cx / ChunkCells, cz / ChunkCells);
+        var (lx, lz) = (cx - chx * ChunkCells, cz - chz * ChunkCells);
+        for (var dz = lz == 0 ? -1 : 0; dz <= (lz == ChunkCells - 1 ? 1 : 0); dz++)
+        for (var dx = lx == 0 ? -1 : 0; dx <= (lx == ChunkCells - 1 ? 1 : 0); dx++)
+            if ((uint)(chx + dx) < (uint)ChunksX && (uint)(chz + dz) < (uint)ChunksZ)
+                HeapDirty[ChunkIndex(chx + dx, chz + dz)] = true;
+    }
+
     public float HeightAt(Vector2 p) => Height.Sample(p.X, p.Y);
+
+    /// <summary>The ground's height at the middle of cell <paramref name="i"/>.</summary>
+    public float CellHeight(int i) => Height.Sample((i % CellsX + 0.5f) * CellSize, (i / CellsX + 0.5f) * CellSize);
+
+    /// <summary>
+    /// How high a heap stands at <paramref name="p"/>, between the middles of the cells around it (what a wheel rolls on,
+    /// as the heap is drawn).
+    /// </summary>
+    public float HeapAt(Vector2 p)
+    {
+        var (fx, fz) = (p.X / CellSize - 0.5f, p.Y / CellSize - 0.5f);
+        var (x0, z0) = ((int)MathF.Floor(fx), (int)MathF.Floor(fz));
+        var (tx, tz) = (fx - x0, fz - z0);
+        float H(int x, int z) => InBounds(x, z) ? Layers.Heap[CellIndex(x, z)] : 0f;
+        var a = H(x0, z0) + (H(x0 + 1, z0) - H(x0, z0)) * tx;
+        var b = H(x0, z0 + 1) + (H(x0 + 1, z0 + 1) - H(x0, z0 + 1)) * tx;
+        return a + (b - a) * tz;
+    }
+
+    /// <summary>The top of what lies at <paramref name="p"/>: the ground, or a heap on it.</summary>
+    public float SurfaceAt(Vector2 p) => HeightAt(p) + HeapAt(p);
 
     public GroundType GroundAt(Vector2 p)
     {

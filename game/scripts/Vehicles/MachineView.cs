@@ -38,19 +38,11 @@ public partial class MachineView : Node3D
             GlobalTransform = carrier.GlobalTransform * m.Parent.JointFrame(joint).ToGodot() * new Transform3D(Basis.Identity, new Vector3(-a.X, 0f, -a.Z));
             return;
         }
-        var world = Sim.World;
-        var s = m.Def.Size;
-
-        // Terrain tilt from four samples around the footprint.
-        var halfL = s.Length * 0.4f;
-        var halfW = s.Width * 0.4f;
-        var hf = world.HeightAt(m.LocalToWorld(0f, s.CenterZ + halfL));
-        var hb = world.HeightAt(m.LocalToWorld(0f, s.CenterZ - halfL));
-        var hl = world.HeightAt(m.LocalToWorld(halfW, s.CenterZ));
-        var hr = world.HeightAt(m.LocalToWorld(-halfW, s.CenterZ));
-        var pitch = Mathf.Atan2(hb - hf, halfL * 2f);
-        var roll = Mathf.Atan2(hl - hr, halfW * 2f);
+        // Tilted with the ground under it, or a heap it drives onto.
+        var (y, slope, tilt) = m.GroundPose(Sim.World);
+        var pitch = Mathf.Atan(-slope);
+        var roll = Mathf.Atan(tilt);
         var basis = new Basis(Vector3.Up, m.Heading) * new Basis(Vector3.Right, pitch) * new Basis(Vector3.Back, roll);
-        GlobalTransform = new Transform3D(basis, world.OnGround(m.Position));
+        GlobalTransform = new Transform3D(basis, new Vector3(m.Position.X, y, m.Position.Y));
     }
 }

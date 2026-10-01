@@ -30,6 +30,7 @@ public partial class ComponentView : Node3D
         WorkAreas w => new WorkAreasView { Sim = sim, Rig = rig, Entity = c.Owner, Areas = w },
         Pipe p => new PipeView { Sim = sim, Rig = rig, Entity = c.Owner, Pipe = p },
         Tipper t => new TipperView { Sim = sim, Rig = rig, Entity = c.Owner, Tipper = t },
+        Shovel s => new ShovelView { Sim = sim, Rig = rig, Entity = c.Owner, Shovel = s },
         Lights l => new LightsView { Sim = sim, Rig = rig, Entity = c.Owner, Lights = l },
         CraneArm a => new CraneArmView { Sim = sim, Rig = rig, Entity = c.Owner, Crane = a },
         Winch w => new WinchView { Sim = sim, Rig = rig, Entity = c.Owner, Winch = w },

@@ -19,7 +19,7 @@ internal static class LayerCodec
         ("ground", l => l.Ground), ("crop", l => l.Crop), ("stage", l => l.Stage), ("progress", l => l.Progress),
         ("moisture", l => l.Moisture), ("nitrogen", l => l.Nitrogen), ("health", l => l.Health),
         ("workAngle", l => l.WorkAngle), ("chill", l => l.Chill), ("weeds", l => l.Weeds), ("fertilized", l => l.Fertilized),
-        ("windrow", l => l.Windrow), ("windrowFill", l => l.WindrowFill),
+        ("windrow", l => l.Windrow), ("windrowFill", l => l.WindrowFill), ("heap", l => l.Heap), ("heapFill", l => l.HeapFill),
     ];
 
     public static byte[] Write(WorldMap world)
@@ -48,7 +48,7 @@ internal static class LayerCodec
 
     /// <summary>
     /// Reads the layers into the world; <paramref name="cropRemap"/> maps saved crop values to current ones, and
-    /// <paramref name="fillRemap"/> saved windrow fill types (what lies of a fill type no longer there is gone).
+    /// <paramref name="fillRemap"/> saved windrow and heap fill types (what lies of a fill type no longer there is gone).
     /// </summary>
     public static void Read(byte[] data, WorldMap world, byte[] cropRemap, byte[] fillRemap, List<string> warnings)
     {
@@ -82,6 +82,12 @@ internal static class LayerCodec
             if (L.WindrowFill[i] == 0) continue;
             L.WindrowFill[i] = fillRemap[L.WindrowFill[i]];
             if (L.WindrowFill[i] == 0) Windrows.Clear(L, i);
+        }
+        for (var i = 0; i < L.HeapFill.Length; i++)
+        {
+            if (L.HeapFill[i] == 0) continue;
+            L.HeapFill[i] = fillRemap[L.HeapFill[i]];
+            if (L.HeapFill[i] == 0) L.Heap[i] = 0f;
         }
         for (var i = 0; i < L.Crop.Length; i++)
         {

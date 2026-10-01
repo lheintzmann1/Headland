@@ -40,6 +40,7 @@ public partial class ScenarioRunner : Node
                 case "menus": await Menus(); break;
                 case "bales": await Bales(); break;
                 case "loader": await Loader(); break;
+                case "heaps": await Heaps(); break;
                 default: Log($"unknown scenario '{Scenario}'"); break;
             }
             ok = true;
@@ -458,6 +459,82 @@ public partial class ScenarioRunner : Node
             Ms.Teleport(t, t.Position, heading);
             var tines = tool.LocalToWorld(0f, tool.Get<Fork>()!.Def.Area.Z);
             Ms.Teleport(t, t.Position + p - tines, heading);
+        }
+    }
+
+    /// <summary>Tips a trailer of wheat on the farm's land, takes it up with a bucket on the front loader and pours it into a trailer.</summary>
+    private async Task Heaps()
+    {
+        Game.Camera.Zoom = 26f;
+        await Frames(10);
+        var yard = new NVec2(160f, 100f);
+        var east = MathF.PI * 0.5f;
+        var shots = DisplayServer.GetName() != "headless";
+
+        // --- Tip a trailer of wheat on the ground, driving on whenever the heap comes up to the tailgate.
+        var hauler = Ms.Spawn("tractor_95", yard + new NVec2(6f, 0f), east);
+        var trailer = Ms.Spawn("trailer_16", yard, east);
+        Ms.Attach(hauler, "drawbar", trailer);
+        trailer.Unit("main")!.Add("wheat", 12000f);
+        Sim.Player.Enter(hauler);
+        Game.FocusOverride = () => trailer.Footprint.Center;
+        var bed = trailer.Get<Tipper>()!;
+        Sim.Perform(InputActions.TipGround);
+        Log($"tipping on the ground: {bed.Tipping}");
+        for (var k = 0; k < 6 && !bed.Load.IsEmpty; k++)
+        {
+            await Until(() => bed.Load.IsEmpty || bed.HeapUp, 40f);
+            if (bed.HeapUp) Ms.Teleport(hauler, hauler.Position + MathUtil.Forward(east) * 4f, east);
+            await Frames(2);
+        }
+        Sim.Heaps.SettleAll();
+        var (amount, top) = HeapAround(yard - new NVec2(3f, 0f), 12f);
+        Log($"tipped on the ground: {amount:N0} L of wheat, {top:0.00} m high");
+        if (shots) await Shot("heap");
+
+        // --- Drive a bucket into it, the arm down and the bucket level.
+        Ms.Teleport(hauler, yard + new NVec2(30f, 0f), east);
+        var loader = Ms.Spawn("tractor_125", yard - new NVec2(16f, 0f), east, configuration: new Dictionary<string, string> { ["frontLoader"] = "bracket" });
+        var arm = Ms.Spawn("frontloader_arm", loader.Position, east);
+        Ms.Attach(loader, "frontLoader", arm);
+        var bucket = Ms.Spawn("bucket", arm.Position, east);
+        Ms.Attach(arm, "tool", bucket);
+        var crane = arm.Get<CraneArm>()!;
+        var load = bucket.Unit("bucket")!;
+        Sim.Player.Exit(Sim);
+        Game.FocusOverride = () => loader.Footprint.Center;
+        loader.Get<Drivable>()!.Controller = new ManualController { Input = new VehicleInput { Throttle = 0.12f } };
+        await Until(() => load.Free < 1f, 20f);
+        loader.Get<Drivable>()!.Controller = new ManualController { Input = new VehicleInput { Brake = true } };
+        Log($"bucket: {load.Level:N0} L of {load.FillType}, the tractor {Sim.World.HeapAt(loader.Position):0.00} m up the heap");
+        if (shots) await Shot("bucket_full");
+
+        // --- Lift it over a trailer and tip it forward.
+        crane.MoveTo("lift", 50f);
+        crane.MoveTo("tilt", -50f);
+        await Until(() => crane.Joint("lift")!.Value > 49f, 5f);
+        var edge = bucket.Get<Shovel>()!.Def.Edge;
+        var p = bucket.OnCrane(new System.Numerics.Vector3(0f, edge.Y, edge.Z))!.Value;
+        var truck = Ms.Spawn("trailer_16", arm.PartToWorld(p.X, p.Z).position, 0f);
+        crane.MoveTo("tilt", -100f);
+        await Until(() => load.IsEmpty, 8f);
+        Log($"poured into a trailer: {truck.Unit("main")!.Level:N0} L");
+        if (shots) await Shot("bucket_poured");
+
+        (float amount, float top) HeapAround(NVec2 c, float r)
+        {
+            var w = Sim.World;
+            var (sum, high) = (0f, 0f);
+            var (x0, z0) = w.WorldToCell(c - new NVec2(r));
+            var (x1, z1) = w.WorldToCell(c + new NVec2(r));
+            for (var cz = z0; cz <= z1; cz++)
+            for (var cx = x0; cx <= x1; cx++)
+            {
+                var i = w.CellIndex(cx, cz);
+                sum += Sim.Heaps.AmountAt(i);
+                high = MathF.Max(high, Sim.Heaps.Has(i) ? w.Layers.Heap[i] : 0f);
+            }
+            return (sum, high);
         }
     }
 

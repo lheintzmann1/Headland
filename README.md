@@ -24,13 +24,18 @@ Built with **Godot 4.7** and **C#**.
   which the rake gathers back into a windrow. The round baler drops a 4,000 L bale behind it each time its chamber is
   full, the bale collector picks the bales up beside it and sets them down where you stop, and the dairy buys those
   left in its bale area. Tilling works what lies cut into the ground.
-- **Front loader tools.** The loader arm's tool carrier takes a bale spike or a pallet fork: lower it to a bale's
-  middle or under a pallet, drive in, and it takes it, lifted and tilted with the arm; set it down anywhere, on top of
-  another to stack bales. The farm's grain mill turns the wheat tipped into its pit into flour, which comes out on
+- **Front loader tools.** The loader arm's tool carrier takes a bale spike, a pallet fork or a bucket: lower it to a
+  bale's middle or under a pallet, drive in, and it takes it, lifted and tilted with the arm; set it down anywhere, on
+  top of another to stack bales. The farm's grain mill turns the wheat tipped into its pit into flour, which comes out on
   pallets beside it every hour, and the farm shop buys the pallets left beside its store.
+- **Heaps on the ground.** Grain can be tipped on the ground, on your own land: it piles up behind the trailer, its sides
+  no steeper than the grain lets them stand (wheat about 27°, canola flatter), until the heap reaches the tailgate and
+  the trailer must drive on. The bucket on the front loader takes it back up, driven into the heap low and level, and
+  pours it out tilted forward: into a trailer, into a silo's pit or an elevator's, or on the ground again. Machines
+  drive up onto heaps, and heaps are saved with the game.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator, a plow, a
   trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road, a mower, a tedder, a rake,
-  a round baler, a bale collector, a front loader with a bale spike and a pallet fork, most with
+  a round baler, a bale collector, a front loader with a bale spike, a pallet fork and a bucket, most with
   options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
   a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color. The menu's shop lists them by
   category and brand, each turning in a preview with what it is (power, capacity, working width, the power it needs…)
@@ -154,6 +159,7 @@ to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu
 | B | Turn on or off (seed drill, spreader, sprayer, mower, tedder, rake, baler, combine); a bale collector starts and stops picking up bales |
 | U | Unfold the combine's pipe, tip a trailer into an unloading area, drop a baler's bale, set a bale collector's bales down behind it, or set down what a front loader's fork carries |
 | Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |
+| Ctrl+U | Tip a trailer on the ground where it stands, on your own land: the load piles up in a heap under the side it tips to |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |
 | L, Alt+L | Lights: headlights and tail lights, then work lights too, then off, and back a step; they go off when you get out, and a helper switches them on at night. Brake and reverse lights work by themselves, and the cab lights at dusk. A front loader or front implement switches to the headlights on the roof |

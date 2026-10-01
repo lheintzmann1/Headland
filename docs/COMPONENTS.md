@@ -151,6 +151,7 @@ trigger. Each is saved with where it lies, or the machine carrying it.
 | `baler` | machines | A baler's chamber: makes bales of what its pickup gathers. |
 | `baleLoader` | machines | A bed that picks bales up from the ground, and sets them down. |
 | `fork` | machines | Tines or spikes carrying objects: a bale spike, a pallet fork. |
+| `shovel` | machines | A bucket: takes up a heap it's driven into, pours it out tilted forward. |
 | `lights` | anything | Headlights, work lights and beacons, switched by the driver; a building's lamps, lit in the dark, on a timer or as someone comes by. |
 | `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
 | `winch` | machines | A rope with a hook. |
@@ -177,7 +178,8 @@ The HUD's vehicle panel (FS: the speed meter and fill levels) shows the vehicle 
 components report them: a `motor` its speed, the engine's load and the fuel left, `fillUnits` each unit's fill level, a
 `baleLoader` its bales, a `wearable` the condition and a `washable` the dirt, as gauges; and the others what they're
 doing in a word or two: lowered or raised (`attachable`), folded (`animatedParts`), on or off and the seed sown
-(`workAreas`), threshing (`thresher`), pipe out (`pipe`), tipping and the side (`tipper`), the cover open, the marker
+(`workAreas`), threshing (`thresher`), pipe out (`pipe`), tipping, on the ground too, and the side (`tipper`), loading or
+dumping and why it can't dump there (`shovel`), the cover open, the marker
 down, the lights on, the wheels slipping, a helper at work (`drivable`), what a `fork` carries. What keeps a machine
 from working (out of seed, a full tank) is listed under it.
 
@@ -484,7 +486,8 @@ header into a windrow that wide, behind the combine. Without one, it's chopped a
 | `sides` | none | The sides it tips to (below); none: to the back, into the unloading area the machine stands in. |
 
 A three-way tipper (FS: tip sides) tips to the back or over either side. Each of its `sides` has a `name` for the key
-hint ("left"), where its load falls, `x`, `z` (the unloading area must be under it), and how the bed tilts: turned by
+hint ("left"), where its load falls, `x`, `z` (the unloading area must be under it), on the ground `y` and `width`
+(below), and how the bed tilts: turned by
 `rotationDeg` [x, y, z] (by default its front lifted by `angleDeg`) about `pivot` [x, y, z], from the bed's own pivot
 at its rear hinge (a side's hinge line along its edge). The tip side key steps to the next side while the bed is down,
 "Tip side (left)"; the side is saved.
@@ -494,6 +497,16 @@ at its rear hinge (a side's hinge line along its edge). The tip side key steps t
   { "name": "back", "x": 0, "z": -3.0 },
   { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1] } ] }
 ```
+
+The tip-on-the-ground key (FS: dump on ground) tips it where it stands, on its farm's own land, when what it holds lies
+in heaps (a fill type's `heap`, below): the load pours along a line `width` (1.5) wide across the side it tips to (by
+default, out of its back), from `y` (1 m) up, and piles up there. Once the heap comes up to `y`, nothing more pours
+until the trailer drives on.
+
+Heaps (FS: tip heaps) lie on the ground in 0.5 m cells, one fill type to a cell, a heap of another fill type stopping
+one as a wall would; their sides stand no steeper than their fill type's angle, what is steeper sliding down. Machines
+drive up onto them. A fill type lies in heaps with a `heap` in `game/data/filltypes.json`: `angleDeg` (26), the angle
+its sides stand at, and `perCubicMeter` (1000), the units a cubic meter of the heap holds.
 
 ### baler
 
@@ -527,6 +540,27 @@ ground or on what lies under them: bales stack. Something taken from under a sta
 
 ```jsonc
 "fork": { "area": { "z": 0.75, "w": 0.9, "d": 1.0 }, "y": 0.55, "into": 0.62, "takes": ["bale"] }
+```
+
+### shovel
+
+A bucket (FS: shovel) on a loader tool: driven forward into a heap, held about level, it takes up into its `fillUnit`
+what lies above its edge and a little behind it, and the heap slides into the cut; tilted forward, it pours out over its
+edge, into a machine under it (a trailer), an unloading area under it (a silo's pit, an elevator's), or on the ground on
+its farm's land.
+
+| Setting | Default | |
+|---|---|---|
+| `fillUnit` | `bucket` | The unit it fills. |
+| `edge` | `z` 1, `y` 0, `width` 2 | Its cutting edge in its space: the middle of the lip, and how wide it is. |
+| `depth` | 0.5 | How far behind its edge it takes up. |
+| `fillPerSecond` | 1500 | How fast it fills, driven into a heap. |
+| `maxPickupAngleDeg` | 25 | How far from level it may be tilted and still take up. |
+| `dumpAngleDeg` | [20, 50] | Tilted forward past the first angle it starts to pour, past the second at its full rate (FS: the shovel's tip angles). |
+| `ratePerSecond` | 800 | How fast it pours, tilted all the way. |
+
+```jsonc
+"shovel": { "fillUnit": "bucket", "edge": { "z": 1.1, "y": -0.08, "width": 2.0 }, "depth": 0.6 }
 ```
 
 ### lights
@@ -826,5 +860,5 @@ A machine's condition is its `wearable`'s: saves from before it (0.14 and older)
 a `wearable` loses it. Its dirt is its `washable`'s: saves from before it kept none, as nothing made machines dirty.
 
 Objects keep where they lie, or the machine carrying them and their slot there; one whose carrier is gone, or no longer
-has that slot, lies on the ground where it was. What lies cut on the fields is saved with the field layers, by fill
-type id: what lies of a fill type that no longer exists is gone.
+has that slot, lies on the ground where it was. What lies cut on the fields, and the heaps on the ground, are saved with
+the field layers, by fill type id: what lies of a fill type that no longer exists is gone.

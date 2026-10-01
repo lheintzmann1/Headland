@@ -3,13 +3,15 @@
   // nitrogen: kg of nitrogen a unit gives the soil when spread (fertilizers).
   // categories: fill units, stations and silos that take a category ("fillTypeCategories") take its fill types, so a
   // new grain goes into grain trailers and sells at the elevator.
-  { "id": "wheat",  "name": "Wheat",  "unit": "L",  "massPerUnit": 0.78, "pricePerUnit": 0.32, "color": "#c9a45c", "categories": ["grain"],
+  // heap: it can be tipped on the ground, in a heap whose sides stand at angleDeg (its angle of repose), perCubicMeter
+  // units to a cubic meter (1000 for liters). Without one, it can't.
+  { "id": "wheat",  "name": "Wheat",  "unit": "L",  "massPerUnit": 0.78, "pricePerUnit": 0.32, "color": "#c9a45c", "categories": ["grain"], "heap": { "angleDeg": 27 },
     "monthlyPriceFactor": [1.05, 1.08, 1.12, 1.15, 1.12, 1.0, 0.86, 0.84, 0.9, 0.95, 1.0, 1.02] },
-  { "id": "barley", "name": "Barley", "unit": "L",  "massPerUnit": 0.65, "pricePerUnit": 0.29, "color": "#d6bb7a", "categories": ["grain"],
+  { "id": "barley", "name": "Barley", "unit": "L",  "massPerUnit": 0.65, "pricePerUnit": 0.29, "color": "#d6bb7a", "categories": ["grain"], "heap": { "angleDeg": 28 },
     "monthlyPriceFactor": [1.04, 1.06, 1.1, 1.12, 1.1, 1.0, 0.88, 0.85, 0.9, 0.96, 1.0, 1.02] },
-  { "id": "canola", "name": "Canola", "unit": "L",  "massPerUnit": 0.66, "pricePerUnit": 0.62, "color": "#3a3226", "categories": ["grain"],
+  { "id": "canola", "name": "Canola", "unit": "L",  "massPerUnit": 0.66, "pricePerUnit": 0.62, "color": "#3a3226", "categories": ["grain"], "heap": { "angleDeg": 23 },
     "monthlyPriceFactor": [1.05, 1.07, 1.1, 1.1, 1.05, 0.95, 0.85, 0.88, 0.95, 1.0, 1.02, 1.04] },
-  { "id": "corn",   "name": "Corn",   "unit": "L",  "massPerUnit": 0.72, "pricePerUnit": 0.27, "color": "#e0b43c", "categories": ["grain"],
+  { "id": "corn",   "name": "Corn",   "unit": "L",  "massPerUnit": 0.72, "pricePerUnit": 0.27, "color": "#e0b43c", "categories": ["grain"], "heap": { "angleDeg": 25 },
     "monthlyPriceFactor": [1.05, 1.08, 1.1, 1.12, 1.12, 1.1, 1.05, 1.0, 0.9, 0.84, 0.88, 0.98] },
   { "id": "seeds",  "name": "Seeds",  "unit": "kg", "massPerUnit": 1.0,  "pricePerUnit": 0.95, "color": "#8a6f4d", "categories": ["seed"] },
   { "id": "diesel", "name": "Diesel", "unit": "L",  "massPerUnit": 0.84, "pricePerUnit": 1.4,  "color": "#3b3a2e", "categories": ["fuel"] },

@@ -50,6 +50,8 @@ public static class CellText
             if (r.WindrowFill is { } lying)
                 sb.Append($"{lying.Name} lying cut: [b]{r.Windrow / WorldMap.CellArea:0.0}[/b] {lying.Unit}/m²\n");
         }
+        if (r.HeapFill is { } heap)
+            sb.Append($"{heap.Name} heap: [b]{r.HeapHeight:0.00} m[/b] high, {r.Heap / WorldMap.CellArea:N0} {heap.Unit}/m²\n");
         if (r.Crop is { VernalizationDays: > 0 } vc && r.StageName != "Dead" && r.Stage < Array.FindIndex(vc.Stages, s => s.RequiresVernalization))
             sb.Append(r.Chill >= vc.VernalizationDays
                 ? Widgets.Colored("Vernalized: ready to shoot in spring", Palette.Info) + "\n"

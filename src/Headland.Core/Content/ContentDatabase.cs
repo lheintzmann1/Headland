@@ -309,6 +309,8 @@ public sealed class ContentDatabase
                 e.Add($"fill type '{f.Id}': tedded needs another known fillType and a factor > 0");
             if (f.Nitrogen < 0f) e.Add($"fill type '{f.Id}': nitrogen must be >= 0");
             if (f.Categories.Any(string.IsNullOrWhiteSpace)) e.Add($"fill type '{f.Id}': categories need names");
+            if (f.Heap is { } h && (h.AngleDeg is <= 0f or >= 60f || h.PerCubicMeter <= 0f))
+                e.Add($"fill type '{f.Id}': heap needs angleDeg in (0, 60) and perCubicMeter > 0");
         }
 
         var seenCrops = new HashSet<string>();

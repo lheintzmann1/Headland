@@ -49,6 +49,7 @@ public sealed class Simulation
         Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
         Objects = new ObjectSystem(this);
+        Heaps = new Heaps(this);
         Shop = new Shop(this);
         Garage = new Garage(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
@@ -78,6 +79,8 @@ public sealed class Simulation
     public MachineSystem Machines { get; }
     /// <summary>Things lying about that machines carry: bales.</summary>
     public ObjectSystem Objects { get; }
+    /// <summary>Grain tipped on the ground, in heaps.</summary>
+    public Heaps Heaps { get; }
     public Shop Shop { get; }
     public Garage Garage { get; }
     public PlayerCharacter Player { get; }
@@ -129,6 +132,7 @@ public sealed class Simulation
         UpdateWeather();
 
         Machines.Update(dt);
+        Heaps.Update();
         Objects.Update(dt);
         Shop.Update();
         Pois.Update(dt);
@@ -464,6 +468,7 @@ public sealed class Simulation
         foreach (var m in gone)
         {
             Pois.Forget(m);
+            Heaps.Forget(m);
             Objects.DropFrom(m);
             Machines.All.Remove(m);
         }
@@ -517,6 +522,9 @@ public sealed class Simulation
             Fertilized = L.Fertilized[i],
             Windrow = Windrows.Has(L, i) ? L.Windrow[i] : 0f,
             WindrowFill = Windrows.Has(L, i) ? Windrows.FillTypeAt(Content, L, i) : null,
+            Heap = Heaps.AmountAt(i),
+            HeapHeight = Heaps.Has(i) ? L.Heap[i] : 0f,
+            HeapFill = Heaps.FillTypeAt(i),
         };
         if (crop != null && stage != CropStage.Dead)
         {
@@ -562,6 +570,10 @@ public sealed class CellReport(bool valid)
     /// <summary>What lies cut on the cell (grass, hay, straw), and how much (units).</summary>
     public float Windrow { get; init; }
     public FillTypeDef? WindrowFill { get; init; }
+    /// <summary>The heap on the cell (grain tipped on the ground): how much, how high (m) and of what.</summary>
+    public float Heap { get; init; }
+    public float HeapHeight { get; init; }
+    public FillTypeDef? HeapFill { get; init; }
     /// <summary>What a hectare of the crop would yield now, by its health and the weeds.</summary>
     public float ExpectedYieldPerHa { get; set; }
     public float DaysToHarvest { get; set; } = float.NaN;

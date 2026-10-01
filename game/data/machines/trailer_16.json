@@ -13,9 +13,9 @@
     "fillUnits": { "units": [ { "id": "main", "capacity": 16000, "fillTypeCategories": ["grain"] } ] },
     // A three-way tipper: to the back, or rolled over either side of the bed (their hinge lines at its edges).
     "tipper": { "fillUnit": "main", "ratePerSecond": 450, "sides": [
-      { "name": "back", "x": 0, "z": -3.0 },
-      { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1] },
-      { "name": "right", "x": -1.9, "z": 0.6, "rotationDeg": [0, 0, 40], "pivot": [-1.275, 0, 3.1] } ] },
+      { "name": "back", "x": 0, "z": -3.0, "y": 1.4, "width": 1.8 },
+      { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1], "y": 1.1, "width": 4.5 },
+      { "name": "right", "x": -1.9, "z": 0.6, "rotationDeg": [0, 0, 40], "pivot": [-1.275, 0, 3.1], "y": 1.1, "width": 4.5 } ] },
     "lights": {
       "lamps": [
         { "type": "turnLeft",  "x":  1.1, "y": 0.9, "z": -2.5, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
@@ -30,7 +30,7 @@
     "washable": {}
   },
   "visual": { "color": "#5b6770", "model": "res://assets/models/trailers/trailer_16.glb" },
-  "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U). Its tarp, as an option, opens by itself at a silo's spout and to tip; open it (C) under a combine's pipe.",
+  "description": "Tandem-axle three-way grain tipper. Park it under the combine pipe, then tip it into an unloading area (U), to the back or over a side (Shift+U), or on your own land in a heap (Ctrl+U). Its tarp, as an option, opens by itself at a silo's spout and to tip; open it (C) under a combine's pipe.",
   "configurations": [
     { "id": "capacity", "name": "Capacity", "options": [
       { "id": "16000", "name": "16,000 L" },

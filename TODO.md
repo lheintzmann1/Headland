@@ -191,7 +191,11 @@ components so new machine kinds, including mod machines, are built from blocks.
       The switch sound comes with the audio.
 - [x] Front loader tools on the arm's tool carrier (a joint on its tilt): a bale spike and a pallet fork, carrying,
       lifting and stacking bales and pallets.
-- [ ] A front loader bucket, with bulk heaps on the ground (a system of their own).
+- [x] A front loader bucket, with bulk heaps on the ground (a system of their own): grain tipped off a trailer (FS: dump
+      on ground) or poured from the bucket, on the farm's own land, settling at its fill type's angle; machines drive up
+      onto them.
+- [ ] More on heaps: other bulk goods that lie in them (sand, gravel, earth, lime, manure, chaff and silage) with what
+      makes and takes them; a pipe pouring on the ground; heaps that machines push against rather than drive over.
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).
 - [ ] Forestry: trees as entities (forests are props today), saw heads, logs as objects, forwarders,

@@ -1,0 +1,16 @@
+// Hangs on a front loader arm's tool carrier: origin at its hitch, the bottom of its frame. See docs/COMPONENTS.md.
+{
+  "id": "bucket", "name": "Bucket 2.1", "category": "loaderTool", "brand": "ridgeline", "price": 2300, "mass": 340,
+  "size": { "length": 1.2, "width": 2.1, "height": 0.95, "centerZ": 0.55 },
+  "components": {
+    "attachable": { "type": "loaderTool", "mode": "mounted" },
+    "fillUnits": { "units": [ { "id": "bucket", "capacity": 1500, "fillTypeCategories": ["grain"] } ] },
+    // Its edge just under its hitch: with the arm all the way down, it scrapes the ground.
+    "shovel": { "fillUnit": "bucket", "edge": { "z": 1.1, "y": -0.08, "width": 2.0 }, "depth": 0.6,
+      "fillPerSecond": 1500, "maxPickupAngleDeg": 25, "dumpAngleDeg": [20, 50], "ratePerSecond": 800 },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#4d5c38", "model": "res://assets/models/frontloaders/bucket.glb" },
+  "description": "Light material bucket for a front loader, for grain. Lower the arm until its edge is on the ground, the bucket level, and drive into a heap: it fills up. Tilt it forward to pour it out, over a trailer, into an unloading area, or on your own land."
+}

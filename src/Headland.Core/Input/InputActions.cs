@@ -24,6 +24,7 @@ public static class InputActions
     public const string TurnOn = "turn_on";
     public const string Unload = "unload";
     public const string TipSide = "tip_side";
+    public const string TipGround = "tip_ground";
     public const string CycleSeed = "cycle_seed";
     public const string Steering = "steering";
     public const string ToolUp = "tool_up";
@@ -76,6 +77,7 @@ public static class InputActions
         new(TurnOn, "Turn on / off", Driving, "B", "Joy B") { Unavailable = "Nothing to turn on", Several = ("Turn on all", "Turn off all") },
         new(Unload, "Pipe / tip trailer", Driving, "U", "Joy Up") { Unavailable = "Nothing to unload" },
         new(TipSide, "Tip side: the side a trailer tips to", Driving, "Shift+U") { Unavailable = "Nothing here tips to another side now" },
+        new(TipGround, "Tip on the ground: a trailer's load in a heap where it stands", Driving, "Ctrl+U") { Unavailable = "Nothing to tip on the ground" },
         new(CycleSeed, "Change seed", Driving, "X") { Unavailable = "No seeder attached" },
         new(Steering, "Steering: normal, all-wheel, crab", Driving, "K") { Unavailable = "It has only one way to steer" },
         new(ToolUp, "Tool up: a loader's arm, a crane's boom", Driving, "Up") { Analog = true },

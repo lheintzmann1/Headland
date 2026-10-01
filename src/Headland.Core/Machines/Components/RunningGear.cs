@@ -349,7 +349,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     {
         var world = sim.World;
         var (pos, forward) = (Machine.Position, Machine.Forward);
-        Grade = (world.HeightAt(pos + forward) - world.HeightAt(pos - forward)) * 0.5f;
+        Grade = (world.SurfaceAt(pos + forward) - world.SurfaceAt(pos - forward)) * 0.5f;
         Pressure = weight / _contactArea / 1000f;
         var (cx, cz) = world.WorldToCell(pos);
         var (ground, moisture) = world.InBounds(cx, cz) && world.CellIndex(cx, cz) is var i

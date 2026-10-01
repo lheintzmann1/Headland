@@ -126,6 +126,17 @@ public sealed class FillTypeDef
     public string[] Categories { get; set; } = [];
     /// <summary>What a tedder turns it into, lying in windrows (FS: the tedder's fill type converter): grass into hay.</summary>
     public FillConversionDef? Tedded { get; set; }
+    /// <summary>How it lies in a heap on the ground (FS: its density map height type); none: it can't be tipped there.</summary>
+    public HeapDef? Heap { get; set; }
+}
+
+/// <summary>How a fill type lies in a heap (FS: a density map height type): its slope and how much a cubic meter holds.</summary>
+public sealed class HeapDef
+{
+    /// <summary>The steepest its sides stand (FS: maxSurfaceAngle), what slides down past it.</summary>
+    public float AngleDeg { get; set; } = 26f;
+    /// <summary>Units in a cubic meter of the heap: 1000 for a fill type counted in liters.</summary>
+    public float PerCubicMeter { get; set; } = 1000f;
 }
 
 /// <summary>A fill type turned into another: <see cref="Factor"/> units of <see cref="FillType"/> for each unit.</summary>
