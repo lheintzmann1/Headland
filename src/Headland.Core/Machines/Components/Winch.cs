@@ -37,11 +37,17 @@ public sealed class WinchSave
     public float Target { get; set; }
 }
 
-public sealed class Winch(Machine machine, WinchDef def) : MachineComponent<WinchDef, WinchSave>(machine, def)
+public sealed class Winch(Machine machine, WinchDef def) : MachineComponent<WinchDef, WinchSave>(machine, def), IReadoutSource
 {
     /// <summary>Rope paid out, and the length it's heading for.</summary>
     public float Length { get; private set; } = def.MinLength;
     public float Target { get; private set; } = def.MinLength;
+
+    /// <summary>The rope paid out, once it is.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Length > Def.MinLength + 0.1f) yield return new Status($"Rope {Length:0.0} m", Tone.Dim);
+    }
 
     /// <summary>Reels the rope out to <paramref name="length"/> (or in), within its limits.</summary>
     public void ReelTo(float length) => Target = Math.Clamp(length, Def.MinLength, Def.MaxLength);

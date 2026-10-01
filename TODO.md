@@ -249,8 +249,8 @@ its docs and tests in the same change; no fallback is kept for later.
 - [x] Typed machine conditions (out of seed, tank full, wrong header, underpowered) from the components
       (`Machine.Conditions`) instead of `Machine.Status` strings: a helper stops for those that stop the work, and
       the HUD lists them.
-- [ ] The HUD's vehicle panel from the components (each gives its state) instead of the special cases in
-      `Hud.UpdateVehicle` (threshing, seed crop, pipe out); with the HUD redesign.
+- [x] The HUD's vehicle panel from the components (each gives its state: gauges and states) instead of the special cases
+      in `Hud.UpdateVehicle` (threshing, seed crop, pipe out); with the HUD redesign.
 - [ ] Format-1 saves: drop `SaveGame.MachinesToComponents` and the `machines-format1.json` fixture once 0.7
       saves are no longer supported; decide and document how many versions back saves load.
 
@@ -364,7 +364,8 @@ in-game menu (see Controls).
 - [x] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
       layers for crop, growth stage, soil, moisture; click to set a waypoint.
 - [x] Minimap in the HUD with POIs and vehicles: small, large or off (FS `TOGGLE_MAP_SIZE`), turned with the camera.
-- [ ] HUD redesign on the theme: vehicle panel with speed, fuel, condition and fill levels.
+- [x] HUD redesign on the theme, laid out as FS's: key hints top left, date, weather and money top right, minimap
+      bottom left, the vehicle panel bottom right with speed, engine load, fuel, condition and fill levels as gauges.
 - [ ] Prices tab (where each crop sells best), field and farm statistics, helper list.
 - [ ] Translatable strings (Godot `tr()`), English and French.
 

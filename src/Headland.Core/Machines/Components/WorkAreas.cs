@@ -102,7 +102,7 @@ public sealed class WorkAreasSave
     public List<float[]?> Poses { get; set; } = [];
 }
 
-public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable, IConditionSource, IActionSource
+public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, ISwitchable, IConditionSource, IActionSource, IReadoutSource
 {
     private readonly List<MachineCondition> _conditions = [];
 
@@ -131,6 +131,13 @@ public sealed class WorkAreas : MachineComponent<WorkAreasDef, WorkAreasSave>, I
     public bool Sows => Def.Areas.Any(a => a.Work.Sows);
     /// <summary>Seeders: the crop sown, as an index into <see cref="ContentDatabase.Crops"/>.</summary>
     public int Crop { get; set; }
+
+    /// <summary>On or off, when it works turned on; what a seeder sows.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (CanTurnOn) yield return On ? new Status("On", Tone.Good) : new Status("Off", Tone.Dim);
+        if (Sows) yield return new Status($"Sows {sim.Content.Crops[Crop].Name.ToLowerInvariant()}");
+    }
 
     /// <summary>The turn-on key when it must be on to work; a seeder's seed key.</summary>
     public void AddActions(ActionList actions, Simulation sim)

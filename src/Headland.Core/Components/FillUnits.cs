@@ -106,11 +106,24 @@ public sealed class FillUnitsSave
     public List<FillUnitSave> Units { get; set; } = [];
 }
 
-public sealed class FillUnits(Entity owner, FillUnitsDef def) : Component<FillUnitsDef, FillUnitsSave>(owner, def)
+public sealed class FillUnits(Entity owner, FillUnitsDef def) : Component<FillUnitsDef, FillUnitsSave>(owner, def), IReadoutSource
 {
     public IReadOnlyList<FillUnit> Units { get; } = def.Units.Select(u => new FillUnit(u)).ToArray();
 
     public FillUnit? Unit(string? id) => id == null ? null : Units.FirstOrDefault(u => u.Def.Id == id);
+
+    /// <summary>The fill level of each unit (FS: the fill level bars), but a motor's fuel tank, which its fuel gauge shows.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        var fuel = Owner.Get<Machines.Components.Motor>()?.FuelTank;
+        foreach (var u in Units)
+        {
+            if (u == fuel) continue;
+            var ft = u.FillType != null ? sim.Content.FillTypes[u.FillType] : null;
+            var unit = ft?.Unit ?? sim.Content.FillTypes[u.Def.FillTypes[0]].Unit;
+            yield return new Gauge("fill", ft?.Name ?? "Empty", u.Fraction, $"{u.Level:N0} / {u.Capacity:N0} {unit}", u.IsEmpty ? Tone.Dim : Tone.Normal);
+        }
+    }
 
     // By fill type, across the units: a silo's bins, a production's stock.
 

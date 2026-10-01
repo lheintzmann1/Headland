@@ -41,7 +41,7 @@ public sealed class ForkDef : MachineComponentDef
     internal override Component Create(Machine machine) => new Fork(machine, this);
 }
 
-public sealed class Fork(Machine machine, ForkDef def) : MachineComponent<ForkDef>(machine, def), IActionSource, IObjectHolder
+public sealed class Fork(Machine machine, ForkDef def) : MachineComponent<ForkDef>(machine, def), IActionSource, IObjectHolder, IReadoutSource
 {
     /// <summary>How near its tines must be to where they go into an object to take it.</summary>
     public const float Reach = 0.25f;
@@ -60,6 +60,12 @@ public sealed class Fork(Machine machine, ForkDef def) : MachineComponent<ForkDe
     /// <summary>Whether its tines go into <paramref name="o"/> where they are: at its height, its middle among them.</summary>
     private bool AtTines(WorldObject o, float tines) =>
         Def.Area.On(Machine).Contains(o.Position) && MathF.Abs(o.Elevation + Def.Into - tines) <= Reach;
+
+    /// <summary>What it carries.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (_held.Count > 0) yield return new Status($"Carrying {(_held.Count == 1 ? "a" : _held.Count)} {_held[0].o.Def.Name.ToLowerInvariant()}{(_held.Count == 1 ? "" : "s")}", Tone.Busy);
+    }
 
     /// <summary>The unload key, and the mouse's action on the tool, set down what it carries.</summary>
     public void AddActions(ActionList actions, Simulation sim)

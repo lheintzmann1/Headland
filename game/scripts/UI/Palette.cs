@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using Headland.Core.Weather;
 
 namespace Headland.Game.UI;
@@ -18,6 +19,17 @@ public static class Palette
     public const string Contract = "#b9a2dc";
     /// <summary>The waypoint set on the map: its flag.</summary>
     public const string Waypoint = "#e8707a";
+
+    /// <summary>The color of a readout's tone, or null to keep the text's own.</summary>
+    public static string? Of(Tone tone) => tone switch
+    {
+        Tone.Dim => Dim,
+        Tone.Good => Good,
+        Tone.Busy => Busy,
+        Tone.Info => Info,
+        Tone.Warning => Warning,
+        _ => null,
+    };
 
     public static string Weather(WeatherCondition c) => c switch
     {

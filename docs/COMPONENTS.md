@@ -171,6 +171,16 @@ trigger. Each is saved with where it lies, or the machine carrying it.
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher`, `baleLoader` and `saw` in the
 vehicle's chain; the lower key lowers every lowerable `attachable`.
 
+### The vehicle panel
+
+The HUD's vehicle panel (FS: the speed meter and fill levels) shows the vehicle and each machine of its chain as their
+components report them: a `motor` its speed, the engine's load and the fuel left, `fillUnits` each unit's fill level, a
+`baleLoader` its bales, a `wearable` the condition and a `washable` the dirt, as gauges; and the others what they're
+doing in a word or two: lowered or raised (`attachable`), folded (`animatedParts`), on or off and the seed sown
+(`workAreas`), threshing (`thresher`), pipe out (`pipe`), tipping and the side (`tipper`), the cover open, the marker
+down, the lights on, the wheels slipping, a helper at work (`drivable`), what a `fork` carries. What keeps a machine
+from working (out of seed, a full tank) is listed under it.
+
 ### Key hints
 
 What a component switches on a key (FS: its action events), the key hints and the F1 help say in its words, naming its

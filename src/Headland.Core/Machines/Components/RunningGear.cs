@@ -272,7 +272,7 @@ public sealed class RunningGearSave
     public string? Mode { get; set; }
 }
 
-public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineComponent<RunningGearDef, RunningGearSave>(machine, def), IActionSource
+public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineComponent<RunningGearDef, RunningGearSave>(machine, def), IActionSource, IReadoutSource
 {
     /// <summary>Skid steer turns on the spot up to this speed (m/s), less the faster it goes.</summary>
     private const float SpinSpeed = 1f;
@@ -326,6 +326,17 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
     public float Grade { get; private set; }
     /// <summary>The share of its driven wheels' turning lost to slipping (0..1).</summary>
     public float Slip { get; internal set; }
+
+    /// <summary>The driven wheels slipping, and a steering mode other than the normal one.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Slip > 0.05f) yield return new Status($"Slip {Slip * 100f:0}%", Slip > 0.15f ? Tone.Warning : Tone.Dim);
+        if (Mode != SteeringMode.Normal)
+        {
+            var name = MachineSystem.SteeringName(Mode);
+            yield return new Status($"{char.ToUpperInvariant(name[0])}{name[1..]} steering", Tone.Info);
+        }
+    }
 
     /// <summary>From the turning center to the farthest steered axle, going forward or backward in the current mode.</summary>
     public float WheelbaseFor(bool reverse) => Def.Wheelbase(Mode, reverse);

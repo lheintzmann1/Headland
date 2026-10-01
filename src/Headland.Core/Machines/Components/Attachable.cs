@@ -53,7 +53,7 @@ public sealed class AttachableSave
     public float LowerAnim { get; set; }
 }
 
-public sealed class Attachable(Machine machine, AttachableDef def) : MachineComponent<AttachableDef, AttachableSave>(machine, def), IActionSource
+public sealed class Attachable(Machine machine, AttachableDef def) : MachineComponent<AttachableDef, AttachableSave>(machine, def), IActionSource, IReadoutSource
 {
     /// <summary>Lowered and raised in about 0.6 s: the time a helper lowers ahead of the field.</summary>
     private const float LowerRate = 1.5f;
@@ -97,6 +97,12 @@ public sealed class Attachable(Machine machine, AttachableDef def) : MachineComp
             Lowered = lower;
             return null;
         });
+    }
+
+    /// <summary>Lowered or raised, once hitched.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Def.Lowerable && Machine.Parent != null) yield return Lowered ? new Status("Lowered", Tone.Good) : new Status("Raised", Tone.Dim);
     }
 
     internal override void OnHitched()

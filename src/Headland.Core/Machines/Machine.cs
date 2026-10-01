@@ -92,6 +92,21 @@ public sealed class Machine : Entity
     public string? ParentJoint { get; set; }
     public Dictionary<string, Machine> Attached { get; } = new();
 
+    /// <summary>
+    /// What the HUD's vehicle panel shows of it (FS: the speed meter, the fill levels, the specializations' states): its
+    /// components' readouts, then a load it takes on at a silo, the work it did and its lease.
+    /// </summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        foreach (var source in Components.OfType<IReadoutSource>())
+        foreach (var r in source.Readouts(sim))
+            yield return r;
+        if (sim.Pois.LoadingFillType(this) is { } loading) yield return new Status($"Loading {sim.Content.FillTypes[loading].Name.ToLowerInvariant()}", Tone.Busy);
+        if (WorkedHa > 0.001f) yield return new Status($"{WorkedHa:0.00} ha worked", Tone.Dim);
+        if (LeaseContract != 0) yield return new Status("Leased for a contract", Tone.Info);
+        else if (Lease is { } lease) yield return new Status($"Leased, ${lease.PerHour:N0}/h", Tone.Info);
+    }
+
     /// <summary>What keeps it from working as it should (out of seed, a full tank…), as its components report it.</summary>
     public IEnumerable<MachineCondition> Conditions => Components.OfType<IConditionSource>().SelectMany(c => c.Conditions);
 

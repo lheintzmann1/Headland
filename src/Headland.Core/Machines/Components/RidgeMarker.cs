@@ -68,7 +68,7 @@ public sealed class RidgeMarkerSave
     public int State { get; set; }
 }
 
-public sealed class RidgeMarker(Machine machine, RidgeMarkerDef def) : MachineComponent<RidgeMarkerDef, RidgeMarkerSave>(machine, def), IActionSource
+public sealed class RidgeMarker(Machine machine, RidgeMarkerDef def) : MachineComponent<RidgeMarkerDef, RidgeMarkerSave>(machine, def), IActionSource, IReadoutSource
 {
     /// <summary>Its disc down to draw from (FS: minWorkLimit).</summary>
     private const float DownFrom = 0.99f;
@@ -78,6 +78,11 @@ public sealed class RidgeMarker(Machine machine, RidgeMarkerDef def) : MachineCo
 
     /// <summary>0: all up; else the marker down, from 1.</summary>
     public int State { get; set; }
+
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Down is { } marker) yield return new Status($"Marker {marker.Name}", Tone.Info);
+    }
 
     /// <summary>The marker down, if one is.</summary>
     public RidgeMarkerArmDef? Down => State > 0 ? Def.Markers[State - 1] : null;

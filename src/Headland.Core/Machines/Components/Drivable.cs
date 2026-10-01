@@ -16,7 +16,7 @@ public sealed class DrivableDef : MachineComponentDef
     internal override Component Create(Machine machine) => new Drivable(machine, this);
 }
 
-public sealed class Drivable(Machine machine, DrivableDef def) : MachineComponent<DrivableDef>(machine, def)
+public sealed class Drivable(Machine machine, DrivableDef def) : MachineComponent<DrivableDef>(machine, def), IReadoutSource
 {
     private Machine? _selected;
 
@@ -87,6 +87,13 @@ public sealed class Drivable(Machine machine, DrivableDef def) : MachineComponen
         if (input.ToolY == 0f && input.ToolX == 0f) return;
         foreach (var m in ToolScope)
             m.Get<CraneArm>()?.Drive((GroupOf(m) - 1 + input.ToolGroupOffset) % GroupsOf(m) + 1, input.ToolY, input.ToolX, dt);
+    }
+
+    /// <summary>The helper driving it: the field, the lane it's on, and its wages so far.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Controller is FieldWorkController w)
+            yield return new Status($"Helper {w.Number} on {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount}, ${w.Wages:N0} in wages", Tone.Info);
     }
 
     /// <summary>What the driver asks for this tick.</summary>

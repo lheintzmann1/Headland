@@ -1,3 +1,4 @@
+using Headland.Core.Components;
 using System.Text.Json.Serialization;
 using Headland.Core.Content;
 using Headland.Core.Input;
@@ -113,7 +114,7 @@ public sealed class LightsSave
 /// shine as it slows down and the reverse lights as it backs up, the cab lights while someone drives, dimmed by day.
 /// An implement on a front joint switches it to its top lights. The implements hanging on it follow.
 /// </summary>
-public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
+public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource, IReadoutSource
 {
     private readonly bool[] _lit;
     private readonly float[] _level;
@@ -130,6 +131,14 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource
     public HashSet<string> On { get; } = [];
     public bool Beacons { get; set; }
     public TurnSignal Signal { get; set; }
+
+    /// <summary>The lights the driver switched on: lamps, beacons, a turn signal or the hazards.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (On.Count > 0) yield return new Status("Lights", Tone.Info);
+        if (Beacons) yield return new Status("Beacons", Tone.Info);
+        if (Signal != TurnSignal.Off) yield return new Status(Signal switch { TurnSignal.Left => "Signal left", TurnSignal.Right => "Signal right", _ => "Hazards" }, Tone.Info);
+    }
 
     /// <summary>Whether lamp <paramref name="index"/> (of the def's lamps) shines, as of the last tick.</summary>
     public bool Lit(int index) => _lit[index];

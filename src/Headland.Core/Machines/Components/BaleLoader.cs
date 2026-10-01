@@ -47,7 +47,7 @@ public sealed class BaleLoaderSave
     public bool On { get; set; }
 }
 
-public sealed class BaleLoader : MachineComponent<BaleLoaderDef, BaleLoaderSave>, ISwitchable, IActionSource, IObjectHolder
+public sealed class BaleLoader : MachineComponent<BaleLoaderDef, BaleLoaderSave>, ISwitchable, IActionSource, IObjectHolder, IReadoutSource
 {
     /// <summary>Faster than this, it won't set its bales down.</summary>
     private const float UnloadSpeed = 0.5f;
@@ -64,6 +64,13 @@ public sealed class BaleLoader : MachineComponent<BaleLoaderDef, BaleLoaderSave>
     public IReadOnlyList<WorldObject?> Slots => _slots;
     public int Count => _slots.Count(s => s != null);
     public int Capacity => _slots.Length;
+
+    /// <summary>The bales on its bed, and whether it picks more up.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        yield return new Gauge("bales", "Bales", (float)Count / Capacity, $"{Count} / {Capacity}", Count == 0 ? Tone.Dim : Tone.Normal);
+        yield return On ? new Status("Loading bales", Tone.Good) : new Status("Off", Tone.Dim);
+    }
 
     /// <summary>The turn-on key starts and stops picking bales up; the unload key sets them down.</summary>
     public void AddActions(ActionList actions, Simulation sim)

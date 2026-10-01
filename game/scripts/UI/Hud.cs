@@ -1,31 +1,27 @@
 using System.Text;
-using Headland.Game.Common;
-using Headland.Core.Components;
 using Headland.Core;
-using Headland.Core.Contracts;
 using Headland.Core.Input;
-using Headland.Core.Machines;
-using Headland.Core.Machines.Components;
-using Headland.Core.Ownership;
 using Headland.Core.Time;
 using Headland.Core.Weather;
-using Headland.Core.World;
 using Godot;
 using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game.UI;
 
 /// <summary>
-/// Heads-up display: clock/weather/forecast, contracts under way, money, vehicle panel, DF-style cell inspector,
-/// context key prompts, notifications and the debug overlay. Built from <see cref="Widgets"/>; styled by the theme.
+/// Heads-up display, laid out as Farming Simulator's: the keys that do something now down the top left (with the debug
+/// overlay under them), the date, weather and money top right with the forecast, the contracts under way and the cell
+/// inspector under them, notifications top center, the minimap bottom left and the vehicle panel bottom right (its
+/// gauges and states from the vehicle's components). Built from <see cref="Widgets"/>; styled by the theme.
 /// </summary>
 public partial class Hud : CanvasLayer
 {
     private RichTextLabel _clock = null!;
+    private RichTextLabel _forecast = null!;
     private RichTextLabel _contracts = null!;
     private PanelContainer _contractsPanel = null!;
     private Label _money = null!;
-    private RichTextLabel _vehicle = null!;
+    private VehiclePanel _vehicle = null!;
     private PanelContainer _vehiclePanel = null!;
     private RichTextLabel _inspect = null!;
     private PanelContainer _inspectPanel = null!;
@@ -58,31 +54,46 @@ public partial class Hud : CanvasLayer
         root.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         AddChild(root);
 
-        // The clock, the contracts under way under it, and the debug overlay below them.
-        var topLeft = Widgets.Anchor(new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore }, Control.LayoutPreset.TopLeft, new Vector2(12, 12));
-        root.AddChild(topLeft);
-        _clock = Widgets.Rich(360);
-        topLeft.AddChild(Widgets.Panel(_clock));
-        _contracts = Widgets.Rich(360);
-        _contractsPanel = Widgets.Panel(_contracts);
-        topLeft.AddChild(_contractsPanel);
+        // Top left: the keys that do something now (FS: the input help), the debug overlay under them.
+        var left = Widgets.Anchor(new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore }, Control.LayoutPreset.TopLeft, new Vector2(12, 12));
+        root.AddChild(left);
+        _prompt = Widgets.Rich(300, "PromptText");
+        var promptPanel = Widgets.Panel(_prompt);
+        promptPanel.Name = "Prompt";
+        left.AddChild(promptPanel);
+        _debug = Widgets.Label(variation: "DebugLabel");
+        _debug.Visible = false;
+        left.AddChild(_debug);
 
+        // Top right: the date, the weather and the money (FS: the game info), the forecast; the contracts under way and
+        // the inspector under them.
+        var right = Widgets.Anchor(new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore }, Control.LayoutPreset.TopRight, new Vector2(-12, 12));
+        right.CustomMinimumSize = new Vector2(380, 0);
+        root.AddChild(right);
+        var info = new VBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        var top = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _clock = Widgets.Rich(0);
+        _clock.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+        top.AddChild(_clock);
         _money = Widgets.Label(variation: "MoneyLabel");
         _money.HorizontalAlignment = HorizontalAlignment.Right;
-        root.AddChild(Widgets.Anchor(Widgets.Panel(_money), Control.LayoutPreset.TopRight, new Vector2(-12, 12)));
+        _money.SizeFlagsVertical = Control.SizeFlags.ShrinkCenter;
+        top.AddChild(_money);
+        info.AddChild(top);
+        _forecast = Widgets.Rich(0);
+        info.AddChild(_forecast);
+        right.AddChild(Widgets.Panel(info));
+        _contracts = Widgets.Rich(0);
+        _contractsPanel = Widgets.Panel(_contracts);
+        right.AddChild(_contractsPanel);
+        _inspect = Widgets.Rich(0);
+        _inspectPanel = Widgets.Panel(_inspect);
+        right.AddChild(_inspectPanel);
 
-        _vehicle = Widgets.Rich(380);
+        // Bottom right: the vehicle's gauges and states (FS: the speed meter and fill levels).
+        _vehicle = new VehiclePanel { Sim = Sim, Name = "Vehicle" };
         _vehiclePanel = Widgets.Anchor(Widgets.Panel(_vehicle), Control.LayoutPreset.BottomRight, new Vector2(-12, -12));
         root.AddChild(_vehiclePanel);
-
-        _inspect = Widgets.Rich(360);
-        _inspectPanel = Widgets.Anchor(Widgets.Panel(_inspect), Control.LayoutPreset.TopRight, new Vector2(-12, 70));
-        root.AddChild(_inspectPanel);
-
-        _prompt = Widgets.Rich(420, "PromptText");
-        var promptPanel = Widgets.Anchor(Widgets.Panel(_prompt), Control.LayoutPreset.CenterBottom, new Vector2(0, -12));
-        promptPanel.Name = "Prompt";
-        root.AddChild(promptPanel);
 
         // The minimap (FS: the in-game map), bottom left: the farmer in the middle, up the way the camera looks.
         _minimap = new MapView { Sim = Sim, Minimap = true, Off = [MapFilter.Farmland], Name = "Minimap" };
@@ -96,10 +107,6 @@ public partial class Hud : CanvasLayer
         _notes.Position = new Vector2(-260, 14);
         _notes.CustomMinimumSize = new Vector2(520, 0);
         root.AddChild(_notes);
-
-        _debug = Widgets.Label(variation: "DebugLabel");
-        _debug.Visible = false;
-        topLeft.AddChild(_debug);
     }
 
     /// <summary>The minimap's size: small, large or off (<see cref="Game.Common.UserSettings.MinimapSizes"/>).</summary>
@@ -151,7 +158,8 @@ public partial class Hud : CanvasLayer
         sb.Append($"{Icon(w.Condition)} {w.Condition}  {w.Temperature:0}°C");
         if (w.Wind > 0.55f) sb.Append("  · windy");
         if (w.SnowCover > 0.05f) sb.Append($"  · snow {w.SnowCover * 100:0}%");
-        sb.Append('\n');
+        _clock.Text = sb.ToString();
+        sb.Clear();
         sb.Append($"[color={Palette.Dim}]");
         foreach (var d in w.Forecast(c.DayIndex + 1, 3))
         {
@@ -163,7 +171,7 @@ public partial class Hud : CanvasLayer
             sb.Append("   ");
         }
         sb.Append("[/color]");
-        _clock.Text = sb.ToString();
+        _forecast.Text = sb.ToString().TrimEnd();
     }
 
     /// <summary>The farm's contracts under way: what, how far, and how long is left.</summary>
@@ -189,72 +197,14 @@ public partial class Hud : CanvasLayer
     {
         var v = Sim.Player.Vehicle;
         _vehiclePanel.Visible = v != null;
-        if (v == null) return;
-        var sb = new StringBuilder();
-        var leased = v.LeaseContract != 0 ? Widgets.Colored(" leased", Palette.Contract)
-            : v.Lease is { } lease ? Widgets.Colored($" leased, ${lease.PerHour:N0}/h", Palette.Contract) : "";
-        // What the tool keys act on is in the key color: the selected implement, or the vehicle for the whole chain.
-        var selected = v.Get<Drivable>()?.Selected;
-        string Named(Machine m) => m == selected || m == v && selected == null && v.Attached.Count > 0 ? Widgets.Colored(m.Def.Name, Palette.Key) : m.Def.Name;
-        sb.Append($"[b]{Named(v)}[/b]{leased}   {Mathf.Abs(v.Speed) * 3.6f:0} km/h{(v.Speed < -0.05f ? " (R)" : "")}");
-        if (v.Get<Motor>() is { Running: true } motor) sb.Append(Widgets.Colored($"   {motor.FuelPerHour:0.0} L/h", Palette.Dim));
-        if (v.Get<RunningGear>() is { Slip: > 0.05f } gear) sb.Append("   " + Widgets.Colored($"slip {gear.Slip * 100f:0}%", gear.Slip > 0.15f ? Palette.Warning : Palette.Dim));
-        if (v.Get<Thresher>() is { } thresher) sb.Append("   " + (thresher.On ? Widgets.Colored("threshing", Palette.Good) : Widgets.Colored("off", Palette.Dim)));
-        if (v.Get<Lights>() is { } lights)
-        {
-            var lit = new List<string>();
-            if (lights.On.Count > 0) lit.Add("lights");
-            if (lights.Beacons) lit.Add("beacons");
-            lit.Add(lights.Signal switch
-            {
-                TurnSignal.Left => "signal left",
-                TurnSignal.Right => "signal right",
-                TurnSignal.Hazards => "hazards",
-                _ => "",
-            });
-            if (lit.Any(l => l.Length > 0)) sb.Append("   " + Widgets.Colored(string.Join(" · ", lit.Where(l => l.Length > 0)), Palette.Info));
-        }
-        sb.Append('\n');
-        if (v.Get<Drivable>()?.Controller is FieldWorkController w)
-            sb.Append($"  {Widgets.Colored($"Helper {w.Number} working {w.Field.Label}: lane {Math.Min(w.LanesDone + 1, w.Path.LaneCount)}/{w.Path.LaneCount} · ${w.Wages:N0} in wages", Palette.Info)}\n");
-        foreach (var m in v.Chain())
-        {
-            if (m != v) sb.Append(m == selected ? $"  [b]{Named(m)}[/b]" : $"  {Named(m)}");
-            var bits = new List<string>();
-            if (m.Get<AnimatedParts>() is { CanFold: true } parts && !parts.Unfolded) bits.Add(parts.Folded ? "folded" : "unfolding");
-            if (m != v && m.Get<Attachable>() is { Def.Lowerable: true } hitch) bits.Add(hitch.Lowered ? Widgets.Colored("lowered", Palette.Good) : "raised");
-            foreach (var s in m.Components.OfType<ISwitchable>().Where(s => s.CanTurnOn && s is not Thresher))
-                bits.Add(s.On ? Widgets.Colored("on", Palette.Good) : "off");
-            if (m.Get<WorkAreas>() is { Sows: true } seeder) bits.Add(Sim.Content.Crops[seeder.Crop].Name);
-            foreach (var u in m.FillUnits)
-            {
-                var ft = u.FillType != null ? Sim.Content.FillTypes[u.FillType] : null;
-                var unit = ft?.Unit ?? Sim.Content.FillTypes[u.Def.FillTypes[0]].Unit;
-                bits.Add($"{ft?.Name ?? "empty"} {u.Level:N0}/{u.Capacity:N0} {unit}");
-            }
-            if (m.Get<BaleLoader>() is { } loader) bits.Add($"bales {loader.Count}/{loader.Capacity}");
-            if (m.Get<Fork>()?.Held is [var carried, ..]) bits.Add($"carrying a {carried.Def.Name.ToLowerInvariant()}");
-            if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
-            if (m.Get<Wearable>() is { } wear)
-                bits.Add(Widgets.Colored($"condition {wear.Condition * 100f:0}%", wear.Condition < Wearable.WornBelow ? Palette.Warning : Palette.Dim));
-            if (m.Dirt >= 0.2f) bits.Add(Widgets.Colored($"dirt {m.Dirt * 100f:0}%", Palette.Dim));
-            if (m.Get<Cover>() is { State: > 0 }) bits.Add("cover open");
-            if (m.Get<RidgeMarker>()?.Down is { } marker) bits.Add($"marker {marker.Name}");
-            if (m.Get<Tipper>() is { Tipping: true }) bits.Add(Widgets.Colored("tipping", Palette.Busy));
-            if (Sim.Pois.LoadingFillType(m) is { } loading) bits.Add(Widgets.Colored($"loading {Sim.Content.FillTypes[loading].Name.ToLowerInvariant()}", Palette.Busy));
-            if (m.Get<Pipe>() is { Out: true }) bits.Add(Widgets.Colored("pipe out", Palette.Busy));
-            if (bits.Count > 0) sb.Append((m == v ? "  " : " — ") + string.Join(" · ", bits));
-            if (m != v || bits.Count > 0) sb.Append('\n');
-            foreach (var c in m.Conditions) sb.Append($"  {Widgets.Warning(c.Text)}\n");
-        }
-        _vehicle.Text = sb.ToString().TrimEnd('\n');
+        if (v != null) _vehicle.Refresh(v);
     }
 
     /// <summary>The keys that do something now, with what they do (<see cref="Simulation.Offers"/>).</summary>
     private void UpdatePrompt()
     {
         var hints = Sim.Offers().Offers.Where(o => o.Hinted).Select(o => o.Action == InputActions.Use ? UseHint() : $"{Widgets.Key(o.Action)} {o.Label}").ToList();
-        _prompt.Text = string.Join("    ", hints);
+        _prompt.Text = string.Join("\n", hints);
         _prompt.GetParent<Control>().Visible = hints.Count > 0;
     }
 

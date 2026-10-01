@@ -63,7 +63,7 @@ public sealed class TipperSave
     public string? Side { get; set; }
 }
 
-public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<TipperDef, TipperSave>(machine, def), IActionSource
+public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<TipperDef, TipperSave>(machine, def), IActionSource, IReadoutSource
 {
     /// <summary>Up in about 3 s; the load starts to slide at 60%.</summary>
     private const float TipRate = 0.35f;
@@ -76,6 +76,13 @@ public sealed class Tipper(Machine machine, TipperDef def) : MachineComponent<Ti
 
     /// <summary>The side it tips to, among its def's (0 with none).</summary>
     public int SideIndex { get; set; }
+
+    /// <summary>Tipping, and the side it tips to when it has several.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Tipping) yield return new Status("Tipping", Tone.Busy);
+        if (Def.Sides.Length > 1 && Side is { } side) yield return new Status($"Tips {side.Name}", Tone.Dim);
+    }
 
     /// <summary>The side it tips to, when its def gives sides.</summary>
     public TipSideDef? Side => Def.Sides.Length > 0 ? Def.Sides[SideIndex] : null;

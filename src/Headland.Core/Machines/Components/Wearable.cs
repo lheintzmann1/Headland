@@ -45,7 +45,7 @@ public sealed class WearableSave
     public double Paint { get; set; } = 1.0;
 }
 
-public sealed class Wearable(Machine machine, WearableDef def) : MachineComponent<WearableDef, WearableSave>(machine, def), IConditionSource
+public sealed class Wearable(Machine machine, WearableDef def) : MachineComponent<WearableDef, WearableSave>(machine, def), IConditionSource, IReadoutSource
 {
     /// <summary>Below this condition the machine is worn: the farmer is told to have it repaired.</summary>
     public const float WornBelow = 0.2f;
@@ -79,6 +79,10 @@ public sealed class Wearable(Machine machine, WearableDef def) : MachineComponen
     public float SpeedFactor => 1f - Def.SpeedLoss * Wear;
     /// <summary>What it burns and spreads, relative to a new one.</summary>
     public float UsageFactor => 1f + Def.UsageIncrease * Wear;
+
+    /// <summary>Its condition (FS: the damage gauge), worn below <see cref="WornBelow"/>.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim) =>
+        [new Gauge("condition", "Condition", Condition, $"{Condition * 100f:0}%", Condition < WornBelow ? Tone.Warning : Tone.Normal)];
 
     public IEnumerable<MachineCondition> Conditions => Condition < WornBelow ? [new Worn(Condition)] : [];
 

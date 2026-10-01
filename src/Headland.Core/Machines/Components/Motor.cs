@@ -40,7 +40,7 @@ public sealed class MotorSave
     public float Unburned { get; set; }
 }
 
-public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<MotorDef, MotorSave>(machine, def), IConditionSource
+public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<MotorDef, MotorSave>(machine, def), IConditionSource, IReadoutSource
 {
     /// <summary>An idling engine burns this share of what it burns at full power.</summary>
     private const float IdleShare = 0.08f;
@@ -94,6 +94,19 @@ public sealed class Motor(Machine machine, MotorDef def) : MachineComponent<Moto
 
     /// <summary>The power it has: its own, less what wear took (<see cref="Wearable"/>).</summary>
     public float PowerHp => Def.PowerHp * Machine.PowerFactor();
+
+    /// <summary>The speed meter (FS): the speed, the engine's load while it runs, and the fuel left.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        var speed = MathF.Abs(Machine.Speed);
+        var reverse = Machine.Speed < -0.05f;
+        yield return new Gauge("speed", "Speed", speed / (reverse ? MaxReverse : MaxSpeed), $"{speed * 3.6f:0} km/h{(reverse ? " R" : "")}");
+        if (Running) yield return new Gauge("load", "Engine", Load, $"{Load * 100f:0}%", Load > 0.97f ? Tone.Warning : Tone.Normal);
+        if (FuelTank is { } tank)
+            yield return new Gauge("fuel", "Fuel", tank.Fraction, Running ? $"{tank.Level:N0} L, {FuelPerHour:0.0} L/h" : $"{tank.Level:N0} L",
+                tank.Fraction < LowFuel ? Tone.Warning : Tone.Normal);
+        if (!Running) yield return new Status(OutOfFuel ? "Out of fuel" : "Engine off", OutOfFuel ? Tone.Warning : Tone.Dim);
+    }
 
     public IEnumerable<MachineCondition> Conditions
     {

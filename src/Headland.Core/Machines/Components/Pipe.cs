@@ -38,7 +38,7 @@ public sealed class PipeSave
     public float Anim { get; set; }
 }
 
-public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def), IActionSource, IConditionSource
+public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDef, PipeSave>(machine, def), IActionSource, IConditionSource, IReadoutSource
 {
     /// <summary>Unfolded in 2.5 s.</summary>
     private const float FoldRate = 0.4f;
@@ -53,6 +53,11 @@ public sealed class Pipe(Machine machine, PipeDef def) : MachineComponent<PipeDe
     public Machine? Covered { get; private set; }
 
     public IEnumerable<MachineCondition> Conditions => Covered is { } m ? [new CoverClosed(m.Def.Name)] : [];
+
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Out) yield return new Status(Flowing ? "Unloading" : "Pipe out", Tone.Busy);
+    }
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
     public Vector2 Outlet => Machine.LocalToWorld(Def.X, Def.Z);

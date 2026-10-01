@@ -144,7 +144,7 @@ public sealed class AnimatedPartsSave
     public Dictionary<string, float[]> Parts { get; set; } = new();
 }
 
-public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSave>, IActionSource
+public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSave>, IActionSource, IReadoutSource
 {
     public AnimatedParts(Entity owner, AnimatedPartsDef def) : base(owner, def)
     {
@@ -155,6 +155,12 @@ public sealed class AnimatedParts : Component<AnimatedPartsDef, AnimatedPartsSav
     }
 
     public IReadOnlyList<AnimatedPart> Parts { get; }
+
+    /// <summary>Folded for the road, or on its way: it doesn't work until unfolded.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (CanFold && !Unfolded) yield return new Status(Folded ? "Folded" : "Unfolding", Tone.Dim);
+    }
 
     public AnimatedPart? Part(string id) => Parts.FirstOrDefault(p => p.Def.Id == id);
 

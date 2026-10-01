@@ -38,12 +38,14 @@ public sealed class ThresherSave
     public bool On { get; set; }
 }
 
-public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable, IConditionSource, IActionSource
+public sealed class Thresher(Machine machine, ThresherDef def) : MachineComponent<ThresherDef, ThresherSave>(machine, def), ISwitchable, IConditionSource, IActionSource, IReadoutSource
 {
     public bool CanTurnOn => true;
     public bool On { get; set; }
 
     public void AddActions(ActionList actions, Simulation sim) => actions.AddSwitch(this);
+
+    public IEnumerable<Readout> Readouts(Simulation sim) => [On ? new Status("Threshing", Tone.Good) : new Status("Thresher off", Tone.Dim)];
 
     public FillUnit Tank => Machine.Unit(Def.FillUnit)!;
 

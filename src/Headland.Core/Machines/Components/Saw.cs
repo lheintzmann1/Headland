@@ -38,8 +38,13 @@ public sealed class SawSave
     public bool On { get; set; }
 }
 
-public sealed class Saw(Machine machine, SawDef def) : MachineComponent<SawDef, SawSave>(machine, def), ISwitchable, IActionSource
+public sealed class Saw(Machine machine, SawDef def) : MachineComponent<SawDef, SawSave>(machine, def), ISwitchable, IActionSource, IReadoutSource
 {
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (On) yield return new Status("Saw running", Tone.Busy);
+    }
+
     public bool CanTurnOn => true;
     public bool On { get; set; }
 

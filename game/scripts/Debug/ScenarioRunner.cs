@@ -375,6 +375,7 @@ public partial class ScenarioRunner : Node
         var crane = arm.Get<CraneArm>()!;
         var spike = Ms.Spawn("bale_spike", yard, tractor.Heading);
         Ms.Attach(arm, "tool", spike);
+        Sim.Player.Enter(tractor);
         Game.FocusOverride = () => tractor.Footprint.Center;
         await Frames(5);
 

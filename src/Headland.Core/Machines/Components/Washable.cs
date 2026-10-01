@@ -33,7 +33,7 @@ public sealed class WashableSave
     public double Dirt { get; set; }
 }
 
-public sealed class Washable(Machine machine, WashableDef def) : MachineComponent<WashableDef, WashableSave>(machine, def)
+public sealed class Washable(Machine machine, WashableDef def) : MachineComponent<WashableDef, WashableSave>(machine, def), IReadoutSource
 {
     /// <summary>Below 1 km/h a machine stands: it gets no dirtier.</summary>
     private const float Standing = 1f / 3.6f;
@@ -48,6 +48,12 @@ public sealed class Washable(Machine machine, WashableDef def) : MachineComponen
     {
         get => (float)_dirt;
         set => _dirt = Math.Clamp(value, 0f, 1f);
+    }
+
+    /// <summary>How dirty it is, once that shows.</summary>
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (Dirt >= 0.2f) yield return new Gauge("dirt", "Dirt", Dirt, $"{Dirt * 100f:0}%", Tone.Dim);
     }
 
     /// <summary>How much faster than on a road it gets dirty now (FS: the dirt multiplier); 0 standing.</summary>

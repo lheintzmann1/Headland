@@ -103,6 +103,11 @@ Built with **Godot 4.7** and **C#**.
   moisture, and the parcels by owner (where land is bought). A click sets a waypoint, a flag on the map, until you get
   there. The minimap in the corner (Shift+M: small, large or off) shows what's around you, turned as the camera looks,
   the waypoint held at its edge.
+- **HUD.** Laid out as in Farming Simulator: the keys that do something now down the top left, the date, the weather,
+  the money and the forecast top right with the contracts under way and the inspector under them, the minimap bottom
+  left, and bottom right the vehicle you drive and what it pulls, each with its gauges (speed, engine load, fuel, fill
+  levels, bales, condition, dirt) and its states (lowered, turned on, threshing, pipe out, the seed it sows, a helper at
+  work), as its parts report them, and what keeps it from working.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, bales, soils, the climate, the map, the money
@@ -114,7 +119,7 @@ Built with **Godot 4.7** and **C#**.
 
 ## Controls
 
-Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The bar at the bottom shows the keys
+Keys follow their position on the keyboard, so AZERTY players get ZQSD for movement. The list at the top left shows the keys
 that do something where you are, in the words of the tool they work ("Lower cultivator", "Unfold boom", "Pipe out"), and
 F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
 (the map and the farmland, contracts, finances, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick

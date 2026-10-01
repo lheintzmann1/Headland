@@ -123,12 +123,17 @@ public sealed class CraneArmSave
     public Dictionary<string, float[]> Joints { get; set; } = new();
 }
 
-public sealed class CraneArm(Machine machine, CraneArmDef def) : MachineComponent<CraneArmDef, CraneArmSave>(machine, def), IActionSource
+public sealed class CraneArm(Machine machine, CraneArmDef def) : MachineComponent<CraneArmDef, CraneArmSave>(machine, def), IActionSource, IReadoutSource
 {
     public IReadOnlyList<CraneJoint> Joints { get; } = def.Joints.Select(j => new CraneJoint(j)).ToArray();
 
     /// <summary>The tool keys move its tip rather than each joint (<see cref="CraneArmDef.Ik"/>). The driver's choice: not saved.</summary>
     public bool TipControl { get; set; }
+
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (TipControl) yield return new Status("Tip control", Tone.Info);
+    }
 
     public CraneJoint? Joint(string id) => Joints.FirstOrDefault(j => j.Def.Id == id);
 

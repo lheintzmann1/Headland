@@ -62,7 +62,7 @@ public sealed class CoverSave
     public bool Auto { get; set; }
 }
 
-public sealed class Cover : MachineComponent<CoverDef, CoverSave>, IActionSource
+public sealed class Cover : MachineComponent<CoverDef, CoverSave>, IActionSource, IReadoutSource
 {
     /// <summary>At a fill trigger last tick: it reacts to going in and out.</summary>
     private bool _atTrigger;
@@ -82,6 +82,11 @@ public sealed class Cover : MachineComponent<CoverDef, CoverSave>, IActionSource
 
     /// <summary>The cover over <paramref name="unit"/>, from 1, or 0 when none covers it.</summary>
     public int CoverOf(FillUnit unit) => Array.FindIndex(Def.Covers, c => c.FillUnits.Contains(unit.Def.Id)) + 1;
+
+    public IEnumerable<Readout> Readouts(Simulation sim)
+    {
+        if (State > 0) yield return new Status("Cover open", Tone.Info);
+    }
 
     /// <summary>A closed cover keeps fill out of <paramref name="unit"/>.</summary>
     public bool Shuts(FillUnit unit) => CoverOf(unit) > 0 && !(State > 0 && Def.Covers[State - 1].FillUnits.Contains(unit.Def.Id));
