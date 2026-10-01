@@ -56,6 +56,13 @@ public sealed record TankHolds(FillTypeDef FillType) : MachineCondition
     public override string Text => $"Tank holds {FillType.Name}: empty it first";
 }
 
+/// <summary>A baler's chamber holds another fill type than what lies under its pickup, which is left lying.</summary>
+public sealed record BalerHolds(FillTypeDef FillType) : MachineCondition
+{
+    public override bool Stops => true;
+    public override string Text => $"The baler holds {FillType.Name.ToLowerInvariant()}: drop its bale first";
+}
+
 /// <summary>The machine under the pipe would take the grain, but its cover is closed.</summary>
 public sealed record CoverClosed(string Machine) : MachineCondition
 {

@@ -6,6 +6,7 @@ using Headland.Core.Economics;
 using Headland.Core.Events;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
+using Headland.Core.Objects;
 using Headland.Core.Pois.Components;
 using Headland.Core.World;
 
@@ -35,6 +36,7 @@ public sealed class PoiSystem
     private readonly HashSet<Machine> _unloading = [];
     private readonly Dictionary<Machine, Loading> _loading = new();
     private HashSet<string>? _fuels;
+    private float _sinceObjects;
 
     public PoiSystem(Simulation sim, ulong seed)
     {
@@ -107,6 +109,7 @@ public sealed class PoiSystem
     {
         Silo s when trigger.Type == "load" => [With(s.Poi, s.Def, $"Load {Names(s.FillTypes)}")],
         Silo s => [With(s.Poi, s.Def, $"Store {Names(s.FillTypes)}", s.Def.MinAmount, s.FillTypes)],
+        SellingStation s when trigger.Type == "objects" => [With(s.Poi, s.Def, $"Sell bales of {Names(s.Def.FillTypes)}: leave them here")],
         SellingStation s => [With(s.Poi, s.Def, $"Sell {Names(s.Def.FillTypes)}", s.Def.MinAmount, s.Def.FillTypes)],
         BuyingStation { Def.FromStorage: true } b => new[]
             {
@@ -255,6 +258,49 @@ public sealed class PoiSystem
         foreach (var m in _deliveries.Keys.Where(m => !_unloading.Contains(m)).ToList()) Flush(m);
         _unloading.Clear();
         UpdateLoading(dt);
+        SellObjects(dt);
+    }
+
+    // ------------------------------------------------------------------ Objects
+
+    /// <summary>Real seconds between looks at what lies in the object triggers.</summary>
+    private const float ObjectCheckSeconds = 0.5f;
+
+    /// <summary>
+    /// Objects left lying in an open selling station's object trigger (bales set down there), holding what it buys, are
+    /// sold together, by farm and fill type: what a contract of the farm is owed here goes to the contract, unpaid.
+    /// </summary>
+    private void SellObjects(float dt)
+    {
+        _sinceObjects += dt;
+        if (_sinceObjects < ObjectCheckSeconds) return;
+        _sinceObjects = 0f;
+        foreach (var poi in All)
+        {
+            if (poi.Get<SellingStation>() is not { } sell || sell.Trigger("objects") is not { } trigger || Closed(poi, sell.Def) != null) continue;
+            var lying = _sim.Objects.LooseIn(trigger.Area)
+                .Where(o => o.Content is { IsEmpty: false } c && sell.Def.FillTypes.Contains(c.FillType!))
+                .GroupBy(o => (o.FarmId, fillType: o.Content!.FillType!))
+                .ToList();
+            foreach (var group in lying) SellObjects(sell, group.Key.FarmId, group.Key.fillType, group.ToList());
+        }
+    }
+
+    private void SellObjects(SellingStation sell, int farmId, string fillType, List<WorldObject> objects)
+    {
+        var poi = sell.Poi;
+        var amount = objects.Sum(o => o.Content!.Level);
+        foreach (var o in objects) _sim.Objects.Remove(o);
+        var (contract, credited) = _sim.Contracts.Credit(farmId, poi, fillType, amount);
+        if (credited > 0f) _sim.Events.Publish(new ContractDelivery(contract!, null, poi, fillType, credited));
+        if (amount - credited is var rest and >= 1f)
+        {
+            var income = rest * Price(sell, fillType);
+            Earn(farmId, income, MoneyCategory.Sales);
+            _sim.Events.Publish(new ObjectsSold(poi, farmId, fillType, objects.Count, rest, income));
+        }
+        var demand = sell.Def.Demand;
+        sell.Demand[fillType] = MathF.Max(demand.Floor, sell.DemandOf(fillType) - demand.Drop * amount / 100_000f);
     }
 
     /// <summary>A machine leaving the map: its load under way is published, and its loading stops.</summary>

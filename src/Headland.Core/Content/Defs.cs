@@ -124,6 +124,26 @@ public sealed class FillTypeDef
     /// categories, so a new fill type goes where its category does.
     /// </summary>
     public string[] Categories { get; set; } = [];
+    /// <summary>What a tedder turns it into, lying in windrows (FS: the tedder's fill type converter): grass into hay.</summary>
+    public FillConversionDef? Tedded { get; set; }
+}
+
+/// <summary>A fill type turned into another: <see cref="Factor"/> units of <see cref="FillType"/> for each unit.</summary>
+public sealed class FillConversionDef
+{
+    public string FillType { get; set; } = "";
+    public float Factor { get; set; } = 1f;
+}
+
+/// <summary>
+/// What cutting a crop leaves lying on the field in windrows (FS: a fruit type's windrow): the grass a mower cuts, the
+/// straw a combine drops behind it.
+/// </summary>
+public sealed class CropWindrowDef
+{
+    public string FillType { get; set; } = "";
+    /// <summary>Units left on a hectare by a crop yielding in full (less as its yield is, by health and weeds).</summary>
+    public float PerHa { get; set; }
 }
 
 /// <summary>A kind of attacher joint (jointtypes.json): an implement hitches to a joint of its attachable's type.</summary>
@@ -256,6 +276,8 @@ public sealed class CropDef
     public int? RegrowStage { get; set; }
     /// <summary>Yield lost where weeds have grown among it (0.2 = 20%; half that where they're still small).</summary>
     public float WeedYieldLoss { get; set; } = 0.2f;
+    /// <summary>What cutting it leaves in windrows (mowing the grass itself, threshing its straw); null: nothing.</summary>
+    public CropWindrowDef? Windrow { get; set; }
     public CropStageDef[] Stages { get; set; } = [];
     public string Description { get; set; } = "";
     /// <summary>Its color on the map's crop layer ("#rrggbb").</summary>
@@ -553,6 +575,14 @@ public sealed class ContractTypeDef
     public string Description { get; set; } = "";
     /// <summary>Work area type doing a field job (cultivator, plow, seeder…); empty for a delivery job.</summary>
     public string Work { get; set; } = "";
+    /// <summary>
+    /// Field jobs: other work the field may get on the way (a bale job's mowing, tedding and raking), besides
+    /// <see cref="Work"/>, which the job is offered for and leases are picked by.
+    /// </summary>
+    public string[] AlsoWork { get; set; } = [];
+
+    /// <summary>Whether the job lets its field get <paramref name="work"/>: its own, or what it also needs.</summary>
+    public bool Allows(string work) => Work == work || AlsoWork.Contains(work);
     /// <summary>Months it is offered in (1..12). Empty: all year.</summary>
     public int[] Months { get; set; } = [];
     /// <summary>Field jobs: the state a field must mostly be in for the job to be offered.</summary>
@@ -600,8 +630,10 @@ public sealed class FieldStateDef
     public string[] Weeds { get; set; } = [];
     /// <summary>Fertilized since the last harvest (true) or not (false).</summary>
     public bool? Fertilized { get; set; }
+    /// <summary>Something cut lies on it in windrows (true: grass, hay, straw) or nothing does (false).</summary>
+    public bool? Windrow { get; set; }
 
-    public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0 && Weeds.Length == 0 && Fertilized == null;
+    public bool IsEmpty => Ground.Length == 0 && Crop.Length == 0 && Weeds.Length == 0 && Fertilized == null && Windrow == null;
 }
 
 /// <summary>Goods a contract wants brought to a buyer on the map (a POI whose selling station takes them).</summary>
@@ -755,6 +787,20 @@ public sealed class PoiPlacementDef
     public float HeadingDeg { get; set; }
     /// <summary>Owning farm: 0 = an NPC's (default), 1 = the player's.</summary>
     public int Farm { get; set; }
+}
+
+// ---- Objects (objects/*.json): bales, and later pallets
+
+/// <summary>
+/// A thing lying about that machines pick up and carry (FS: objects, such as bales): built from components as machines
+/// and POIs are. Its space has its origin at the middle of its bottom, +z forward and +x left. Unknown properties are
+/// refused.
+/// </summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed class ObjectDef : EntityDef
+{
+    /// <summary>The box it takes up: <c>length</c> along z, <c>width</c> along x, <c>height</c>.</summary>
+    public SizeDef Size { get; set; } = new() { Length = 1.2f, Width = 1.2f, Height = 1.2f };
 }
 
 public sealed class MachineSpawnDef

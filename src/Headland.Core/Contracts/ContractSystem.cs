@@ -38,7 +38,8 @@ public sealed class ContractSystem
         Rng = new Rng(seed);
         sim.Events.Subscribe<FarmlandOwnerChanged>(e => WithdrawOn(e.Farmland));
         sim.Events.Subscribe<FieldWorked>(_ => _changed = true);
-        sim.Events.Subscribe<CropHarvested>(OnHarvested);
+        sim.Events.Subscribe<CropHarvested>(e => OnHarvested(e.Harvester, e.FieldId, e.FillType, e.Amount));
+        sim.Events.Subscribe<WindrowPickedUp>(e => OnHarvested(e.Machine, e.FieldId, e.FillType, e.Amount));
     }
 
     /// <summary>Rolls what goes on the board.</summary>
@@ -184,11 +185,14 @@ public sealed class ContractSystem
         return (float)n / Math.Max(1, cells.Length);
     }
 
-    /// <summary>Crop threshed on a field the harvester's farm has a harvest contract on is the neighbor's.</summary>
-    private void OnHarvested(CropHarvested e)
+    /// <summary>
+    /// Crop threshed (or baled) on a field the machine's farm has a contract on, asking for it at a buyer, is the
+    /// neighbor's.
+    /// </summary>
+    private void OnHarvested(Machine machine, int fieldId, string fillType, float amount)
     {
-        if (_sim.World.FieldById(e.FieldId) is not { } field || On(field) is not { State: ContractState.Active } c) return;
-        if (c.FarmId == e.Harvester.FarmId && c.Type.Deliver != null && c.Goods?.Id == e.FillType) c.Harvested += e.Amount;
+        if (_sim.World.FieldById(fieldId) is not { } field || On(field) is not { State: ContractState.Active } c) return;
+        if (c.FarmId == machine.FarmId && c.Type.Deliver != null && c.Goods?.Id == fillType) c.Harvested += amount;
     }
 
     /// <summary>The farm's contract that <paramref name="fillType"/> tipped at <paramref name="poi"/> would go to, if any.</summary>

@@ -90,7 +90,7 @@ public class ContractTests
     public void ContractTypesComeFromTheData()
     {
         var types = TestContent.Content.ContractTypes;
-        Assert.Equal(["cultivate", "deliver", "fertilize", "harvest", "mow", "plow", "sow", "spray"], types.Keys.ToArray());
+        Assert.Equal(["bale", "cultivate", "deliver", "fertilize", "harvest", "mow", "plow", "sow", "spray"], types.Keys.ToArray());
         var harvest = types["harvest"];
         Assert.Equal(("harvester", 0.9f), (harvest.Work, harvest.Deliver!.Share));
         Assert.Equal(["harvestable"], harvest.Offer.Crop);
@@ -124,7 +124,7 @@ public class ContractTests
         Assert.Contains("contract type 'juggle': offer ground 'road' is not a field's (grass, cultivated, seeded, stubble, plowed)", errors);
         Assert.Contains("contract type 'juggle': offer crop state 'ripe' is unknown (none, dead, sown, growing, harvestable)", errors);
         Assert.Contains("contract type 'juggle': offer weed state 'dandelions' is unknown (none, small, grown, sprayed)", errors);
-        Assert.Contains("contract type 'juggle': unknown work 'juggler' (cultivator, plow, seeder, harvester, spreader, sprayer, mower)", errors);
+        Assert.Contains("contract type 'juggle': unknown work 'juggler' (cultivator, plow, seeder, harvester, spreader, sprayer, mower, tedder, windrower, baler)", errors);
         Assert.Contains("contract type 'juggle': a field job needs offer and done states", errors);
         Assert.Contains("contract type 'juggle': deliver.amount is for delivery jobs (no work)", errors);
         Assert.Contains("contract type 'juggle': deliver.share must be in (0, 1], on jobs that harvest", errors);

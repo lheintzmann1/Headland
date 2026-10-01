@@ -1,7 +1,8 @@
 # Entities and components
 
-The things the game puts on the map are **entities**: machines (`game/data/machines/*.json`) and points of interest
-(POIs, `game/data/pois/*.json`) today, later the farmer, pallets, bales and animals. Each is a JSON object with a few
+The things the game puts on the map are **entities**: machines (`game/data/machines/*.json`), points of interest
+(POIs, `game/data/pois/*.json`) and objects such as bales (`game/data/objects/*.json`) today, later the farmer,
+pallets and animals. Each is a JSON object with a few
 settings of its own (its name, its size, how it looks) and the **components** it is built from. A component is one
 working part: wheels, an engine, a seat, a hitch, a grain tank, a tipping bed, a crane. The game has no fixed kinds of
 machines: a tractor is running gear, a motor, a seat, attacher joints and a fuel tank; a trailer is running gear, an
@@ -20,7 +21,8 @@ Positions are in meters, in the entity's own space: **+z forward, +x left, +y up
   a tractor and the front one of a combine, and the rear frame's axle of an articulated one,
 - trailed implements: likewise the middle of their fixed axles (their drawbar eye is ahead of it),
 - mounted implements and headers: the hitch point,
-- POIs: the center of their footprint, their front (+z) being the side machines come from.
+- POIs: the center of their footprint, their front (+z) being the side machines come from,
+- objects: the middle of their bottom.
 
 ## Machines
 
@@ -104,6 +106,29 @@ A map's `pois` place them: a unique `id` (saves refer to it), the POI `type`, wh
 `headingDeg` (0 faces +z, south; 90 faces +x, east), its `farm` (0: an NPC's, the default; 1: the player's) and
 optionally a `name` in place of the type's.
 
+## Objects
+
+An object is a thing lying about that machines pick up and carry (FS: objects): a bale. Machines make them (a baler
+drops a bale), carry them (a bale loader's bed) and set them down; a selling station buys those left in its object
+trigger. Each is saved with where it lies, or the machine carrying it.
+
+```jsonc
+{ "id": "round_bale", "name": "Round bale",
+  "size": { "length": 1.25, "width": 1.2, "height": 1.25 },
+  "components": {
+    "fillUnits": { "units": [ { "id": "bale", "capacity": 4000, "fillTypeCategories": ["windrow"] } ] },
+    "bale": { "shape": "round" }
+  },
+  "visual": { "model": "res://assets/models/bales/round_bale.glb" } }
+```
+
+| Setting | Default | |
+|---|---|---|
+| `id`, `name`, `description` | | Machines name it by its `id` (a baler's `bale`). |
+| `size` | 1.2 × 1.2 × 1.2 | The box it takes up: `length` along z, `width` along x, `height`. |
+| `visual` | | Its glTF `model`, as for machines; its fill materials take the color of what it holds. An object whose model doesn't load still works, but nothing is drawn for it. |
+| `components` | none | What it is: a `bale` with the `fillUnits` it's made of. |
+
 ## Components
 
 | Kind | Goes on | What it is |
@@ -122,6 +147,8 @@ optionally a `name` in place of the type's.
 | `thresher` | machines | A combine's threshing drum, filling a tank with what its header cuts. |
 | `pipe` | machines | An unloading pipe. |
 | `tipper` | machines | A tipping bed. |
+| `baler` | machines | A baler's chamber: makes bales of what its pickup gathers. |
+| `baleLoader` | machines | A bed that picks bales up from the ground, and sets them down. |
 | `lights` | anything | Headlights, work lights and beacons, switched by the driver; a building's lamps, lit in the dark, on a timer or as someone comes by. |
 | `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
 | `winch` | machines | A rope with a hook. |
@@ -136,9 +163,10 @@ optionally a `name` in place of the type's.
 | `workshop` | POIs | Repairs machines, and changes their options. |
 | `washingStation` | POIs | Washes machines. |
 | `deliverySpot` | POIs | Where machines bought or leased appear. |
+| `bale` | objects | A bale: what it's made of is its fill unit's. |
 
-The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher` and `saw` in the vehicle's
-chain; the lower key lowers every lowerable `attachable`.
+The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher`, `baleLoader` and `saw` in the
+vehicle's chain; the lower key lowers every lowerable `attachable`.
 
 ### Key hints
 
@@ -152,7 +180,7 @@ machine by its [`noun`](#machines), as Farming Simulator does: "Lower cultivator
 ```
 
 A component's keys are those it switches something on: `lower` (a lowerable `attachable`), `fold` and the keys its parts
-move on (`animatedParts`), `turn_on` (a `workAreas` with an area that `requiresOn`, a `thresher`, a `saw`), `unload`
+move on (`animatedParts`), `turn_on` (a `workAreas` with an area that `requiresOn`, a `thresher`, a `baleLoader`, a `saw`), `unload`
 (a `pipe`) and `cover` (a `cover` with one cover). Where tools with words of their own switch together on a key (the vehicle itself selected), the key says it
 for all of them: "Lower all", "Lift all".
 
@@ -304,7 +332,7 @@ spread over the units that take it, those already holding it filled first.
 
 What a unit takes is its `fillTypes` and the fill types of its `fillTypeCategories` (FS: fill type categories), each
 fill type naming its `categories` in `game/data/filltypes.json` (`grain`, `seed`, `fertilizer`, `herbicide`, `fuel`,
-`product`, `forage`). A unit or station taking a category takes a new fill type of it too: a mod's oats go into grain
+`product`, `forage`, `windrow`: what lies cut on the fields, for balers). A unit or station taking a category takes a new fill type of it too: a mod's oats go into grain
 trailers and sell at the elevator. Stations and silos take categories the same way, and so do delivery contracts
 (`deliver.fillTypeCategories`).
 
@@ -387,6 +415,7 @@ the markers up, and they can't come down while the machine is folded; a helper l
 | `fillUnit` | none | Seeder, spreader, sprayer: the unit what it sows or spreads comes from. |
 | `ratePerHa` | 0 | Spreader, sprayer: units of its fill spread on a hectare. |
 | `harvestGroups` | none | Harvester, mower: the crops' harvest groups it cuts (`grain`, `corn`, `grass`). |
+| `windrowWidth` | 0 | Mower, windrower: the windrow it leaves in its middle, what it cuts or rakes drawn in from the sides; 0: a mower leaves the grass where it cut it. |
 
 The kinds of work (work types, registered in code; mods will add their own):
 
@@ -398,15 +427,23 @@ The kinds of work (work types, registered in code; mods will add their own):
 | `spreader` | Spreads the fertilizer in its `fillUnit` at `ratePerHa`, once each time it passes over: the soil gets the fertilizer's `nitrogen` (filltypes.json), and the field counts as fertilized until harvested or cut. |
 | `sprayer` | Sprays the herbicide in its `fillUnit` at `ratePerHa` on tilled, sown or stubble ground: the weeds die, and none come up until the ground is tilled or harvested. |
 | `harvester` | Cuts ripe crops of its `harvestGroups` for the thresher it hangs on, and clears dead ones, leaving stubble. Needs an `attachable`: it works while the vehicle it hangs on threshes. |
-| `mower` | Cuts ripe crops of its `harvestGroups`: grass grows back from its `regrowStage` (crops JSON); the cut grass lies on the field until balers exist. |
+| `mower` | Cuts ripe crops of its `harvestGroups`: grass grows back from its `regrowStage` (crops JSON). What the crop leaves cut (its `windrow`, crops JSON) lies in the area's windrow. |
+| `tedder` | Spreads what lies cut under it evenly over its width, turning it into what it dries into (a fill type's `tedded`, filltypes.json: grass into hay). |
+| `windrower` | Rakes what lies cut under it into a windrow in its middle, `windrowWidth` wide (needed, narrower than the area). |
+| `baler` | Its pickup gathers what lies cut into the machine's `baler`, which drops a bale each time it's full. Needs a `baler`. |
 
-The work of a `harvester`, `spreader`, `sprayer` or `mower` takes its power from the engine; that of the others is
+What lies cut on a field (FS: windrows) is a layer of its own: each 0.5 m cell holds some of one fill type, grass,
+hay or straw, until a baler picks it up or tilling (cultivator, plow) works it into the ground.
+
+The work of a `harvester`, `spreader`, `sprayer`, `mower`, `tedder`, `windrower` or `baler` takes its power from the engine; that of the others is
 drawn through the ground (see [motor](#motor)). A helper lowers an implement as it reaches the field and raises it as it
 leaves; one that isn't lowered but turned on, such as a spreader, it turns on and off instead.
 
 ### thresher
 
-`fillUnit` (`tank`): where the crop goes. Turned on with the turn-on key.
+`fillUnit` (`tank`): where the crop goes. Turned on with the turn-on key. Its `swath` (none) is where the straw falls,
+`{ "x": 0, "z": -6.2, "width": 1.6 }`: what the crop leaves cut (its `windrow`, crops JSON) is drawn in from across the
+header into a windrow that wide, behind the combine. Without one, it's chopped and spread: nothing to bale.
 
 ### pipe
 
@@ -435,6 +472,27 @@ at its rear hinge (a side's hinge line along its edge). The tip side key steps t
 "tipper": { "fillUnit": "main", "sides": [
   { "name": "back", "x": 0, "z": -3.0 },
   { "name": "left", "x": 1.9, "z": 0.6, "rotationDeg": [0, 0, -40], "pivot": [1.275, 0, 3.1] } ] }
+```
+
+### baler
+
+A baler's chamber (FS: baler): its pickup, a `workAreas` area of type `baler`, fills its `fillUnit` (`chamber`) with
+what lies cut, one fill type at a time; each time it's full, a bale of type `bale` (an object with a `bale`) drops at
+`x`, `z` (0, -2), and the pickup goes on. The unload key drops what it holds as a smaller bale. Something else lying
+under the pickup (straw, with grass in the chamber) is left, and the baler says so until it picks something up again.
+The bale must hold what the chamber does.
+
+### baleLoader
+
+A bale collector (FS: bale loader), turned on with the turn-on key: it grabs the bales of its farm whose middle is in
+its `pickup` area (`x`, `z`, `w`, `d`, in its space), one every `grabSeconds` (1.5), onto its `slots` ([x, y, z] each,
+y their bottom: as many as it carries), those of its `shapes` only (`round`, `square`; none: any). Standing still, the
+unload key sets them all down behind it, in the same rows, the front row at `unloadZ` (-4); in a selling station's
+object trigger, they're sold.
+
+```jsonc
+"baleLoader": { "slots": [ [0.64, 1.0, 2.1], [-0.64, 1.0, 2.1] ], "pickup": { "x": -2.0, "z": 3.0, "w": 1.8, "d": 2.6 },
+  "words": { "turn_on": ["Start loading bales", "Stop loading bales"] } }
 ```
 
 ### lights
@@ -583,7 +641,9 @@ paid is not.
 ### sellingStation
 
 Buys loads tipped or piped into its `trigger`: its `fillTypes` and `fillTypeCategories` (FS: selling station), at the
-market price times its factors, less as its demand drops, more in high demand. `minAmount` (0) is the smallest load it
+market price times its factors, less as its demand drops, more in high demand. With an `objectTrigger`, it also buys
+the objects left lying in it (FS: a bale trigger): bales set down there are sold for what they hold, a few times a
+second, while it's open. It needs a `trigger`, an `objectTrigger` or both. `minAmount` (0) is the smallest load it
 takes; a load under way may finish below it. A sale of a fill type the POI's `fillUnits` keep goes into them, so a mill
 takes only what it has room to mill, and stops buying when full.
 
@@ -725,3 +785,7 @@ components (0.13 and older) kept goods by fill type, and hand them to the unit o
 
 A machine's condition is its `wearable`'s: saves from before it (0.14 and older) hand it over, and a machine without
 a `wearable` loses it. Its dirt is its `washable`'s: saves from before it kept none, as nothing made machines dirty.
+
+Objects keep where they lie, or the machine carrying them and their slot there; one whose carrier is gone, or no longer
+has that slot, lies on the ground where it was. What lies cut on the fields is saved with the field layers, by fill
+type id: what lies of a fill type that no longer exists is gone.

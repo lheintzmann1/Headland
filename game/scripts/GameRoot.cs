@@ -77,6 +77,7 @@ public partial class GameRoot : Node3D
         AddChild(new TerrainRenderer { Sim = Sim, Name = "Terrain" });
         AddChild(new NetworkRenderer { Sim = Sim, Name = "Networks" });
         AddChild(new CropRenderer { Sim = Sim, Name = "Crops" });
+        AddChild(new WindrowRenderer { Sim = Sim, Name = "Windrows" });
         AddChild(new PropsRenderer { Sim = Sim, Name = "Props" });
         AddChild(new EntityRenderer { Sim = Sim, Name = "Entities" });
         AddChild(new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" });

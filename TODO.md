@@ -67,8 +67,12 @@ units are written once, and new kinds of things come from data (and later mods) 
       trigger), `buyingStation` (buy and refuel at a fill trigger), `silo` (storage with its unloading pit and
       loading spout), `productionPoint` (process), `workshop` (repair, configure), `washingStation` (wash), and
       the delivery spot for new and leased machines.
+- [x] Bales on the same model, as FS has them: objects (`objects/`) lying about, made by a baler from what lies cut on
+      the fields (a windrow layer: the mower's grass, the combine's straw, tedded into hay and raked), carried by a bale
+      collector, sold in a selling station's object trigger (the dairy's bale area); saved where they lie or on what
+      carries them.
 - [ ] The rest on the same model as it comes: the farmer and NPCs (with hand tools, and on-foot states as FS's
-      `PlayerOnFootStateMachine`: walking, crouching, swimming), pallets and bales, animals, trees (what saws
+      `PlayerOnFootStateMachine`: walking, crouching, swimming), pallets, animals, trees (what saws
       cut), props; new POI kinds with their features (`husbandry`, `bunkerSilo`, `manureHeap`, `objectStorage`,
       `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
       placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
@@ -133,7 +137,7 @@ The triggers, storage and actions have since become POI components (see Componen
 - [x] Generation: NPC fields offer jobs by crop state and season (cultivate, sow, harvest), buyers ask for
       goods (deliver to a POI). Reward from area and type, time limit, cap on open contracts.
 - [x] Plow, fertilize, spray and mow jobs: entries in `contracts/`.
-- [ ] Bale jobs, once balers pick up the cut grass (mowing leaves it lying on the field).
+- [x] Bale jobs: mow the meadow (tedding and raking allowed), bale it, and leave 90% of it in bales at the buyer.
 - [x] Field access: work only applies on the player's farmland or fields with an active contract, and only
       the contract's work. Contract fields show in the world (sign, outline), in the inspector and on the map
       (outlined, the offers dashed).

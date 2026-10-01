@@ -8,6 +8,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Economics;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
+using Headland.Core.Objects;
 using Headland.Core.Pois;
 using Headland.Core.Pois.Components;
 using Headland.Core.World;
@@ -128,6 +129,7 @@ public static class SaveGame
                 GroundWetness = weather.GroundWetness, SnowCover = weather.SnowCover, SnowpackMm = weather.SnowpackMm,
             },
             Crops = content.Crops.Select(c => c.Id).ToList(),
+            FillTypes = content.FillTypeList.Select(f => f.Id).ToList(),
             Mineralization = mineral,
             Economy = new EconomySave
             {
@@ -139,7 +141,7 @@ public static class SaveGame
             Statistics = new StatisticsSave
             {
                 HectaresWorked = new(stats.HectaresWorked), Harvested = new(stats.Harvested), Sold = new(stats.Sold),
-                Bought = new(stats.Bought), HelpersHired = stats.HelpersHired, ContractsCompleted = stats.ContractsCompleted,
+                Bought = new(stats.Bought), HelpersHired = stats.HelpersHired, BalesMade = stats.BalesMade, ContractsCompleted = stats.ContractsCompleted,
                 DaysPlayed = stats.DaysPlayed,
             },
             Farms = sim.Farms.All.Select(f => new FarmSave { Id = f.Id, Name = f.Name }).ToList(),
@@ -151,6 +153,12 @@ public static class SaveGame
             ContractRngState = sim.Contracts.Rng.State,
             NextMachineId = sim.Machines.NextId,
             Machines = sim.Machines.All.Select(m => CaptureMachine(sim, m)).ToList(),
+            NextObjectId = sim.Objects.NextId,
+            Objects = sim.Objects.All.Select(o => new ObjectSave
+            {
+                Id = o.Id, Def = o.Def.Id, Farm = o.FarmId, X = o.Position.X, Z = o.Position.Y, Heading = o.Heading, Elevation = o.Elevation,
+                Holder = o.Holder?.Machine.Id, Slot = o.Holder?.SlotOf(o) ?? 0, Components = o.SaveComponents(content),
+            }).ToList(),
             Player = new PlayerSave
             {
                 X = sim.Player.Position.X, Z = sim.Player.Position.Y, Heading = sim.Player.Heading,
@@ -241,7 +249,10 @@ public static class SaveGame
             if (now < 0) warnings.Add($"Crop '{s.Crops[i]}' no longer exists: fields growing it were cleared");
             cropRemap[i + 1] = (byte)(now + 1);
         }
-        LayerCodec.Read(layers, sim.World, cropRemap, warnings);
+        // Windrow cells store fill type index + 1 too; saves from before windrows have none lying.
+        var fillRemap = new byte[256];
+        for (var i = 0; i < s.FillTypes.Count && i < 254; i++) fillRemap[i + 1] = (byte)(content.FillTypeIndex(s.FillTypes[i]) + 1);
+        LayerCodec.Read(layers, sim.World, cropRemap, fillRemap, warnings);
         for (var i = 0; i < content.Soils.Count; i++)
             sim.Crops.MineralAccumulators[i] = s.Mineralization.GetValueOrDefault(content.Soils[i].Id);
 
@@ -256,6 +267,7 @@ public static class SaveGame
         foreach (var (key, value) in saved)
             target[key] = value;
         stats.HelpersHired = s.Statistics.HelpersHired;
+        stats.BalesMade = s.Statistics.BalesMade;
         stats.ContractsCompleted = s.Statistics.ContractsCompleted;
         stats.DaysPlayed = s.Statistics.DaysPlayed;
 
@@ -271,6 +283,7 @@ public static class SaveGame
         RestoreContracts(sim, s, warnings);
 
         var machines = RestoreMachines(sim, s, warnings);
+        RestoreObjects(sim, s, machines, warnings);
         var p = s.Player;
         sim.Player.Position = new Vector2(p.X, p.Z);
         sim.Player.Heading = p.Heading;
@@ -422,6 +435,29 @@ public static class SaveGame
             seat.Controller = helper;
         }
         return byId;
+    }
+
+    /// <summary>Objects come back where they lay, or into the slot of the machine that carried them (else on the ground there).</summary>
+    private static void RestoreObjects(Simulation sim, SaveState s, Dictionary<int, Machine> machines, List<string> warnings)
+    {
+        var context = new SaveContext(sim.Content, warnings);
+        foreach (var o in s.Objects)
+        {
+            if (!sim.Content.Objects.TryGetValue(o.Def, out var def))
+            {
+                warnings.Add($"Object '{o.Def}' no longer exists: it was removed");
+                continue;
+            }
+            var obj = new WorldObject(o.Id, def, new Vector2(o.X, o.Z), o.Heading, o.Farm) { Elevation = Math.Max(0f, o.Elevation) };
+            obj.LoadComponents(o.Components, context);
+            sim.Objects.All.Add(obj);
+            if (o.Holder is not { } id) continue;
+            var holder = machines.GetValueOrDefault(id)?.Components.OfType<IObjectHolder>().FirstOrDefault();
+            if (holder?.Restore(obj, o.Slot) == true) continue;
+            obj.Elevation = 0f;
+            warnings.Add($"A {def.Name.ToLowerInvariant()} could not be put back on what carried it: it lies on the ground");
+        }
+        sim.Objects.NextId = Math.Max(s.NextObjectId, s.Objects.Select(o => o.Id + 1).DefaultIfEmpty(1).Max());
     }
 
     /// <summary>A machine type with its saved options; an option that no longer exists gives the default.</summary>

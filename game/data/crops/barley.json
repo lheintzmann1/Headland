@@ -4,6 +4,7 @@
   "sowingMonths": [3, 4], "harvestMonths": [7, 8],
   "frostKillC": -8, "wiltingPoint": 0.24, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.8,
   "nitrogenDemandKgPerHa": 130,
+  "windrow": { "fillType": "straw", "perHa": 10000 },
   "description": "Spring barley. Quick to grow, tolerates light soils, frost-sensitive when young.",
   "stages": [
     { "name": "Sown",           "gdd": 100, "height": 0.0 },

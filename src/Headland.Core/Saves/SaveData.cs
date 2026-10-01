@@ -38,6 +38,8 @@ public sealed class SaveState
     public WeatherSave Weather { get; set; } = new();
     /// <summary>Crop ids by the index cells store (index + 1), to remap layers if the crop list changed.</summary>
     public List<string> Crops { get; set; } = [];
+    /// <summary>Fill type ids by the index windrow cells store (index + 1), to remap them if the fill types changed.</summary>
+    public List<string> FillTypes { get; set; } = [];
     /// <summary>Nitrogen mineralization carried over between hours, per soil id.</summary>
     public Dictionary<string, float> Mineralization { get; set; } = new();
     public EconomySave Economy { get; set; } = new();
@@ -53,6 +55,9 @@ public sealed class SaveState
     public ulong ContractRngState { get; set; }
     public int NextMachineId { get; set; }
     public List<MachineSave> Machines { get; set; } = [];
+    public int NextObjectId { get; set; }
+    /// <summary>Bales lying about or carried.</summary>
+    public List<ObjectSave> Objects { get; set; } = [];
     public PlayerSave Player { get; set; } = new();
 }
 
@@ -102,6 +107,7 @@ public sealed class StatisticsSave
     public Dictionary<string, float> Sold { get; set; } = new();
     public Dictionary<string, float> Bought { get; set; } = new();
     public int HelpersHired { get; set; }
+    public int BalesMade { get; set; }
     public int ContractsCompleted { get; set; }
     public int DaysPlayed { get; set; }
 }
@@ -183,6 +189,22 @@ public sealed class MachineSave
     /// <summary>A load being taken from a silo, totalled so far.</summary>
     public LoadingSave? Loading { get; set; }
     public HelperSave? Helper { get; set; }
+}
+
+/// <summary>An object (a bale): where it lies, or the machine carrying it and its slot there, and what its components keep.</summary>
+public sealed class ObjectSave
+{
+    public int Id { get; set; }
+    public string Def { get; set; } = "";
+    public int Farm { get; set; }
+    public float X { get; set; }
+    public float Z { get; set; }
+    public float Heading { get; set; }
+    public float Elevation { get; set; }
+    /// <summary>The machine carrying it, and the slot it's in there.</summary>
+    public int? Holder { get; set; }
+    public int Slot { get; set; }
+    public Dictionary<string, JsonElement> Components { get; set; } = new();
 }
 
 /// <summary>A machine's lease at the shop: its fee, what an hour of running costs, and what its hours cost so far.</summary>

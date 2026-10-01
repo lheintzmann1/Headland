@@ -1,0 +1,9 @@
+// What each setting means: docs/COMPONENTS.md (Objects). Lying on its side, its axis across (along x).
+{ "id": "round_bale", "name": "Round bale",
+  "size": { "length": 1.25, "width": 1.2, "height": 1.25 },
+  "components": {
+    "fillUnits": { "units": [ { "id": "bale", "capacity": 4000, "fillTypeCategories": ["windrow"] } ] },
+    "bale": { "shape": "round" }
+  },
+  "visual": { "model": "res://assets/models/bales/round_bale.glb" },
+  "description": "A round bale of grass, hay or straw, 1.25 m across." }

@@ -19,8 +19,14 @@ Built with **Godot 4.7** and **C#**.
 - **The farming loop.** Cultivate or plow the stubble, sow in season, fertilize the growing crop and spray the weeds
   before they cost it yield, harvest it with the right header, unload the combine into a trailer and tip the grain at
   the elevator. Meadows are mown when the grass is ready, and it grows back for the next cut.
+- **Hay, straw and bales.** Mown grass lies in a windrow, and the combine leaves the straw of wheat and barley in a
+  swath behind it. Bale the grass as it is, or ted it first: the tedder spreads it and turns it into hay, worth more,
+  which the rake gathers back into a windrow. The round baler drops a 4,000 L bale behind it each time its chamber is
+  full, the bale collector picks the bales up beside it and sets them down where you stop, and the dairy buys those
+  left in its bale area. Tilling works what lies cut into the ground.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator, a plow, a
-  trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road and a mower, most with
+  trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road, a mower, a tedder, a rake,
+  a round baler and a bale collector, most with
   options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
   a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color. The menu's shop lists them by
   category and brand, each turning in a preview with what it is (power, capacity, working width, the power it needs…)
@@ -40,8 +46,9 @@ Built with **Godot 4.7** and **C#**.
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
   herbicide at the farm shop, refuel and wash at the gas station, or at the farm's own fuel tank, filled by ordering
   diesel in bulk (5,000 L at a time, for less, on foot at its pump), get machines repaired or their options changed at the
-  workshop (new options cost what they cost more than the old ones, and the work), and pick up the machines bought or
-  leased at the shop, or leased for contracts, at the machinery dealer.
+  workshop (new options cost what they cost more than the old ones, and the work), leave bales of grass, hay or straw
+  at the dairy, and pick up the machines bought or leased at the shop, or leased for contracts, at the machinery
+  dealer.
   Prices follow the season, drop as you flood a buyer and recover over time, and now and then a buyer pays more for a
   few days. Each place is a point of interest defined in JSON and built from components, as Farming Simulator builds
   its placeables: selling and buying stations, silos, production points that run by the hour, workshops, washing
@@ -58,10 +65,12 @@ Built with **Godot 4.7** and **C#**.
   buy it there. Parcels go by the fields in them ("Field 4 land"), as fields alone have numbers; land sells back for what it cost, except the ground the farm's own buildings stand on. Machines only work the farm's own land, and the neighbors'
   fields it has a contract on.
 - **Contracts.** Every morning the neighbors post the work their fields need in the season (cultivating or plowing
-  stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing a meadow), and
+  stubble, sowing a seedbed, fertilizing a growing crop, spraying weeds, harvesting a ripe crop, mowing or baling a
+  meadow), and
   buyers order goods for more than the market price. The menu's contracts are the board: take up to three at a time,
   each due within a few days. A field job is done once 95% of the field is; a harvest's crop is the neighbor's, and
-  90% of it must be tipped at the buyer named on the contract, who takes it without paying. Giving a contract back, or
+  90% of it must be tipped at the buyer named on the contract, who takes it without paying, as the grass of a bale
+  job must be left there in bales. Giving a contract back, or
   finishing late, costs 10% of its reward. A field job can also be taken with leased machines, for a fee taken from
   the reward: they wait on the machinery dealer's lot, implements hitched, and go back when the contract ends. Fields
   under contract show it on their sign and get an outline. The jobs are JSON too (`game/data/contracts/`).
@@ -91,11 +100,12 @@ Built with **Godot 4.7** and **C#**.
   the waypoint held at its edge.
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
-- **Data-driven.** Crops, machines, buildings and other points of interest, soils, the climate, the map, the money
+- **Data-driven.** Crops, machines, buildings and other points of interest, bales, soils, the climate, the map, the money
   rules, the kinds of hitches and lamps and the shop's brands and categories are JSON files in [`game/data`](game/data). Machines are built from components (running gear, motor, hitches,
   tanks, work areas, pipe, tipper, lights, crane arm…), so a new machine is a combination of them; POIs are built the
   same way, sharing the kinds that make sense on both (lamps lit at night or as someone comes by, moving parts,
-  storage, map icons). [`docs/COMPONENTS.md`](docs/COMPONENTS.md) lists every setting of machines, POIs and components.
+  storage, map icons), and so are the objects lying about, such as bales. [`docs/COMPONENTS.md`](docs/COMPONENTS.md)
+  lists every setting of machines, POIs, objects and components.
 
 ## Controls
 
@@ -120,8 +130,8 @@ file (see below).
 | N | Fold or unfold implements (a sprayer's boom) |
 | Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |
 | C | Open or close a cover (a seeder's lid opens by itself at the seed shop; a trailer's tarp, an option, at a silo's spout and to tip, but open it yourself under a combine's pipe) |
-| B | Turn on or off (seed drill, spreader, sprayer, mower, combine) |
-| U | Unfold the combine's pipe, or tip a trailer into an unloading area |
+| B | Turn on or off (seed drill, spreader, sprayer, mower, tedder, rake, baler, combine); a bale collector starts and stops picking up bales |
+| U | Unfold the combine's pipe, tip a trailer into an unloading area, drop a baler's bale, or set a bale collector's bales down behind it |
 | Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |

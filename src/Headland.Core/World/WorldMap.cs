@@ -103,6 +103,8 @@ public sealed class FieldLayers
         Chill = new byte[count];
         Weeds = new byte[count];
         Fertilized = new byte[count];
+        Windrow = new float[count];
+        WindrowFill = new byte[count];
     }
 
     public byte[] Ground { get; }
@@ -130,6 +132,10 @@ public sealed class FieldLayers
     public byte[] Weeds { get; }
     /// <summary>Times fertilized since the last harvest (or cut, on a meadow).</summary>
     public byte[] Fertilized { get; }
+    /// <summary>Units of what lies cut on the cell, in windrows or spread (grass, hay, straw): see <see cref="Windrows"/>.</summary>
+    public float[] Windrow { get; }
+    /// <summary>What lies there: fill type index + 1 (<see cref="Content.ContentDatabase.FillTypeList"/>), 0 = nothing.</summary>
+    public byte[] WindrowFill { get; }
 }
 
 public enum ObstacleShape { Circle, Box }
@@ -238,8 +244,10 @@ public sealed class WorldMap
         Layers = new FieldLayers(CellsX * CellsZ);
         GroundDirty = new bool[ChunksX * ChunksZ];
         CropDirty = new bool[ChunksX * ChunksZ];
+        WindrowDirty = new bool[ChunksX * ChunksZ];
         Array.Fill(GroundDirty, true);
         Array.Fill(CropDirty, true);
+        Array.Fill(WindrowDirty, true);
     }
 
     public int Size { get; }
@@ -263,6 +271,8 @@ public sealed class WorldMap
     public bool[] GroundDirty { get; }
     /// <summary>Chunk needs its crop instances rebuilt.</summary>
     public bool[] CropDirty { get; }
+    /// <summary>Chunk needs its windrows rebuilt.</summary>
+    public bool[] WindrowDirty { get; }
 
     public int CellIndex(int cx, int cz) => cz * CellsX + cx;
 
@@ -300,6 +310,14 @@ public sealed class WorldMap
     {
         Array.Fill(GroundDirty, true);
         if (crop) Array.Fill(CropDirty, true);
+        Array.Fill(WindrowDirty, true);
+    }
+
+    /// <summary>Marks the chunk of cell <paramref name="i"/> for its windrows to be drawn again.</summary>
+    public void MarkWindrowDirty(int i)
+    {
+        var (cx, cz) = (i % CellsX, i / CellsX);
+        WindrowDirty[ChunkIndex(cx / ChunkCells, cz / ChunkCells)] = true;
     }
 
     public float HeightAt(Vector2 p) => Height.Sample(p.X, p.Y);

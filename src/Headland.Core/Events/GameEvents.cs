@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Contracts;
 using Headland.Core.Machines;
+using Headland.Core.Objects;
 using Headland.Core.Pois;
 using Headland.Core.Time;
 using Headland.Core.Weather;
@@ -36,10 +37,22 @@ public sealed record FieldWorked(Machine Machine, string Work, int FieldId, floa
 /// <summary>Crop threshed into a combine's tank during one tick.</summary>
 public sealed record CropHarvested(Machine Harvester, string Crop, string FillType, float Amount, int FieldId) : IGameEvent;
 
+/// <summary>What lay cut on a field (grass, hay, straw) picked up by a baler during one tick.</summary>
+public sealed record WindrowPickedUp(Machine Machine, string FillType, float Amount, int FieldId) : IGameEvent;
+
+/// <summary>A baler dropped a bale.</summary>
+public sealed record BaleMade(Machine Baler, WorldObject Bale) : IGameEvent;
+
 // ---- Trade
 
 /// <summary>A whole load sold at a POI (published when the machine stops unloading).</summary>
 public sealed record FillSold(Machine Machine, Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
+
+/// <summary>
+/// Objects of a farm (bales) left in a POI's object trigger sold there, together: <paramref name="Count"/> of them holding
+/// <paramref name="Amount"/> of <paramref name="FillType"/>.
+/// </summary>
+public sealed record ObjectsSold(Poi Poi, int Farm, string FillType, int Count, float Amount, float Income) : IGameEvent;
 
 /// <summary>A whole load put into a POI's storage by its owner (published when the machine stops unloading).</summary>
 public sealed record FillStored(Machine Machine, Poi Poi, string FillType, float Amount) : IGameEvent;
@@ -149,8 +162,11 @@ public sealed record MachinesLeased(Contract Contract, IReadOnlyList<Machine> Ma
 /// <summary>A contract ended and its leased machines went back; the farm paid <paramref name="Fee"/> for them.</summary>
 public sealed record LeaseReturned(Contract Contract, IReadOnlyList<Machine> Machines, float Fee) : IContractEvent;
 
-/// <summary>A load tipped at a buyer for a contract, which took it without paying (published when the machine stops).</summary>
-public sealed record ContractDelivery(Contract Contract, Machine Machine, Poi Poi, string FillType, float Amount) : IContractEvent;
+/// <summary>
+/// A load tipped at a buyer for a contract, which took it without paying (published when the machine stops), or bales
+/// left there (no machine).
+/// </summary>
+public sealed record ContractDelivery(Contract Contract, Machine? Machine, Poi Poi, string FillType, float Amount) : IContractEvent;
 
 // ---- Machines
 

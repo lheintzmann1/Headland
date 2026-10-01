@@ -1,13 +1,15 @@
+using Headland.Game.Objects.Components;
 using Headland.Game.Vehicles.Components;
 using Headland.Core;
 using Headland.Core.Components;
 using Headland.Core.Machines.Components;
+using Headland.Core.Objects.Components;
 using Godot;
 
 namespace Headland.Game.Components;
 
 /// <summary>
-/// Draws one component of an entity (a machine, a POI), as a child of its view: moves the rig parts of its roles, and
+/// Draws one component of an entity (a machine, a POI, an object), as a child of its view: moves the rig parts of its roles, and
 /// adds what isn't part of the model (lights, a rope, falling grain).
 /// </summary>
 public partial class ComponentView : Node3D
@@ -34,6 +36,7 @@ public partial class ComponentView : Node3D
         Saw s => new SawView { Sim = sim, Rig = rig, Entity = c.Owner, Saw = s },
         Wearable w => new WearableView { Sim = sim, Rig = rig, Entity = c.Owner, Wearable = w },
         Washable w => new WashableView { Sim = sim, Rig = rig, Entity = c.Owner, Washable = w },
+        Bale b => new BaleView { Sim = sim, Rig = rig, Entity = c.Owner, Bale = b },
         _ => null,
     };
 

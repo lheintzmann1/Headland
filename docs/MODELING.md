@@ -217,6 +217,13 @@ nothing is drawn for it.
 A POI's moving parts (a door, a gate) are nodes named after their role, as on machines: its `animatedParts` give the
 roles (the parts' ids), and `visual.nodes` maps a role to a node named otherwise. Its lamps are placed by its JSON.
 
+## Bales and other objects
+
+Objects (`game/data/objects/*.json`) follow the same scale, orientation and `root` node, `root`'s origin at the middle
+of the object's bottom. Export to `game/assets/models/bales/` (later `pallets/`…). What a bale is made of colors it:
+its `fill` materials take the color of the fill type it holds (grass, hay, straw), as a trailer's load does. A round
+bale lies on its side, its axis along X.
+
 ## The farmer
 
 The farmer follows the same scale, orientation and `root` node: `root`'s origin on the ground between the feet, the

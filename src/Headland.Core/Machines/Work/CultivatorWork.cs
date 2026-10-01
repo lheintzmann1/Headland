@@ -5,8 +5,8 @@ using Headland.Core.World;
 namespace Headland.Core.Machines.Work;
 
 /// <summary>
-/// Shallow tillage: stubble, grass, a meadow or a failed crop into a seedbed. It kills small weeds, and the herbicide's
-/// hold on the ground ends; grown weeds survive it (the plow buries them).
+/// Shallow tillage: stubble, grass, a meadow or a failed crop into a seedbed, with what lay cut on it. It kills small
+/// weeds, and the herbicide's hold on the ground ends; grown weeds survive it (the plow buries them).
 /// </summary>
 public sealed class CultivatorWork() : WorkType("cultivator")
 {
@@ -36,6 +36,7 @@ public sealed class CultivatorWork() : WorkType("cultivator")
         HarvesterWork.ClearCrop(L, i);
         L.WorkAngle[i] = angle;
         if (L.Weeds[i] != WeedState.Grown) L.Weeds[i] = WeedState.None;
+        Windrows.Clear(world, i);
         MarkDirty(world, i, crop: true);
         return true;
     }

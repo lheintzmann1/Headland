@@ -9,6 +9,7 @@ namespace Headland.Core.Machines.Work;
 /// <summary>
 /// A header cutting ripe crops of its harvest groups for the thresher it hangs on, which threshes them into its tank,
 /// and clearing dead ones: the field is left as stubble. The yield is the crop's, less what its health and weeds cost.
+/// What the crop leaves when cut (its windrow: the straw) falls in the thresher's swath, behind it.
 /// </summary>
 public sealed class HarvesterWork() : WorkType("harvester")
 {
@@ -75,6 +76,13 @@ public sealed class HarvesterWork() : WorkType("harvester")
                 break;
             }
             tank.Add(def.FillType, liters);
+            if (def.Windrow is { } w && thresher.Def.Swath is { } swath)
+            {
+                // Across the header, into the swath behind the combine.
+                var x = swath.X + Windrows.Gather(pass.InArea(i).X, pass.Area.Width, swath.Width);
+                Windrows.Drop(pass.World, thresher.Machine.LocalToWorld(x, swath.Z), Windrows.FillOf(pass.Content, w.FillType),
+                    MowerWork.WindrowOf(L, def, w, i));
+            }
             threshed ??= def;
             threshedAmount += liters;
             Clear(pass.World, i, pass.Angle);

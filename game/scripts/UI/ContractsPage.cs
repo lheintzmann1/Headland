@@ -128,15 +128,15 @@ public partial class ContractsPage : MenuPage
         foreach (var header in headers) table.AddChild(Widgets.Label(header, "DimLabel"));
     }
 
-    /// <summary>The contract, and where a harvest's crop goes.</summary>
+    /// <summary>The contract, and where a harvest's crop (a bale job's bales) goes.</summary>
     private static string Title(Contract c) => c.Field != null && c.Poi != null ? $"{c.Label}, to {c.Poi.Name}" : c.Label;
 
-    /// <summary>How far a contract under way is: "64% of 95%", "3,000 of 8,000 L tipped".</summary>
+    /// <summary>How far a contract under way is: "64% of 95%", "3,000 of 8,000 L delivered" (tipped, or left in bales).</summary>
     public static string Progress(Simulation sim, Contract c)
     {
         var parts = new List<string>();
         if (c.Field != null) parts.Add($"{c.Progress * 100f:0}% of {sim.Contracts.Rules.Threshold * 100f:0}%");
-        if (c.Poi != null && (c.Field == null || c.Harvested > 0f)) parts.Add($"{c.Delivered:N0} of {c.ToDeliver:N0} {c.Goods!.Unit} tipped");
+        if (c.Poi != null && (c.Field == null || c.Harvested > 0f)) parts.Add($"{c.Delivered:N0} of {c.ToDeliver:N0} {c.Goods!.Unit} delivered");
         return string.Join(" · ", parts);
     }
 }

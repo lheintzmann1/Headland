@@ -1,0 +1,13 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+// A neighbor's dairy: buys bales of grass, hay and straw left in its bale area, in front of the barn.
+{ "id": "dairy_farm", "name": "Dairy Farm", "w": 36, "d": 36,
+  "visual": { "model": "res://assets/models/buildings/dairy_farm.glb" },
+  "colliders": [
+    { "x": -3, "z": -9, "w": 26, "d": 14 },
+    { "x": 13, "z": -10, "w": 6, "d": 6, "round": true }
+  ],
+  "components": {
+    "sellingStation": { "objectTrigger": { "x": -2, "z": 9, "w": 24, "d": 14 }, "fillTypes": ["grass", "hay", "straw"],
+      "openHours": [5, 21] },
+    "hotspots": { "spots": [ { "icon": "grass" } ] }
+  } }

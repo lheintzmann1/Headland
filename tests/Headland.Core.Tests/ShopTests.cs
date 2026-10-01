@@ -28,7 +28,8 @@ public class ShopTests
     {
         var sim = TestContent.NewSim();
         var shop = sim.Shop;
-        Assert.Equal(["tractor", "combine", "header", "trailer", "cultivator", "plow", "seeder", "spreader", "sprayer", "mower", "frontLoader"],
+        Assert.Equal(["tractor", "combine", "header", "trailer", "cultivator", "plow", "seeder", "spreader", "sprayer", "mower", "tedder",
+                "windrower", "baler", "baleLoader", "frontLoader"],
             shop.Categories().Select(c => c.Id));
         var content = sim.Content;
         // Cheapest first.

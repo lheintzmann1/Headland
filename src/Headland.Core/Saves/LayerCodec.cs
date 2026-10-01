@@ -19,6 +19,7 @@ internal static class LayerCodec
         ("ground", l => l.Ground), ("crop", l => l.Crop), ("stage", l => l.Stage), ("progress", l => l.Progress),
         ("moisture", l => l.Moisture), ("nitrogen", l => l.Nitrogen), ("health", l => l.Health),
         ("workAngle", l => l.WorkAngle), ("chill", l => l.Chill), ("weeds", l => l.Weeds), ("fertilized", l => l.Fertilized),
+        ("windrow", l => l.Windrow), ("windrowFill", l => l.WindrowFill),
     ];
 
     public static byte[] Write(WorldMap world)
@@ -45,8 +46,11 @@ internal static class LayerCodec
         return ms.ToArray();
     }
 
-    /// <summary>Reads the layers into the world; <paramref name="cropRemap"/> maps saved crop values to current ones.</summary>
-    public static void Read(byte[] data, WorldMap world, byte[] cropRemap, List<string> warnings)
+    /// <summary>
+    /// Reads the layers into the world; <paramref name="cropRemap"/> maps saved crop values to current ones, and
+    /// <paramref name="fillRemap"/> saved windrow fill types (what lies of a fill type no longer there is gone).
+    /// </summary>
+    public static void Read(byte[] data, WorldMap world, byte[] cropRemap, byte[] fillRemap, List<string> warnings)
     {
         using var r = new BinaryReader(new MemoryStream(data), Encoding.UTF8);
         if (r.ReadUInt32() != Magic) throw new SaveException("layers.bin is not a Headland layer file");
@@ -73,6 +77,12 @@ internal static class LayerCodec
         }
 
         var L = world.Layers;
+        for (var i = 0; i < L.WindrowFill.Length; i++)
+        {
+            if (L.WindrowFill[i] == 0) continue;
+            L.WindrowFill[i] = fillRemap[L.WindrowFill[i]];
+            if (L.WindrowFill[i] == 0) Windrows.Clear(L, i);
+        }
         for (var i = 0; i < L.Crop.Length; i++)
         {
             var crop = cropRemap[L.Crop[i]];

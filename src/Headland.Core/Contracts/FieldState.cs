@@ -14,6 +14,7 @@ internal readonly struct FieldState
     private readonly int _crops;
     private readonly int _weeds;
     private readonly bool? _fertilized;
+    private readonly bool? _windrow;
 
     public FieldState(FieldStateDef def)
     {
@@ -21,6 +22,7 @@ internal readonly struct FieldState
         foreach (var c in def.Crop) _crops |= 1 << Array.IndexOf(FieldStateDef.CropStates, c);
         foreach (var w in def.Weeds) _weeds |= 1 << Array.IndexOf(WeedState.Names, w);
         _fertilized = def.Fertilized;
+        _windrow = def.Windrow;
     }
 
     /// <summary>True when the state is about a living crop, which for a job is its own crop.</summary>
@@ -35,6 +37,7 @@ internal readonly struct FieldState
         if (_grounds != 0 && (_grounds & (1 << L.Ground[i])) == 0) return false;
         if (_weeds != 0 && (_weeds & (1 << L.Weeds[i])) == 0) return false;
         if (_fertilized is { } fertilized && L.Fertilized[i] > 0 != fertilized) return false;
+        if (_windrow is { } windrow && Windrows.Has(L, i) != windrow) return false;
         return _crops == 0 || (_crops & CropStates(L, crops, i, crop)) != 0;
     }
 

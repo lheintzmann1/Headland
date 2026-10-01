@@ -109,6 +109,8 @@ public sealed class MachineSystem
             if (def.Joints.FirstOrDefault(j => j.Id == jointId)?.Type != m.Joint(jointId)!.Type)
                 Detach(child);
         if (m.Parent is { } parent && def.Get<AttachableDef>()?.Type != parent.Joint(m.ParentJoint!)!.Type) Detach(m);
+        // What it carries is set down where it is: its holders are built anew.
+        _sim.Objects.DropFrom(m);
         m.Reconfigure(def, Content);
         UpdateChildren(m.Root);
     }

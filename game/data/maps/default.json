@@ -36,7 +36,8 @@
     { "x": 414, "z": 200, "w": 58, "h": 40 },
     { "x": 350, "z": 206, "w": 62, "h": 36 },
     { "x": 472, "z": 256, "w": 40, "h": 50 },
-    { "x": 472, "z": 156, "w": 40, "h": 84 }
+    { "x": 472, "z": 156, "w": 40, "h": 84 },
+    { "x": 472, "z": 312, "w": 40, "h": 64 }
   ],
   // Parcels of land (FS farmland): bought and sold whole. Fields are the crop areas inside them.
   // Shapes are rectangles (x, z, w, h) or "polygon": [[x, z], ...]. Roads, forests and the elevator stay outside.
@@ -75,7 +76,9 @@
     { "id": "gas",       "type": "gas_station",    "x": 368, "z": 225 },
     { "id": "workshop",  "type": "workshop",       "x": 399, "z": 224 },
     { "id": "mill",      "type": "flour_mill",     "x": 492, "z": 282, "headingDeg": 180 },
-    { "id": "dealer",    "type": "machinery_dealer", "x": 492, "z": 198 }
+    { "id": "dealer",    "type": "machinery_dealer", "x": 492, "z": 198 },
+    // South of the mill, its bale area facing north, the way from the road.
+    { "id": "dairy",     "type": "dairy_farm",     "x": 492, "z": 346, "headingDeg": 180 }
   ],
   // Machines belong to the player's farm unless "farm": 0 (an NPC's).
   "machines": [

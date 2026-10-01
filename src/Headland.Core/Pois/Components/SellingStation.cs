@@ -23,12 +23,16 @@ public sealed class DemandDef
 }
 
 /// <summary>
-/// Buys the loads of its fill types tipped or piped into its trigger (FS: sellingStation). A sale of a fill type the
-/// POI's fill units keep goes into them, so a mill takes only what it has room to mill.
+/// Buys the loads of its fill types tipped or piped into its trigger (FS: sellingStation), and the bales left in its
+/// object trigger (FS: a bale trigger). A sale of a fill type the POI's fill units keep goes into them, so a mill takes
+/// only what it has room to mill.
 /// </summary>
 public sealed class SellingStationDef : StationDef, IPriced
 {
-    public AreaDef Trigger { get; set; } = new();
+    /// <summary>Where loads are tipped or piped into it; none: it buys objects only.</summary>
+    public AreaDef? Trigger { get; set; }
+    /// <summary>Where objects (bales) left lying are sold, when it buys what they hold; none: it buys loads only.</summary>
+    public AreaDef? ObjectTrigger { get; set; }
     /// <summary>What it buys: these fill types, and those of <see cref="FillTypeCategories"/> once linked.</summary>
     public string[] FillTypes { get; set; } = [];
     public string[] FillTypeCategories { get; set; } = [];
@@ -41,7 +45,14 @@ public sealed class SellingStationDef : StationDef, IPriced
 
     public override string Verb => "buys";
 
-    internal override IEnumerable<(string type, AreaDef area)> Triggers => [("unload", Trigger)];
+    internal override IEnumerable<(string type, AreaDef area)> Triggers
+    {
+        get
+        {
+            if (Trigger != null) yield return ("unload", Trigger);
+            if (ObjectTrigger != null) yield return ("objects", ObjectTrigger);
+        }
+    }
 
     internal override IEnumerable<string> FillTypesOf(PoiDef poi) => FillTypes;
 
@@ -51,6 +62,7 @@ public sealed class SellingStationDef : StationDef, IPriced
     {
         foreach (var error in content.CategoryErrors(FillTypeCategories)) yield return error;
         if (FillTypes.Length == 0) yield return "needs fillTypes or fillTypeCategories";
+        if (Trigger == null && ObjectTrigger == null) yield return "needs a trigger, an objectTrigger or both";
         if (MinAmount < 0f) yield return "minAmount must be >= 0";
         foreach (var e in Priced.Errors(this, FillTypes)) yield return e;
         var d = Demand;

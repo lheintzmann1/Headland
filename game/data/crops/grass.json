@@ -4,7 +4,9 @@
   "sowingMonths": [3, 4, 5], "harvestMonths": [5, 6, 7, 8, 9],
   "frostKillC": -25, "wiltingPoint": 0.2, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.85,
   "nitrogenDemandKgPerHa": 90, "regrowStage": 1,
-  "description": "Meadow grass. Sown in spring, mown when it's ready, and it grows back for the next cut; fertilize it after each one. The cut grass is left lying for now.",
+  // Mown, the grass lies in the mower's windrow for a baler, or a tedder to make hay of it.
+  "windrow": { "fillType": "grass", "perHa": 20000 },
+  "description": "Meadow grass. Sown in spring, mown when it's ready, and it grows back for the next cut; fertilize it after each one. The mown grass is baled, or tedded into hay first.",
   "stages": [
     { "name": "Sown",         "gdd": 120, "height": 0.0 },
     { "name": "Sward",        "gdd": 180, "height": 0.08 },

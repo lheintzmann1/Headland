@@ -25,6 +25,11 @@ public sealed class WorkAreaDef
     public string? FillUnit { get; set; }
     /// <summary>Spreader, sprayer: units of its fill spread on a hectare.</summary>
     public float RatePerHa { get; set; }
+    /// <summary>
+    /// Mower, windrower: the width of the windrow it leaves in its middle (FS: a swath), what it cuts or rakes drawn in
+    /// from the sides; 0: a mower leaves the grass where it cut it.
+    /// </summary>
+    public float WindrowWidth { get; set; }
 
     /// <summary>Its work type (known once the content is validated).</summary>
     [JsonIgnore]
@@ -71,6 +76,7 @@ public sealed class WorkAreasDef : MachineComponentDef, ISpecSource
             }
             if (a.Width <= 0f || a.Length <= 0f || a.MaxWorkSpeedKmh <= 0f || a.RequiredPowerHp < 0f || a.RatePerHa < 0f)
                 yield return $"{a.Type}: width, length and maxWorkSpeedKmh must be > 0, requiredPowerHp and ratePerHa >= 0";
+            if (a.WindrowWidth < 0f || a.WindrowWidth > a.Width) yield return $"{a.Type}: windrowWidth must be 0..width";
             foreach (var e in work.Errors(a, machine, content)) yield return e;
         }
     }

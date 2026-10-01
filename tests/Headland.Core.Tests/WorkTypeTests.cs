@@ -40,7 +40,8 @@ public class WorkTypeTests
     [Fact]
     public void EveryKindOfWorkIsRegisteredAndTheShippedMachinesDoIt()
     {
-        Assert.Equal(["cultivator", "plow", "seeder", "harvester", "spreader", "sprayer", "mower"], WorkTypes.All.Select(t => t.Id));
+        Assert.Equal(["cultivator", "plow", "seeder", "harvester", "spreader", "sprayer", "mower", "tedder", "windrower", "baler"],
+            WorkTypes.All.Select(t => t.Id));
         var done = TestContent.Content.Machines.Values
             .SelectMany(m => m.Get<WorkAreasDef>()?.Areas ?? [])
             .Select(a => a.Work.Id)
@@ -60,7 +61,7 @@ public class WorkTypeTests
                    { "type": "juggler" }, { "type": "spreader", "fillUnit": "bin" }, { "type": "sprayer", "ratePerHa": -1 },
                    { "type": "mower" } ] } } }]
             """));
-        Assert.Contains("machine 'x' workAreas: unknown type 'juggler' (cultivator, plow, seeder, harvester, spreader, sprayer, mower)", bad.Message);
+        Assert.Contains("machine 'x' workAreas: unknown type 'juggler' (cultivator, plow, seeder, harvester, spreader, sprayer, mower, tedder, windrower, baler)", bad.Message);
         Assert.Contains("machine 'x' workAreas: a spreader needs ratePerHa > 0", bad.Message);
         Assert.Contains("machine 'x' workAreas: a spreader spreads fertilizer: 'seeds' has no nitrogen", bad.Message);
         Assert.Contains("machine 'x' workAreas: sprayer: width, length and maxWorkSpeedKmh must be > 0, requiredPowerHp and ratePerHa >= 0", bad.Message);

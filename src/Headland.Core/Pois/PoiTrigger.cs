@@ -6,7 +6,8 @@ namespace Headland.Core.Pois;
 
 /// <summary>
 /// An area of a placed POI where machines use it, and the component they use there (a selling station, a silo, a
-/// workshop…): <see cref="Type"/> says how, "unload", "load", "fill", "repair", "wash" or "delivery".
+/// workshop…): <see cref="Type"/> says how, "unload", "load", "fill", "repair", "wash", "delivery", or "objects" (where
+/// objects left lying are sold).
 /// </summary>
 public sealed class PoiTrigger(Poi poi, Component station, string type, AreaDef def)
 {

@@ -48,6 +48,7 @@ public class ContentTests
             [
                 "removed from map 'default' (1 place)",
                 "the cultivator_3 hitched to it on map 'default' stands unhitched",
+                "removed from the lease sets of 'bale' contracts",
                 "removed from the lease sets of 'cultivate' contracts",
                 "removed from the lease sets of 'plow' contracts",
                 "removed from the lease sets of 'sow' contracts",

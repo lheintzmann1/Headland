@@ -1,0 +1,16 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "tedder_6", "name": "Spreadwell 6", "category": "tedder", "brand": "verdant", "price": 9800, "mass": 820,
+  "size": { "length": 2.2, "width": 6.4, "height": 1.2, "centerZ": -1.4 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true, "lift": 0.4 },
+    // Its rotors spread the grass over their width, and it dries into hay.
+    "workAreas": {
+      "areas": [ { "type": "tedder", "width": 6.4, "length": 0.8, "z": -1.6, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 35 } ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#7a5a24", "model": "res://assets/models/tedders/tedder_6.glb" },
+  "description": "Rotary tedder. Lower it (V) and turn it on (B) over mown grass: it spreads the grass over 6.4 m and turns it into hay, which sells for more. Rake the hay into a windrow for the baler."
+}

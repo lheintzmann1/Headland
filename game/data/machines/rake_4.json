@@ -1,0 +1,17 @@
+// Mounted: origin at the hitch point. See docs/COMPONENTS.md.
+{
+  "id": "rake_4", "name": "Swathmaker 4", "category": "windrower", "brand": "verdant", "price": 8600, "mass": 690,
+  "size": { "length": 2.6, "width": 4.2, "height": 1.3, "centerZ": -1.4 },
+  "components": {
+    "attachable": { "type": "threePoint", "mode": "mounted", "x": 0, "z": 0, "lowerable": true, "lift": 0.4 },
+    // What lies across its 4.2 m is gathered into a 1.3 m windrow in its middle.
+    "workAreas": {
+      "areas": [ { "type": "windrower", "width": 4.2, "length": 0.8, "z": -1.7, "requiresOn": true, "windrowWidth": 1.3,
+        "maxWorkSpeedKmh": 14, "requiredPowerHp": 30 } ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#7a5a24", "model": "res://assets/models/rakes/rake_4.glb" },
+  "description": "Rotary rake. Lower it (V) and turn it on (B) to gather hay or straw lying spread into a windrow for the baler."
+}

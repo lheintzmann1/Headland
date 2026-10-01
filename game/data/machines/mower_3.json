@@ -7,12 +7,12 @@
     "workAreas": {
       "areas": [
         { "type": "mower", "width": 3.0, "length": 0.6, "z": -1.25, "requiresOn": true, "maxWorkSpeedKmh": 15, "requiredPowerHp": 55,
-          "harvestGroups": ["grass"] }
+          "harvestGroups": ["grass"], "windrowWidth": 1.2 }
       ]
     },
     "wearable": {},
     "washable": {}
   },
   "visual": { "color": "#7a5a24", "model": "res://assets/models/mowers/mower_3.glb" },
-  "description": "Rear-mounted disc mower. Lower it (V) and turn it on (B) to cut a meadow that's ready; the grass grows back for the next cut."
+  "description": "Rear-mounted disc mower. Lower it (V) and turn it on (B) to cut a meadow that's ready: the grass lies in a windrow for a baler, and grows back for the next cut."
 }

@@ -68,6 +68,8 @@ public sealed class ContentDatabase
     public List<CropDef> Crops { get; } = [];
     public Dictionary<string, MachineDef> Machines { get; } = new();
     public Dictionary<string, PoiDef> Pois { get; } = new();
+    /// <summary>Things lying about that machines carry: bales.</summary>
+    public Dictionary<string, ObjectDef> Objects { get; } = new();
     public Dictionary<string, ContractTypeDef> ContractTypes { get; } = new();
     public Dictionary<string, ClimateDef> Climates { get; } = new();
     public Dictionary<string, MapDef> Maps { get; } = new();
@@ -87,6 +89,8 @@ public sealed class ContentDatabase
     internal IEnumerable<string> CategoryErrors(string[] categories) =>
         categories.Where(c => !FillTypesIn(c).Any()).Select(c => $"no fill type is in category '{c}'");
     public int CropIndex(string id) => Crops.FindIndex(c => c.Id == id);
+    /// <summary>A fill type's place in <see cref="FillTypeList"/> (what windrow cells store, plus one), or -1.</summary>
+    public int FillTypeIndex(string id) => FillTypeList.FindIndex(f => f.Id == id);
     public int SoilIndex(string id) => Soils.FindIndex(s => s.Id == id);
 
     public ClimateDef Climate => Climates[Game.Climate];
@@ -116,6 +120,12 @@ public sealed class ContentDatabase
         {
             p.Link(db);
             db.AddUnique(db.Pois, p.Id, p, "poi");
+        }
+        foreach (var file in src.ListJson("objects"))
+        foreach (var o in ReadMany<ObjectDef>(src, file))
+        {
+            o.Link(db);
+            db.AddUnique(db.Objects, o.Id, o, "object");
         }
         foreach (var file in src.ListJson("contracts"))
         foreach (var c in ReadMany<ContractTypeDef>(src, file))
@@ -291,9 +301,12 @@ public sealed class ContentDatabase
                 e.Add($"lamp type '{l.Id}': key is for lights, one of {string.Join(", ", LampTypeDef.Keys)}");
         }
 
+        if (FillTypeList.Count > 254) e.Add("at most 254 fill types are supported");
         foreach (var f in FillTypeList)
         {
             if (f.MonthlyPriceFactor is { Length: not 12 }) e.Add($"fill type '{f.Id}': monthlyPriceFactor needs 12 values");
+            if (f.Tedded is { } t && (!FillTypes.ContainsKey(t.FillType) || t.FillType == f.Id || t.Factor <= 0f))
+                e.Add($"fill type '{f.Id}': tedded needs another known fillType and a factor > 0");
             if (f.Nitrogen < 0f) e.Add($"fill type '{f.Id}': nitrogen must be >= 0");
             if (f.Categories.Any(string.IsNullOrWhiteSpace)) e.Add($"fill type '{f.Id}': categories need names");
         }
@@ -319,6 +332,8 @@ public sealed class ContentDatabase
                 e.Add($"crop '{c.Id}': regrowStage must be a stage before the harvestable one");
             if (c.WeedYieldLoss is < 0f or > 1f) e.Add($"crop '{c.Id}': weedYieldLoss must be 0..1");
             if (MapLayers.ParseRgb(c.MapColor) == null) e.Add($"crop '{c.Id}': mapColor must be a color (#rrggbb)");
+            if (c.Windrow is { } w && (!FillTypes.ContainsKey(w.FillType) || w.PerHa <= 0f))
+                e.Add($"crop '{c.Id}': windrow needs a known fillType and perHa > 0");
         }
         foreach (var s in Soils.Where(s => MapLayers.ParseRgb(s.MapColor) == null))
             e.Add($"soil '{s.Id}': mapColor must be a color (#rrggbb)");
@@ -364,6 +379,12 @@ public sealed class ContentDatabase
             if (p.Colliders.Any(q => q.W <= 0 || q.D <= 0)) e.Add($"poi '{p.Id}': colliders need w and d > 0");
         }
 
+        foreach (var o in Objects.Values)
+        {
+            e.AddRange(EntityErrors(o).Select(error => $"object '{o.Id}'{error}"));
+            if (o.Size.Length <= 0f || o.Size.Width <= 0f || o.Size.Height <= 0f) e.Add($"object '{o.Id}': size needs length, width and height > 0");
+        }
+
         foreach (var t in ContractTypes.Values)
         {
             var what = $"contract type '{t.Id}'";
@@ -381,6 +402,8 @@ public sealed class ContentDatabase
                     e.Add($"{what}: {name} weed state '{w}' is unknown ({string.Join(", ", World.WeedState.Names)})");
             }
             if (t.Work == "" && t.Leases.Length > 0) e.Add($"{what}: leases are for field jobs");
+            if (t.Work == "" && t.AlsoWork.Length > 0) e.Add($"{what}: alsoWork is for field jobs");
+            foreach (var w in t.AlsoWork.Where(w => WorkTypes.Find(w) == null)) e.Add($"{what}: unknown alsoWork '{w}' ({WorkTypes.Known})");
             for (var k = 0; k < t.Leases.Length && t.Work != ""; k++)
             {
                 var lease = t.Leases[k];

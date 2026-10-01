@@ -1,0 +1,30 @@
+// Trailed: origin in the middle of its axle, the drawbar eye ahead of it. See docs/COMPONENTS.md.
+{
+  "id": "baler_125", "name": "Rollmaster 125", "category": "baler", "brand": "verdant", "price": 34500, "mass": 2650,
+  "size": { "length": 4.4, "width": 2.6, "height": 2.7, "centerZ": 0.5 },
+  "components": {
+    "runningGear": { "axles": [ { "z": 0, "track": 2.3, "wheels": { "radius": 0.45, "width": 0.42 } } ] },
+    "attachable": { "type": "drawbar", "mode": "trailed", "x": 0, "z": 3.4, "maxArticulationDeg": 70 },
+    // The pickup, ahead of the chamber: it gathers the windrow the tractor straddles.
+    "workAreas": {
+      "areas": [ { "type": "baler", "width": 2.1, "length": 0.6, "z": 1.5, "requiresOn": true, "maxWorkSpeedKmh": 14, "requiredPowerHp": 75 } ]
+    },
+    "fillUnits": { "units": [ { "id": "chamber", "capacity": 4000, "fillTypeCategories": ["windrow"] } ] },
+    // A bale drops out of the tailgate each time the chamber is full.
+    "baler": { "fillUnit": "chamber", "bale": "round_bale", "z": -2.3 },
+    "lights": {
+      "lamps": [
+        { "type": "turnLeft",  "x":  1.15, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "turnRight", "x": -1.15, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 1.2, "color": "#ffa630" },
+        { "type": "tail",  "x":  1.0, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "tail",  "x": -1.0, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 4, "angleDeg": 70, "energy": 0.6, "color": "#ff2a1a" },
+        { "type": "brake", "x":  1.0, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" },
+        { "type": "brake", "x": -1.0, "y": 1.1, "z": -1.6, "yawDeg": 180, "pitchDeg": -10, "range": 5, "angleDeg": 70, "energy": 2, "color": "#ff2a1a" }
+      ]
+    },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#4d5c38", "model": "res://assets/models/balers/baler_125.glb" },
+  "description": "Round baler. Turn it on (B) and drive over a windrow of grass, hay or straw: each time its chamber is full it drops a 4,000 L bale behind it. Drop what it holds at the end of a field (U)."
+}

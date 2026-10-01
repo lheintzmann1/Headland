@@ -9,6 +9,7 @@ using Headland.Core.Events;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
+using Headland.Core.Objects;
 using Headland.Core.Ownership;
 using Headland.Core.Pois;
 using Headland.Core.Time;
@@ -47,6 +48,7 @@ public sealed class Simulation
         Crops = new CropSystem(content, World, Calendar, Climate);
         Pois = new PoiSystem(this, setup.WeatherSeed * 0x9E3779B97F4A7C15UL + 0x504F49UL);
         Machines = new MachineSystem(this);
+        Objects = new ObjectSystem(this);
         Shop = new Shop(this);
         Garage = new Garage(this);
         Player = new PlayerCharacter(Events) { Position = new Vector2(Map.PlayerX, Map.PlayerZ) };
@@ -74,6 +76,8 @@ public sealed class Simulation
     public PoiSystem Pois { get; }
     public ContractSystem Contracts { get; }
     public MachineSystem Machines { get; }
+    /// <summary>Things lying about that machines carry: bales.</summary>
+    public ObjectSystem Objects { get; }
     public Shop Shop { get; }
     public Garage Garage { get; }
     public PlayerCharacter Player { get; }
@@ -125,6 +129,7 @@ public sealed class Simulation
         UpdateWeather();
 
         Machines.Update(dt);
+        Objects.Update(dt);
         Shop.Update();
         Pois.Update(dt);
         foreach (var m in Machines.All)
@@ -434,6 +439,7 @@ public sealed class Simulation
         foreach (var m in gone)
         {
             Pois.Forget(m);
+            Objects.DropFrom(m);
             Machines.All.Remove(m);
         }
     }
@@ -484,6 +490,8 @@ public sealed class Simulation
             Chill = L.Chill[i],
             Weeds = L.Weeds[i],
             Fertilized = L.Fertilized[i],
+            Windrow = Windrows.Has(L, i) ? L.Windrow[i] : 0f,
+            WindrowFill = Windrows.Has(L, i) ? Windrows.FillTypeAt(Content, L, i) : null,
         };
         if (crop != null && stage != CropStage.Dead)
         {
@@ -526,6 +534,9 @@ public sealed class CellReport(bool valid)
     public byte Weeds { get; init; }
     /// <summary>Times fertilized since the last harvest.</summary>
     public int Fertilized { get; init; }
+    /// <summary>What lies cut on the cell (grass, hay, straw), and how much (units).</summary>
+    public float Windrow { get; init; }
+    public FillTypeDef? WindrowFill { get; init; }
     /// <summary>What a hectare of the crop would yield now, by its health and the weeds.</summary>
     public float ExpectedYieldPerHa { get; set; }
     public float DaysToHarvest { get; set; } = float.NaN;

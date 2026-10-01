@@ -12,3 +12,5 @@ One file per crop, named after its `id`. The game reads every `.json` here: the 
 - `ground`: what its cells show once sown: `seeded` (the default) or `grass` (a meadow, where weeds don't come up).
 - `regrowStage`: a crop that grows back once mown starts over from this stage (grass); others are cleared.
 - `weedYieldLoss`: yield lost where weeds grew up among the crop (default 0.2; half of it where they're small).
+- `windrow`: what cutting it leaves lying on the field, `fillType` and `perHa` (units on a hectare, less as the crop
+  yields less): mown grass lies in the mower's windrow, a combine drops straw in its swath. Balers pick it up.

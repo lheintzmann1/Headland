@@ -19,6 +19,12 @@
     "categories": ["fertilizer"] },
   // Sold mixed with water, ready for the sprayer's tank.
   { "id": "herbicide", "name": "Herbicide", "unit": "L", "massPerUnit": 1.0, "pricePerUnit": 0.6, "color": "#7d949b", "categories": ["herbicide"] },
-  // Cut grass: left lying on the meadow until balers exist.
-  { "id": "grass", "name": "Grass", "unit": "L", "massPerUnit": 0.2, "pricePerUnit": 0.05, "color": "#6e8a3e", "categories": ["forage"] }
+  // What lies cut on the fields ("windrow": what balers pick up). A tedder turns grass into hay ("tedded"), drying it
+  // to 0.6 of its volume; straw is what the combine leaves of wheat and barley.
+  { "id": "grass", "name": "Grass", "unit": "L", "massPerUnit": 0.2, "pricePerUnit": 0.05, "color": "#6e8a3e", "categories": ["forage", "windrow"],
+    "tedded": { "fillType": "hay", "factor": 0.6 } },
+  { "id": "hay", "name": "Hay", "unit": "L", "massPerUnit": 0.1, "pricePerUnit": 0.12, "color": "#b3a25e", "categories": ["forage", "windrow"],
+    "monthlyPriceFactor": [1.15, 1.2, 1.2, 1.1, 1.0, 0.9, 0.85, 0.85, 0.9, 0.95, 1.05, 1.1] },
+  { "id": "straw", "name": "Straw", "unit": "L", "massPerUnit": 0.08, "pricePerUnit": 0.06, "color": "#cdb87e", "categories": ["windrow"],
+    "monthlyPriceFactor": [1.1, 1.15, 1.15, 1.1, 1.0, 0.95, 0.85, 0.85, 0.9, 0.95, 1.0, 1.05] }
 ]

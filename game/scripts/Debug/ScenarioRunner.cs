@@ -38,6 +38,7 @@ public partial class ScenarioRunner : Node
                 case "loop": await Loop(); break;
                 case "tour": await Tour(); break;
                 case "menus": await Menus(); break;
+                case "bales": await Bales(); break;
                 default: Log($"unknown scenario '{Scenario}'"); break;
             }
             ok = true;
@@ -285,6 +286,78 @@ public partial class ScenarioRunner : Node
     }
 
     // ------------------------------------------------------------------ Helpers
+
+    /// <summary>
+    /// Mow a strip of the farm's meadow, bale it, collect the bales and leave them at the dairy (shots only with a window).
+    /// </summary>
+    private async Task Bales()
+    {
+        Game.Camera.Zoom = 30f;
+        await Frames(10);
+        var meadow = Sim.World.FieldById(7)!.Shape;
+        var strip = FieldInfo.Rect(7, meadow.Min.X, meadow.Min.Y, 12f, meadow.Size.Y);
+        var at = new NVec2(meadow.Min.X + 3f, meadow.Min.Y - 8f);
+
+        // --- Mow.
+        var tractor = Ms.Spawn("tractor_125", at, 0f);
+        var mower = Ms.Spawn("mower_3", at - new NVec2(0f, 3f), 0f);
+        Ms.Attach(tractor, "rear", mower);
+        Game.FocusOverride = () => tractor.Footprint.Center;
+        Game.SimSubsteps = 4;
+        var mowing = Sim.HireHelper(tractor, strip, maxLanes: 4);
+        await Until(() => mowing.Finished, 240f);
+        Game.SimSubsteps = 1;
+        Log($"mowed {mower.WorkedHa:0.00} ha: {Lying("grass"):N0} L of grass in windrows");
+        if (DisplayServer.GetName() != "headless") await Shot("windrows");
+
+        // --- Bale what lies there.
+        Ms.Detach(mower);
+        Ms.Teleport(mower, at + new NVec2(-12f, -6f), 0f);
+        var baler = Ms.Spawn("baler_125", tractor.Position - MathUtil.Forward(tractor.Heading) * 5f, tractor.Heading);
+        Ms.Attach(tractor, "drawbar", baler);
+        Ms.Teleport(tractor, at, 0f);
+        Game.SimSubsteps = 4;
+        var baling = Sim.HireHelper(tractor, strip);
+        await Until(() => baling.Finished, 300f);
+        Game.SimSubsteps = 1;
+        baler.Get<Baler>()!.Drop(Sim);
+        var bales = Sim.Objects.All.ToList();
+        Log($"baled {Sim.Statistics.Harvested.GetValueOrDefault("grass"):N0} L into {bales.Count} bales, {Lying("grass"):N0} L left lying");
+        if (DisplayServer.GetName() != "headless") await Shot("bales");
+
+        // --- Collect them: the loader's pickup beside each in turn.
+        var t95 = Ms.Spawn("tractor_95", at + new NVec2(20f, 0f), 0f);
+        var loader = Ms.Spawn("baleloader_8", t95.Position - new NVec2(0f, 6f), 0f);
+        Ms.Attach(t95, "drawbar", loader);
+        var bed = loader.Get<BaleLoader>()!;
+        bed.On = true;
+        Game.FocusOverride = () => loader.Footprint.Center;
+        foreach (var bale in bales.Take(bed.Capacity))
+        {
+            var pickup = bed.Def.Pickup;
+            var heading = bale.Heading;
+            var loaderAt = bale.Position - MathUtil.Left(heading) * pickup.X - MathUtil.Forward(heading) * pickup.Z;
+            Ms.Teleport(t95, loaderAt + MathUtil.Forward(heading) * loader.Get<Attachable>()!.Def.Z - MathUtil.Forward(heading) * t95.Joint("drawbar")!.Z, heading);
+            await Until(() => bale.Holder != null, 5f);
+        }
+        Log($"loaded {bed.Count} bales");
+        if (DisplayServer.GetName() != "headless") await Shot("loaded");
+
+        // --- Leave them at the dairy.
+        var dairy = Sim.World.PoiById("dairy")!.Trigger("objects")!.Area;
+        var money = Sim.Economy.Money;
+        var facing = MathUtil.HeadingOf(dairy.AxisY);
+        Ms.Teleport(t95, dairy.Center + dairy.AxisY * (dairy.HalfExtents.Y + 9f), facing);
+        await Frames(10);
+        bed.Unload(Sim);
+        await Until(() => Sim.Economy.Money > money, 5f);
+        Log($"sold the bales at the dairy for ${Sim.Economy.Money - money:N0}; {Sim.Objects.All.Count} bales left in the field");
+        if (DisplayServer.GetName() != "headless") await Shot("dairy");
+
+        float Lying(string fillType) => Enumerable.Range(0, Sim.World.Layers.Windrow.Length)
+            .Where(i => Windrows.FillTypeAt(Sim.Content, Sim.World.Layers, i)?.Id == fillType)
+            .Sum(i => Sim.World.Layers.Windrow[i]);
+    }
 
     private Machine Find(string defId) => Ms.All.First(m => m.Def.Id == defId);
 

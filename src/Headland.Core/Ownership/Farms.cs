@@ -99,13 +99,13 @@ public sealed class Farms
         if (farmId != Farm.None && land?.FarmId == farmId) return null;
         if (_contracts.On(field) is not { State: ContractState.Active } c || c.FarmId != farmId)
             return land != null ? $"{field.Label} belongs to {OwnerName(land)}: take a contract on it first" : $"{field.Label} can't be worked";
-        if (c.Type.Work != work) return $"The contract on {field.Label} is to {c.Type.Name.ToLowerInvariant()}";
+        if (!c.Type.Allows(work)) return $"The contract on {field.Label} is to {c.Type.Name.ToLowerInvariant()}";
         return Allows(c, farmId, work, crop) ? null : $"The contract on {field.Label} is to sow {c.Crop!.Name.ToLowerInvariant()}";
     }
 
-    /// <summary>A contract lets the farm doing it do its work, and put only its crop on the field.</summary>
+    /// <summary>A contract lets the farm doing it do its work (and the work the job also needs), and put only its crop on the field.</summary>
     private static bool Allows(Contract c, int farmId, string work, CropDef? crop) =>
-        c.State == ContractState.Active && c.FarmId == farmId && c.Type.Work == work && (crop == null || c.Crop == null || c.Crop == crop);
+        c.State == ContractState.Active && c.FarmId == farmId && c.Type.Allows(work) && (crop == null || c.Crop == null || c.Crop == crop);
 
     /// <summary>What <paramref name="land"/> costs the player's farm at its price level, and pays when sold back.</summary>
     public float Price(Farmland land) => MathF.Round(land.Price * _economy.PriceLevel);

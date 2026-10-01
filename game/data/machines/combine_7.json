@@ -20,7 +20,8 @@
         { "id": "fuel", "capacity": 600, "fillTypes": ["diesel"], "startFillType": "diesel", "startLevel": 600 }
       ]
     },
-    "thresher": { "fillUnit": "tank" },
+    // The straw falls in a swath behind it.
+    "thresher": { "fillUnit": "tank", "swath": { "z": -6.2, "width": 1.6 } },
     "pipe": { "fillUnit": "tank", "x": 5.6, "z": -1.4, "ratePerSecond": 140 },
     "lights": {
       "lamps": [
@@ -49,7 +50,7 @@
     "washable": {}
   },
   "visual": { "color": "#56703f", "model": "res://assets/models/combines/combine_7.glb" },
-  "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer.",
+  "description": "Conventional combine. Turn it on (B), lower the header (V), unfold the pipe (U) over a trailer. The straw of wheat and barley falls in a swath behind it, for a baler.",
   "configurations": [
     { "id": "wheels", "name": "Front wheels", "options": [
       { "id": "single", "name": "Standard" },

@@ -11,6 +11,9 @@ public sealed class Statistics
         events.Subscribe<CropHarvested>(e => Add(Harvested, e.FillType, e.Amount));
         events.Subscribe<FillSold>(e => Add(Sold, e.FillType, e.Amount));
         events.Subscribe<ProductionSold>(e => Add(Sold, e.FillType, e.Amount));
+        events.Subscribe<ObjectsSold>(e => Add(Sold, e.FillType, e.Amount));
+        events.Subscribe<WindrowPickedUp>(e => Add(Harvested, e.FillType, e.Amount));
+        events.Subscribe<BaleMade>(_ => BalesMade++);
         events.Subscribe<FillBought>(e => Add(Bought, e.FillType, e.Amount));
         events.Subscribe<FillOrdered>(e => Add(Bought, e.FillType, e.Amount));
         events.Subscribe<HelperHired>(_ => HelpersHired++);
@@ -20,13 +23,14 @@ public sealed class Statistics
 
     /// <summary>Hectares worked per work type (cultivator, seeder, harvester).</summary>
     public Dictionary<string, float> HectaresWorked { get; } = new();
-    /// <summary>Units harvested per fill type.</summary>
+    /// <summary>Units harvested per fill type: threshed, and baled.</summary>
     public Dictionary<string, float> Harvested { get; } = new();
     /// <summary>Units sold per fill type.</summary>
     public Dictionary<string, float> Sold { get; } = new();
     /// <summary>Units bought per fill type.</summary>
     public Dictionary<string, float> Bought { get; } = new();
     public int HelpersHired { get; set; }
+    public int BalesMade { get; set; }
     public int ContractsCompleted { get; set; }
     public int DaysPlayed { get; set; }
 

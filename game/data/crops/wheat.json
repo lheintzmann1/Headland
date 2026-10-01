@@ -4,6 +4,8 @@
   "sowingMonths": [9, 10, 11], "harvestMonths": [7, 8],
   "frostKillC": -18, "wiltingPoint": 0.22, "optimalMoistureMin": 0.4, "optimalMoistureMax": 0.8,
   "nitrogenDemandKgPerHa": 180, "vernalizationDays": 40,
+  // The straw the combine leaves in its swath.
+  "windrow": { "fillType": "straw", "perHa": 12000 },
   "description": "Winter wheat. Sown in autumn, needs a winter (vernalization) to head, harvested in summer.",
   "stages": [
     { "name": "Sown",            "gdd": 150, "height": 0.0,  "card": 0 },

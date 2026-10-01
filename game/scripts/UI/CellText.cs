@@ -47,6 +47,8 @@ public static class CellText
             if (r.Weeds != WeedState.None) treated.Add(WeedName(r.Weeds));
             if (r.Fertilized > 0) treated.Add(r.Fertilized == 1 ? "fertilized" : $"fertilized {r.Fertilized}×");
             if (treated.Count > 0) sb.Append(Widgets.Colored(string.Join(" · ", treated), Palette.Dim) + "\n");
+            if (r.WindrowFill is { } lying)
+                sb.Append($"{lying.Name} lying cut: [b]{r.Windrow / WorldMap.CellArea:0.0}[/b] {lying.Unit}/m²\n");
         }
         if (r.Crop is { VernalizationDays: > 0 } vc && r.StageName != "Dead" && r.Stage < Array.FindIndex(vc.Stages, s => s.RequiresVernalization))
             sb.Append(r.Chill >= vc.VernalizationDays

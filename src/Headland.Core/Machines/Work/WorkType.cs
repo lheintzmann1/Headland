@@ -1,3 +1,4 @@
+using System.Numerics;
 using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Machines.Components;
@@ -21,7 +22,7 @@ public abstract class WorkType(string id)
     /// </summary>
     public virtual bool Draft => true;
 
-    /// <summary>It threshes the crop into a tank: its contracts can ask for the crop at a buyer.</summary>
+    /// <summary>It gathers the crop (threshing it into a tank, baling it): its contracts can ask for the crop at a buyer.</summary>
     public virtual bool Harvests => false;
 
     /// <summary>It sows the crop the driver picks (<see cref="WorkAreas.Crop"/>).</summary>
@@ -119,6 +120,20 @@ internal sealed class WorkPass(Simulation sim, Machine machine, WorkAreas areas,
         return false;
     }
 
+    /// <summary>Where cell <paramref name="i"/> is from the middle of the area: across it (x, to the left) and along it (y, ahead).</summary>
+    public Vector2 InArea(int i) =>
+        MathUtil.WorldToLocal(Machine.Position, Machine.Heading, World.CellCenter(i % World.CellsX, i / World.CellsX)) - new Vector2(Area.X, Area.Z);
+
+    /// <summary>
+    /// Leaves <paramref name="amount"/> of <paramref name="fill"/>, cut or raked up in cell <paramref name="i"/>, in the
+    /// area's windrow (<see cref="WorkAreaDef.WindrowWidth"/>; none: where it was).
+    /// </summary>
+    public void Swath(int i, byte fill, float amount)
+    {
+        var at = InArea(i);
+        Windrows.Drop(World, Machine.LocalToWorld(Area.X + Windrows.Gather(at.X, Area.Width, Area.WindrowWidth), Area.Z + at.Y), fill, amount);
+    }
+
     /// <summary>The pass is over: takes the fill it used from the unit.</summary>
     public void Finish()
     {
@@ -129,8 +144,8 @@ internal sealed class WorkPass(Simulation sim, Machine machine, WorkAreas areas,
 
 /// <summary>
 /// Every kind of field work, by the id work areas and contracts give it: tilling (cultivator, plow), sowing (seeder),
-/// harvesting (harvester), fertilizing (spreader), spraying herbicide (sprayer) and mowing (mower). More can be
-/// registered (mods, Lua).
+/// harvesting (harvester), fertilizing (spreader), spraying herbicide (sprayer), mowing (mower), and the work on what
+/// lies cut (tedder, windrower, baler). More can be registered (mods, Lua).
 /// </summary>
 public static class WorkTypes
 {
@@ -141,8 +156,11 @@ public static class WorkTypes
     public static readonly SpreaderWork Spreader = new();
     public static readonly SprayerWork Sprayer = new();
     public static readonly MowerWork Mower = new();
+    public static readonly TedderWork Tedder = new();
+    public static readonly WindrowerWork Windrower = new();
+    public static readonly BalerWork Baler = new();
 
-    private static readonly List<WorkType> Types = [Cultivator, Plow, Seeder, Harvester, Spreader, Sprayer, Mower];
+    private static readonly List<WorkType> Types = [Cultivator, Plow, Seeder, Harvester, Spreader, Sprayer, Mower, Tedder, Windrower, Baler];
 
     public static IReadOnlyList<WorkType> All => Types;
 

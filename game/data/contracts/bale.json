@@ -1,0 +1,7 @@
+{ "id": "bale", "name": "Bale", "work": "baler", "alsoWork": ["mower", "tedder", "windrower"], "months": [5, 6, 7, 8, 9],
+  "offer": { "crop": ["harvestable"] },
+  "done": { "crop": ["growing"], "windrow": false },
+  "deliver": { "share": 0.9 },
+  "rewardPerHa": 650, "days": [3, 5],
+  "leases": [ { "machines": ["tractor_95", "mower_3", "baler_125", "tractor_125", "baleloader_8"], "feePerHa": 190 } ],
+  "description": "Mow the meadow, bale the grass and bring the bales to the buyer. The grass is the neighbor's: the buyer pays you nothing for it." }

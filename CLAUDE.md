@@ -9,8 +9,8 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
   world/field layers, crops, machines, economy, player, input bindings. Godot only renders and feeds input.
 - `tests/Headland.Core.Tests/`: xUnit, including agronomy calibration (`CalibrationTests`) and helper coverage.
 - `game/`: the Godot project (assembly `Headland`, namespaces `Headland.Game.*`). `scripts/` (C# presentation),
-  `shaders/` (GDShader), `data/` (JSON content "raws": a file per machine, POI, crop, contract type, climate and map in
-  their folders, named after its id; soils, fill types, npcs, the shop's brands and categories as lists),
+  `shaders/` (GDShader), `data/` (JSON content "raws": a file per machine, POI, object, crop, contract type, climate and
+  map in their folders, named after its id; soils, fill types, npcs, the shop's brands and categories as lists),
   `ui/theme.tres` (the project `Theme`), `assets/` (textures, fonts, icons, future models, `CREDITS.md`),
   `export_presets.cfg` (Linux/Windows/macOS, used by CI).
 - `.github/workflows/`: `ci.yml` (build + tests + content validation), `build.yml` (Godot exports, the macOS app re-signed
@@ -66,12 +66,13 @@ On the main dev machine Godot is `~/.local/bin/godot`, which is not on PATH. `gl
   shop…) is one of them. Screens cover the whole view as in FS, in a `ScreenFrame` (title or tabs with the balance and
   date on top, key hints and the latest notification below), and pages fill it; only small choices and overlays (the
   silo's load picker, F1 help) are centered `Widgets.Dialog`s.
-- Machines and POIs are entities built from components (FS specializations), on one base in
+- Machines, POIs and objects (bales) are entities built from components (FS specializations), on one base in
   `src/Headland.Core/Components` (`Entity`, `EntityDef`, `Component`, `ComponentKinds`, where every kind is
   registered). A kind per file (its def, checked against what it's on, runtime state and save data): shared ones
   beside the base, machine-only ones in `src/Headland.Core/Machines/Components`, POI-only ones (stations, silos,
-  production) in `src/Headland.Core/Pois/Components`; a view per kind in `game/scripts/Components` (base, shared
-  kinds) or `game/scripts/Vehicles/Components`. Systems and UI query them (`machine.Get<Pipe>()`); the JSON
+  production) in `src/Headland.Core/Pois/Components`, object-only ones in `src/Headland.Core/Objects/Components`; a
+  view per kind in `game/scripts/Components` (base, shared kinds), `game/scripts/Vehicles/Components` or
+  `game/scripts/Objects/Components`. Systems and UI query them (`machine.Get<Pipe>()`); the JSON
   reference is `docs/COMPONENTS.md`.
 - Art direction: realistic proportions, low poly, muted/desaturated (Project Zomboid-like), no toy look.
   Machines, POIs and the farmer are `.glb` models (`visual.model` on machines and POIs, `player.model` in
