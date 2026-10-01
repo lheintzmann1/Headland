@@ -307,7 +307,7 @@ public sealed class RunningGear(Machine machine, RunningGearDef def) : MachineCo
         if (Machine.Parent != null || Def.Modes.Length < 2) return;
         actions.Add(InputActions.Steering, $"Steering: {MachineSystem.SteeringName(Mode)}", () =>
         {
-            if (Machine.Get<Drivable>()?.Controller is FieldWorkController)
+            if (Machine.Get<Drivable>()?.Controller is Helpers.HelperJob)
             {
                 sim.Notifications.Post("The helper steers: dismiss them first");
                 return;

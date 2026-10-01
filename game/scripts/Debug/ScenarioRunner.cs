@@ -79,7 +79,7 @@ public partial class ScenarioRunner : Node
         Game.FocusOverride = () => combine.Footprint.Center;
         Game.Camera.Zoom = 34f;
         Game.SimSubsteps = 4;
-        await Until(() => helper.Finished || helper.LanesDone >= 2 && combine.Speed > 2f && header.Get<Attachable>()!.Lowered, 150f);
+        await Until(() => helper.Finished || helper.FieldWork!.LanesDone >= 2 && combine.Speed > 2f && header.Get<Attachable>()!.Lowered, 150f);
         Log($"harvested {tank.Level:N0} L wheat ({header.WorkedHa:0.00} ha), fps {Engine.GetFramesPerSecond():0}");
         await Shot("harvest");
         await Until(() => helper.Finished, 120f);
@@ -132,11 +132,11 @@ public partial class ScenarioRunner : Node
         Game.FocusOverride = () => t125.Footprint.Center;
         Game.Camera.Zoom = 40f;
         Game.SimSubsteps = 6;
-        await Until(() => helper.Finished || helper.LanesDone >= 3 && t125.Speed < 2.5f, 120f);
+        await Until(() => helper.Finished || helper.FieldWork!.LanesDone >= 3 && t125.Speed < 2.5f, 120f);
         await Shot("cultivate_turn");
         await Until(() => helper.Finished, 120f);
         Game.SimSubsteps = 1;
-        Log($"cultivated {cultivator.WorkedHa:0.00} ha, headland margin {helper.Margin:0.0} m, worked outside field: {OutsideCells(strip)} cells");
+        Log($"cultivated {cultivator.WorkedHa:0.00} ha, headland margin {helper.FieldWork!.Margin:0.0} m, worked outside field: {OutsideCells(strip)} cells");
         Game.FocusOverride = () => new NVec2(strip.Center.X, strip.Shape.Min.Y + 12f);
         Game.Camera.Zoom = 60f;
         await Frames(20);
@@ -321,7 +321,8 @@ public partial class ScenarioRunner : Node
     // ------------------------------------------------------------------ Helpers
 
     /// <summary>
-    /// Mow a strip of the farm's meadow, bale it, collect the bales and leave them at the dairy (shots only with a window).
+    /// Mow a strip of the farm's meadow, bale it and collect the bales, each by a helper, then leave a load at the dairy
+    /// (shots only with a window).
     /// </summary>
     private async Task Bales()
     {
@@ -353,28 +354,36 @@ public partial class ScenarioRunner : Node
         var baling = Sim.HireHelper(tractor, strip);
         await Until(() => baling.Finished, 300f);
         Game.SimSubsteps = 1;
-        baler.Get<Baler>()!.Drop(Sim);
         var bales = Sim.Objects.All.ToList();
         Log($"baled {Sim.Statistics.Harvested.GetValueOrDefault("grass"):N0} L into {bales.Count} bales, {Lying("grass"):N0} L left lying");
         if (DisplayServer.GetName() != "headless") await Shot("bales");
 
-        // --- Collect them: the loader's pickup beside each in turn.
-        var t95 = Ms.Spawn("tractor_95", at + new NVec2(20f, 0f), 0f);
-        var loader = Ms.Spawn("baleloader_8", t95.Position - new NVec2(0f, 6f), 0f);
+        // --- A helper collects them and sets them down beside the field, where it was hired.
+        Ms.Teleport(tractor, at + new NVec2(-25f, -12f), 0f);
+        var t95 = Ms.Spawn("tractor_95", at + new NVec2(20f, 0f), MathF.PI * 0.5f);
+        var loader = Ms.Spawn("baleloader_8", t95.Position - new NVec2(6f, 0f), t95.Heading);
         Ms.Attach(t95, "drawbar", loader);
         var bed = loader.Get<BaleLoader>()!;
-        bed.On = true;
         Game.FocusOverride = () => loader.Footprint.Center;
-        foreach (var bale in bales.Take(bed.Capacity))
+        Game.SimSubsteps = 4;
+        var collecting = Sim.HireHelper(t95, strip);
+        await Until(() => collecting.Finished, 300f);
+        Game.SimSubsteps = 1;
+        var stacked = Sim.Objects.All.Count(o => o.Holder == null && strip.Shape.Distance(o.Position) > 3f);
+        Log($"collected the bales: {stacked} of {bales.Count} set down beside the field, {collecting.Describe()}");
+        if (DisplayServer.GetName() != "headless") await Shot("stacked");
+
+        // --- Take a load to the dairy.
+        foreach (var bale in Sim.Objects.All.Where(o => o.Holder == null).Take(bed.Capacity).ToList())
         {
             var pickup = bed.Def.Pickup;
             var heading = bale.Heading;
             var loaderAt = bale.Position - MathUtil.Left(heading) * pickup.X - MathUtil.Forward(heading) * pickup.Z;
+            bed.On = true;
             Ms.Teleport(t95, loaderAt + MathUtil.Forward(heading) * loader.Get<Attachable>()!.Def.Z - MathUtil.Forward(heading) * t95.Joint("drawbar")!.Z, heading);
             await Until(() => bale.Holder != null, 5f);
         }
         Log($"loaded {bed.Count} bales");
-        if (DisplayServer.GetName() != "headless") await Shot("loaded");
 
         // --- Leave them at the dairy.
         var dairy = Sim.World.PoiById("dairy")!.Trigger("objects")!.Area;
@@ -612,6 +621,8 @@ public partial class ScenarioRunner : Node
 
     private async Task Shot(string name)
     {
+        // Headless, nothing is drawn: no shot, the run goes on.
+        if (DisplayServer.GetName() == "headless") return;
         await Frames(3);
         await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
         Game.SaveScreenshot($"{ShotsDir}/{++_shot:00}_{name}.png");

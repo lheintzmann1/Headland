@@ -781,7 +781,7 @@ public sealed class PoiSystem
         if (workshop.Def.Configure == null) return $"{workshop.Poi.Name} does not fit options";
         if (Closed(workshop.Poi, workshop.Def) is { } closed) return closed;
         if (m.LeaseContract != 0 || m.Lease != null) return "A leased machine goes back as it came";
-        if (m.Root.Get<Drivable>()?.Controller is FieldWorkController) return "The helper is working: dismiss them first";
+        if (m.Root.Get<Drivable>()?.Controller is Helpers.HelperJob) return "The helper is working: dismiss them first";
         foreach (var u in m.FillUnits)
             if (u.Level > (def.Get<FillUnitsDef>()?.Units.FirstOrDefault(x => x.Id == u.Def.Id)?.Capacity ?? 0f) + 0.5f)
                 return $"Unload the {m.Def.Name} first: it holds more than it would take";

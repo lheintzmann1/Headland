@@ -1,6 +1,7 @@
 using System.Numerics;
 using Headland.Core.Content;
 using Headland.Core.Events;
+using Headland.Core.Helpers;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Work;
@@ -290,16 +291,14 @@ public class MachineTests
     // A plot inside field 4 (grass), so headland turns stay on open grass (which the cultivator would happily work).
     private static readonly FieldInfo Plot = FieldInfo.Rect(4, 240, 290, 24, 40);
 
-    private static (Simulation sim, Machine tractor, FieldWorkController helper) HireCultivatorHelper()
+    private static (Simulation sim, Machine tractor, HelperJob helper) HireCultivatorHelper()
     {
         var sim = TestContent.NewSim();
         TestContent.OwnField4(sim);
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         var c = sim.Machines.Spawn("cultivator_3", Plot.Shape.Min + new Vector2(2f, -12f), 0f);
         sim.Machines.Attach(t, "rear", c);
-        var helper = new FieldWorkController(sim, t, Plot);
-        t.Get<Drivable>()!.Controller = helper;
-        return (sim, t, helper);
+        return (sim, t, sim.HireHelper(t, Plot));
     }
 
     [Fact]
@@ -404,7 +403,7 @@ public class MachineTests
     {
         var (sim, _, helper) = HireCultivatorHelper();
         for (var s = 0f; s < 900f && !helper.Finished; s += Dt) sim.Tick(Dt);
-        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
+        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.FieldWork!.Driver.Index}/{helper.FieldWork!.Path.Points.Count}");
         Assert.False(helper.Stopped, helper.StopReason?.Text);
 
         int inside = 0, insideDone = 0, outsideDone = 0;
@@ -431,11 +430,11 @@ public class MachineTests
     {
         var (_, t, helper) = HireCultivatorHelper();
         var turnRadius = t.Get<RunningGear>()!.Def.TurnRadius * 1.15f;
-        var worst = helper.Path.Points.Max(Plot.Shape.Distance);
+        var worst = helper.FieldWork!.Path.Points.Max(Plot.Shape.Distance);
         // Past the edge by the implement's offset, plus a turning radius: a mounted implement backs up in its turns.
-        Assert.Contains(PathSegment.Reverse, helper.Path.Segments);
-        Assert.True(worst <= helper.Margin + turnRadius + 0.5f, $"path reaches {worst:F1} m outside the field");
-        Assert.True(helper.Margin < 4.5f, $"margin {helper.Margin:F1} m");
+        Assert.Contains(PathSegment.Reverse, helper.FieldWork!.Path.Segments);
+        Assert.True(worst <= helper.FieldWork!.Margin + turnRadius + 0.5f, $"path reaches {worst:F1} m outside the field");
+        Assert.True(helper.FieldWork!.Margin < 4.5f, $"margin {helper.FieldWork!.Margin:F1} m");
     }
 
     [Fact]
@@ -484,10 +483,10 @@ public class MachineTests
         return (float)n / inside;
     }
 
-    private static void RunHelper(Simulation sim, FieldWorkController helper)
+    private static void RunHelper(Simulation sim, HelperJob helper)
     {
         for (var s = 0f; s < 900f && !helper.Finished; s += Dt) sim.Tick(Dt);
-        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
+        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.FieldWork!.Driver.Index}/{helper.FieldWork!.Path.Points.Count}");
         Assert.False(helper.Stopped, helper.StopReason?.Text);
     }
 
@@ -501,7 +500,7 @@ public class MachineTests
         var t = sim.Machines.Spawn("tractor_125", Plot.Shape.Min + new Vector2(2f, -10f), 0f);
         Assert.True(sim.Machines.Attach(t, "drawbar", sim.Machines.Spawn("seeder_3", Plot.Shape.Min + new Vector2(2f, -14f), 0f)));
         var helper = sim.HireHelper(t, Plot);
-        Assert.DoesNotContain(PathSegment.Reverse, helper.Path.Segments);
+        Assert.DoesNotContain(PathSegment.Reverse, helper.FieldWork!.Path.Segments);
         RunHelper(sim, helper);
         Assert.True(PlotShare(sim, i => sim.World.Layers.Crop[i] != 0) > 0.99f);
     }
@@ -566,10 +565,10 @@ public class MachineTests
         var helper = sim.HireHelper(t, Plot);
 
         // The first lane runs on from the tractor to the far headland, then the helper works toward the nearer edge.
-        Assert.Equal(PathSegment.Work, helper.Path.Segments[0]);
-        Assert.Equal(start.X, helper.Path.Points[0].X, 2);
-        Assert.True(helper.Path.Points[0].Y > Plot.Shape.Max.Y);
-        var lanes = Enumerable.Range(0, helper.Path.Points.Count).Where(helper.Path.EndsLane).Select(k => helper.Path.Points[k].X).ToList();
+        Assert.Equal(PathSegment.Work, helper.FieldWork!.Path.Segments[0]);
+        Assert.Equal(start.X, helper.FieldWork!.Path.Points[0].X, 2);
+        Assert.True(helper.FieldWork!.Path.Points[0].Y > Plot.Shape.Max.Y);
+        var lanes = Enumerable.Range(0, helper.FieldWork!.Path.Points.Count).Where(helper.FieldWork!.Path.EndsLane).Select(k => helper.FieldWork!.Path.Points[k].X).ToList();
         Assert.True(lanes[1] < lanes[0]);
 
         Run(sim, 4f);
@@ -595,7 +594,7 @@ public class MachineTests
         var helper = sim.HireHelper(t, Plot);
 
         // Nine lanes cover the plot: the helper does the five over its right half (one of them straddling the middle).
-        Assert.Equal(5, helper.Path.LaneCount);
+        Assert.Equal(5, helper.FieldWork!.Path.LaneCount);
         RunHelper(sim, helper);
         Assert.True(PlotShare(sim, i => sim.World.Layers.Ground[i] == (byte)GroundType.Cultivated) > 0.99f);
     }

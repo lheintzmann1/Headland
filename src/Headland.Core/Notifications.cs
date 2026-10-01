@@ -93,6 +93,7 @@ public sealed class Notifications
         events.Subscribe<ImplementDetached>(e => Post($"Detached {e.Implement.Def.Name}"));
         events.Subscribe<WaypointReached>(_ => Post("Waypoint reached"));
         events.Subscribe<HelperHired>(e => Post($"Helper {e.Number} started on {e.Field.Label} ({e.Field.AreaHa:0.00} ha)", Severity.Good));
+        events.Subscribe<HelperWaiting>(e => Post($"Helper {e.Number} waits on {e.Field.Label} ({e.Reason.Text})", Severity.Warning));
         events.Subscribe<HelperDismissed>(e =>
         {
             var wages = e.Wages >= 0.5f ? $" (${e.Wages:N0} in wages)" : "";

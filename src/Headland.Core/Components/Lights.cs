@@ -230,7 +230,7 @@ public sealed class Lights : Component<LightsDef, LightsSave>, IActionSource, IR
         var root = (Owner as Machine)?.Root;
         var driven = root?.Get<Drivable>()?.Controller;
         // A helper at night lights every step (FS: the AI's working lights), not the high beams.
-        var helperAtNight = driven is FieldWorkController && weather.Night;
+        var helperAtNight = driven is Helpers.HelperJob && weather.Night;
         var motor = root?.Get<Motor>();
         var (braking, reversing) = (motor?.Braking == true, motor?.Reversing == true);
         var left = switches.Signal is TurnSignal.Left or TurnSignal.Hazards;

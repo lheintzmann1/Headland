@@ -2,6 +2,7 @@ using System.Numerics;
 using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Crops;
+using Headland.Core.Helpers;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
@@ -289,7 +290,7 @@ public class WorkTypeTests
         {
             sim.Tick(Dt);
             if (helper.Finished) break;
-            var onLane = helper.Path.Segments[helper.Driver.Index] == PathSegment.Work;
+            var onLane = helper.FieldWork!.Path.Segments[helper.FieldWork!.Driver.Index] == PathSegment.Work;
             if (areas.On && !onLane && !plot.Contains(spreader.LocalToWorld(areas.Bounds.center))) onInTurns = true;
             if (areas.On && onLane) onOnLanes = true;
         }

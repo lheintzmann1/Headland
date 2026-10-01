@@ -229,9 +229,14 @@ FS19 reference values; tune in data.
 ### Helpers
 
 - [x] Helpers numbered as in FS (the lowest free number when hired), on their vehicles on the map.
-- [ ] Helper jobs as chains of tasks (FS `AITask`: drive to the field, work it, unload at a station) with typed
-      parameters (vehicle, field, station) checked before hiring, instead of one `FieldWorkController`; Lua adds
-      task types.
+- [x] Helper jobs as chains of tasks (FS `AIJob`, `AITask`) checked before hiring, instead of one `FieldWorkController`:
+      field work; harvesting, unloading into a trailer alongside and waiting for one when full; baling, the last bale
+      dropped; collecting bales and setting them down beside the field. Job types are registered (`HelperJobs`); Lua
+      adds its own.
+- [ ] Drive to the field and unload at a station, with spline roads: routes along the roads (FS `AITaskDriveTo`), a
+      trailer helper taking a combine's grain to a silo or a buyer, a collector taking its bales to the dairy, and a
+      hire screen picking the vehicle, the field and the station (FS: the AI job menu on the map).
+- [ ] A helper driving a trailer alongside a combine, from field to field.
 
 ### Removing the old machine code
 

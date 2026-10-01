@@ -6,6 +6,7 @@ using Headland.Core.Contracts;
 using Headland.Core.Crops;
 using Headland.Core.Economics;
 using Headland.Core.Events;
+using Headland.Core.Helpers;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
@@ -138,7 +139,7 @@ public sealed class Simulation
         Pois.Update(dt);
         foreach (var m in Machines.All)
         {
-            if (m.Get<Drivable>()?.Controller is not FieldWorkController w) continue;
+            if (m.Get<Drivable>()?.Controller is not HelperJob w) continue;
             PayHelper(w, dt);
             if (w.Finished) DismissHelper(m, w.Stopped ? HelperEnd.Stopped : HelperEnd.Finished);
         }
@@ -319,35 +320,41 @@ public sealed class Simulation
         Player.Enter(next);
     }
 
-    /// <summary>The helper key: dismiss the helper driving, or hire one for the field the vehicle works in or next to.</summary>
+    /// <summary>
+    /// The helper key: dismiss the helper driving, or hire one for the job the vehicle and its implements do (field work,
+    /// harvesting, baling, collecting bales) on the field it's in or next to.
+    /// </summary>
     private void AddHelper(ActionList actions, Machine v)
     {
-        if (v.Get<Drivable>()?.Controller is FieldWorkController)
+        if (v.Get<Drivable>()?.Controller is HelperJob)
         {
             actions.Add(InputActions.Helper, "Dismiss helper", () => DismissHelper(v, HelperEnd.Dismissed));
             return;
         }
-        var field = v.Chain().Any(m => m.Has<WorkAreas>()) ? FieldNear(v) : null;
+        var field = HelperJobs.For(v) != null ? FieldNear(v) : null;
         actions.Add(InputActions.Helper, field != null ? $"Hire helper for {field.Label} (${HelperWage:N0}/h)" : "Hire helper",
             () => HireHelper(v), hinted: field != null);
     }
 
+    /// <summary>
+    /// Hires a helper for the job <paramref name="v"/> does on the field it's in or next to, once the job's steps say they
+    /// can be done there (its implements, the field's owner's leave, something left to do) and there's money for wages;
+    /// else says why not.
+    /// </summary>
     private void HireHelper(Machine v)
     {
-        var field = FieldNear(v);
-        if (field == null)
-        {
-            Notifications.Post("Drive to a field first: helpers work the field you are in or next to", Severity.Warning);
-            return;
-        }
-        if (v.Chain().FirstOrDefault(m => m.Has<WorkAreas>()) is not { } tool)
+        if (HelperJobs.For(v) is not { } type)
         {
             Notifications.Post("Attach an implement first", Severity.Warning);
             return;
         }
-        var areas = tool.Get<WorkAreas>()!;
-        var area = areas.Def.Areas[0];
-        if (Farms.FieldBlocker(v.FarmId, field, area.Type, area.Work.Crop(areas, Content)) is { } why)
+        if (FieldNear(v) is not { } field)
+        {
+            Notifications.Post("Drive to a field first: helpers work the field you are in or next to", Severity.Warning);
+            return;
+        }
+        var job = type.Create(this, v, field, new JobSetup());
+        if (job.Check() is { } why)
         {
             Notifications.Post(why, Severity.Warning);
             return;
@@ -357,27 +364,24 @@ public sealed class Simulation
             Notifications.Post("Not enough money to pay a helper", Severity.Warning);
             return;
         }
-        var helper = new FieldWorkController(this, v, field);
-        if (helper.Path.LaneCount == 0)
-        {
-            Notifications.Post($"Nothing left for the {tool.Def.Name} to do on {field.Label}", Severity.Warning);
-            return;
-        }
-        Hire(v, helper);
+        Hire(v, job);
     }
 
     /// <summary>What a helper hired now earns per hour of work.</summary>
     public float HelperWage => Content.Economy.HelperWagePerHour * Economy.PriceLevel;
 
     /// <summary>
-    /// Puts a helper in the vehicle to work what's left of <paramref name="field"/> (optionally only its first
-    /// lanes), going on from where the vehicle stands.
+    /// Puts a helper in the vehicle for the job it does (<see cref="HelperJobs.For"/>) on <paramref name="field"/>
+    /// (optionally only its first lanes), going on from where the vehicle stands, without checking it can.
     /// </summary>
-    public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null) =>
-        Hire(v, new FieldWorkController(this, v, field, maxLanes: maxLanes));
+    public HelperJob HireHelper(Machine v, FieldInfo field, int? maxLanes = null)
+    {
+        var type = HelperJobs.For(v) ?? throw new InvalidOperationException($"{v.Def.Name} has no helper job to do");
+        return Hire(v, type.Create(this, v, field, new JobSetup { MaxLanes = maxLanes }));
+    }
 
     /// <summary>Dismisses a helper at work: its vehicle stops where it is.</summary>
-    public void Dismiss(FieldWorkController helper)
+    public void Dismiss(HelperJob helper)
     {
         if (helper.Vehicle.Get<Drivable>()?.Controller == helper) DismissHelper(helper.Vehicle, HelperEnd.Dismissed);
     }
@@ -402,7 +406,7 @@ public sealed class Simulation
         + Objects.All.Where(o => o.FarmId == farmId && o.Content?.FillType == fillType).Sum(o => o.Content!.Level);
 
     /// <summary>The helpers at work, in their vehicles.</summary>
-    public IEnumerable<FieldWorkController> Helpers => Machines.All.Select(m => m.Get<Drivable>()?.Controller).OfType<FieldWorkController>();
+    public IEnumerable<HelperJob> Helpers => Machines.All.Select(m => m.Get<Drivable>()?.Controller).OfType<HelperJob>();
 
     /// <summary>The lowest number no helper at work has (from 1).</summary>
     internal int FreeHelperNumber()
@@ -413,7 +417,7 @@ public sealed class Simulation
         return n;
     }
 
-    private FieldWorkController Hire(Machine v, FieldWorkController helper)
+    private HelperJob Hire(Machine v, HelperJob helper)
     {
         helper.WagePerHour = HelperWage;
         helper.Number = FreeHelperNumber();
@@ -424,13 +428,13 @@ public sealed class Simulation
     }
 
     /// <summary>A helper earns its wage for every second it works, paid in whole dollars as they add up.</summary>
-    private void PayHelper(FieldWorkController helper, float dt)
+    private void PayHelper(HelperJob helper, float dt)
     {
         helper.WorkedSeconds += dt;
         if (MathF.Floor(helper.Wages - helper.WagesPaid) is var due and >= 1f) PayWages(helper, due);
     }
 
-    private void PayWages(FieldWorkController helper, float amount)
+    private void PayWages(HelperJob helper, float amount)
     {
         helper.WagesPaid += amount;
         if (helper.Vehicle.FarmId == Farms.Player.Id) Economy.Spend(amount, MoneyCategory.Wages);
@@ -439,14 +443,9 @@ public sealed class Simulation
     private void DismissHelper(Machine v, HelperEnd end)
     {
         var drivable = v.Get<Drivable>()!;
-        var helper = (FieldWorkController)drivable.Controller!;
+        var helper = (HelperJob)drivable.Controller!;
         if (helper.Wages - helper.WagesPaid is var rest and > 0f) PayWages(helper, rest);
-        foreach (var m in v.Chain())
-        {
-            if (m.Get<WorkAreas>() is not { } areas) continue;
-            if (m.Get<Attachable>() is { } a) a.Lowered = false;
-            if (FieldWorkController.SwitchedOnLanes(m, areas)) areas.On = false;
-        }
+        helper.Release();
         drivable.Controller = Player.Vehicle == v ? Player.Controls : null;
         Events.Publish(new HelperDismissed(v, helper.Field, helper.Number, end, helper.StopReason, helper.Wages));
     }
@@ -458,7 +457,7 @@ public sealed class Simulation
     internal void RemoveMachines(IReadOnlyCollection<Machine> gone)
     {
         foreach (var root in gone.Select(m => m.Root).Distinct().ToList())
-            if (root.Get<Drivable>()?.Controller is FieldWorkController) DismissHelper(root, HelperEnd.Dismissed);
+            if (root.Get<Drivable>()?.Controller is HelperJob) DismissHelper(root, HelperEnd.Dismissed);
         if (Player.Vehicle is { } v && gone.Contains(v)) Player.Exit(this);
         foreach (var m in gone)
         {

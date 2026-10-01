@@ -81,7 +81,7 @@ public sealed class Garage
     {
         if (m.FarmId != Player) return $"The {m.Def.Name} is not the farm's";
         if (m.LeaseContract != 0) return "It goes back when its contract ends";
-        return m.Root.Get<Drivable>()?.Controller is FieldWorkController ? "The helper is working: dismiss them first" : null;
+        return m.Root.Get<Drivable>()?.Controller is Helpers.HelperJob ? "The helper is working: dismiss them first" : null;
     }
 
     /// <summary>

@@ -6,6 +6,8 @@ using Headland.Core.Components;
 using Headland.Core.Content;
 using Headland.Core.Contracts;
 using Headland.Core.Economics;
+using Headland.Core.Helpers;
+using Headland.Core.Helpers.Tasks;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Objects;
@@ -202,23 +204,32 @@ public static class SaveGame
             };
         if (sim.Pois.Loadings.TryGetValue(m, out var l))
             save.Loading = new LoadingSave { Poi = l.Silo.Poi.Id, FillType = l.FillType, Amount = l.Amount };
-        if (m.Get<Drivable>()?.Controller is FieldWorkController h)
+        if (m.Get<Drivable>()?.Controller is HelperJob h)
+        {
+            var work = h.FieldWork;
+            var setDown = h.Tasks.OfType<SetDownBalesTask>().FirstOrDefault();
             save.Helper = new HelperSave
             {
+                Job = h.Type.Id,
+                Task = h.TaskIndex,
                 Field = h.Field.Id,
                 Shape = h.Field.Shape.Points.Select(p => new[] { p.X, p.Y }).ToArray(),
-                SpeedKmh = h.SpeedKmh,
-                MaxLanes = h.MaxLanes,
-                Margin = h.Margin,
-                Route = h.Path.Points.Select(p => new[] { p.X, p.Y }).ToArray(),
-                Segments = string.Concat(h.Path.Segments.Select(s => SegmentLetters[(int)s])),
-                Waypoint = h.Driver.Index,
-                DriveStart = h.Driver.Start is { } s ? [s.X, s.Y] : null,
+                SpeedKmh = work?.SpeedKmh ?? 0f,
+                MaxLanes = work?.MaxLanes,
+                Margin = work?.Margin ?? 0f,
+                Route = work?.Path.Points.Select(p => new[] { p.X, p.Y }).ToArray() ?? [],
+                Segments = work != null ? string.Concat(work.Path.Segments.Select(s => SegmentLetters[(int)s])) : "",
+                Waypoint = work?.Driver.Index ?? 0,
+                DriveStart = work?.Driver.Start is { } s ? [s.X, s.Y] : null,
+                Missed = h.Tasks.OfType<CollectBalesTask>().FirstOrDefault()?.Missed.ToDictionary(),
+                Stack = setDown != null ? [setDown.Spot.X, setDown.Spot.Y, setDown.Heading] : null,
+                Loads = setDown?.Loads ?? 0,
                 WagePerHour = h.WagePerHour,
                 Number = h.Number,
                 WorkedSeconds = h.WorkedSeconds,
                 WagesPaid = h.WagesPaid,
             };
+        }
         return save;
     }
 
@@ -406,11 +417,12 @@ public static class SaveGame
                 sim.Pois.Loadings[machine] = new Loading(silo, l.FillType, l.Amount);
         }
 
-        // Helpers last: they work with the implements attached.
+        // Helpers last: they work with the implements attached. A save from before jobs had field work: the vehicle's job.
         foreach (var m in s.Machines)
         {
             if (m.Helper is not { } h || !byId.TryGetValue(m.Id, out var vehicle)) continue;
-            if (vehicle.Get<Drivable>() is not { } seat || !vehicle.Has<Motor>() || h.Shape.Length < 3 || !vehicle.Chain().Any(c => c.Has<WorkAreas>()))
+            var type = (h.Job != null ? HelperJobs.Find(h.Job) : null) ?? HelperJobs.For(vehicle);
+            if (vehicle.Get<Drivable>() is not { } seat || !vehicle.Has<Motor>() || h.Shape.Length < 3 || type == null || !type.Fits(vehicle))
             {
                 warnings.Add($"The helper on {vehicle.Def.Name} could not resume");
                 continue;
@@ -420,14 +432,19 @@ public static class SaveGame
             var field = mapField != null && mapField.Shape.Points.SequenceEqual(shape.Points)
                 ? mapField
                 : new FieldInfo { Id = h.Field, Shape = shape, FarmlandId = mapField?.FarmlandId ?? 0 };
-            FieldWorkController helper;
-            if (RestoreRoute(h) is { } route)
+            // The route is kept rather than planned again from where the vehicle is now (older saves have none).
+            var route = RestoreRoute(h);
+            var helper = type.Create(sim, vehicle, field, new JobSetup
             {
-                helper = new FieldWorkController(vehicle, field, h.SpeedKmh, h.MaxLanes, h.Margin, route);
-                helper.Driver.Index = Math.Clamp(h.Waypoint, 0, route.Points.Count);
-                helper.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
+                SpeedKmh = h.SpeedKmh, MaxLanes = h.MaxLanes, Route = route is { } r ? (h.Margin, r) : null, Missed = h.Missed,
+                Stacks = h.Stack is [var x, var z, var heading] ? (new Vector2(x, z), heading, Math.Max(0, h.Loads)) : null,
+            });
+            if (route != null && helper.FieldWork is { } work)
+            {
+                work.Driver.Index = Math.Clamp(h.Waypoint, 0, route.Points.Count);
+                work.Driver.Start = h.DriveStart is [var sx, var sz] ? new Vector2(sx, sz) : null;
             }
-            else helper = new FieldWorkController(sim, vehicle, field, h.SpeedKmh, h.MaxLanes); // planned again from where it is
+            helper.Restore(h.Task);
             helper.WagePerHour = h.WagePerHour ?? sim.HelperWage;
             helper.WorkedSeconds = Math.Max(0.0, h.WorkedSeconds);
             helper.WagesPaid = Math.Max(0f, h.WagesPaid);

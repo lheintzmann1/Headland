@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Headland.Core.Components;
 using Headland.Core.Content;
+using Headland.Core.Helpers;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
 using Headland.Core.Ownership;
@@ -86,12 +87,12 @@ public class SaveTests
         var combine = loaded.Machines.All.First(m => m.Def.Id == "combine_7");
         Assert.Same(combine, loaded.Player.Vehicle);
         Assert.True(combine.Unit("tank")!.Level > 100f);
-        var (h1, h2) = ((FieldWorkController)sim.Player.Vehicle!.Get<Drivable>()!.Controller!, Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller));
+        var (h1, h2) = ((HelperJob)sim.Player.Vehicle!.Get<Drivable>()!.Controller!, Assert.IsType<HelperJob>(combine.Get<Drivable>()!.Controller));
         // The route itself is kept: planned again, it would start from where the combine is now.
-        Assert.Equal(h1.Path.Points, h2.Path.Points);
-        Assert.Equal(h1.Path.Segments, h2.Path.Segments);
-        Assert.Equal(h1.Driver.Index, h2.Driver.Index);
-        Assert.Equal(h1.Margin, h2.Margin);
+        Assert.Equal(h1.FieldWork!.Path.Points, h2.FieldWork!.Path.Points);
+        Assert.Equal(h1.FieldWork!.Path.Segments, h2.FieldWork!.Path.Segments);
+        Assert.Equal(h1.FieldWork!.Driver.Index, h2.FieldWork!.Driver.Index);
+        Assert.Equal(h1.FieldWork!.Margin, h2.FieldWork!.Margin);
         Assert.Equal((h1.WagePerHour, h1.WorkedSeconds, h1.WagesPaid), (h2.WagePerHour, h2.WorkedSeconds, h2.WagesPaid));
 
         // New machines never reuse an id.
@@ -123,11 +124,11 @@ public class SaveTests
         var loaded = SaveGame.Load(sim.Content, file with { State = JsonSerializer.SerializeToUtf8Bytes(state, SaveGame.Json) }).Sim;
 
         var combine = loaded.Machines.All.First(m => m.Def.Id == "combine_7");
-        var helper = Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);
+        var helper = Assert.IsType<HelperJob>(combine.Get<Drivable>()!.Controller);
         // Planned again from where the combine is: on along the lane it was harvesting.
-        Assert.Equal(0, helper.Driver.Index);
-        Assert.Equal(PathSegment.Work, helper.Path.Segments[0]);
-        Assert.InRange(helper.Path.Points[0].X, combine.Position.X - 0.2f, combine.Position.X + 0.2f);
+        Assert.Equal(0, helper.FieldWork!.Driver.Index);
+        Assert.Equal(PathSegment.Work, helper.FieldWork!.Path.Segments[0]);
+        Assert.InRange(helper.FieldWork!.Path.Points[0].X, combine.Position.X - 0.2f, combine.Position.X + 0.2f);
     }
 
     [Fact]
@@ -160,7 +161,7 @@ public class SaveTests
         Assert.Equal(60.838486f, combine.Get<RunningGear>()!.Distance, 3);
         Assert.Equal((true, 1f), (header.Get<Attachable>()!.Lowered, header.Get<Attachable>()!.LowerAnim));
         Assert.Equal(sim.Content.CropIndex("canola"), seeder.Get<WorkAreas>()!.Crop);
-        Assert.IsType<FieldWorkController>(combine.Get<Drivable>()!.Controller);
+        Assert.IsType<HelperJob>(combine.Get<Drivable>()!.Controller);
 
         // It goes on as the game it was saved from.
         foreach (var s in new[] { sim, loaded.Sim }) Run(s, 10f);

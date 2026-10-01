@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Content;
+using Headland.Core.Helpers;
 using Headland.Core.Machines;
 using Headland.Core.World;
 
@@ -134,7 +135,7 @@ public class FarmlandTests
         sim.Machines.Attach(t, "rear", c);
         var helper = sim.HireHelper(t, Trapezoid);
         for (var s = 0f; s < 900f && !helper.Finished; s += 1f / 60f) sim.Tick(1f / 60f);
-        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.Driver.Index}/{helper.Path.Points.Count}");
+        Assert.True(helper.Finished, $"helper stuck at waypoint {helper.FieldWork!.Driver.Index}/{helper.FieldWork!.Path.Points.Count}");
 
         int inside = 0, insideDone = 0, outsideDone = 0;
         for (var cz = 0; cz < sim.World.CellsZ; cz++)

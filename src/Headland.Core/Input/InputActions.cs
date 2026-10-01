@@ -104,7 +104,7 @@ public static class InputActions
         {
             Unavailable = "Park in a marked area first: a shop, silo, gas station, workshop or wash bay",
         },
-        new(Helper, "Hire / dismiss a field helper", Driving, "H"),
+        new(Helper, "Hire / dismiss a helper", Driving, "H"),
         new(Enter, "Enter / exit vehicle", Moving, "F", "Joy Y") { Unavailable = "No vehicle nearby" },
         new(NextVehicle, "Switch to the next vehicle", Moving, "Tab", "Joy Right"),
         new(PrevVehicle, "Switch to the previous vehicle", Moving, "Shift+Tab", "Joy Left"),

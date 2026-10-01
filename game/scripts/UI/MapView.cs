@@ -357,7 +357,7 @@ public partial class MapView : Control
         {
             if (m.Parent != null || m == driven) continue;
             var at = ToScreen(m.Footprint.Center);
-            if (m.Get<Drivable>()?.Controller is FieldWorkController helper)
+            if (m.Get<Drivable>()?.Controller is Headland.Core.Helpers.HelperJob helper)
             {
                 Glyph("fiber_manual_record", at, 30f, new Color(Palette.Info), 0f);
                 Text(font, at, helper.Number.ToString(), size, Colors.White);

@@ -195,6 +195,12 @@ public enum HelperEnd { Finished, Stopped, Dismissed }
 public sealed record HelperHired(Machine Vehicle, FieldInfo Field, int Number) : IGameEvent;
 
 /// <summary>
+/// A helper stopped for something its job sees to, and waits for it: a combine with its tank full, for a trailer to
+/// unload into.
+/// </summary>
+public sealed record HelperWaiting(Machine Vehicle, FieldInfo Field, int Number, MachineCondition Reason) : IGameEvent;
+
+/// <summary>
 /// A helper left its vehicle; <paramref name="Reason"/> says why it stopped early (out of seed, tank full), and
 /// <paramref name="Wages"/> what it earned on the job.
 /// </summary>

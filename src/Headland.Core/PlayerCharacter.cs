@@ -145,7 +145,7 @@ public sealed class PlayerCharacter(EventBus events)
     /// <summary>
     /// The farm's vehicles that are free or driven by a helper (the helper keeps control until dismissed).
     /// </summary>
-    private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Get<Drivable>() is { Controller: null or FieldWorkController };
+    private bool CanEnter(Machine m) => m.FarmId == FarmId && m.Get<Drivable>() is { Controller: null or Helpers.HelperJob };
 
     /// <summary>Puts the player back in a vehicle (or on foot) as a save had them, without an event.</summary>
     internal void Restore(Machine? vehicle)

@@ -69,6 +69,23 @@ public sealed class Polygon
         return best;
     }
 
+    /// <summary>The point of its outline nearest to <paramref name="p"/>, and which way the edge it's on runs (a unit vector).</summary>
+    public (Vector2 point, Vector2 along) ClosestEdgePoint(Vector2 p)
+    {
+        var (best, point, along) = (float.MaxValue, _points[0], Vector2.UnitX);
+        for (int i = 0, j = _points.Length - 1; i < _points.Length; j = i++)
+        {
+            var a = _points[j];
+            var ab = _points[i] - a;
+            var t = Math.Clamp(Vector2.Dot(p - a, ab) / MathF.Max(ab.LengthSquared(), 1e-9f), 0f, 1f);
+            var q = a + ab * t;
+            if (Vector2.Distance(p, q) >= best) continue;
+            (best, point) = (Vector2.Distance(p, q), q);
+            along = ab.LengthSquared() > 1e-9f ? Vector2.Normalize(ab) : Vector2.UnitX;
+        }
+        return (point, along);
+    }
+
     /// <summary>
     /// Extent of the polygon inside a strip, for planning lanes: with <paramref name="alongZ"/> the strip is
     /// <c>u1 ≤ x ≤ u2</c> and the result is the z range covered, else the strip is on z and the result on x.

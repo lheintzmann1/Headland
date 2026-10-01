@@ -476,6 +476,9 @@ header into a windrow that wide, behind the combine. Without one, it's chopped a
 | `x`, `z` | 4, 1 | Its outlet: over a trailer's bed, or a POI's unloading area. |
 | `ratePerSecond` | 150 | |
 
+A combine's helper swings it out by itself over a trailer driven alongside, and back in a few seconds after the trailer
+left (FS: automatic discharge); with the tank full, it stops and waits for one with the pipe out.
+
 ### tipper
 
 | Setting | Default | |
@@ -522,7 +525,8 @@ A bale collector (FS: bale loader), turned on with the turn-on key: it grabs the
 its `pickup` area (`x`, `z`, `w`, `d`, in its space), one every `grabSeconds` (1.5), onto its `slots` ([x, y, z] each,
 y their bottom: as many as it carries), those of its `shapes` only (`round`, `square`; none: any). Standing still, the
 unload key sets them all down behind it, in the same rows, the front row at `unloadZ` (-4); in a selling station's
-object trigger, they're sold.
+object trigger, they're sold. A helper with a bale collector picks up the bales lying on the field it's hired for, and
+sets them down beside it a load at a time.
 
 ```jsonc
 "baleLoader": { "slots": [ [0.64, 1.0, 2.1], [-0.64, 1.0, 2.1] ], "pickup": { "x": -2.0, "z": 3.0, "w": 1.8, "d": 2.6 },

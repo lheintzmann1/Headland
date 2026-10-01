@@ -361,7 +361,7 @@ public sealed class MachineSystem
     private void ProcessWorkAreas(Machine root)
     {
         // A helper only works the field it was hired for.
-        var limit = (root.Get<Drivable>()?.Controller as FieldWorkController)?.Field.Shape;
+        var limit = (root.Get<Drivable>()?.Controller as Helpers.HelperJob)?.Field.Shape;
         Span<Vector2> pts = stackalloc Vector2[8];
         foreach (var m in root.Chain())
         {

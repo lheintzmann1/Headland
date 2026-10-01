@@ -53,7 +53,7 @@ public sealed class EconomyDef
     public float CreditLimit { get; set; } = 500_000f;
     /// <summary>Interest on the loan per game year (0.05 = 5%), charged every day of the compressed year.</summary>
     public float LoanInterest { get; set; } = 0.05f;
-    /// <summary>What a field helper earns per hour of work (real time: machines don't follow the clock speed).</summary>
+    /// <summary>What a helper earns per hour of work (real time: machines don't follow the clock speed).</summary>
     public float HelperWagePerHour { get; set; } = 150f;
     /// <summary>How the neighbors offer contracts (the jobs themselves are in contracts/).</summary>
     public ContractRulesDef Contracts { get; set; } = new();

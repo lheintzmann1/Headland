@@ -1,5 +1,6 @@
 using System.Numerics;
 using Headland.Core.Events;
+using Headland.Core.Helpers;
 using Headland.Core.Input;
 using Headland.Core.Machines;
 using Headland.Core.Machines.Components;
@@ -152,7 +153,7 @@ public class GameEventTests
         var sim = TestContent.NewSim();
         TestContent.OwnField4(sim);
         var field = sim.World.FieldById(4)!;
-        FieldWorkController Hire(float x)
+        HelperJob Hire(float x)
         {
             var t = sim.Machines.Spawn("tractor_125", new Vector2(x, 280f), 0f);
             sim.Machines.Attach(t, "rear", sim.Machines.Spawn("cultivator_3", new Vector2(x, 278f), 0f));

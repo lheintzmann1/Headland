@@ -237,11 +237,15 @@ public sealed class LoadingSave
 }
 
 /// <summary>
-/// A field helper and its route. The route is kept rather than planned again: it was planned from the vehicle's pose
-/// and from what was left to do on the field when the helper was hired.
+/// A helper at work: its job, the step it's at and what its steps keep. A field work's route is kept rather than planned
+/// again: it was planned from the vehicle's pose and from what was left to do on the field when the helper was hired.
 /// </summary>
 public sealed class HelperSave
 {
+    /// <summary>Its job's type (missing in older saves: field work, the job the vehicle does).</summary>
+    public string? Job { get; set; }
+    /// <summary>The step of its job it's at.</summary>
+    public int Task { get; set; }
     public int Field { get; set; }
     /// <summary>The area worked, as [x, z] points (a whole field, or a strip of one).</summary>
     public float[][] Shape { get; set; } = [];
@@ -258,6 +262,11 @@ public sealed class HelperSave
     /// <summary>Index of the waypoint being driven to, and [x, z] where driving started.</summary>
     public int Waypoint { get; set; }
     public float[]? DriveStart { get; set; }
+    /// <summary>Collecting bales: the ids of those it missed, and how many times.</summary>
+    public Dictionary<int, int>? Missed { get; set; }
+    /// <summary>Collecting bales: where the first load goes, [x, z, heading], and the loads set down there already.</summary>
+    public float[]? Stack { get; set; }
+    public int Loads { get; set; }
     /// <summary>Pay agreed when hired (missing in older saves: today's wage).</summary>
     public float? WagePerHour { get; set; }
     /// <summary>The helper's number (missing in older saves: the lowest free one).</summary>

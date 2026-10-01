@@ -84,11 +84,17 @@ Built with **Godot 4.7** and **C#**.
   finishing late, costs 10% of its reward. A field job can also be taken with leased machines, for a fee taken from
   the reward: they wait on the machinery dealer's lot, implements hitched, and go back when the contract ends. Fields
   under contract show it on their sign and get an outline. The jobs are JSON too (`game/data/contracts/`).
-- **Field helpers.** Press H and a helper works the field one lane after the other, leaving out what's done already,
-  so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland it
-  backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it
-  lifts the implement whenever it leaves the field. Helpers earn $150 per hour of work, whatever the clock speed. Each
-  has a number, the lowest free when hired, on its vehicle on the map and the minimap.
+- **Helpers.** Press H and a helper takes over the job your vehicle does on the field it's in or next to, as a chain
+  of steps (as Farming Simulator's AI jobs): it works the field one lane after the other, leaving out what's done
+  already, so you can hand over a half-worked field. Lined up on a lane, it goes on from where you are. On the headland
+  it backs up to turn onto the next lane with a mounted implement or a header, loops round with a trailed one, and it
+  lifts the implement whenever it leaves the field. A combine's helper unloads into a trailer driven alongside as it
+  goes, and with its tank full it waits for one, its pipe out, then harvests on. A baler's helper drops what's left in
+  the chamber as a last bale. A bale collector's helper picks up the bales lying on the field and sets them down beside
+  it, where you hired it if that's off the field, a load at a time. Before it starts, the job checks it can be done
+  (the implement, the field's owner, something left to do, bales lying there) and says why not. Helpers earn $150 per
+  hour of work, whatever the clock speed. Each has a number, the lowest free when hired, on its vehicle on the map and
+  the minimap.
 - **Soils and crops.** Every 0.5 m cell tracks soil type, moisture, nitrogen, crop stage and health, weeds, and
   whether it was fertilized. Crops grow by growing degree-days; winter wheat and canola need a winter (vernalization)
   before they shoot; drought, waterlogging, frost and nitrogen shortage cost health and yield. Weeds come up on tilled
@@ -106,8 +112,8 @@ Built with **Godot 4.7** and **C#**.
   buyer's price and how it takes them, and the market month by month through the year. Its statistics are the farm's
   records (days, money in and out, land, machines, contracts, bales, the hectares worked by kind of work, what it
   harvested, sold and bought) and how each of its fields is doing: crop, growth, weeds, fertilizing and what the crop
-  would yield now. Its helpers list the helpers at work, with their vehicle, field, lanes, time and wages, to dismiss
-  one or take a seat beside it.
+  would yield now. Its helpers list the helpers at work, with their vehicle, field, job and what they're doing, time and
+  wages, to dismiss one or take a seat beside it.
 - **Map.** The menu's map (M) shows the world from above with the numbered fields, the farmland (yours shaded), the
   contracts' fields, the places to sell, buy and get service, the machines (white dots, the helpers' blue ones with
   their numbers) and you, each switched on and off; its
@@ -167,7 +173,7 @@ to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu
 | Shift+L, Ctrl+L | Beacons (where fitted), hazard lights |
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines; on foot at the farm's fuel tank, order diesel) |
-| H | Hire or dismiss a field helper |
+| H | Hire or dismiss a helper: field work, harvesting, baling or collecting bales, by what the vehicle has |
 | Esc | The menu: the map and the farmland, prices, contracts, finances and loans, statistics, helpers, the shop, the garage, controls, and the game (resume, settings, save, load, quit); Q / E switch its tabs |
 | M, O | The menu's map, its shop (again: close it) |
 | Shift+M | Minimap: small, large, off |
