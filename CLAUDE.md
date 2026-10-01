@@ -25,7 +25,8 @@ Top-down/isometric farming simulation (Farming Simulator gameplay, Dwarf Fortres
 dotnet build Headland.sln                                         # everything
 dotnet test tests/Headland.Core.Tests                             # ~30 s
 ~/.local/bin/godot --headless --path game --import                # after changing textures (re-import)
-~/.local/bin/godot --path game                                    # play
+~/.local/bin/godot --path game                                    # play (the main menu)
+~/.local/bin/godot --path game -- --new                           # straight into a new game
 ~/.local/bin/godot --path game -- --scenario=loop --shots=/abs/dir  # scripted end-to-end run + screenshots
 ~/.local/bin/godot --path game -- --scenario=tour --shots=/abs/dir  # quick render check
 ~/.local/bin/godot --path game -- --load=quicksave                  # start from a save slot (user://saves/<slot>.zip)

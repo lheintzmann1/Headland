@@ -133,8 +133,9 @@ jobs:
 
       - name: Launch headless
         run: |
-          # open goes through launchd like a double-click. The "<id>: model res://..." lines come from C# (Rig).
-          open -W -n --stdout "$PWD/out.log" --stderr "$PWD/err.log" Headland.app --args --headless --quit
+          # open goes through launchd like a double-click. --new skips the main menu for a new game, whose
+          # "<id>: model res://..." lines come from C# (Rig).
+          open -W -n --stdout "$PWD/out.log" --stderr "$PWD/err.log" Headland.app --args --headless --quit-after 120 -- --new
           cat out.log err.log
           grep -q ': model res://' out.log
 

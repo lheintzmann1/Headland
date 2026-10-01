@@ -11,7 +11,7 @@ public partial class ControlsPage : MenuPage
     private const InputContext Moving = InputContext.OnFoot | InputContext.Vehicle;
 
     /// <summary>The sections, each with the actions whose contexts are exactly these, in two columns.</summary>
-    private static readonly (string title, Func<InputContext, bool> holds, int column)[] Sections =
+    internal static readonly (string title, Func<InputContext, bool> holds, int column)[] Sections =
     [
         ("Walking and driving", c => c == Moving, 0),
         ("On foot", c => c == InputContext.OnFoot, 0),
@@ -21,7 +21,7 @@ public partial class ControlsPage : MenuPage
     ];
 
     public override string Subtitle =>
-        "Every key and where it works. Keys follow your keyboard layout; change them in settings.cfg (see the README).";
+        "Every key and where it works. Keys follow your keyboard layout; change them in the settings (the game tab).";
 
     protected override void Build()
     {

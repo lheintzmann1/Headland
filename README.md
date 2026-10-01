@@ -115,6 +115,10 @@ Built with **Godot 4.7** and **C#**.
   left, and bottom right the vehicle you drive and what it pulls, each with its gauges (speed, engine load, fuel, fill
   levels, bales, condition, dirt) and its states (lowered, turned on, threshing, pipe out, the seed it sows, a helper at
   work), as its parts report them, and what keeps it from working.
+- **Main menu, pause and settings.** The game opens on a main menu: continue the latest save, start a new game (the
+  farm's name, the map, the difficulty), load or delete a save, the settings and the credits. In the game, the menu's
+  game tab is the pause menu: resume, the settings, save, load, quit to the main menu or the desktop. Time stands still
+  while the menu covers the view (a setting).
 - **Saves.** F5 quicksaves, F8 quickloads, and the game autosaves every 10 minutes. A save is a zip in Godot's
   user data folder (`saves/`): readable JSON for everything on the map, plus the compressed field layers.
 - **Data-driven.** Crops, machines, buildings and other points of interest, bales, soils, the climate, the map, the money
@@ -131,7 +135,7 @@ that do something where you are, in the words of the tool they work ("Lower cult
 F1 lists every key for walking or for the vehicle you drive. Esc opens the menu
 (the map and the farmland, prices, contracts, finances, statistics, helpers, the shop, the garage, every key, save and load), or closes the screen on top. A gamepad works too (left stick
 to walk and drive, A lowers, B turns on, X uses, Y gets in, Start opens the menu). Keys can be changed in the settings
-file (see below).
+(see below).
 
 | Key | Action |
 |---|---|
@@ -158,7 +162,7 @@ file (see below).
 | Ctrl+Q / Ctrl+E | Turn signal left / right |
 | R | Use the POI you are parked at: buy supplies, load a trailer from storage, refuel, repair or change options, wash (repairs and washing on foot too, beside your machines; on foot at the farm's fuel tank, order diesel) |
 | H | Hire or dismiss a field helper |
-| Esc | The menu: the map and the farmland, prices, contracts, finances and loans, statistics, helpers, the shop, the garage, controls, save, load and quit; Q / E switch its tabs |
+| Esc | The menu: the map and the farmland, prices, contracts, finances and loans, statistics, helpers, the shop, the garage, controls, and the game (resume, settings, save, load, quit); Q / E switch its tabs |
 | M, O | The menu's map, its shop (again: close it) |
 | Shift+M | Minimap: small, large, off |
 | Q / E | Rotate the camera |
@@ -169,16 +173,20 @@ file (see below).
 
 ## Settings
 
-Until the settings screen exists, edit `settings.cfg` in Godot's user data folder (on Linux
-`~/.local/share/godot/app_userdata/Headland/`). The game writes it with the defaults on first launch and reads it at
-startup; a missing or invalid value falls back to its default.
+The settings screen, from the main menu or the in-game menu's game tab, changes the graphics (window, resolution,
+vertical sync, frame rate cap, render scale, anti-aliasing, shadows), the volumes, every key (click a binding, then
+press the key, mouse button or gamepad input for it; Delete removes it, and a key another action of the same moment
+uses is refused) and the gameplay (autosave, time standing still in menus, the minimap), each change at once. They're
+kept in `settings.cfg` in Godot's user data folder (on Linux `~/.local/share/godot/app_userdata/Headland/`), which can
+be edited too: the game writes it with the defaults on first launch and reads it at startup; a missing or invalid
+value falls back to its default.
 
 | Section | Keys |
 |---|---|
 | `[graphics]` | `window_mode` (windowed, maximized, fullscreen, exclusive_fullscreen), `resolution`, `vsync`, `max_fps` (0 = no cap), `render_scale` (0.5–1, FSR below 1), `antialiasing` (off, fxaa, msaa2, msaa4), `shadows` (off, low, medium, high) |
 | `[audio]` | `master`, `music`, `vehicles`, `environment`, `ui`: volumes from 0 to 1 |
 | `[controls]` | A list of bindings per action (`["W", "Joy LY-"]`): keys named as on a US QWERTY keyboard, since the position counts and not the letter, with `Ctrl+`, `Shift+` or `Alt+` (`"Shift+Tab"`); mouse buttons (`"Mouse Middle"`, `"Mouse Wheel Up"`); gamepad buttons and axes (`"Joy A"`, `"Joy LX-"`, `"Joy LT"`). `"Hold V"` fires after a long press and `"Double V"` on a double tap. Two actions sharing a binding where both work are reported at startup |
-| `[gameplay]` | `autosave_minutes` (0 = off) |
+| `[gameplay]` | `autosave_minutes` (0 = off), `pause_in_menus` (true: time stands still while the menu or a screen covers the view) |
 | `[hud]` | `minimap` (small, large, off; Shift+M steps through them) |
 
 ## Running from source
@@ -192,8 +200,10 @@ dotnet build Headland.sln
 godot --path game            # or open game/project.godot in the editor and press Play
 ```
 
-A new game starts on the difficulty named in `game/data/game.json` (normal); until there is a main menu, pick another
-with `godot --path game -- --difficulty=easy` (or `hard`).
+The game opens on its main menu: continue the latest save, start a new game (the farm's name, the map and the
+difficulty), load a save, the settings, the credits. The command line skips it: `godot --path game -- --new` starts a
+new game as `game/data/game.json` sets it up, `-- --difficulty=easy` (or `hard`) on another difficulty, and
+`-- --load=quicksave` from a save.
 
 Run the tests with `dotnet test tests/Headland.Core.Tests`. They include content validation and multi-year crop
 calibration runs.

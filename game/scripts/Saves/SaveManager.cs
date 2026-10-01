@@ -36,6 +36,23 @@ public partial class SaveManager : Node
         return pending;
     }
 
+    /// <summary>
+    /// Reads and builds a saved game for the game scene to start with (from the main menu); null, or why it can't be
+    /// loaded.
+    /// </summary>
+    public static string? Open(ContentDatabase content, string slot)
+    {
+        try
+        {
+            _pending = (Read(content, slot), slot);
+            return null;
+        }
+        catch (SaveException e)
+        {
+            return e.Message;
+        }
+    }
+
     /// <summary>Reads and builds a saved game; throws <see cref="SaveException"/> when it can't.</summary>
     public static LoadedGame Read(ContentDatabase content, string slot) =>
         SaveStore.IsValidSlot(slot) ? SaveGame.Load(content, Store.Read(slot)) : throw new SaveException($"'{slot}' is not a save name");

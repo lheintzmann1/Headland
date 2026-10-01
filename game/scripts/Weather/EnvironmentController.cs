@@ -25,8 +25,18 @@ public partial class EnvironmentController : Node3D
     private double _lastClockSeconds = double.NaN;
 
     public Simulation Sim { get; init; } = null!;
+    private bool _shadows = true;
+
     /// <summary>Sun shadows (the settings' shadow quality sets the atlas; "off" clears this).</summary>
-    public bool Shadows { get; init; } = true;
+    public bool Shadows
+    {
+        get => _shadows;
+        set
+        {
+            _shadows = value;
+            if (_sun != null) _sun.ShadowEnabled = value;
+        }
+    }
 
 
     public override void _Ready()
@@ -34,7 +44,7 @@ public partial class EnvironmentController : Node3D
         _sun = new DirectionalLight3D
         {
             Name = "Sun",
-            ShadowEnabled = Shadows,
+            ShadowEnabled = _shadows,
             DirectionalShadowMode = DirectionalLight3D.ShadowMode.Orthogonal,
             DirectionalShadowMaxDistance = 380f,
             ShadowBlur = 1.6f,

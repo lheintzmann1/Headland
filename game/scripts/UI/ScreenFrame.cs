@@ -6,7 +6,8 @@ namespace Headland.Game.UI;
 /// <summary>
 /// A screen covering the whole view (FS: the in-game menu, the shop): its title or tabs across the top beside the
 /// farm's balance and the date, a line on what it's for, its content filling the rest, and along the bottom the keys it
-/// answers and the latest notification (the HUD's are under it). The world only shows faintly through.
+/// answers and the latest notification (the HUD's are under it). The world only shows faintly through. Without a game
+/// (the main menu's settings), the balance, date and notifications are left out.
 /// </summary>
 public partial class ScreenFrame : PanelContainer
 {
@@ -18,7 +19,8 @@ public partial class ScreenFrame : PanelContainer
     private RichTextLabel _note = null!;
     private double _refresh;
 
-    public Simulation Sim { get; init; } = null!;
+    /// <summary>The game whose balance, date and notifications it shows, if there's one.</summary>
+    public Simulation? Sim { get; init; }
     /// <summary>The keys shown along the bottom: the action, and what it does here.</summary>
     public (string action, string label)[] Hints { get; init; } = [];
 
@@ -69,6 +71,7 @@ public partial class ScreenFrame : PanelContainer
 
     private void Refresh()
     {
+        if (Sim == null) return;
         Widgets.Balance(_balance, Sim.Economy.Money);
         _date.Text = $"{Sim.Clock.Date}   {Sim.Clock.TimeString}";
         var note = Sim.Notifications.Items.LastOrDefault(n => Sim.RealTime - n.RealTime < NoteSeconds);

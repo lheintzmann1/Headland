@@ -20,15 +20,29 @@ using NVec2 = System.Numerics.Vector2;
 
 namespace Headland.Game;
 
+/// <summary>A new game as the main menu sets it up: the map, the difficulty and the farm's name.</summary>
+public sealed record GameSetup(string Map, string Difficulty, string FarmName);
+
 /// <summary>
-/// Entry point: loads content, starts a new game or a saved one, builds the renderers, and routes input.
-/// The simulation ticks at the physics rate (60 Hz); visuals read its state every frame. Loading a save reloads
-/// this scene around the loaded game.
+/// The game scene: loads content, starts a new game (as the main menu set it up) or a saved one, builds the renderers,
+/// and routes input. The simulation ticks at the physics rate (60 Hz), standing still while a menu covers the view (as
+/// the settings say); visuals read its state every frame. Loading a save reloads this scene around the loaded game, and
+/// quitting to the menu goes back to the main menu's scene.
 /// </summary>
 public partial class GameRoot : Node3D
 {
-    /// <summary>Read once per run: loading a save reloads the scene, but not the settings.</summary>
-    private static UserSettings? _settings;
+    public const string ScenePath = "res://scenes/Main.tscn";
+
+    /// <summary>The command line (--load, --difficulty) starts the first game of the run only.</summary>
+    private static bool _commandLineUsed;
+
+    /// <summary>The game the main menu set up, for this scene to start (taken once).</summary>
+    public static GameSetup? NextGame { get; set; }
+
+    /// <summary>The command line hasn't started a game yet: the main menu hands over to it.</summary>
+    public static bool CommandLineWaiting => !_commandLineUsed;
+
+    private EnvironmentController _environment = null!;
 
     /// <summary>The tool keys' travel for a pixel of the mouse's motion in a simulation tick, the mouse on the tool.</summary>
     private const float MouseToolPerPixel = 0.3f;
@@ -57,21 +71,19 @@ public partial class GameRoot : Node3D
         CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
         CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
         var args = OS.GetCmdlineUserArgs();
-        var scenario = args.FirstOrDefault(a => a.StartsWith("--scenario="))?.Split('=', 2)[1];
-        if (_settings == null)
-        {
-            _settings = UserSettings.Load();
-            // Scenarios keep the project's window and quality, so their screenshots compare.
-            if (scenario == null) _settings.ApplyDisplay(GetViewport());
-            _settings.ApplyAudio();
-        }
-        Settings = _settings;
+        var scenario = _commandLineUsed ? null : args.FirstOrDefault(a => a.StartsWith("--scenario="))?.Split('=', 2)[1];
+        Settings = UserSettings.Current;
+        // Scenarios keep the project's window and quality, so their screenshots compare.
+        if (scenario == null) Settings.ApplyAtStart(GetViewport());
+        else Settings.ApplyAudio();
         InputLayer = new InputLayer { Bindings = Settings.Controls, Name = "Input" };
         AddChild(InputLayer);
         InputLayer.Fired += OnAction;
 
-        var (sim, slot, warnings) = StartGame(args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1],
-            args.FirstOrDefault(a => a.StartsWith("--difficulty="))?.Split('=', 2)[1]);
+        var firstGame = !_commandLineUsed;
+        _commandLineUsed = true;
+        var (sim, slot, warnings) = StartGame(firstGame ? args.FirstOrDefault(a => a.StartsWith("--load="))?.Split('=', 2)[1] : null,
+            firstGame ? args.FirstOrDefault(a => a.StartsWith("--difficulty="))?.Split('=', 2)[1] : null);
         Sim = sim;
 
         AddChild(new TerrainRenderer { Sim = Sim, Name = "Terrain" });
@@ -80,7 +92,8 @@ public partial class GameRoot : Node3D
         AddChild(new WindrowRenderer { Sim = Sim, Name = "Windrows" });
         AddChild(new PropsRenderer { Sim = Sim, Name = "Props" });
         AddChild(new EntityRenderer { Sim = Sim, Name = "Entities" });
-        AddChild(new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" });
+        _environment = new EnvironmentController { Sim = Sim, Shadows = scenario != null || Settings.Shadows != "off", Name = "Environment" };
+        AddChild(_environment);
         Camera = new IsoCamera { Name = "Camera" };
         AddChild(Camera);
         Camera.SnapTo(Sim.World.OnGround(Sim.Player.Position));
@@ -102,12 +115,23 @@ public partial class GameRoot : Node3D
         foreach (var w in warnings) Sim.Notifications.Post(w, Severity.Warning, 0);
     }
 
-    /// <summary>The game a quickload just built, else the save named by --load, else a new game (on --difficulty).</summary>
+    /// <summary>
+    /// The game a load just built (the main menu's, a quickload), else the main menu's new game, else the save named by
+    /// --load, else a new game (on --difficulty).
+    /// </summary>
     private static (Simulation sim, string? slot, IReadOnlyList<string> warnings) StartGame(string? loadSlot, string? difficulty)
     {
         if (SaveManager.TakePending() is var (pending, pendingSlot)) return (pending.Sim, pendingSlot, pending.Warnings);
         var content = ContentDatabase.Load(new GodotContentSource("res://data"));
         Models.LeaveOutBroken(content);
+        if (NextGame is { } setup)
+        {
+            NextGame = null;
+            if (content.Maps.ContainsKey(setup.Map)) content.Game.Map = setup.Map;
+            if (content.Difficulties.ContainsKey(setup.Difficulty)) content.Game.Difficulty = setup.Difficulty;
+            content.Game.FarmName = setup.FarmName;
+            return (Simulation.Create(content), null, []);
+        }
         if (loadSlot != null)
         {
             try
@@ -130,8 +154,21 @@ public partial class GameRoot : Node3D
     {
         if (PlayerInputEnabled && Screens.BlocksInput) ReleaseControls();
         else if (PlayerInputEnabled) ApplyMovementInput();
+        // A menu covering the view stops the clock, as the settings say (scenarios run on).
+        if (PlayerInputEnabled && Settings.PauseInMenus && Screens.CoversView) return;
         for (var i = 0; i < SimSubsteps; i++) Sim.Tick((float)delta);
     }
+
+    /// <summary>The settings changed (the settings screen): the game follows them.</summary>
+    public void ApplySettings()
+    {
+        Saves.AutosaveMinutes = Settings.AutosaveMinutes;
+        Hud.MinimapSize = Settings.Minimap;
+        _environment.Shadows = Settings.Shadows != "off";
+    }
+
+    /// <summary>Back to the main menu (what isn't saved is lost).</summary>
+    public void QuitToMenu() => GetTree().ChangeSceneToFile(MainMenu.ScenePath);
 
     /// <summary>A modal screen is open: the farmer stands still and the vehicle brakes.</summary>
     private void ReleaseControls()

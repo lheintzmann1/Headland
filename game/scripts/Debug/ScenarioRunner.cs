@@ -213,6 +213,37 @@ public partial class ScenarioRunner : Node
             if (menu.Page is UI.GaragePage garage) await GarageMachine(garage);
         }
         menu.Close();
+        await Settings();
+    }
+
+    /// <summary>
+    /// The settings screen's tabs, and a rebinding: a key pressed for an action, then removed. On settings of its own,
+    /// in the shots' folder, so the player's aren't touched.
+    /// </summary>
+    private async Task Settings()
+    {
+        var path = $"{ShotsDir.TrimEnd('/')}/settings-test.cfg";
+        DirAccess.MakeDirRecursiveAbsolute(ProjectSettings.GlobalizePath(ShotsDir));
+        var settings = new Common.UserSettings { Path = path };
+        var screen = Game.Screens.Push(new UI.SettingsScreen { Settings = settings, Sim = Sim });
+        foreach (var tab in new[] { "Graphics", "Audio", "Gameplay", "Controls" })
+        {
+            screen.ShowTab(tab);
+            await Frames(10);
+            Log($"settings: {tab}");
+            if (DisplayServer.GetName() != "headless") await Shot($"settings_{tab.ToLowerInvariant()}");
+        }
+        var action = InputActions.Helper;
+        var before = settings.Controls.Of(action).Count;
+        screen.Capture(action, -1);
+        Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.F7, Keycode = Key.F7, Pressed = true });
+        await Frames(5);
+        var bound = settings.Controls.Of(action).Select(b => b.ToString()).ToList();
+        screen.Capture(action, bound.IndexOf("F7"));
+        Input.ParseInputEvent(new InputEventKey { PhysicalKeycode = Key.Delete, Keycode = Key.Delete, Pressed = true });
+        await Frames(5);
+        Log($"settings: {action} bound to {string.Join(", ", bound)}, then back to {string.Join(", ", settings.Controls.Of(action))} ({(settings.Controls.Of(action).Count == before ? "ok" : "wrong")})");
+        screen.Close();
     }
 
     /// <summary>The map in each of its layers.</summary>

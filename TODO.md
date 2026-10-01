@@ -357,10 +357,14 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
 Feature screens (shop, garage, contracts, finances) are listed with their feature; in game, they are tabs of the
 in-game menu (see Controls).
 
-- [ ] Main menu: new game (map, difficulty), continue, load, settings, mods, credits, quit.
-- [ ] Pause: resume, save, load, settings, quit to menu, in the in-game menu.
-- [ ] Settings: graphics (resolution, window mode, vsync, render scale, shadows, view distance), audio
-      volumes, controls (rebinding on physical keys, saved), gameplay (units, autosave), language.
+- [x] Main menu: new game (the farm's name, map, difficulty), continue, load (and delete), settings, credits, quit; the
+      mods with the mods screen (see Modding).
+- [x] Pause: resume, save, load, settings, quit to menu, in the in-game menu (its game tab); time stands still while a
+      menu covers the view, as a setting says.
+- [x] Settings: graphics (resolution, window mode, vsync, frame rate cap, render scale, anti-aliasing, shadows), audio
+      volumes, controls (rebinding on physical keys, refusing a key another action of the same moment uses, saved),
+      gameplay (autosave, pausing in menus, the minimap).
+- [ ] More settings: view distance, units, language (with the translations).
 - [x] Map tab (M): numbered fields, POIs with icons and filters, vehicles, contract fields, ownership;
       layers for crop, growth stage, soil, moisture; click to set a waypoint.
 - [x] Minimap in the HUD with POIs and vehicles: small, large or off (FS `TOGGLE_MAP_SIZE`), turned with the camera.

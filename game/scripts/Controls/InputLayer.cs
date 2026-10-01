@@ -195,6 +195,23 @@ public partial class InputLayer : Node
         _ => null,
     };
 
+    /// <summary>
+    /// What a Godot input event would be bound as (the settings' rebinding): a key by its position with the modifiers
+    /// held, a mouse button, a gamepad button, or a stick or trigger pushed past half way. Null for anything else (a
+    /// release, the mouse moving).
+    /// </summary>
+    public static InputBinding? BindingOf(InputEvent e) => e switch
+    {
+        InputEventKey { Pressed: true, Echo: false } k when (k.PhysicalKeycode != Key.None ? k.PhysicalKeycode : k.Keycode) is var key
+            && key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta)
+            => new InputBinding(OS.GetKeycodeString(key), ModifiersOf(k, key)),
+        InputEventMouseButton { Pressed: true } mb when MouseName(mb.ButtonIndex) is { } button => new InputBinding(button, ModifiersOf(mb, Key.None)),
+        InputEventJoypadButton { Pressed: true } jb when PadName(jb.ButtonIndex) is { } pad => new InputBinding(pad),
+        InputEventJoypadMotion jm when MathF.Abs(jm.AxisValue) >= InputRouter.PressAt && AxisName(jm.Axis) is { } axis =>
+            new InputBinding(axis is "Joy LT" or "Joy RT" ? axis : axis + (jm.AxisValue < 0f ? "-" : "+")),
+        _ => null,
+    };
+
     // ------------------------------------------------------------------ Names
 
     /// <summary>

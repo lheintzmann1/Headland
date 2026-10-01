@@ -6,12 +6,24 @@ namespace Headland.Game.Common;
 
 /// <summary>
 /// The player's settings in user://settings.cfg (a Godot ConfigFile: INI sections, Godot value syntax). Read once
-/// at startup, written with the defaults when missing so it can be found and edited; a missing or invalid value
-/// falls back to its default. The settings screen will edit these and call <see cref="Save"/>.
+/// at startup (<see cref="Current"/>), written with the defaults when missing so it can be found and edited; a missing
+/// or invalid value falls back to its default. The settings screen edits them and calls <see cref="Save"/>.
 /// </summary>
 public sealed class UserSettings
 {
     public const string DefaultPath = "user://settings.cfg";
+
+    private static UserSettings? _current;
+
+    /// <summary>The settings of this run: read from the file the first time they're asked for.</summary>
+    public static UserSettings Current => _current ??= Load();
+
+    /// <summary>The window sizes offered (the settings' own is added when it's another).</summary>
+    public static readonly Vector2I[] Resolutions = [new(1280, 720), new(1366, 768), new(1600, 900), new(1920, 1080), new(2560, 1440), new(3840, 2160)];
+    /// <summary>Frame rate caps offered; 0 = none.</summary>
+    public static readonly int[] FpsCaps = [0, 30, 60, 90, 120, 144, 165, 240];
+    /// <summary>Minutes between autosaves offered; 0 = off.</summary>
+    public static readonly float[] AutosaveSteps = [0f, 5f, 10f, 15f, 30f];
 
     public static readonly string[] WindowModes = ["windowed", "maximized", "fullscreen", "exclusive_fullscreen"];
     public static readonly string[] AntialiasingModes = ["off", "fxaa", "msaa2", "msaa4"];
@@ -21,6 +33,9 @@ public sealed class UserSettings
     /// <summary>Audio buses by setting name (only Master exists until the audio work adds the others).</summary>
     public static readonly (string setting, string bus)[] Buses =
         [("master", "Master"), ("music", "Music"), ("vehicles", "Vehicles"), ("environment", "Environment"), ("ui", "UI")];
+
+    /// <summary>The file they're read from and saved to.</summary>
+    public string Path { get; init; } = DefaultPath;
 
     // [graphics]
     public string WindowMode { get; set; } = "windowed";
@@ -46,6 +61,8 @@ public sealed class UserSettings
     // [gameplay]
     /// <summary>Real minutes between autosaves; 0 turns autosave off.</summary>
     public float AutosaveMinutes { get; set; } = 10f;
+    /// <summary>The game stands still while a menu covers the view (the in-game menu, the shop).</summary>
+    public bool PauseInMenus { get; set; } = true;
 
     // [hud]
     /// <summary>The minimap: small, large or off (<see cref="MinimapSizes"/>).</summary>
@@ -53,7 +70,7 @@ public sealed class UserSettings
 
     public static UserSettings Load(string path = DefaultPath)
     {
-        var s = new UserSettings();
+        var s = new UserSettings { Path = path };
         var cfg = new ConfigFile();
         var err = cfg.Load(path);
         if (err == Error.FileNotFound)
@@ -86,6 +103,7 @@ public sealed class UserSettings
             GD.PushWarning($"{path}: {c.Binding} is bound to both {c.Action} and {c.Other}");
 
         s.AutosaveMinutes = Math.Clamp(cfg.GetValue("gameplay", "autosave_minutes", s.AutosaveMinutes).AsSingle(), 0f, 240f);
+        s.PauseInMenus = cfg.GetValue("gameplay", "pause_in_menus", s.PauseInMenus).AsBool();
         s.Minimap = OneOf(cfg.GetValue("hud", "minimap", s.Minimap).AsString(), MinimapSizes, s.Minimap);
         return s;
     }
@@ -125,8 +143,9 @@ public sealed class UserSettings
         Controls.Set(action.Id, bindings);
     }
 
-    public void Save(string path = DefaultPath)
+    public void Save(string? path = null)
     {
+        path ??= Path;
         var cfg = new ConfigFile();
         cfg.SetValue("graphics", "window_mode", WindowMode);
         cfg.SetValue("graphics", "resolution", Resolution);
@@ -139,13 +158,32 @@ public sealed class UserSettings
         foreach (var action in Controls.Actions)
             cfg.SetValue("controls", action.Id, new Godot.Collections.Array(Controls.Of(action.Id).Select(b => Variant.From(b.ToString()))));
         cfg.SetValue("gameplay", "autosave_minutes", AutosaveMinutes);
+        cfg.SetValue("gameplay", "pause_in_menus", PauseInMenus);
         cfg.SetValue("hud", "minimap", Minimap);
         var err = cfg.Save(path);
         if (err != Error.Ok) GD.PushWarning($"{path}: cannot write ({err})");
     }
 
+    private static bool _applied;
+
+    /// <summary>The display and audio settings, once per run (scenarios keep the project's, for their screenshots).</summary>
+    public void ApplyAtStart(Viewport viewport)
+    {
+        if (_applied) return;
+        _applied = true;
+        ApplyDisplay(viewport);
+        ApplyAudio();
+    }
+
     /// <summary>Window, frame pacing, 3D resolution, anti-aliasing and the directional shadow atlas.</summary>
     public void ApplyDisplay(Viewport viewport)
+    {
+        ApplyWindow();
+        ApplyRendering(viewport);
+    }
+
+    /// <summary>The window: its mode, and its size and place when windowed.</summary>
+    public void ApplyWindow()
     {
         switch (WindowMode)
         {
@@ -159,6 +197,11 @@ public sealed class UserSettings
                 DisplayServer.WindowSetPosition(screen.Position + (screen.Size - Resolution) / 2);
                 break;
         }
+    }
+
+    /// <summary>Frame pacing, 3D resolution, anti-aliasing and the directional shadow atlas.</summary>
+    public void ApplyRendering(Viewport viewport)
+    {
         DisplayServer.WindowSetVsyncMode(Vsync ? DisplayServer.VSyncMode.Enabled : DisplayServer.VSyncMode.Disabled);
         Engine.MaxFps = MaxFps;
 
