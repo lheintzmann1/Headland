@@ -8,7 +8,7 @@ namespace Headland.Core.Machines.Work;
 /// Raking (FS: a windrower): gathers what lies cut under it into a windrow in its middle, its
 /// <see cref="WorkAreaDef.WindrowWidth"/>, for a baler to pick up. The ground is raked once as the rake reaches it.
 /// </summary>
-public sealed class WindrowerWork() : WorkType("windrower")
+public sealed class WindrowerWork() : WorkType("windrower", "Raked")
 {
     public override bool Draft => false;
 

@@ -366,7 +366,8 @@ in-game menu (see Controls).
 - [x] Minimap in the HUD with POIs and vehicles: small, large or off (FS `TOGGLE_MAP_SIZE`), turned with the camera.
 - [x] HUD redesign on the theme, laid out as FS's: key hints top left, date, weather and money top right, minimap
       bottom left, the vehicle panel bottom right with speed, engine load, fuel, condition and fill levels as gauges.
-- [ ] Prices tab (where each crop sells best), field and farm statistics, helper list.
+- [x] Prices tab (where each crop sells best, what's in stock, the month ahead and the year), field and farm
+      statistics, helper list (dismiss one, or take a seat in its vehicle).
 - [ ] Translatable strings (Godot `tr()`), English and French.
 
 ## Audio

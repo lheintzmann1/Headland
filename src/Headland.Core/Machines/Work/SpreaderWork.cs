@@ -9,7 +9,7 @@ namespace Headland.Core.Machines.Work;
 /// each time it passes over. It counts toward the season's fertilizing (<see cref="FieldLayers.Fertilized"/>) until the
 /// crop is harvested or cut.
 /// </summary>
-public sealed class SpreaderWork() : WorkType("spreader")
+public sealed class SpreaderWork() : WorkType("spreader", "Fertilized")
 {
     public override bool Draft => false;
 

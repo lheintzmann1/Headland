@@ -20,8 +20,8 @@ SIL Open Font License 1.1 (`fonts/OFL.txt`).
 conditions: `clear` (sunny), `cloudy` (cloud), `rain` (rainy), `storm` (thunderstorm), `snow` (weather_snowy), `fog`
 (foggy). The rest keep their Material Symbols names: `warning`, the map's `flag` (the waypoint), `navigation` (the
 farmer) and `fiber_manual_record` (the machines), and the POI map icons `agriculture`, `build`, `factory`, `grass`, `home`, `local_gas_station`, `sell`, `storefront`,
-`warehouse`, and the HUD's gauges `speed`, `manufacturing` (the engine), `inventory_2` (fill levels) and `water_drop`
-(dirt).
+`warehouse`, the HUD's gauges `speed`, `manufacturing` (the engine), `inventory_2` (fill levels) and `water_drop`
+(dirt), and the prices' `trending_up`, `trending_down` and `trending_flat`.
 
 ## Crops
 

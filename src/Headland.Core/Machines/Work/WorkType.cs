@@ -11,10 +11,13 @@ namespace Headland.Core.Machines.Work;
 /// (seed, a thresher to cut for), and what helpers and contracts check. Work areas and contracts name it by its
 /// <see cref="Id"/>; <see cref="WorkTypes"/> holds them all.
 /// </summary>
-public abstract class WorkType(string id)
+public abstract class WorkType(string id, string done)
 {
     /// <summary>What work areas and contracts call it: "cultivator", "plow".</summary>
     public string Id { get; } = id;
+
+    /// <summary>What the ground it worked is, in a word: "Cultivated", "Plowed" (the statistics' hectares worked).</summary>
+    public string Done { get; } = done;
 
     /// <summary>
     /// Its power is drawn through the ground (tines, a plow's bodies, coulters), holding the vehicle back, rather than

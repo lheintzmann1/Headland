@@ -10,7 +10,7 @@ namespace Headland.Core.Machines.Work;
 /// each time it's full. The chamber holds one fill type at a time: something else lying there is left until the bale is
 /// dropped. What it picks up counts as harvested, so a bale job's contract can ask for the bales at a buyer.
 /// </summary>
-public sealed class BalerWork() : WorkType("baler")
+public sealed class BalerWork() : WorkType("baler", "Baled")
 {
     public override bool Draft => false;
     public override bool Harvests => true;

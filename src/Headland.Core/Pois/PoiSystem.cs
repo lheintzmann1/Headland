@@ -18,6 +18,12 @@ namespace Headland.Core.Pois;
 /// </summary>
 internal sealed record Delivery(Poi Poi, string FillType, float Amount, float Income, bool Stored, Contract? Contract = null);
 
+/// <summary>
+/// What a buyer pays for a fill type now: per unit, any high demand for it, why it doesn't buy now (null: it does), and
+/// how it takes it: tipped or piped in bulk (<paramref name="Loads"/>), in bales or on pallets (<paramref name="Objects"/>).
+/// </summary>
+public sealed record Quote(Poi Poi, float Price, HighDemand? High, string? Closed, bool Loads, bool Objects);
+
 /// <summary>A machine filling up from a silo at its loading spout, with what it took so far.</summary>
 internal sealed record Loading(Silo Silo, string FillType, float Amount);
 
@@ -74,6 +80,22 @@ public sealed class PoiSystem
         var price = Economy.Price(fillType, _sim.Clock.Month) * station.Def.FactorOf(fillType) * station.DemandOf(fillType);
         return station.HighDemand is { } high && high.FillType == fillType ? price * high.Factor : price;
     }
+
+    /// <summary>The fill types some selling station buys, in the order of filltypes.json: what the prices page lists.</summary>
+    public IEnumerable<FillTypeDef> Sellable => Content.FillTypeList.Where(f => All.Any(p => p.Get<SellingStation>()?.Def.FillTypes.Contains(f.Id) == true));
+
+    /// <summary>
+    /// What each selling station buying <paramref name="fillType"/> pays for it now (FS: the prices page), the best
+    /// first: its price per unit, any high demand for it there, and why it doesn't buy now (closed, out of season).
+    /// </summary>
+    public IReadOnlyList<Quote> Quotes(string fillType) => All
+        .Select(p => p.Get<SellingStation>())
+        .OfType<SellingStation>()
+        .Where(s => s.Def.FillTypes.Contains(fillType))
+        .Select(s => new Quote(s.Poi, Price(s, fillType), s.HighDemand?.FillType == fillType ? s.HighDemand : null, Closed(s.Poi, s.Def),
+            s.Trigger("unload") != null, s.Trigger("objects") != null))
+        .OrderByDescending(q => q.Price)
+        .ToList();
 
     /// <summary>What a unit of <paramref name="fillType"/> costs at <paramref name="station"/> now: the market price times its factor and the price level.</summary>
     public float Price(BuyingStation station, string fillType) =>

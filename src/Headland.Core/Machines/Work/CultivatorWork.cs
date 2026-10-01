@@ -8,7 +8,7 @@ namespace Headland.Core.Machines.Work;
 /// Shallow tillage: stubble, grass, a meadow or a failed crop into a seedbed, with what lay cut on it. It kills small
 /// weeds, and the herbicide's hold on the ground ends; grown weeds survive it (the plow buries them).
 /// </summary>
-public sealed class CultivatorWork() : WorkType("cultivator")
+public sealed class CultivatorWork() : WorkType("cultivator", "Cultivated")
 {
     public override bool WouldChange(WorldMap world, ContentDatabase content, WorkAreaDef area, int i) => CanTill(world, i);
 

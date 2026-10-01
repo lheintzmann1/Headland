@@ -10,7 +10,7 @@ namespace Headland.Core.Machines.Work;
 /// is cleared to stubble. What the crop leaves when cut (its windrow: the grass) lies in the work area's windrow for a
 /// baler to pick up, and the next cut needs fertilizing again.
 /// </summary>
-public sealed class MowerWork() : WorkType("mower")
+public sealed class MowerWork() : WorkType("mower", "Mown")
 {
     public override bool Draft => false;
 

@@ -8,7 +8,7 @@ namespace Headland.Core.Machines.Work;
 /// Sowing: the crop the driver picked, from the area's fill unit, into a seedbed or plowed ground. Out of its sowing
 /// window it still comes up, but weak.
 /// </summary>
-public sealed class SeederWork() : WorkType("seeder")
+public sealed class SeederWork() : WorkType("seeder", "Sown")
 {
     public override bool Sows => true;
 

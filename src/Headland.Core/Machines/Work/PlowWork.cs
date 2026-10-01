@@ -5,7 +5,7 @@ using Headland.Core.World;
 namespace Headland.Core.Machines.Work;
 
 /// <summary>Plowing: turns the soil over, burying whatever grew or lay cut on it, grown weeds too. Sown like a seedbed.</summary>
-public sealed class PlowWork() : WorkType("plow")
+public sealed class PlowWork() : WorkType("plow", "Plowed")
 {
     public override bool WouldChange(WorldMap world, ContentDatabase content, WorkAreaDef area, int i) => CanPlow(world, i);
 

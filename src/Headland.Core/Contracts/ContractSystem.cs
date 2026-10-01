@@ -28,7 +28,6 @@ public sealed class ContractSystem
 
     private readonly Simulation _sim;
     private readonly List<Contract> _all = [];
-    private readonly Dictionary<FieldInfo, int[]> _cells = new();
     private bool _changed;
     private float _sinceCheck = CheckInterval;
 
@@ -178,7 +177,7 @@ public sealed class ContractSystem
         var done = new FieldState(c.Type.Done);
         var crop = c.Crop != null ? _sim.Content.Crops.IndexOf(c.Crop) + 1 : 0;
         var L = _sim.World.Layers;
-        var cells = CellsOf(c.Field!);
+        var cells = _sim.World.CellsOf(c.Field!);
         var n = 0;
         foreach (var i in cells)
             if (done.Matches(L, _sim.Content.Crops, i, crop)) n++;
@@ -372,7 +371,7 @@ public sealed class ContractSystem
     {
         var L = _sim.World.Layers;
         var crops = _sim.Content.Crops;
-        var cells = CellsOf(field);
+        var cells = _sim.World.CellsOf(field);
         var counts = new int[crops.Count + 1];
         int offer = 0, done = 0;
         foreach (var i in cells)
@@ -402,18 +401,4 @@ public sealed class ContractSystem
             .Where(ft => type.Deliver!.FillTypes.Length == 0 || type.Deliver.FillTypes.Contains(ft))
             .Select(ft => (p, ft)))
         .ToList();
-
-    /// <summary>The cells of a field: inside its outline and not taken by a field drawn over it.</summary>
-    internal int[] CellsOf(FieldInfo field)
-    {
-        if (_cells.TryGetValue(field, out var cells)) return cells;
-        var w = _sim.World;
-        var list = new List<int>();
-        field.Shape.Rasterize(WorldMap.CellSize, w.CellsX, w.CellsZ, (cx, cz) =>
-        {
-            var i = w.CellIndex(cx, cz);
-            if (w.Layers.FieldId[i] == field.Id) list.Add(i);
-        });
-        return _cells[field] = list.ToArray();
-    }
 }

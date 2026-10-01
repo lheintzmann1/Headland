@@ -11,7 +11,7 @@ namespace Headland.Core.Machines.Work;
 /// and clearing dead ones: the field is left as stubble. The yield is the crop's, less what its health and weeds cost.
 /// What the crop leaves when cut (its windrow: the straw) falls in the thresher's swath, behind it.
 /// </summary>
-public sealed class HarvesterWork() : WorkType("harvester")
+public sealed class HarvesterWork() : WorkType("harvester", "Harvested")
 {
     public override bool Draft => false;
     public override bool Harvests => true;

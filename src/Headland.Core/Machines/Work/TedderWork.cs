@@ -9,7 +9,7 @@ namespace Headland.Core.Machines.Work;
 /// <see cref="FillTypeDef.Tedded"/>: grass into hay), at once as FS's tedder does. Something else lying among it (straw
 /// on a meadow) is left where it is.
 /// </summary>
-public sealed class TedderWork() : WorkType("tedder")
+public sealed class TedderWork() : WorkType("tedder", "Tedded")
 {
     public override bool Draft => false;
 

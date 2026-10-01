@@ -372,6 +372,31 @@ public sealed class Simulation
     public FieldWorkController HireHelper(Machine v, FieldInfo field, int? maxLanes = null) =>
         Hire(v, new FieldWorkController(this, v, field, maxLanes: maxLanes));
 
+    /// <summary>Dismisses a helper at work: its vehicle stops where it is.</summary>
+    public void Dismiss(FieldWorkController helper)
+    {
+        if (helper.Vehicle.Get<Drivable>()?.Controller == helper) DismissHelper(helper.Vehicle, HelperEnd.Dismissed);
+    }
+
+    /// <summary>The farmer gets into <paramref name="v"/>, out of the vehicle they're in, a helper driving it keeps working.</summary>
+    public bool TakeSeat(Machine v)
+    {
+        if (Player.Vehicle == v) return true;
+        var from = Player.Vehicle;
+        Player.Exit(this);
+        if (Player.Enter(v)) return true;
+        if (from != null) Player.Enter(from);
+        return false;
+    }
+
+    /// <summary>
+    /// What <paramref name="farmId"/> has of <paramref name="fillType"/> in stock (the prices page): in its POIs' storage
+    /// (silos, a production's), and in the bales and on the pallets it owns.
+    /// </summary>
+    public float Stock(int farmId, string fillType) =>
+        World.Pois.Where(p => p.FarmId == farmId).Sum(p => p.Get<FillUnits>()?.Level(fillType) ?? 0f)
+        + Objects.All.Where(o => o.FarmId == farmId && o.Content?.FillType == fillType).Sum(o => o.Content!.Level);
+
     /// <summary>The helpers at work, in their vehicles.</summary>
     public IEnumerable<FieldWorkController> Helpers => Machines.All.Select(m => m.Get<Drivable>()?.Controller).OfType<FieldWorkController>();
 

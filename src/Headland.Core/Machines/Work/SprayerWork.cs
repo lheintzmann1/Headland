@@ -10,7 +10,7 @@ namespace Headland.Core.Machines.Work;
 /// tilled or the crop harvested (<see cref="WeedState.Sprayed"/>). Sprayed where weeds grow: tilled, sown or stubble
 /// ground, not a meadow.
 /// </summary>
-public sealed class SprayerWork() : WorkType("sprayer")
+public sealed class SprayerWork() : WorkType("sprayer", "Sprayed")
 {
     public override bool Draft => false;
 

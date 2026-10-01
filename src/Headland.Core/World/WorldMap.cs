@@ -335,6 +335,21 @@ public sealed class WorldMap
     public static bool IsSealed(GroundType g) => g is GroundType.Road or GroundType.Yard or GroundType.Water;
 
     public FieldInfo? FieldById(int id) => Fields.Find(f => f.Id == id);
+
+    private readonly Dictionary<FieldInfo, int[]> _fieldCells = new();
+
+    /// <summary>The cells of a field: inside its outline and not taken by a field drawn over it.</summary>
+    public int[] CellsOf(FieldInfo field)
+    {
+        if (_fieldCells.TryGetValue(field, out var cells)) return cells;
+        var list = new List<int>();
+        field.Shape.Rasterize(CellSize, CellsX, CellsZ, (cx, cz) =>
+        {
+            var i = CellIndex(cx, cz);
+            if (Layers.FieldId[i] == field.Id) list.Add(i);
+        });
+        return _fieldCells[field] = list.ToArray();
+    }
     public Poi? PoiById(string id) => Pois.Find(p => p.Id == id);
     public Farmland? FarmlandById(int id) => Farmlands.Find(f => f.Id == id);
 
