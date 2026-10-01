@@ -30,6 +30,7 @@ public static class ComponentKinds
         ("tipper", typeof(TipperDef)),
         ("baler", typeof(BalerDef)),
         ("baleLoader", typeof(BaleLoaderDef)),
+        ("fork", typeof(ForkDef)),
         ("lights", typeof(LightsDef)),
         ("craneArm", typeof(CraneArmDef)),
         ("winch", typeof(WinchDef)),
@@ -45,6 +46,7 @@ public static class ComponentKinds
         ("washingStation", typeof(WashingStationDef)),
         ("deliverySpot", typeof(DeliverySpotDef)),
         ("bale", typeof(BaleDef)),
+        ("pallet", typeof(PalletDef)),
     ];
 
     public static IEnumerable<string> Names => Kinds.Select(k => k.name);

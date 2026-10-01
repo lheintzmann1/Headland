@@ -6,5 +6,7 @@
   { "id": "drawbar",     "name": "Drawbar" },
   { "id": "fifthWheel",  "name": "Fifth wheel" },
   { "id": "header",      "name": "Feeder house" },
-  { "id": "frontLoader", "name": "Front loader consoles" }
+  { "id": "frontLoader", "name": "Front loader consoles" },
+  // A front loader's tool carrier (a Euro hitch), on its tilt: forks and spikes hang on it.
+  { "id": "loaderTool",  "name": "Loader tool carrier" }
 ]

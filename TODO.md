@@ -71,8 +71,10 @@ units are written once, and new kinds of things come from data (and later mods) 
       the fields (a windrow layer: the mower's grass, the combine's straw, tedded into hay and raked), carried by a bale
       collector, sold in a selling station's object trigger (the dairy's bale area); saved where they lie or on what
       carries them.
+- [x] Pallets the same way: productions put their goods on them (an output's `pallet` mode, the farm's grain mill's
+      flour), front loader forks carry and stack them, a selling station's object trigger buys them (the farm shop).
 - [ ] The rest on the same model as it comes: the farmer and NPCs (with hand tools, and on-foot states as FS's
-      `PlayerOnFootStateMachine`: walking, crouching, swimming), pallets, animals, trees (what saws
+      `PlayerOnFootStateMachine`: walking, crouching, swimming), animals, trees (what saws
       cut), props; new POI kinds with their features (`husbandry`, `bunkerSilo`, `manureHeap`, `objectStorage`,
       `weighingStation`, `farmhouse`, `greenhouse`, `incomePerHour` for solar panels and wind turbines) and the
       placement ones with construction mode (`clearAreas`, `leveling`, `foliageAreas`).
@@ -109,8 +111,8 @@ The triggers, storage and actions have since become POI components (see Componen
       conditions later.
 - [x] Prices: per-POI factors on top of the monthly curves in `filltypes.json`, demand that drops as you
       sell and recovers, occasional high-demand events.
-- [x] Production output goes to POI storage: sold automatically or loaded into a trailer. Pallets and
-      bales later.
+- [x] Production output goes to POI storage: sold automatically, loaded into a trailer, or put on pallets in the
+      production point's pallet area.
 - [x] Farm silo as a player-owned storage POI.
 - [x] Move sell/buy code out of `MachineSystem`; migrate the elevator and supplies shop in `default.json`;
       labels in `PropsRenderer` come from the POI def.
@@ -119,7 +121,7 @@ The triggers, storage and actions have since become POI components (see Componen
       and stations take categories as well as fill types, so a mod's new grain sells at the elevator by itself.
 - [ ] More FS station settings (placeable XML): silo storage costs per unit and day, loading that starts by
       itself when a trailer parks under the spout (`autoStart`), silo extensions adding room to a silo nearby
-      (with construction mode), pallet-only selling stations (with pallets).
+      (with construction mode).
 
 ## Economy
 
@@ -187,7 +189,9 @@ components so new machine kinds, including mod machines, are built from blocks.
       front and rear work lights alone, high beams, the roof lights instead of the bumper ones behind a front loader
       (top and bottom lights), cab lights by the time of day, beacons that come on with the driver (`alwaysActive`).
       The switch sound comes with the audio.
-- [ ] Front loader and tools (bucket, bale fork, pallet fork); the bucket needs bulk heaps.
+- [x] Front loader tools on the arm's tool carrier (a joint on its tilt): a bale spike and a pallet fork, carrying,
+      lifting and stacking bales and pallets.
+- [ ] A front loader bucket, with bulk heaps on the ground (a system of their own).
 - [ ] Cranes: multi-joint arms (direct joint control or simple IK) and grabs.
 - [ ] Hooks and winches (hook-lift containers, rope winch).
 - [ ] Forestry: trees as entities (forests are props today), saw heads, logs as objects, forwarders,
@@ -307,7 +311,9 @@ Commands in Core (`MachineSystem`, tested), bound through the input layer.
       select key, and a front loader arm for the tractors' loader consoles.
 - [ ] Winch: reel in and out, hook and unhook.
 - [ ] Saw: on and off with the turn-on key (done); cutting once trees are entities.
-- [ ] Front loader: hitch the arm to the bracket (and park it on its stands), tools on the arm.
+- [x] Front loader: hitch the arm to the bracket, tools on the arm (hitched on its tool carrier, set down with the
+      unload key or the mouse's tool action).
+- [ ] Park a front loader arm on its stands (support legs, as FS's).
 - [x] Pipe, tipping and seed selection (U and X today) as actions of the selected implement.
 
 ### In-game menu

@@ -1,0 +1,14 @@
+// Hangs on a front loader arm's tool carrier: origin at its hitch, the bottom of its frame. See docs/COMPONENTS.md.
+{
+  "id": "bale_spike", "name": "Bale spike", "category": "loaderTool", "brand": "ridgeline", "price": 1650, "mass": 190,
+  "size": { "length": 1.3, "width": 1.3, "height": 0.8, "centerZ": 0.65 },
+  "components": {
+    "attachable": { "type": "loaderTool", "mode": "mounted" },
+    // Its spikes go into a round bale at mid-height: drive into one, the spikes at its middle, and lift.
+    "fork": { "area": { "z": 0.75, "w": 0.9, "d": 1.0 }, "y": 0.55, "into": 0.62, "takes": ["bale"] },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#4d5c38", "model": "res://assets/models/frontloaders/bale_spike.glb" },
+  "description": "Bale spike for a front loader. Lower the arm until the spikes are level with a bale's middle and drive into it: it takes the bale, to lift, stack it on another or set it down (U) on a trailer's way or in a buyer's bale area."
+}

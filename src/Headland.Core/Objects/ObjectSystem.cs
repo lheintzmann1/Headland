@@ -27,6 +27,13 @@ public sealed class ObjectSystem(Simulation sim)
     /// <summary>The objects lying loose with their middle in <paramref name="area"/>.</summary>
     public IEnumerable<WorldObject> LooseIn(Obb area) => All.Where(o => o.Holder == null && area.Contains(o.Position));
 
+    /// <summary>How high something set down at <paramref name="p"/> rests: on the top of what lies loose under it, else the ground.</summary>
+    public float TopAt(Vector2 p, WorldObject? except = null) => All
+        .Where(o => o != except && o.Holder == null && o.Footprint.Contains(p))
+        .Select(o => o.Elevation + o.Def.Size.Height)
+        .DefaultIfEmpty(0f)
+        .Max();
+
     /// <summary>Takes an object off the map (sold): what held it lets go.</summary>
     public void Remove(WorldObject o)
     {
@@ -67,11 +74,24 @@ public sealed class ObjectSystem(Simulation sim)
         o.Elevation = at.Y;
     }
 
-    /// <summary>After the machines moved: the objects' components run.</summary>
+    private float _sinceSettled;
+
+    /// <summary>After the machines moved: the objects' components run, and what lay on an object taken away comes down.</summary>
     internal void Update(float dt)
     {
         foreach (var o in All)
         foreach (var c in o.Components)
             c.Update(sim, dt);
+        _sinceSettled += dt;
+        if (_sinceSettled < 0.25f) return;
+        _sinceSettled = 0f;
+        Settle();
+    }
+
+    /// <summary>Objects lying on others rest on what's under them now, the lowest first: a stack whose bottom was taken comes down.</summary>
+    internal void Settle()
+    {
+        foreach (var o in All.Where(o => o.Holder == null && o.Elevation > 0f).OrderBy(o => o.Elevation).ToList())
+            o.Elevation = MathF.Min(o.Elevation, TopAt(o.Position, o));
     }
 }

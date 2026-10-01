@@ -1,4 +1,5 @@
 // What each setting means: docs/COMPONENTS.md (POIs).
+// Sells seed, fertilizer and herbicide, and buys farm products on pallets (flour) left beside the shop for its store.
 { "id": "farm_shop", "name": "Farm Supplies", "w": 20, "d": 26,
   "visual": { "model": "res://assets/models/buildings/farm_shop.glb" },
   "colliders": [
@@ -6,5 +7,6 @@
   ],
   "components": {
     "buyingStation": { "trigger": { "z": 3.5, "w": 18, "d": 17 }, "fillTypeCategories": ["seed", "fertilizer", "herbicide"], "openHours": [7, 19] },
+    "sellingStation": { "objectTrigger": { "x": 5.5, "z": -9, "w": 7, "d": 8 }, "fillTypeCategories": ["product"], "openHours": [7, 19] },
     "hotspots": { "spots": [ { "icon": "storefront" } ] }
   } }

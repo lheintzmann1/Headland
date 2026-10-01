@@ -82,7 +82,8 @@ public class OwnershipTests
 
         Assert.Equal("Farmhouse stands on Farmyard", sim.Farms.SellBlocker(sim.World.FarmlandById(1)!));
         Assert.False(sim.Farms.Sell(sim.World.FarmlandById(1)!));
-        Assert.Null(sim.Farms.SellBlocker(sim.World.FarmlandById(2)!));
+        Assert.Equal("Grain Mill stands on Field 1 land", sim.Farms.SellBlocker(sim.World.FarmlandById(2)!));
+        Assert.Null(sim.Farms.SellBlocker(sim.World.FarmlandById(4)!));
     }
 
     [Fact]

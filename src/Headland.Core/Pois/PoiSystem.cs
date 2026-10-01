@@ -109,7 +109,7 @@ public sealed class PoiSystem
     {
         Silo s when trigger.Type == "load" => [With(s.Poi, s.Def, $"Load {Names(s.FillTypes)}")],
         Silo s => [With(s.Poi, s.Def, $"Store {Names(s.FillTypes)}", s.Def.MinAmount, s.FillTypes)],
-        SellingStation s when trigger.Type == "objects" => [With(s.Poi, s.Def, $"Sell bales of {Names(s.Def.FillTypes)}: leave them here")],
+        SellingStation s when trigger.Type == "objects" => [With(s.Poi, s.Def, $"Sell {Names(s.Def.FillTypes)}: leave {Carriers(s.Def.FillTypes)} here")],
         SellingStation s => [With(s.Poi, s.Def, $"Sell {Names(s.Def.FillTypes)}", s.Def.MinAmount, s.Def.FillTypes)],
         BuyingStation { Def.FromStorage: true } b => new[]
             {
@@ -129,6 +129,7 @@ public sealed class PoiSystem
             ? [With(w.Poi, w.Def, "Repair machines"), With(w.Poi, w.Def, "Change machines' options")]
             : [With(w.Poi, w.Def, "Repair machines")],
         WashingStation w => [With(w.Poi, w.Def, "Wash machines")],
+        ProductionPoint p when trigger.Type == "pallets" => [OnPallets(p)],
         DeliverySpot d => new[] { (d.Def.Sales, "Machines bought or leased at the shop wait here"), (d.Def.Leases, "Machines leased for contracts wait here") }
             .Where(x => x.Item1)
             .Select(x => With(d.Poi, d.Def, x.Item2)),
@@ -137,6 +138,23 @@ public sealed class PoiSystem
 
     internal string Names(IEnumerable<string> fillTypes) =>
         string.Join(", ", fillTypes.Select(f => Content.FillTypes[f].Name.ToLowerInvariant()));
+
+    /// <summary>What a production point's pallet area is for: "Flour comes out here on pallets".</summary>
+    private string OnPallets(ProductionPoint p)
+    {
+        var made = p.Def.Productions.SelectMany(x => x.Outputs).Where(o => o.Mode == "pallet").Select(o => Content.FillTypes[o.FillType].Name).Distinct().ToList();
+        return $"{string.Join(", ", made)} {(made.Count == 1 ? "comes" : "come")} out here on pallets";
+    }
+
+    /// <summary>The objects that can hold some of <paramref name="fillTypes"/>, by name: "round bales", "pallets".</summary>
+    private string Carriers(string[] fillTypes)
+    {
+        var names = Content.Objects.Values
+            .Where(o => o.Get<FillUnitsDef>()?.Units.Any(u => u.FillTypes.Any(fillTypes.Contains)) == true)
+            .Select(o => $"{o.Name.ToLowerInvariant()}s")
+            .ToList();
+        return names.Count > 0 ? string.Join(" or ", names) : "them";
+    }
 
     // ------------------------------------------------------------------ Conditions
 
@@ -280,7 +298,7 @@ public sealed class PoiSystem
             if (poi.Get<SellingStation>() is not { } sell || sell.Trigger("objects") is not { } trigger || Closed(poi, sell.Def) != null) continue;
             var lying = _sim.Objects.LooseIn(trigger.Area)
                 .Where(o => o.Content is { IsEmpty: false } c && sell.Def.FillTypes.Contains(c.FillType!))
-                .GroupBy(o => (o.FarmId, fillType: o.Content!.FillType!))
+                .GroupBy(o => (o.FarmId, o.Def, fillType: o.Content!.FillType!))
                 .ToList();
             foreach (var group in lying) SellObjects(sell, group.Key.FarmId, group.Key.fillType, group.ToList());
         }
@@ -297,7 +315,7 @@ public sealed class PoiSystem
         {
             var income = rest * Price(sell, fillType);
             Earn(farmId, income, MoneyCategory.Sales);
-            _sim.Events.Publish(new ObjectsSold(poi, farmId, fillType, objects.Count, rest, income));
+            _sim.Events.Publish(new ObjectsSold(poi, farmId, objects[0].Def, fillType, objects.Count, rest, income));
         }
         var demand = sell.Def.Demand;
         sell.Demand[fillType] = MathF.Max(demand.Floor, sell.DemandOf(fillType) - demand.Drop * amount / 100_000f);
@@ -826,8 +844,48 @@ public sealed class PoiSystem
                 if (cycles > 0)
                     foreach (var output in p.Outputs) _sim.Events.Publish(new PoiProduced(poi, output.FillType, output.Amount * cycles));
                 SellOutputs(plant, p, month);
+                PalletOutputs(plant, p);
             }
         }
+    }
+
+    /// <summary>
+    /// Puts the stored outputs whose mode is "pallet" on pallets in the production point's pallet area (FS: a pallet
+    /// spawner), for its owner: onto a pallet of it there that isn't full yet, else a new one in the first free place,
+    /// row by row from the area's front. With no room left in the area, they stay stored (and the production stops once
+    /// its storage is full).
+    /// </summary>
+    private void PalletOutputs(ProductionPoint plant, ProductionDef production)
+    {
+        if (plant.Trigger("pallets") is not { } spot) return;
+        foreach (var output in production.Outputs.Where(o => o is { Mode: "pallet", Pallet: not null }))
+        {
+            var ft = output.FillType;
+            var def = Content.Objects[output.Pallet!];
+            while (plant.Storage.Level(ft) >= 1f)
+            {
+                var pallet = _sim.Objects.LooseIn(spot.Area).FirstOrDefault(o =>
+                                 o.Def == def && o.FarmId == plant.Poi.FarmId && o.Content is { } c && c.CanAccept(ft) && !c.IsEmpty)
+                             ?? (FreePlace(spot.Area, def) is { } at ? _sim.Objects.Spawn(def.Id, at, spot.Area.Heading, plant.Poi.FarmId) : null);
+                if (pallet == null) break;
+                pallet.Content!.Add(ft, plant.Storage.Remove(ft, pallet.Content.Free));
+            }
+        }
+    }
+
+    /// <summary>The middle of a free place for <paramref name="def"/> in <paramref name="area"/>, rows from its front, or null.</summary>
+    private Vector2? FreePlace(Obb area, ObjectDef def)
+    {
+        const float gap = 0.4f;
+        var half = new Vector2(def.Size.Width * 0.5f, def.Size.Length * 0.5f);
+        var room = area.HalfExtents - half;
+        for (var y = room.Y; y >= -room.Y - 0.01f; y -= def.Size.Length + gap)
+        for (var x = -room.X; x <= room.X + 0.01f; x += def.Size.Width + gap)
+        {
+            var box = new Obb(area.Center + area.AxisX * x + area.AxisY * y, half + new Vector2(gap * 0.4f), area.Heading);
+            if (!_sim.Objects.All.Any(o => o.Holder == null && Geometry.Overlaps(box, o.Footprint))) return box.Center;
+        }
+        return null;
     }
 
     /// <summary>Sells the stored outputs whose mode is "sell", at the market price times the production's factor.</summary>

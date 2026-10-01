@@ -17,6 +17,11 @@ public sealed class AttacherJointDef
     /// headlights in the hood; by default for a joint in front of the vehicle's origin.
     /// </summary>
     public bool? UseTopLights { get; set; }
+    /// <summary>
+    /// The joint of the machine's <c>craneArm</c> carrying it (a loader arm's tool carrier, on its tilt): x, y, z are then
+    /// in that joint's space, and what hangs on it moves with the arm.
+    /// </summary>
+    public string? Crane { get; set; }
 
     /// <summary>Whether an implement on it switches the vehicle to its top lights (<see cref="UseTopLights"/>).</summary>
     [JsonIgnore]
@@ -62,7 +67,11 @@ public sealed class AttacherJointsDef : MachineComponentDef, IJointSource, ISpec
     internal override IEnumerable<string> Errors(MachineDef machine, ContentDatabase content)
     {
         foreach (var j in Joints)
+        {
             if (AttacherJointDef.TypeError(j.Type, content) is { } error) yield return $"joint '{j.Id}': {error}";
+            if (j.Crane != null && machine.Get<CraneArmDef>()?.Joints.Any(c => c.Id == j.Crane) != true)
+                yield return $"joint '{j.Id}': its crane joint '{j.Crane}' is not one of its craneArm's";
+        }
     }
 
     internal override Component Create(Machine machine) => new AttacherJoints(machine, this);

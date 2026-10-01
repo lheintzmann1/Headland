@@ -65,6 +65,14 @@ public sealed class Attachable(Machine machine, AttachableDef def) : MachineComp
     /// <summary>How far down (<see cref="LowerAnim"/>) it works: most of the way.</summary>
     internal const float WorkingDepth = 0.9f;
 
+    /// <summary>
+    /// How high it's lifted now: mounted on a three-point linkage, or lowerable (a header), by its <c>lift</c> while
+    /// raised; on a joint that doesn't lift (a loader's consoles, its tool carrier), not at all.
+    /// </summary>
+    public float Lift => Def.Mode == "mounted" && Machine.ParentJointDef is { } j && j.Crane == null && (Def.Lowerable || j.TypeDef?.Linkage == true)
+        ? (1f - LowerAnim) * Def.Lift
+        : 0f;
+
     /// <summary>The seconds it takes to go down to work once lowered: the linkage's, or its parts' going down.</summary>
     public float LowerSeconds => MathF.Max(WorkingDepth / LowerRate, Machine.Def.Get<AnimatedPartsDef>()?.LowerSeconds ?? 0f);
 

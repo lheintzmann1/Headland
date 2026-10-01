@@ -14,7 +14,7 @@ public partial class AttacherJointsView : MachineComponentView
         {
             if (Rig.Part(AttacherJointsDef.LinkageRole(j)) is not { } links) continue;
             // Up and down with the implement it carries; down without one.
-            var lift = Machine.Attached.GetValueOrDefault(j.Id)?.Get<Attachable>() is { Def.Mode: "mounted" } a ? (1f - a.LowerAnim) * a.Def.Lift : 0f;
+            var lift = Machine.Attached.GetValueOrDefault(j.Id)?.Get<Attachable>()?.Lift ?? 0f;
             links.Node.Position = links.Position + new Vector3(0f, lift / Rig.Scale, 0f);
         }
     }

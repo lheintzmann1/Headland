@@ -24,9 +24,13 @@ Built with **Godot 4.7** and **C#**.
   which the rake gathers back into a windrow. The round baler drops a 4,000 L bale behind it each time its chamber is
   full, the bale collector picks the bales up beside it and sets them down where you stop, and the dairy buys those
   left in its bale area. Tilling works what lies cut into the ground.
+- **Front loader tools.** The loader arm's tool carrier takes a bale spike or a pallet fork: lower it to a bale's
+  middle or under a pallet, drive in, and it takes it, lifted and tilted with the arm; set it down anywhere, on top of
+  another to stack bales. The farm's grain mill turns the wheat tipped into its pit into flour, which comes out on
+  pallets beside it every hour, and the farm shop buys the pallets left beside its store.
 - **Machines.** Tractors, a combine with swappable grain and corn headers, a tipping trailer, a cultivator, a plow, a
   trailed seed drill, a fertilizer spreader, a trailed sprayer whose boom folds for the road, a mower, a tedder, a rake,
-  a round baler and a bale collector, most with
+  a round baler, a bale collector, a front loader with a bale spike and a pallet fork, most with
   options as in a dealer's catalog: dual wheels or tracks, a front linkage, a front weight or loader consoles, beacons,
   a stronger engine, a bigger tank or bed, a wider cultivator or drill, the color. The menu's shop lists them by
   category and brand, each turning in a preview with what it is (power, capacity, working width, the power it needs…)
@@ -45,7 +49,8 @@ Built with **Godot 4.7** and **C#**.
 - **Places to trade and service.** Tip grain at the elevator, or at the flour mill, which pays more but only takes
   what it can mill. Keep grain in the farm silo and load it back into a trailer later, buy seed, fertilizer and
   herbicide at the farm shop, refuel and wash at the gas station, or at the farm's own fuel tank, filled by ordering
-  diesel in bulk (5,000 L at a time, for less, on foot at its pump), get machines repaired or their options changed at the
+  diesel in bulk (5,000 L at a time, for less, on foot at its pump), mill the farm's wheat into flour at its grain mill,
+  get machines repaired or their options changed at the
   workshop (new options cost what they cost more than the old ones, and the work), leave bales of grass, hay or straw
   at the dairy, and pick up the machines bought or leased at the shop, or leased for contracts, at the machinery
   dealer.
@@ -125,13 +130,13 @@ file (see below).
 | T | Select the next implement, or a crane's next control group: lowering, turning on, folding, tipping and the seed act on it only; the vehicle itself selected, on all of them (the HUD shows the selection in yellow) |
 | Arrow keys | A front loader's arm up and down, its tool tilted back and forth; a crane's joints, a control group at a time |
 | I | A crane's tip control: the arrow keys move its tip up, down, in and out rather than each joint |
-| Right mouse (held) | Move the tool with the mouse as with the arrow keys; with Ctrl or Shift, its next control groups; left click for its action (a saw) |
+| Right mouse (held) | Move the tool with the mouse as with the arrow keys; with Ctrl or Shift, its next control groups; left click for its action (a saw, a fork setting down what it carries) |
 | V | Lower or raise implements (a sprayer's boom goes down on its mast) |
 | N | Fold or unfold implements (a sprayer's boom) |
 | Shift+N | A tool's other parts: a seeder's ridge markers, left, right, then up (the one down draws the next pass when lowered) |
 | C | Open or close a cover (a seeder's lid opens by itself at the seed shop; a trailer's tarp, an option, at a silo's spout and to tip, but open it yourself under a combine's pipe) |
 | B | Turn on or off (seed drill, spreader, sprayer, mower, tedder, rake, baler, combine); a bale collector starts and stops picking up bales |
-| U | Unfold the combine's pipe, tip a trailer into an unloading area, drop a baler's bale, or set a bale collector's bales down behind it |
+| U | Unfold the combine's pipe, tip a trailer into an unloading area, drop a baler's bale, set a bale collector's bales down behind it, or set down what a front loader's fork carries |
 | Shift+U | The side a trailer tips to: back, left or right, with that side over the unloading area |
 | X | Change the seed |
 | K | Steering mode, on machines with all-wheel steering: normal, all-wheel, crab |

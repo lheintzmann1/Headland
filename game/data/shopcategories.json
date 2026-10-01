@@ -16,5 +16,6 @@
   { "id": "windrower", "name": "Rakes", "noun": "rake" },
   { "id": "baler", "name": "Balers", "noun": "baler" },
   { "id": "baleLoader", "name": "Bale loaders", "noun": "bale loader" },
-  { "id": "frontLoader", "name": "Front loaders", "noun": "front loader" }
+  { "id": "frontLoader", "name": "Front loaders", "noun": "front loader" },
+  { "id": "loaderTool", "name": "Front loader tools", "noun": "tool" }
 ]

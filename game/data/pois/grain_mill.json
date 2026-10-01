@@ -1,0 +1,21 @@
+// What each setting means: docs/COMPONENTS.md (POIs).
+// The farm's own mill: wheat tipped into its pit is milled into flour, which comes out on pallets beside it, to sell
+// at a buyer of farm products (the farm shop).
+{ "id": "grain_mill", "name": "Grain Mill", "w": 24, "d": 22,
+  "visual": { "color": "#8c8577", "model": "res://assets/models/buildings/grain_mill.glb" },
+  "colliders": [
+    { "x": 0, "z": -5, "w": 12, "d": 10 },
+    { "x": 8, "z": -6, "w": 5, "d": 5, "round": true }
+  ],
+  "components": {
+    "fillUnits": { "units": [
+      { "id": "wheat", "capacity": 30000, "fillTypes": ["wheat"] },
+      { "id": "flour", "capacity": 3000, "fillTypes": ["flour"] } ] },
+    "silo": { "unloadTrigger": { "x": -6, "z": 6, "w": 9, "d": 9 }, "fillTypes": ["wheat"] },
+    "productionPoint": { "productions": [
+      { "id": "flour", "cycleHours": 1, "runningCost": 15,
+        "inputs": [ { "fillType": "wheat", "amount": 500 } ],
+        "outputs": [ { "fillType": "flour", "amount": 325, "mode": "pallet", "pallet": "pallet" } ] } ],
+      "pallets": { "x": 6, "z": 6.5, "w": 10, "d": 8 } },
+    "hotspots": { "spots": [ { "icon": "factory" } ] }
+  } }

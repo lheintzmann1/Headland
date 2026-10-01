@@ -39,6 +39,7 @@ public partial class ScenarioRunner : Node
                 case "tour": await Tour(); break;
                 case "menus": await Menus(); break;
                 case "bales": await Bales(); break;
+                case "loader": await Loader(); break;
                 default: Log($"unknown scenario '{Scenario}'"); break;
             }
             ok = true;
@@ -357,6 +358,75 @@ public partial class ScenarioRunner : Node
         float Lying(string fillType) => Enumerable.Range(0, Sim.World.Layers.Windrow.Length)
             .Where(i => Windrows.FillTypeAt(Sim.Content, Sim.World.Layers, i)?.Id == fillType)
             .Sum(i => Sim.World.Layers.Windrow[i]);
+    }
+
+    /// <summary>
+    /// The front loader's tools: stack two bales with the spike, then mill wheat into flour pallets and fork one to the
+    /// farm shop (shots only with a window).
+    /// </summary>
+    private async Task Loader()
+    {
+        Game.Camera.Zoom = 22f;
+        await Frames(10);
+        var yard = new NVec2(160f, 166f);
+        var tractor = Ms.Spawn("tractor_125", yard, MathF.PI * 0.5f, configuration: new Dictionary<string, string> { ["frontLoader"] = "bracket" });
+        var arm = Ms.Spawn("frontloader_arm", yard, tractor.Heading);
+        Ms.Attach(tractor, "frontLoader", arm);
+        var crane = arm.Get<CraneArm>()!;
+        var spike = Ms.Spawn("bale_spike", yard, tractor.Heading);
+        Ms.Attach(arm, "tool", spike);
+        Game.FocusOverride = () => tractor.Footprint.Center;
+        await Frames(5);
+
+        // --- Spike a bale, lift it onto another.
+        var fork = spike.Get<Fork>()!;
+        var top = Sim.Objects.Spawn("round_bale", spike.LocalToWorld(0f, 0.75f), tractor.Heading, Sim.Player.FarmId);
+        top.Content!.Add("hay", 4000f);
+        await Until(() => top.Holder != null, 3f);
+        crane.MoveTo("lift", 45f);
+        await Until(() => crane.Joint("lift")!.Value > 44f, 5f);
+        var under = Sim.Objects.Spawn("round_bale", top.Position, tractor.Heading, Sim.Player.FarmId);
+        under.Content!.Add("straw", 4000f);
+        await Frames(5);
+        if (DisplayServer.GetName() != "headless") await Shot("spike_lifted");
+        fork.SetDown(Sim);
+        await Frames(5);
+        Log($"spiked a bale: set it down at {top.Elevation:0.00} m, on the other");
+        if (DisplayServer.GetName() != "headless") await Shot("stacked");
+
+        // --- Mill wheat: flour comes out on pallets; the fork takes one to the shop.
+        var mill = Sim.World.PoiById("grainmill")!;
+        mill.Get<Headland.Core.Components.FillUnits>()!.Add("wheat", 6000f);
+        Sim.SkipHours(10);
+        var pallets = Sim.Objects.LooseIn(mill.Trigger("pallets")!.Area).ToList();
+        Log($"milled: {pallets.Count} pallets, {pallets.Sum(p => p.Content!.Level):N0} kg of flour");
+        crane.MoveTo("lift", 0f);
+        await Until(() => crane.Joint("lift")!.Value < 1f, 6f);
+        Ms.Detach(spike);
+        Ms.Teleport(spike, yard + new NVec2(0f, 8f), 0f);
+        var forks = Ms.Spawn("pallet_fork", arm.Position, arm.Heading);
+        Ms.Attach(arm, "tool", forks);
+        var pallet = pallets.First();
+        Reach(tractor, forks, pallet.Position, pallet.Heading);
+        await Until(() => pallet.Holder != null, 3f);
+        crane.MoveTo("lift", 15f);
+        await Until(() => crane.Joint("lift")!.Value > 14f, 3f);
+        if (DisplayServer.GetName() != "headless") await Shot("pallet_lifted");
+        var stand = Sim.World.PoiById("supplies")!.Trigger("objects")!.Area;
+        Reach(tractor, forks, stand.Center, stand.Heading);
+        var money = Sim.Economy.Money;
+        await Frames(5);
+        forks.Get<Fork>()!.SetDown(Sim);
+        await Until(() => Sim.Economy.Money > money, 3f);
+        Log($"sold a pallet of {pallet.Content!.Level:N0} kg of flour at the farm shop for ${Sim.Economy.Money - money:N0}");
+        if (DisplayServer.GetName() != "headless") await Shot("pallet_sold");
+
+        void Reach(Machine t, Machine tool, NVec2 p, float heading)
+        {
+            Ms.Teleport(t, t.Position, heading);
+            var tines = tool.LocalToWorld(0f, tool.Get<Fork>()!.Def.Area.Z);
+            Ms.Teleport(t, t.Position + p - tines, heading);
+        }
     }
 
     private Machine Find(string defId) => Ms.All.First(m => m.Def.Id == defId);

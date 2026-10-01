@@ -220,9 +220,13 @@ roles (the parts' ids), and `visual.nodes` maps a role to a node named otherwise
 ## Bales and other objects
 
 Objects (`game/data/objects/*.json`) follow the same scale, orientation and `root` node, `root`'s origin at the middle
-of the object's bottom. Export to `game/assets/models/bales/` (later `pallets/`…). What a bale is made of colors it:
-its `fill` materials take the color of the fill type it holds (grass, hay, straw), as a trailer's load does. A round
+of the object's bottom. Export to `game/assets/models/bales/` or `pallets/`. What an object holds colors it: its
+`fill` materials take the color of the fill type it holds (grass, hay, straw, flour), as a trailer's load does, and a
+pallet's goods are its `load` node, modeled full with its pivot at their bottom, scaled with how full it is. A round
 bale lies on its side, its axis along X.
+
+A front loader's tools (a bale spike, a pallet fork) have their origin at their hitch point: the bottom of the frame
+that hooks onto the arm's tool carrier, their tines or spikes pointing forward (+Z).
 
 ## The farmer
 

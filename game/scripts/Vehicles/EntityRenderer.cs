@@ -40,7 +40,7 @@ public partial class EntityRenderer : Node3D
                 if (shown.def == m.Def) continue;
                 shown.view.QueueFree();
             }
-            var view = new MachineView { Sim = Sim, Machine = m };
+            var view = new MachineView { Sim = Sim, Machine = m, MachineViewOf = ViewOf };
             _views[m.Id] = (view, m.Def);
             AddChild(view);
         }

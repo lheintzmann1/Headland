@@ -270,7 +270,7 @@ public class BaleTests
         Assert.All(sold, s => Assert.Equal(1, s.Count));
         Assert.Equal(4000f, sim.Statistics.Sold["hay"]);
         Assert.True(sell.DemandOf("hay") < 1f);
-        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Sold a bale of hay (4,000 L) to Dairy Farm"));
+        Assert.Contains(sim.Notifications.Items, n => n.Text.StartsWith("Sold a round bale of hay (4,000 L) to Dairy Farm"));
     }
 
     [Fact]

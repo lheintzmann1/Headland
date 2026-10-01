@@ -1,0 +1,9 @@
+// What each setting means: docs/COMPONENTS.md (Objects). A wooden pallet with a ton of bagged goods on it.
+{ "id": "pallet", "name": "Pallet",
+  "size": { "length": 1.2, "width": 1.0, "height": 1.3 },
+  "components": {
+    "fillUnits": { "units": [ { "id": "goods", "capacity": 1000, "fillTypeCategories": ["product"] } ] },
+    "pallet": {}
+  },
+  "visual": { "model": "res://assets/models/pallets/pallet.glb" },
+  "description": "A pallet of bagged goods: up to 1,000 kg of flour." }

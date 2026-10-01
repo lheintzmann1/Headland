@@ -108,8 +108,9 @@ optionally a `name` in place of the type's.
 
 ## Objects
 
-An object is a thing lying about that machines pick up and carry (FS: objects): a bale. Machines make them (a baler
-drops a bale), carry them (a bale loader's bed) and set them down; a selling station buys those left in its object
+An object is a thing lying about that machines pick up and carry (FS: objects): a bale, a pallet. Machines make them
+(a baler drops a bale, a production point puts its goods on pallets), carry them (a bale loader's bed, a fork on a
+front loader) and set them down, on the ground or on other objects; a selling station buys those left in its object
 trigger. Each is saved with where it lies, or the machine carrying it.
 
 ```jsonc
@@ -127,7 +128,7 @@ trigger. Each is saved with where it lies, or the machine carrying it.
 | `id`, `name`, `description` | | Machines name it by its `id` (a baler's `bale`). |
 | `size` | 1.2 × 1.2 × 1.2 | The box it takes up: `length` along z, `width` along x, `height`. |
 | `visual` | | Its glTF `model`, as for machines; its fill materials take the color of what it holds. An object whose model doesn't load still works, but nothing is drawn for it. |
-| `components` | none | What it is: a `bale` with the `fillUnits` it's made of. |
+| `components` | none | What it is: a `bale` or a `pallet`, with the `fillUnits` holding what it's made of or carries. |
 
 ## Components
 
@@ -149,6 +150,7 @@ trigger. Each is saved with where it lies, or the machine carrying it.
 | `tipper` | machines | A tipping bed. |
 | `baler` | machines | A baler's chamber: makes bales of what its pickup gathers. |
 | `baleLoader` | machines | A bed that picks bales up from the ground, and sets them down. |
+| `fork` | machines | Tines or spikes carrying objects: a bale spike, a pallet fork. |
 | `lights` | anything | Headlights, work lights and beacons, switched by the driver; a building's lamps, lit in the dark, on a timer or as someone comes by. |
 | `craneArm` | machines | A chain of joints: a forestry crane, a loader's boom. |
 | `winch` | machines | A rope with a hook. |
@@ -164,6 +166,7 @@ trigger. Each is saved with where it lies, or the machine carrying it.
 | `washingStation` | POIs | Washes machines. |
 | `deliverySpot` | POIs | Where machines bought or leased appear. |
 | `bale` | objects | A bale: what it's made of is its fill unit's. |
+| `pallet` | objects | A pallet: what it holds is its fill unit's. |
 
 The turn-on key switches every `workAreas` with an area that `requiresOn`, `thresher`, `baleLoader` and `saw` in the
 vehicle's chain; the lower key lowers every lowerable `attachable`.
@@ -286,7 +289,15 @@ No settings. Needs a `motor`.
 implement on a joint with `useTopLights` (by default a joint ahead of the machine's origin, `z` > 0) switches the
 vehicle to its top lights (see [lights](#lights)), unless its `attachable` has `useTopLights: false`.
 
-The types are in `game/data/jointtypes.json` (`threePoint`, `drawbar`, `fifthWheel`, `header`, `frontLoader`), each
+A joint with a `crane` is carried by that joint of the machine's `craneArm` (a loader arm's tool carrier, on its
+`tilt`): its `x`, `y`, `z` are then in that joint's space, and what hangs on it (a bale spike, a pallet fork) moves,
+lifts and tilts with the arm. The tool's origin is its hitch point, where it hooks onto the carrier.
+
+```jsonc
+"attacherJoints": { "joints": [ { "id": "tool", "type": "loaderTool", "crane": "tilt", "x": 0, "y": 0, "z": 0.14 } ] }
+```
+
+The types are in `game/data/jointtypes.json` (`threePoint`, `drawbar`, `fifthWheel`, `header`, `frontLoader`, `loaderTool`), each
 with an `id`, a `name` and `linkage` (false): a three-point linkage, whose lower links lift with the implement mounted
 on it (see [`MODELING.md`](MODELING.md#moving-parts)). An implement hitches to a joint of its `attachable`'s type, so a
 new kind of hitch is a new entry there.
@@ -313,7 +324,7 @@ Adds a joint where a loader arm's pivots are.
 | `hitchLoad` | 0 | Trailed: the share of its weight (with its load) resting on the hitch, below 1. |
 | `useTopLights` | true | On a joint that uses them, it switches the vehicle to its top lights (a front loader hides the headlights in the hood). |
 | `lowerable` | false | Lowered and raised with the lower key. Its work areas only work lowered. |
-| `lift` | 0.45 | Mounted: how high the linkage lifts it when raised. |
+| `lift` | 0.45 | Mounted on a three-point linkage, or lowerable (a header): how high it's lifted when raised. On a joint that doesn't lift (a loader's consoles or tool carrier), it isn't. |
 
 A trailed machine needs a `runningGear`. It is drawn by its eye, turning about the middle of its fixed axles (its
 origin), and its self-steering axles follow; backing up they lock, and it turns about the middle of all its axles.
@@ -495,6 +506,19 @@ object trigger, they're sold.
   "words": { "turn_on": ["Start loading bales", "Stop loading bales"] } }
 ```
 
+### fork
+
+Tines or spikes carrying objects (FS: a bale spike's or pallet fork's dynamic mount), on a loader tool: an object of its
+farm of a kind it `takes` (`bale`, `pallet`), lying loose with its middle in its `area` (`x`, `z`, `w`, `d`), is picked
+up once its tines, `y` over its origin, are at its height: `into` (0.1) over its bottom, within 0.25 m (a bale spike's
+go into a round bale at mid-height, a pallet fork's into the pallet's openings). It carries `capacity` (1) at a time,
+lifted and tilted with the arm; the unload key (and the mouse's tool action) sets them down where they are, on the
+ground or on what lies under them: bales stack. Something taken from under a stack lets what lay on it down.
+
+```jsonc
+"fork": { "area": { "z": 0.75, "w": 0.9, "d": 1.0 }, "y": 0.55, "into": 0.62, "takes": ["bale"] }
+```
+
 ### lights
 
 `lamps`: each has a `type`, a position `x`, `y` (1.5), `z`, where it points (`pitchDeg` -18, down when negative, -90
@@ -642,8 +666,8 @@ paid is not.
 
 Buys loads tipped or piped into its `trigger`: its `fillTypes` and `fillTypeCategories` (FS: selling station), at the
 market price times its factors, less as its demand drops, more in high demand. With an `objectTrigger`, it also buys
-the objects left lying in it (FS: a bale trigger): bales set down there are sold for what they hold, a few times a
-second, while it's open. It needs a `trigger`, an `objectTrigger` or both. `minAmount` (0) is the smallest load it
+the objects left lying in it (FS: a bale or pallet trigger): bales and pallets set down there are sold for what they
+hold, a few times a second, while it's open. It needs a `trigger`, an `objectTrigger` or both. `minAmount` (0) is the smallest load it
 takes; a load under way may finish below it. A sale of a fill type the POI's `fillUnits` keep goes into them, so a mill
 takes only what it has room to mill, and stops buying when full.
 
@@ -693,12 +717,17 @@ inputs and outputs:
 |---|---|---|
 | `id` | | Unique on the POI; saves refer to it. |
 | `cycleHours` | 1 | Game hours per cycle (below 1 for several cycles an hour). |
-| `inputs`, `outputs` | | What a cycle takes and makes: `fillType` and `amount`. An output's `mode` is `store` (kept for the owner's trailers at a silo's spout) or `sell` (sold every hour at the market price times its factors, for the owner). |
+| `inputs`, `outputs` | | What a cycle takes and makes: `fillType` and `amount`. An output's `mode` is `store` (kept for the owner's trailers at a silo's spout), `sell` (sold every hour at the market price times its factors, for the owner) or `pallet` (put on pallets of the object type `pallet` names, in the production point's `pallets` area). |
 | `runningCost` | 0 | What the owner pays for each hour it runs. |
 | `priceFactor`, `priceFactors` | 1 | On the outputs it sells. |
 | `openHours`, `months` | | When it runs. A closed production waits with its cycle half done. |
 
 A production short of inputs, or of room for its outputs, starts its cycle over.
+
+`pallets` (an area: `x`, `z`, `w`, `d`) is where the outputs in `pallet` mode come out (FS: a pallet spawner), every
+hour, for the POI's owner: onto a pallet of theirs there that isn't full yet, else a new one in the first free place,
+in rows from the area's front. With no room left there, they stay in the fill units, and once those are full the
+production stops until pallets are taken away.
 
 ### workshop
 

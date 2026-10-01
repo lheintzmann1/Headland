@@ -49,10 +49,10 @@ public sealed record BaleMade(Machine Baler, WorldObject Bale) : IGameEvent;
 public sealed record FillSold(Machine Machine, Poi Poi, string FillType, float Amount, float Income) : IGameEvent;
 
 /// <summary>
-/// Objects of a farm (bales) left in a POI's object trigger sold there, together: <paramref name="Count"/> of them holding
-/// <paramref name="Amount"/> of <paramref name="FillType"/>.
+/// Objects of a farm (bales, pallets) left in a POI's object trigger sold there, together: <paramref name="Count"/> of
+/// type <paramref name="Def"/> holding <paramref name="Amount"/> of <paramref name="FillType"/>.
 /// </summary>
-public sealed record ObjectsSold(Poi Poi, int Farm, string FillType, int Count, float Amount, float Income) : IGameEvent;
+public sealed record ObjectsSold(Poi Poi, int Farm, Content.ObjectDef Def, string FillType, int Count, float Amount, float Income) : IGameEvent;
 
 /// <summary>A whole load put into a POI's storage by its owner (published when the machine stops unloading).</summary>
 public sealed record FillStored(Machine Machine, Poi Poi, string FillType, float Amount) : IGameEvent;

@@ -238,7 +238,14 @@ public sealed class CraneArm(Machine machine, CraneArmDef def) : MachineComponen
 
     internal override void Update(Simulation sim, float dt)
     {
-        foreach (var j in Joints) j.Value = MathUtil.MoveToward(j.Value, j.Target, j.Def.Speed * dt);
+        var moving = false;
+        foreach (var j in Joints)
+        {
+            moving |= j.Value != j.Target;
+            j.Value = MathUtil.MoveToward(j.Value, j.Target, j.Def.Speed * dt);
+        }
+        // What hangs on its joints (a loader's tool) goes with them.
+        if (moving && Machine.Def.Joints.Any(j => j.Crane != null && Machine.Attached.ContainsKey(j.Id))) sim.Machines.UpdateChildren(Machine);
     }
 
     protected override CraneArmSave Capture(ContentDatabase content) =>

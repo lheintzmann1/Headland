@@ -17,4 +17,9 @@ public static class Conv
     public static Vector3 OnGround(this WorldMap world, NVec2 p, float lift = 0f) => new(p.X, world.HeightAt(p) + lift, p.Y);
 
     public static Color Hex(string hex) => Color.FromHtml(hex);
+
+    /// <summary>A Core frame (row vectors: p × m, in an entity's space) as a Godot transform of the same space.</summary>
+    public static Transform3D ToGodot(this System.Numerics.Matrix4x4 m) => new(
+        new Basis(new Vector3(m.M11, m.M12, m.M13), new Vector3(m.M21, m.M22, m.M23), new Vector3(m.M31, m.M32, m.M33)),
+        new Vector3(m.M41, m.M42, m.M43));
 }

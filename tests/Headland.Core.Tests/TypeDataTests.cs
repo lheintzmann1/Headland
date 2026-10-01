@@ -12,7 +12,7 @@ public class TypeDataTests
     public void JointAndLampTypesComeFromTheData()
     {
         var content = TestContent.Content;
-        Assert.Equal(["threePoint", "drawbar", "fifthWheel", "header", "frontLoader"], content.JointTypes.Keys.ToArray());
+        Assert.Equal(["threePoint", "drawbar", "fifthWheel", "header", "frontLoader", "loaderTool"], content.JointTypes.Keys.ToArray());
         Assert.Equal(["threePoint"], content.JointTypes.Values.Where(j => j.Linkage).Select(j => j.Id));
         Assert.Equal(["head", "tail", "workFront", "workRear", "highBeam", "beacon", "turnLeft", "turnRight", "brake", "reverse", "cab"], content.LampTypes.Keys.ToArray());
         Assert.Equal([("head", 1), ("tail", 1), ("workFront", 2), ("workRear", 2), ("highBeam", 0)],
@@ -79,7 +79,7 @@ public class TypeDataTests
                  "frontLoaderBracket": { "type": "loaderArm" },
                  "lights": { "lamps": [ { "type": "laser" } ] } } }]
             """));
-        const string known = "(known: threePoint, drawbar, fifthWheel, header, frontLoader)";
+        const string known = "(known: threePoint, drawbar, fifthWheel, header, frontLoader, loaderTool)";
         Assert.Contains($"machine 'x' attacherJoints: joint 'rear': unknown type 'hitchPin' {known}", bad.Message);
         Assert.Contains($"machine 'x' attachable: unknown type 'towBall' {known}", bad.Message);
         Assert.Contains($"machine 'x' frontLoaderBracket: unknown type 'loaderArm' {known}", bad.Message);

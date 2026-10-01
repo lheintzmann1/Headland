@@ -92,7 +92,7 @@ public class PoiTests
                      "silo: needs the POI's fillUnits to keep the goods", "productionPoint: production 'mill' is defined more than once",
                      "productionPoint: needs the POI's fillUnits to keep its inputs and outputs",
                      "productionPoint: production 'mill': amounts must be > 0",
-                     "productionPoint: production 'mill': output 'flour' mode must be store or sell",
+                     "productionPoint: production 'mill': output 'flour' mode must be store, sell, pallet",
                      "productionPoint: production 'mill': needs inputs and outputs", "workshop: months must be 1..12",
                      "workshop: configure.price must be >= 0", "washingStation: price must be >= 0",
                  ])

@@ -76,7 +76,7 @@ public sealed class MachineSystem
         if (a.Def.Mode == "trailed")
         {
             // Keep the trailer's heading but clamp it into the allowed articulation.
-            var frame = parent.PartToWorld(joint.X, joint.Z).heading;
+            var frame = parent.JointToWorld(joint).heading;
             var max = a.Def.MaxArticulationDeg * MathUtil.Deg2Rad;
             var rel = Math.Clamp(MathUtil.WrapAngle(child.Heading - frame), -max, max);
             child.Heading = frame + rel;
@@ -124,7 +124,7 @@ public sealed class MachineSystem
         foreach (var j in p.Def.Joints)
         {
             if (p.Attached.ContainsKey(j.Id)) continue;
-            var (jw, frame) = p.PartToWorld(j.X, j.Z);
+            var (jw, frame) = p.JointToWorld(j);
             foreach (var c in All)
             {
                 if (c.Parent != null || c.Get<Attachable>() is not { } a || c.Has<Motor>() || c.Root == vehicle.Root) continue;
@@ -282,7 +282,7 @@ public sealed class MachineSystem
         foreach (var (jointId, child) in parent.Attached)
         {
             var j = parent.Joint(jointId)!;
-            var (jw, frame) = parent.PartToWorld(j.X, j.Z);
+            var (jw, frame) = parent.JointToWorld(j);
             var a = child.Get<Attachable>()!.Def;
             if (a.Mode == "mounted")
             {

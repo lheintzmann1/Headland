@@ -5,6 +5,8 @@
   "size": { "length": 0.8, "width": 1.5, "height": 1.5, "centerZ": 2.6 },
   "components": {
     "attachable": { "type": "frontLoader", "mode": "mounted" },
+    // Its tool carrier, on the tilt: a bale spike or a pallet fork hangs on it, lifted and tilted with the arm.
+    "attacherJoints": { "joints": [ { "id": "tool", "type": "loaderTool", "crane": "tilt", "x": 0, "y": 0, "z": 0.14 } ] },
     // Lifted on the up and down keys, its tool tilted back and forth on the left and right keys.
     "craneArm": { "groups": ["arm"], "joints": [
       { "id": "lift", "axis": "pitch", "offset": [0, 1.2, 0], "min": -8, "max": 55, "rest": 0, "speed": 20, "control": "y" },
@@ -13,5 +15,5 @@
     "washable": {}
   },
   "visual": { "color": "#4d5c38", "model": "res://assets/models/frontloaders/frontloader_arm.glb" },
-  "description": "Front loader arm for a tractor with loader consoles (a workshop fits them). Hitch it (G), lift it with the up and down keys and tilt its tool with the left and right keys."
+  "description": "Front loader arm for a tractor with loader consoles (a workshop fits them). Hitch it (G), lift it with the up and down keys and tilt its tool with the left and right keys. Its tool carrier takes a bale spike or a pallet fork: drive up to one lying on the ground, the arm down, and hitch it (G)."
 }

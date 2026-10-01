@@ -43,8 +43,9 @@ public sealed class Notifications
         events.Subscribe<ObjectsSold>(e =>
         {
             if (e.Farm != Ownership.Farm.PlayerId) return;
-            var bales = e.Count == 1 ? "a bale" : $"{e.Count} bales";
-            Post($"Sold {bales} of {content.FillTypes[e.FillType].Name.ToLowerInvariant()} ({e.Amount:N0} {content.FillTypes[e.FillType].Unit}) to {e.Poi.Name} for ${e.Income:N0}", Severity.Good, 0);
+            var what = e.Def.Name.ToLowerInvariant();
+            var objects = e.Count == 1 ? $"a {what}" : $"{e.Count} {what}s";
+            Post($"Sold {objects} of {content.FillTypes[e.FillType].Name.ToLowerInvariant()} ({e.Amount:N0} {content.FillTypes[e.FillType].Unit}) to {e.Poi.Name} for ${e.Income:N0}", Severity.Good, 0);
         });
         events.Subscribe<FillLoaded>(e => Post($"Loaded {Amount(e.FillType, e.Amount)} from {e.Poi.Name}", Severity.Good, 0));
         events.Subscribe<MachineBought>(e => Post($"Bought the {e.Machine.Def.Name} for ${e.Price:N0}: it waits at {e.Poi.Name}", Severity.Good, 0));

@@ -1,0 +1,14 @@
+// Hangs on a front loader arm's tool carrier: origin at its hitch, the bottom of its frame. See docs/COMPONENTS.md.
+{
+  "id": "pallet_fork", "name": "Pallet fork", "category": "loaderTool", "brand": "ridgeline", "price": 1450, "mass": 210,
+  "size": { "length": 1.2, "width": 1.2, "height": 1.0, "centerZ": 0.6 },
+  "components": {
+    "attachable": { "type": "loaderTool", "mode": "mounted" },
+    // Its tines go into a pallet's openings, just over the ground.
+    "fork": { "area": { "z": 0.7, "w": 0.8, "d": 0.8 }, "y": 0.03, "into": 0.07, "takes": ["pallet"] },
+    "wearable": {},
+    "washable": {}
+  },
+  "visual": { "color": "#4d5c38", "model": "res://assets/models/frontloaders/pallet_fork.glb" },
+  "description": "Pallet fork for a front loader. Lower the arm all the way and drive the tines into a pallet: it takes the pallet, to lift and carry, and sets it down (U) where you want it, in a buyer's pallet area to sell it."
+}

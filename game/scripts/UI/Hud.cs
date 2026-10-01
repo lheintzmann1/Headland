@@ -233,6 +233,7 @@ public partial class Hud : CanvasLayer
                 bits.Add($"{ft?.Name ?? "empty"} {u.Level:N0}/{u.Capacity:N0} {unit}");
             }
             if (m.Get<BaleLoader>() is { } loader) bits.Add($"bales {loader.Count}/{loader.Capacity}");
+            if (m.Get<Fork>()?.Held is [var carried, ..]) bits.Add($"carrying a {carried.Def.Name.ToLowerInvariant()}");
             if (m.WorkedHa > 0.001f) bits.Add($"{m.WorkedHa:0.00} ha");
             if (m.Get<Wearable>() is { } wear)
                 bits.Add(Widgets.Colored($"condition {wear.Condition * 100f:0}%", wear.Condition < Wearable.WornBelow ? Palette.Warning : Palette.Dim));

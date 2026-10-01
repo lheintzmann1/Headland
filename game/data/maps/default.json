@@ -37,7 +37,8 @@
     { "x": 350, "z": 206, "w": 62, "h": 36 },
     { "x": 472, "z": 256, "w": 40, "h": 50 },
     { "x": 472, "z": 156, "w": 40, "h": 84 },
-    { "x": 472, "z": 312, "w": 40, "h": 64 }
+    { "x": 472, "z": 312, "w": 40, "h": 64 },
+    { "x": 150, "z": 128, "w": 36, "h": 32 }
   ],
   // Parcels of land (FS farmland): bought and sold whole. Fields are the crop areas inside them.
   // Shapes are rectangles (x, z, w, h) or "polygon": [[x, z], ...]. Roads, forests and the elevator stay outside.
@@ -71,6 +72,8 @@
     { "id": "shed",      "type": "machine_shed",   "x": 153, "z": 188, "farm": 1 },
     { "id": "silo",      "type": "farm_silo",      "x": 180, "z": 191, "farm": 1 },
     { "id": "fuel",      "type": "farm_fuel_tank", "x": 186, "z": 212, "farm": 1 },
+    // North of the yard, its intake pit and pallet area facing it.
+    { "id": "grainmill", "type": "grain_mill",     "x": 167, "z": 142, "farm": 1 },
     { "id": "supplies",  "type": "farm_shop",      "x": 131, "z": 226 },
     { "id": "elevator",  "type": "grain_elevator", "x": 443, "z": 220 },
     { "id": "gas",       "type": "gas_station",    "x": 368, "z": 225 },

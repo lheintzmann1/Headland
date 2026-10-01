@@ -113,6 +113,47 @@ public sealed class Machine : Entity
 
     public AttacherJointDef? Joint(string id) => Def.Joints.FirstOrDefault(j => j.Id == id);
 
+    /// <summary>The joint it hangs on, if it's hitched.</summary>
+    public AttacherJointDef? ParentJointDef => Parent?.Joint(ParentJoint!);
+
+    /// <summary>
+    /// Joint <paramref name="j"/>'s frame in the machine's space (row vectors: a point p of the joint's space is at p ×
+    /// frame): at its x, y, z, or, on a crane joint (a loader's tool carrier), there in that joint's frame as it moves.
+    /// </summary>
+    public Matrix4x4 JointFrame(AttacherJointDef j)
+    {
+        var at = Matrix4x4.CreateTranslation(j.X, j.Y, j.Z);
+        return j.Crane != null && Get<CraneArm>() is { } arm ? at * arm.Frame(j.Crane) : at;
+    }
+
+    /// <summary>Where joint <paramref name="j"/> is on the map, and which way it faces (a crane turning turns it).</summary>
+    public (Vector2 position, float heading) JointToWorld(AttacherJointDef j)
+    {
+        var f = JointFrame(j);
+        var (position, heading) = PartToWorld(f.M41, f.M43);
+        return (position, heading + MathF.Atan2(f.M31, f.M33));
+    }
+
+    /// <summary>
+    /// A point of the machine (in its space) in its parent's, when it hangs on a crane joint (a tool on a loader arm):
+    /// moved and tilted with the arm. Null for any other machine.
+    /// </summary>
+    public Vector3? OnCrane(Vector3 local)
+    {
+        if (ParentJointDef is not { Crane: not null } j || Get<Attachable>() is not { } a) return null;
+        return Vector3.Transform(local - new Vector3(a.Def.X, 0f, a.Def.Z), Parent!.JointFrame(j));
+    }
+
+    /// <summary>
+    /// How high a point of the machine (in its space) is over the ground: a tool on a crane joint as the crane holds it,
+    /// a mounted implement as its linkage lifts it.
+    /// </summary>
+    public float HeightOf(Vector3 local)
+    {
+        if (OnCrane(local) is { } onParent) return Parent!.HeightOf(onParent);
+        return local.Y + (Get<Attachable>()?.Lift ?? 0f);
+    }
+
     /// <summary>Its <see cref="Cover"/> is closed over <paramref name="unit"/>: nothing fills it.</summary>
     public bool ClosedOver(FillUnit unit) => Get<Cover>()?.Shuts(unit) == true;
 

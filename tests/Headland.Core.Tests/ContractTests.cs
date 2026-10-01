@@ -160,17 +160,17 @@ public class ContractTests
         Assert.All(jobs, c => Assert.InRange(c.Reward, 0.9f * c.Type.RewardPerHa * c.Field!.AreaHa - 5f, 1.1f * c.Type.RewardPerHa * c.Field.AreaHa + 5f));
         Assert.All(jobs, c => Assert.InRange(c.Days, c.Type.Days[0], c.Type.Days[1]));
 
-        // Each buyer asks for one kind of goods at a time, for their market price and 30% more.
-        var deliveries = offers.Where(c => c.Field == null).OrderBy(c => c.Poi!.Id).ToList();
-        Assert.Equal(["elevator", "mill"], deliveries.Select(c => c.Poi!.Id));
-        Assert.Equal("wheat", deliveries[1].Goods!.Id);
+        // Each buyer asks for one kind of goods at a time, what it buys, for their market price and 30% more.
+        var deliveries = offers.Where(c => c.Field == null).ToList();
+        Assert.Equal(2, deliveries.Select(c => c.Poi).Distinct().Count());
         Assert.All(deliveries, c =>
         {
             Assert.Equal((0f, c.Poi!.Name), (c.Amount % 1000f, c.Client));
             Assert.InRange(c.Amount, 4000f, 12000f);
+            Assert.Contains(c.Goods!.Id, c.Poi.Get<SellingStation>()!.Def.FillTypes);
             Assert.Equal(MathF.Round(c.Amount * sim.Economy.Price(c.Goods!.Id, 8) * 1.3f / 10f) * 10f, c.Reward);
+            Assert.Equal($"Deliver {c.Amount:N0} {c.Goods.Unit} {c.Goods.Name.ToLowerInvariant()} to {c.Poi.Name}", c.Label);
         });
-        Assert.Equal($"Deliver {deliveries[1].Amount:N0} L wheat to Flour Mill", deliveries[1].Label);
         var first = sim.Contracts.Offers.First();
         Assert.Contains(sim.Notifications.Items, n => n.Text == $"New contract: {first.Label} for {first.Client}, ${first.Reward:N0}");
     }
@@ -464,19 +464,21 @@ public class ContractTests
     {
         var sim = TestContent.NewSim();
         sim.SkipHours(24);
-        var job = sim.Contracts.Offers.Single(c => c.Poi?.Id == "mill");
+        // A buyer of grain tipped into its pit.
+        var job = sim.Contracts.Offers.First(c => c.Field == null && c.Poi!.Trigger("unload") != null);
         Assert.True(sim.Contracts.Accept(job));
-        var pit = sim.World.PoiById("mill")!.Trigger("unload")!;
+        var pit = job.Poi!.Trigger("unload")!;
+        var goods = job.Goods!;
         var trailer = sim.Machines.Spawn("trailer_16", pit.Area.Center, 0f);
         var money = sim.Economy.Money;
 
-        sim.Pois.Unload(trailer, pit, "wheat", job.Amount - 1000f);
+        sim.Pois.Unload(trailer, pit, goods.Id, job.Amount - 1000f);
         Run(sim, 1f);
         Assert.Equal((ContractState.Active, job.Amount - 1000f, money), (job.State, job.Delivered, sim.Economy.Money));
-        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Delivered {job.Amount - 1000f:N0} L Wheat for the contract: {job.Label}, 1,000 L to go");
+        Assert.Contains(sim.Notifications.Items, n => n.Text == $"Delivered {job.Amount - 1000f:N0} L {goods.Name} for the contract: {job.Label}, 1,000 L to go");
         // The last 1,000 L go to the contract, the rest is sold.
-        var income = 2000f * sim.Pois.Price((SellingStation)pit.Station, "wheat");
-        sim.Pois.Unload(trailer, pit, "wheat", 3000f);
+        var income = 2000f * sim.Pois.Price((SellingStation)pit.Station, goods.Id);
+        sim.Pois.Unload(trailer, pit, goods.Id, 3000f);
         Run(sim, 1f);
         Assert.Equal((ContractState.Completed, job.Amount), (job.State, job.Delivered));
         Assert.Equal(money + job.Reward + income, sim.Economy.Money, 1);

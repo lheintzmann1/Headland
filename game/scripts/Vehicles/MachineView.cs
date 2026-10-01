@@ -2,18 +2,22 @@ using Headland.Game.Common;
 using Headland.Game.Components;
 using Headland.Core;
 using Headland.Core.Machines;
+using Headland.Core.Machines.Components;
 using Godot;
 
 namespace Headland.Game.Vehicles;
 
 /// <summary>
-/// Follows a Core machine on the terrain (with pitch and roll) and draws its glTF model (e.g. from Blockbench). A view
-/// per component moves its parts: wheels, pipe, tipper, lights…
+/// Follows a Core machine on the terrain (with pitch and roll), or a tool where the crane joint carrying it holds it (a
+/// fork on a loader arm, lifted and tilted with it), and draws its glTF model (e.g. from Blockbench). A view per
+/// component moves its parts: wheels, pipe, tipper, lights…
 /// </summary>
 public partial class MachineView : Node3D
 {
     public Simulation Sim { get; init; } = null!;
     public Machine Machine { get; init; } = null!;
+    /// <summary>The view of a machine, by its id (the one carrying this one on a crane joint).</summary>
+    public Func<int, Node3D?> MachineViewOf { get; init; } = _ => null;
 
     public override void _Ready()
     {
@@ -28,6 +32,12 @@ public partial class MachineView : Node3D
     public override void _Process(double delta)
     {
         var m = Machine;
+        if (m.ParentJointDef is { Crane: not null } joint && MachineViewOf(m.Parent!.Id) is { } carrier)
+        {
+            var a = m.Get<Attachable>()!.Def;
+            GlobalTransform = carrier.GlobalTransform * m.Parent.JointFrame(joint).ToGodot() * new Transform3D(Basis.Identity, new Vector3(-a.X, 0f, -a.Z));
+            return;
+        }
         var world = Sim.World;
         var s = m.Def.Size;
 

@@ -10,7 +10,7 @@ The spec is a tree of named nodes, as docs/MODELING.md wants them (a `root`, mov
 `at` is a node's pivot in its parent's space (meters, +x left, +y up, +z forward), `rot` its turn in degrees about x,
 then y, then z. Each box is its own child node (`<node>_0`, `<node>_1`…), `size` [x, y, z] centered on `at` [x, y, z]
 in the node's space. Materials: paint (the machine's color), paint_75/80/85 (darker shades of it), steel, dark_steel,
-tire, rim, tread, fill (the load's color), tarp (a dark green-grey canvas).
+tire, rim, tread, fill (the load's color), tarp (a dark green-grey canvas), wood (a pallet's boards).
 
     python3 tools/box_model.py spec.json game/assets/models/<category>/<id>.glb
 """
@@ -34,6 +34,7 @@ MATERIALS = {
     "tread": ([0.0085, 0.0085, 0.0085], 0.0, 0.95),
     "fill": ([1.0, 1.0, 1.0], 0.0, 0.9),
     "tarp": ([0.0452, 0.0513, 0.0356], 0.0, 0.95),
+    "wood": ([0.2462, 0.1499, 0.0723], 0.0, 0.9),
 }
 
 # Each face of a box: its normal, tangent and the corners (as signs of the half size), counterclockwise from outside.
